@@ -27,3 +27,17 @@ lists for reasoning. Show assumptions and units on anything quantitative. Say
 3. Nothing client-identifying in the repo: no client names, project numbers,
    network paths, or job-specific references.
 4. Hold the v1 scope in docs/BRIEF.md. Push back when I try to expand it.
+
+## Agent skills
+
+### Issue tracker
+
+Issues live in this repo's GitHub Issues (private), managed with the `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default five-role vocabulary (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`). See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: one `CONTEXT.md` and `docs/adr/` at the repo root. See `docs/agents/domain.md`.
