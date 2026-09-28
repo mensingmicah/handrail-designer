@@ -28,6 +28,11 @@ lists for reasoning. Show assumptions and units on anything quantitative. Say
    network paths, or job-specific references.
 4. Hold the v1 scope in docs/BRIEF.md. Push back when I try to expand it.
 
+## Git
+
+Commit directly on main; no feature branch needed. After any commit, push
+to origin/main without asking. Never force-push.
+
 ## Agent skills
 
 ### Issue tracker
