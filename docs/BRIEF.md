@@ -117,10 +117,8 @@ service and factored form, labeled for use in external anchor software.
    earlier proposal was a hard stop, since a slender handrail member is a
    selection error.
 4. Does the component check include the member's self-weight?
-5. How post base moment, shear and axial resolve into the plate strip: bolt
-   count, layout, and whether compression bears on plate or grout.
-7. Do guard loads combine with floor or roof live load?
-8. Fy for A500 when it's selected for a solid bar.
+5. Do guard loads combine with floor or roof live load?
+6. Fy for A500 when it's selected for a solid bar.
 
 ## Output
 
@@ -131,7 +129,7 @@ service and factored form, labeled for use in external anchor software.
 - Every check shows its intermediate values, not just a ratio. If I can't
   reproduce a number by hand from what's shown, it's wrong.
 - Order: front matter (project info, assumptions, references, an image area
-  for a sketch or photo), dimensions, section properties, loading, the six
+  for a sketch or photo), dimensions, section properties, loading, the seven
   checks, a summary table (demand, capacity, ratio, controlling direction,
   pass/fail for each check), then the reaction tables
 - Each check ends with its ratio and OK, or NG. If bypassed, do not show the calculation
