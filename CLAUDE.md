@@ -17,11 +17,15 @@ when my framing is off or I'm solving the wrong problem. Prose over bullet
 lists for reasoning. Show assumptions and units on anything quantitative. Say
 "I'm not sure" rather than producing a confident number.
 
+The repo documents are the only source of truth for this project. Don't rely
+on, or write, auto-memory for it.
+
 ## Rules
 
-1. Code values are never embedded silently. Any value drafted from memory is
-   cited by document, edition and section and marked unverified until I check
-   it. Never source code values from web search.
+1. Code values live only in the code-value registry, each cited by document,
+   edition and section. Claude creates an entry with its citation and a blank
+   value; only I enter values. The tool stops with an error naming any blank
+   entry it needs. Never fill a value from memory or from web search.
 2. If the tool's result disagrees with my hand calc, stop and tell me. Don't
    change the tool to match until we know which one is wrong.
 3. Nothing client-identifying in the repo: no client names, project numbers,
