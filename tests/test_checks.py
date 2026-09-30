@@ -263,3 +263,38 @@ def test_upward_margin_note_states_net_downward_when_dead_load_wins():
             ML = next(ln for ln in c.lines if ln.symbol == "M_L").value
             assert 0.6 * MD > ML  # the premise of the test
             assert "net downward" in Ma.note
+
+
+# ---------------------------------------------------------------------------
+# Slice 2: post section and dead load at the post (dev section, not a hand case)
+# ---------------------------------------------------------------------------
+
+
+def test_post_radius_of_gyration_is_the_database_rx():
+    assert shapes.pipe("Pipe2STD").r.m_as("inch") == 0.791
+    assert shapes.pipe("Pipe1-1/2STD").r.m_as("inch") == 0.626
+
+
+def test_dead_load_at_the_post_matches_plain_calc(results):
+    # Pipe2STD rail over 6'-0" on a Pipe2STD post, h = 42 in, t_p = 1/2 in:
+    # D_post = 3.66 lb/ft x 41.5 in / 12 = 12.6575 lb; D_rail = 3.66 lb/ft x 6 ft = 21.96 lb.
+    ld = results.loading
+    assert ld.L_post.m_as("inch") == pytest.approx(41.5, rel=1e-12)
+    assert ld.P_D.m_as("lbf") == pytest.approx(12.6575 + 21.96, rel=1e-12)
+    lines = {ln.symbol: ln for ln in ld.lines if ln.kind == "value"}
+    assert lines['D_"post"'].value.m_as("lbf") == pytest.approx(12.6575, rel=1e-12)
+    assert lines['D_"rail"'].value.m_as("lbf") == pytest.approx(21.96, rel=1e-12)
+
+
+def test_dead_load_lines_cite_the_post_dead_load_entry(results):
+    cite = Registry().get("ej.post.axial_dead_load").cite
+    for sym in ('D_"post"', 'D_"rail"', "P_D"):
+        ln = next(ln for ln in results.loading.lines if ln.symbol == sym)
+        assert cite in ln.cite
+
+
+def test_post_block_adds_r_and_rail_block_is_unchanged(results):
+    rail_syms = [ln.symbol for ln in results.section_lines]
+    post_syms = [ln.symbol for ln in results.post_section_lines]
+    assert "r" not in rail_syms
+    assert post_syms == rail_syms[:-1] + ["r", rail_syms[-1]]

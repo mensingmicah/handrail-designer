@@ -104,6 +104,8 @@ class Loading:
     P: object          # concentrated guard load
     w_L: object        # uniform guard load, or None when exempt
     w_D: object        # top rail self-weight
+    L_post: object     # post cantilever length, h - t_p
+    P_D: object        # axial dead load at the top of the baseplate (D at the post)
     exempt: bool
     exemption_statement: str
     lines: list[Line]
@@ -113,8 +115,10 @@ class Loading:
 class Results:
     project: Project
     rail: PipeSection
+    post: PipeSection
     loading: Loading
-    section_lines: list[Line]
+    section_lines: list[Line]       # top rail
+    post_section_lines: list[Line]
     checks: list[Check]
 
 
@@ -136,7 +140,7 @@ def require_supported_grade(member: Member, name: str) -> None:
         )
 
 
-def build_loading(project: Project, registry: Registry, rail: PipeSection) -> Loading:
+def build_loading(project: Project, registry: Registry, rail: PipeSection, post: PipeSection) -> Loading:
     sh = Sheet(registry)
     ld = project.loads
 
@@ -169,22 +173,43 @@ def build_loading(project: Project, registry: Registry, rail: PipeSection) -> Lo
             cite=f"Input; {code_w.cite}",
         ).value
 
-    w_D = sh.given("w_D", rail.W, f"Top rail self-weight: tabulated W = {rail.W.m_as('lbf/ft'):g} lb/ft", DB).value
-    return Loading(P=P.value, w_L=w_L, w_D=w_D, exempt=ld.uniform_exempt,
-                   exemption_statement=ld.exemption_statement, lines=sh.lines)
+    w_D = sh.given("w_D", rail.W, f"Top rail self-weight: tabulated W = {rail.W.m_as('lbf/ft'):g} lb/ft", DB)
+
+    # Dead load reaching the post (docs/plans/slice-2.md, D2). The critical
+    # section is the top of the baseplate (D4), so the post weight is taken
+    # over h - t_p, the same cantilever length Checks 5 and 6 use.
+    sh.heading("Dead load at the post")
+    dl = "ej.post.axial_dead_load"
+    h = sh.given("h", project.post_height.value, "Post height, top of concrete to top rail centerline", "Input")
+    tp = sh.given("t_p", project.baseplate_thickness.value, "Baseplate thickness", "Input")
+    L_post = sh.line('L_"post"', h - tp, "Post cantilever length, top of baseplate to top rail centerline",
+                     cite="Stated assumption: post fixed at the top of the baseplate", unit="inch")
+    W_post = sh.given('W_"post"', post.W, f"Post self-weight: {post.label}, tabulated W", DB)
+    D_post = sh.line('D_"post"', W_post * L_post, "Post dead load, full weight at the base",
+                     cite_ids=(dl,), unit="lbf")
+    s = sh.given("L", project.span.value, "Span: the tributary length for the post (stated assumption)", "Input")
+    D_rail = sh.line('D_"rail"', w_D * s, "Top rail dead load delivered to the post", cite_ids=(dl,), unit="lbf")
+    P_D = sh.line("P_D", D_rail + D_post, "D at the post: axial dead load at the top of the baseplate",
+                  cite_ids=(dl,), unit="lbf")
+    return Loading(P=P.value, w_L=w_L, w_D=w_D.value, L_post=L_post.value, P_D=P_D.value,
+                   exempt=ld.uniform_exempt, exemption_statement=ld.exemption_statement, lines=sh.lines)
 
 
-def section_lines(registry: Registry, rail: PipeSection) -> list[Line]:
+def section_lines(registry: Registry, sec: PipeSection, with_r: bool = False) -> list[Line]:
+    """Section properties as published. The post block adds r, which only
+    the compression check uses; the rail block prints as it did in slice 1."""
     sh = Sheet(registry)
-    sh.given("D", rail.OD, f"{rail.label}: outside diameter", DB)
-    sh.given('t_"nom"', rail.tnom, "Nominal wall thickness", DB)
-    sh.given('t_"des"', rail.tdes, "Design wall thickness", DB)
-    sh.given("A", rail.A, "Area (design wall)", DB)
-    sh.given("W", rail.W, f"Nominal weight: tabulated {rail.W.m_as('lbf/ft'):g} lb/ft (nominal wall)", DB)
-    sh.given("I", rail.I, "Moment of inertia", DB)
-    sh.given("S", rail.S, "Elastic section modulus", DB)
-    sh.given("Z", rail.Z, "Plastic section modulus", DB)
-    sh.given("D slash t", rail.D_t, "Diameter-to-thickness ratio, tabulated", DB)
+    sh.given("D", sec.OD, f"{sec.label}: outside diameter", DB)
+    sh.given('t_"nom"', sec.tnom, "Nominal wall thickness", DB)
+    sh.given('t_"des"', sec.tdes, "Design wall thickness", DB)
+    sh.given("A", sec.A, "Area (design wall)", DB)
+    sh.given("W", sec.W, f"Nominal weight: tabulated {sec.W.m_as('lbf/ft'):g} lb/ft (nominal wall)", DB)
+    sh.given("I", sec.I, "Moment of inertia", DB)
+    sh.given("S", sec.S, "Elastic section modulus", DB)
+    sh.given("Z", sec.Z, "Plastic section modulus", DB)
+    if with_r:
+        sh.given("r", sec.r, "Radius of gyration", DB)
+    sh.given("D slash t", sec.D_t, "Diameter-to-thickness ratio, tabulated", DB)
     return sh.lines
 
 
@@ -431,9 +456,11 @@ def run(project: Project, registry: Registry) -> Results:
     from handrail import shapes
 
     rail = shapes.pipe(project.top_rail.section)
+    post = shapes.pipe(project.post.section)
     require_supported_grade(project.top_rail, "top rail")
     require_supported_grade(project.post, "post")
-    loading = build_loading(project, registry, rail)
+    loading = build_loading(project, registry, rail, post)
     props = section_lines(registry, rail)
+    post_props = section_lines(registry, post, with_r=True)
     checks = [check_1(registry, project, rail, loading), check_2(registry, project, rail, loading)]
-    return Results(project, rail, loading, props, checks)
+    return Results(project, rail, post, loading, props, post_props, checks)
