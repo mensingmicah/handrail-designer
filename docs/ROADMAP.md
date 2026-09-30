@@ -156,7 +156,8 @@ limits, Ωc, Ωt, K, the B4.1a round limit, the H1.1 equations and their
 0.2 threshold, Table 3-23 cantilever cases, the L/60 limit as
 engineering judgement, and the second-order entries below). Two hand cases
 (cases 2 and 3): a Pipe1-1/2STD post and a Pipe2STD post, one for each
-Chapter E branch (E3-3 and E3-2).
+Chapter E branch (E3-3 and E3-2), both on case 1's rail and span with
+h = 42 in and t_p = 1/2 in.
 
 **Decided: second-order effects** (Micah, 2026-09-30). The tool does not
 implement Appendix 8 amplification. For the post it computes αPr/Pe and
