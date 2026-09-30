@@ -126,17 +126,24 @@ def compare(path, key, hand, res):
     )
 
 
-@pytest.mark.parametrize("path", CASES, ids=[p.stem for p in CASES])
-def test_hand_keys_and_tool_values_match_both_ways(runs, path):
-    hand_raw, res = runs(path)
+def assert_hand_keys_match(path, hand_raw, res):
+    """Every [hand] key names a tool value, and every tool value has a [hand] key.
+
+    The second half matters: a deleted hand value must not silently stop
+    being tested. Each tool value needs a hand key, as a number or "pending".
+    """
     tool = set(tool_values(res)) | {"check1.controlling", "check2.controlling"}
     hand = {key for key, _ in _flatten(hand_raw)}
     unknown = sorted(hand - tool)
     assert not unknown, f"{path.name}: [hand] keys that match no tool value: {unknown}"
-    # A deleted hand value must not silently stop being tested:
-    # every tool value needs a hand key, as a number or "pending".
     missing = sorted(tool - hand)
     assert not missing, f"{path.name}: tool values with no [hand] key: {missing}"
+
+
+@pytest.mark.parametrize("path", CASES, ids=[p.stem for p in CASES])
+def test_hand_keys_and_tool_values_match_both_ways(runs, path):
+    hand_raw, res = runs(path)
+    assert_hand_keys_match(path, hand_raw, res)
 
 
 def test_comparison_machinery_catches_a_mismatch():
@@ -153,11 +160,21 @@ def test_comparison_machinery_catches_a_mismatch():
         compare(Path("self-test"), "check2.controlling", "upward, distributed", res)
 
 
-def test_a_deleted_hand_value_is_caught(tmp_path):
+def test_a_deleted_hand_value_is_caught():
+    """Self-test of the real key check, not a copy of it."""
     case = CASES[0]
     raw = _load(case)
-    del raw["hand"]["check1"]["ratio"]["upward_distributed"]
     res = checks.run(project.from_dict(raw), Registry())
-    tool = set(tool_values(res)) | {"check1.controlling", "check2.controlling"}
-    hand = {key for key, _ in _flatten(raw["hand"])}
-    assert tool - hand == {"check1.ratio.upward_distributed"}
+    assert_hand_keys_match(case, raw["hand"], res)  # the intact file passes
+    del raw["hand"]["check1"]["ratio"]["upward_distributed"]
+    with pytest.raises(AssertionError, match=r"no \[hand\] key: \['check1.ratio.upward_distributed'\]"):
+        assert_hand_keys_match(case, raw["hand"], res)
+
+
+def test_an_unknown_hand_key_is_caught():
+    case = CASES[0]
+    raw = _load(case)
+    res = checks.run(project.from_dict(raw), Registry())
+    raw["hand"]["check1"]["ratio"]["sideways_concentrated"] = 0.5
+    with pytest.raises(AssertionError, match=r"match no tool value: \['check1.ratio.sideways_concentrated'\]"):
+        assert_hand_keys_match(case, raw["hand"], res)
