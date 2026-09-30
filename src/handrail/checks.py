@@ -26,7 +26,6 @@ from handrail.calc import Const, Line, Sheet, Sym, absolute, fmt_quantity_plain,
 from handrail.project import Member, Project, ProjectError
 from handrail.registry import Entry, Registry
 from handrail.shapes import PipeSection
-from handrail.units import Q_
 
 DIRECTIONS = ("Downward", "Outward", "Inward", "Upward", "Longitudinal")
 CONCENTRATED, DISTRIBUTED = "Concentrated", "Distributed"
@@ -212,7 +211,6 @@ def flexural_capacity(registry: Registry, rail: PipeSection, grade: str) -> Capa
     app = registry.get("aisc360.F8.applicability")
     lp_e = registry.get("aisc360.B4.1b.round_hss.lambda_p")
     lr_e = registry.get("aisc360.B4.1b.round_hss.lambda_r")
-    f82 = registry.get("aisc360.eq.F8-2")
 
     sh.decision(
         mtext(f"{rail.label}, {grade}"), "Designed as round HSS",
@@ -254,6 +252,9 @@ def flexural_capacity(registry: Registry, rail: PipeSection, grade: str) -> Capa
         Mn = sh.line("M_n", Mp, "Nominal flexural strength", cite_ids=("aisc360.F8.nominal_strength",),
                      unit="lbf*inch")
     else:
+        # Fetched only here: Registry.get records every lookup for the DRAFT list,
+        # and a compact calc must not list an equation it never used.
+        f82 = registry.get("aisc360.eq.F8-2")
         sh.decision(f"lambda_p = {fmt_sig(lp.value)} < lambda = {D_t:g} <= lambda_r = {fmt_sig(lr.value)}",
                     "NONCOMPACT", "Section classification: reduced capacity",
                     cite_ids=("aisc360.B4.1b.classification",))

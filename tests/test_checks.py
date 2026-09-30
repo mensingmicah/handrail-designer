@@ -236,3 +236,13 @@ def test_every_formula_line_prints_a_citation(results):
             for ln in c.lines:
                 if ln.kind == "value" and ln.symbolic and ln.symbolic != ln.symbol:
                     assert ln.cite, f"no citation on {ln.symbol} = {ln.symbolic}"
+
+
+@pytest.mark.parametrize("section, span, listed", [("Pipe2STD", "6'-0\"", False), ("Pipe26STD", "12'-0\"", True)])
+def test_eq_F8_2_is_listed_as_used_only_for_a_noncompact_section(section, span, listed):
+    reg = Registry()
+    res = checks.run(project(section=section, span=span), reg)
+    assert bool(res.checks[0].flags) is listed  # noncompact flag raised only for Pipe26STD
+    used = {e.id for e in reg.drafted_used}
+    assert ("aisc360.eq.F8-2" in used) is listed
+    assert ("aisc360.eq.F8-2.coeff" in used) is listed
