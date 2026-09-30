@@ -114,6 +114,9 @@ def compare(path, key, hand, res):
         )
         return
 
+    if not isinstance(hand, (int, float)):
+        pytest.fail(f"{path.name} {key} = {hand!r}: a hand value must be a bare number "
+                    f"(no quotes; quotes make it text), or \"{PENDING}\"")
     tool = tool_values(res)[key]
     rel = abs(tool - hand) / abs(hand)
     assert rel <= TOLERANCE, (

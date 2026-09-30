@@ -34,3 +34,6 @@ npm-debug.log*
 
 # Generated calc PDFs
 examples/*.pdf
+
+# Excel lock files (workbook open in Excel)
+~$*
