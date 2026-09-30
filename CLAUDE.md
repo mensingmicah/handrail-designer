@@ -44,6 +44,11 @@ changes (docs/, .claude/, CLAUDE.md, CONTEXT.md, CHANGELOG.md) can still be
 committed directly on main and pushed to origin/main without asking. Never
 force-push.
 
+For small issues that can't change a printed number or calc text (stale
+comments, doc wording, dead references), add them to the open
+next-calc-branch cleanup issue without asking me. Only raise things with me
+that affect calc results, calc text, or a decision.
+
 ## Agent skills
 
 Issue tracker (GitHub Issues via `gh`): docs/agents/issue-tracker.md.
