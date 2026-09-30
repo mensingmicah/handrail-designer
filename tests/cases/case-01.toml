@@ -4,6 +4,10 @@
 # interior post. The span is chosen so the concentrated load should control
 # bending and the distributed load should control deflection.
 #
+# Post inputs were added in slice 2, because every project now has a post
+# (docs/plans/slice-2.md, D9): the same post as test case 2. This case
+# records no post values; its hand values are for Checks 1 and 2 only.
+#
 # Inputs use the project file format. Hand values go under [hand]; replace
 # each "pending" with the hand-calculated number, in the unit named by the
 # key's suffix. Every value must be within 0.5% (relative) of the tool's.
@@ -20,8 +24,14 @@ description = "Pipe1-1/2STD top rail, 7'-0\" span, default loads"
 
 [geometry]
 span = "7'-0\""
+post_height = 42
+baseplate_thickness = "1/2"
 
 [top_rail]
+section = "Pipe1-1/2STD"
+grade = "A53 Gr B"
+
+[post]
 section = "Pipe1-1/2STD"
 grade = "A53 Gr B"
 

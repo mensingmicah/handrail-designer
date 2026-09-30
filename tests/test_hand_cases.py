@@ -149,8 +149,9 @@ def test_hand_keys_and_tool_values_match_both_ways(runs, path):
 def test_comparison_machinery_catches_a_mismatch():
     """Self-test on the dev section (Pipe2STD, 6'-0"), not a hand case: a right
     value passes, a value 1% off fails with the rule 2 message."""
-    raw = {"project": {"name": "self-test"}, "geometry": {"span": "6'-0\""},
-           "top_rail": {"section": "Pipe2STD"}}
+    raw = {"project": {"name": "self-test"},
+           "geometry": {"span": "6'-0\"", "post_height": 42, "baseplate_thickness": "1/2"},
+           "top_rail": {"section": "Pipe2STD"}, "post": {"section": "Pipe2STD"}}
     res = checks.run(project.from_dict(raw), Registry())
     good = tool_values(res)["check1.ratio.downward_concentrated"]
     compare(Path("self-test"), "check1.ratio.downward_concentrated", good * 1.004, res)

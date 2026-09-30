@@ -123,7 +123,7 @@ class Results:
 # ---------------------------------------------------------------------------
 
 
-def require_supported_grade(member: Member) -> None:
+def require_supported_grade(member: Member, name: str) -> None:
     """Refuse a grade this slice has no Fy entry for.
 
     The brief's unusual-pairing warning (a grade outside the shape's standard
@@ -132,7 +132,7 @@ def require_supported_grade(member: Member) -> None:
     """
     if member.grade not in FY_ENTRY:
         raise ProjectError(
-            f"top rail grade {member.grade!r}: slice 1 supports {', '.join(FY_ENTRY)} only"
+            f"{name} grade {member.grade!r}: this version supports {', '.join(FY_ENTRY)} only"
         )
 
 
@@ -431,7 +431,8 @@ def run(project: Project, registry: Registry) -> Results:
     from handrail import shapes
 
     rail = shapes.pipe(project.top_rail.section)
-    require_supported_grade(project.top_rail)
+    require_supported_grade(project.top_rail, "top rail")
+    require_supported_grade(project.post, "post")
     loading = build_loading(project, registry, rail)
     props = section_lines(registry, rail)
     checks = [check_1(registry, project, rail, loading), check_2(registry, project, rail, loading)]

@@ -21,11 +21,14 @@ E, FY, OMEGA = 29000.0, 35.0, 1.67  # ksi, ksi, - (registry values, restated for
 P, W_L = 200.0, 50.0 / 12  # lb, lb/in
 
 
-def project(section="Pipe2STD", span="6'-0\"", **kw):
+def project(section="Pipe2STD", span="6'-0\"", post="Pipe2STD", h="42", tp="1/2", **kw):
     return Project(
         info=ProjectInfo(name="Test"),
         span=dimensions.parse(span),
         top_rail=Member(section=section, grade="A53 Gr B"),
+        post=Member(section=post, grade="A53 Gr B"),
+        post_height=dimensions.parse(h),
+        baseplate_thickness=dimensions.parse(tp),
         **kw,
     )
 

@@ -12,7 +12,9 @@ from handrail.version import Stamp
 
 def run(**kw):
     p = Project(info=ProjectInfo(name='Name with #hash, *stars*, "quotes" and $dollar'),
-                span=dimensions.parse("6'-0\""), top_rail=Member("Pipe2STD", "A53 Gr B"), **kw)
+                span=dimensions.parse("6'-0\""), top_rail=Member("Pipe2STD", "A53 Gr B"),
+                post=Member("Pipe2STD", "A53 Gr B"), post_height=dimensions.parse("42"),
+                baseplate_thickness=dimensions.parse("1/2"), **kw)
     reg = Registry()
     return checks.run(p, reg), reg
 
