@@ -1,0 +1,1045 @@
+# GENERATED FILE. Do not edit by hand.
+# Produced by: uv run python -m handrail.shapes_extract
+# Source: data/aisc-shapes-database-v16.0.xlsx, sheet 'Database v16.0', rows with Type = PIPE,
+# US customary columns only, values exactly as stored in the workbook.
+# Source SHA-256: 82d0ceb96a0d938ae1a6bd9637cb10a1e269225b5d668dce5b0bdc8d86013496
+
+source_file = "aisc-shapes-database-v16.0.xlsx"
+source_sha256 = "82d0ceb96a0d938ae1a6bd9637cb10a1e269225b5d668dce5b0bdc8d86013496"
+
+[units]
+"W" = "lbf/ft"
+"A" = "in^2"
+"OD" = "in"
+"ID" = "in"
+"tnom" = "in"
+"tdes" = "in"
+"Ix" = "in^4"
+"Zx" = "in^3"
+"Sx" = "in^3"
+"rx" = "in"
+"Iy" = "in^4"
+"Zy" = "in^3"
+"Sy" = "in^3"
+"ry" = "in"
+"J" = "in^4"
+
+[shape."Pipe26STD"]
+"EDI_Std_Nomenclature" = "Pipe26STD"
+"AISC_Manual_Label" = "Pipe26STD"
+"W" = 103
+"A" = 28.2
+"OD" = 26
+"ID" = 25.3
+"tnom" = 0.375
+"tdes" = 0.349
+"D/t" = 74.5
+"Ix" = 2320
+"Zx" = 230
+"Sx" = 178
+"rx" = 9.07
+"Iy" = 2320
+"Zy" = 230
+"Sy" = 178
+"ry" = 9.07
+"J" = 4640
+
+[shape."Pipe24STD"]
+"EDI_Std_Nomenclature" = "Pipe24SCH20"
+"AISC_Manual_Label" = "Pipe24STD"
+"W" = 94.7
+"A" = 26
+"OD" = 24
+"ID" = 23.3
+"tnom" = 0.375
+"tdes" = 0.349
+"D/t" = 68.8
+"Ix" = 1820
+"Zx" = 196
+"Sx" = 152
+"rx" = 8.36
+"Iy" = 1820
+"Zy" = 196
+"Sy" = 152
+"ry" = 8.36
+"J" = 3640
+
+[shape."Pipe20STD"]
+"EDI_Std_Nomenclature" = "Pipe20SCH20"
+"AISC_Manual_Label" = "Pipe20STD"
+"W" = 78.7
+"A" = 21.6
+"OD" = 20
+"ID" = 19.3
+"tnom" = 0.375
+"tdes" = 0.349
+"D/t" = 57.3
+"Ix" = 1040
+"Zx" = 135
+"Sx" = 104
+"rx" = 6.95
+"Iy" = 1040
+"Zy" = 135
+"Sy" = 104
+"ry" = 6.95
+"J" = 2090
+
+[shape."Pipe18STD"]
+"EDI_Std_Nomenclature" = "Pipe18STD"
+"AISC_Manual_Label" = "Pipe18STD"
+"W" = 70.7
+"A" = 19.4
+"OD" = 18
+"ID" = 17.3
+"tnom" = 0.375
+"tdes" = 0.349
+"D/t" = 51.6
+"Ix" = 756
+"Zx" = 109
+"Sx" = 84
+"rx" = 6.24
+"Iy" = 756
+"Zy" = 109
+"Sy" = 84
+"ry" = 6.24
+"J" = 1510
+
+[shape."Pipe16STD"]
+"EDI_Std_Nomenclature" = "Pipe16SCH30"
+"AISC_Manual_Label" = "Pipe16STD"
+"W" = 62.6
+"A" = 17.2
+"OD" = 16
+"ID" = 15.3
+"tnom" = 0.375
+"tdes" = 0.349
+"D/t" = 45.8
+"Ix" = 527
+"Zx" = 85.7
+"Sx" = 65.9
+"rx" = 5.53
+"Iy" = 527
+"Zy" = 85.7
+"Sy" = 65.9
+"ry" = 5.53
+"J" = 1050
+
+[shape."Pipe14STD"]
+"EDI_Std_Nomenclature" = "Pipe14SCH30"
+"AISC_Manual_Label" = "Pipe14STD"
+"W" = 54.6
+"A" = 15
+"OD" = 14
+"ID" = 13.3
+"tnom" = 0.375
+"tdes" = 0.349
+"D/t" = 40.1
+"Ix" = 350
+"Zx" = 65.2
+"Sx" = 50
+"rx" = 4.83
+"Iy" = 350
+"Zy" = 65.2
+"Sy" = 50
+"ry" = 4.83
+"J" = 700
+
+[shape."Pipe12STD"]
+"EDI_Std_Nomenclature" = "Pipe12STD"
+"AISC_Manual_Label" = "Pipe12STD"
+"W" = 49.6
+"A" = 13.7
+"OD" = 12.75
+"ID" = 12
+"tnom" = 0.375
+"tdes" = 0.349
+"D/t" = 36.5
+"Ix" = 262
+"Zx" = 53.7
+"Sx" = 41
+"rx" = 4.39
+"Iy" = 262
+"Zy" = 53.7
+"Sy" = 41
+"ry" = 4.39
+"J" = 523
+
+[shape."Pipe10STD"]
+"EDI_Std_Nomenclature" = "Pipe10SCH40"
+"AISC_Manual_Label" = "Pipe10STD"
+"W" = 40.5
+"A" = 11.5
+"OD" = 10.75
+"ID" = 10
+"tnom" = 0.365
+"tdes" = 0.34
+"D/t" = 31.6
+"Ix" = 151
+"Zx" = 36.9
+"Sx" = 28.1
+"rx" = 3.68
+"Iy" = 151
+"Zy" = 36.9
+"Sy" = 28.1
+"ry" = 3.68
+"J" = 302
+
+[shape."Pipe8STD"]
+"EDI_Std_Nomenclature" = "Pipe8SCH40"
+"AISC_Manual_Label" = "Pipe8STD"
+"W" = 28.6
+"A" = 7.85
+"OD" = 8.625
+"ID" = 7.98
+"tnom" = 0.32200000000000006
+"tdes" = 0.3
+"D/t" = 28.8
+"Ix" = 68.1
+"Zx" = 20.8
+"Sx" = 15.8
+"rx" = 2.95
+"Iy" = 68.1
+"Zy" = 20.8
+"Sy" = 15.8
+"ry" = 2.95
+"J" = 136
+
+[shape."Pipe6STD"]
+"EDI_Std_Nomenclature" = "Pipe6SCH40"
+"AISC_Manual_Label" = "Pipe6STD"
+"W" = 19
+"A" = 5.2
+"OD" = 6.625
+"ID" = 6.07
+"tnom" = 0.28
+"tdes" = 0.261
+"D/t" = 25.4
+"Ix" = 26.5
+"Zx" = 10.6
+"Sx" = 7.99
+"rx" = 2.25
+"Iy" = 26.5
+"Zy" = 10.6
+"Sy" = 7.99
+"ry" = 2.25
+"J" = 52.9
+
+[shape."Pipe5STD"]
+"EDI_Std_Nomenclature" = "Pipe5SCH40"
+"AISC_Manual_Label" = "Pipe5STD"
+"W" = 14.6
+"A" = 4.01
+"OD" = 5.563
+"ID" = 5.05
+"tnom" = 0.258
+"tdes" = 0.241
+"D/t" = 23.1
+"Ix" = 14.3
+"Zx" = 6.83
+"Sx" = 5.14
+"rx" = 1.88
+"Iy" = 14.3
+"Zy" = 6.83
+"Sy" = 5.14
+"ry" = 1.88
+"J" = 28.6
+
+[shape."Pipe4STD"]
+"EDI_Std_Nomenclature" = "Pipe4SCH40"
+"AISC_Manual_Label" = "Pipe4STD"
+"W" = 10.8
+"A" = 2.96
+"OD" = 4.5
+"ID" = 4.03
+"tnom" = 0.2370000000000001
+"tdes" = 0.221
+"D/t" = 20.4
+"Ix" = 6.82
+"Zx" = 4.05
+"Sx" = 3.03
+"rx" = 1.51
+"Iy" = 6.82
+"Zy" = 4.05
+"Sy" = 3.03
+"ry" = 1.51
+"J" = 13.6
+
+[shape."Pipe3-1/2STD"]
+"EDI_Std_Nomenclature" = "Pipe3-1/2SCH40"
+"AISC_Manual_Label" = "Pipe3-1/2STD"
+"W" = 9.12
+"A" = 2.5
+"OD" = 4
+"ID" = 3.55
+"tnom" = 0.22599999999999998
+"tdes" = 0.211
+"D/t" = 19
+"Ix" = 4.52
+"Zx" = 3.03
+"Sx" = 2.26
+"rx" = 1.34
+"Iy" = 4.52
+"Zy" = 3.03
+"Sy" = 2.26
+"ry" = 1.34
+"J" = 9.04
+
+[shape."Pipe3STD"]
+"EDI_Std_Nomenclature" = "Pipe3SCH40"
+"AISC_Manual_Label" = "Pipe3STD"
+"W" = 7.58
+"A" = 2.07
+"OD" = 3.5
+"ID" = 3.07
+"tnom" = 0.21599999999999997
+"tdes" = 0.201
+"D/t" = 17.4
+"Ix" = 2.85
+"Zx" = 2.19
+"Sx" = 1.63
+"rx" = 1.17
+"Iy" = 2.85
+"Zy" = 2.19
+"Sy" = 1.63
+"ry" = 1.17
+"J" = 5.69
+
+[shape."Pipe2-1/2STD"]
+"EDI_Std_Nomenclature" = "Pipe2-1/2SCH40"
+"AISC_Manual_Label" = "Pipe2-1/2STD"
+"W" = 5.8
+"A" = 1.61
+"OD" = 2.875
+"ID" = 2.47
+"tnom" = 0.20300000000000007
+"tdes" = 0.189
+"D/t" = 15.2
+"Ix" = 1.45
+"Zx" = 1.37
+"Sx" = 1.01
+"rx" = 0.952
+"Iy" = 1.45
+"Zy" = 1.37
+"Sy" = 1.01
+"ry" = 0.952
+"J" = 2.89
+
+[shape."Pipe2STD"]
+"EDI_Std_Nomenclature" = "Pipe2SCH40"
+"AISC_Manual_Label" = "Pipe2STD"
+"W" = 3.66
+"A" = 1.02
+"OD" = 2.375
+"ID" = 2.07
+"tnom" = 0.15399999999999991
+"tdes" = 0.143
+"D/t" = 16.6
+"Ix" = 0.627
+"Zx" = 0.713
+"Sx" = 0.528
+"rx" = 0.791
+"Iy" = 0.627
+"Zy" = 0.713
+"Sy" = 0.528
+"ry" = 0.791
+"J" = 1.25
+
+[shape."Pipe1-1/2STD"]
+"EDI_Std_Nomenclature" = "Pipe1-1/2SCH40"
+"AISC_Manual_Label" = "Pipe1-1/2STD"
+"W" = 2.72
+"A" = 0.749
+"OD" = 1.9
+"ID" = 1.61
+"tnom" = 0.145
+"tdes" = 0.135
+"D/t" = 14.1
+"Ix" = 0.293
+"Zx" = 0.421
+"Sx" = 0.309
+"rx" = 0.626
+"Iy" = 0.293
+"Zy" = 0.421
+"Sy" = 0.309
+"ry" = 0.626
+"J" = 0.586
+
+[shape."Pipe1-1/4STD"]
+"EDI_Std_Nomenclature" = "Pipe1-1/4SCH40"
+"AISC_Manual_Label" = "Pipe1-1/4STD"
+"W" = 2.27
+"A" = 0.625
+"OD" = 1.66
+"ID" = 1.38
+"tnom" = 0.14
+"tdes" = 0.13
+"D/t" = 12.8
+"Ix" = 0.184
+"Zx" = 0.305
+"Sx" = 0.222
+"rx" = 0.543
+"Iy" = 0.184
+"Zy" = 0.305
+"Sy" = 0.222
+"ry" = 0.543
+"J" = 0.368
+
+[shape."Pipe1STD"]
+"EDI_Std_Nomenclature" = "Pipe1SCH40"
+"AISC_Manual_Label" = "Pipe1STD"
+"W" = 1.68
+"A" = 0.469
+"OD" = 1.315
+"ID" = 1.05
+"tnom" = 0.133
+"tdes" = 0.124
+"D/t" = 10.6
+"Ix" = 0.083
+"Zx" = 0.177
+"Sx" = 0.126
+"rx" = 0.423
+"Iy" = 0.083
+"Zy" = 0.177
+"Sy" = 0.126
+"ry" = 0.423
+"J" = 0.166
+
+[shape."Pipe3/4STD"]
+"EDI_Std_Nomenclature" = "Pipe3/4SCH40"
+"AISC_Manual_Label" = "Pipe3/4STD"
+"W" = 1.13
+"A" = 0.312
+"OD" = 1.05
+"ID" = 0.824
+"tnom" = 0.11300000000000004
+"tdes" = 0.105
+"D/t" = 10
+"Ix" = 0.035
+"Zx" = 0.0942
+"Sx" = 0.0671
+"rx" = 0.336
+"Iy" = 0.035
+"Zy" = 0.0942
+"Sy" = 0.0671
+"ry" = 0.336
+"J" = 0.07
+
+[shape."Pipe1/2STD"]
+"EDI_Std_Nomenclature" = "Pipe1/2SCH40"
+"AISC_Manual_Label" = "Pipe1/2STD"
+"W" = 0.85
+"A" = 0.234
+"OD" = 0.84
+"ID" = 0.622
+"tnom" = 0.10899999999999999
+"tdes" = 0.101
+"D/t" = 8.32
+"Ix" = 0.016
+"Zx" = 0.0555
+"Sx" = 0.0388
+"rx" = 0.264
+"Iy" = 0.016
+"Zy" = 0.0555
+"Sy" = 0.0388
+"ry" = 0.264
+"J" = 0.032
+
+[shape."Pipe26XS"]
+"EDI_Std_Nomenclature" = "Pipe26SCH20"
+"AISC_Manual_Label" = "Pipe26XS"
+"W" = 136
+"A" = 36.1
+"OD" = 26
+"ID" = 25.1
+"tnom" = 0.5
+"tdes" = 0.465
+"D/t" = 55.9
+"Ix" = 2950
+"Zx" = 294
+"Sx" = 227
+"rx" = 9.03
+"Iy" = 2950
+"Zy" = 294
+"Sy" = 227
+"ry" = 9.03
+"J" = 5900
+
+[shape."Pipe24XS"]
+"EDI_Std_Nomenclature" = "Pipe24XS"
+"AISC_Manual_Label" = "Pipe24XS"
+"W" = 126
+"A" = 33.3
+"OD" = 24
+"ID" = 23.1
+"tnom" = 0.5
+"tdes" = 0.465
+"D/t" = 51.6
+"Ix" = 2310
+"Zx" = 250
+"Sx" = 192
+"rx" = 8.33
+"Iy" = 2310
+"Zy" = 250
+"Sy" = 192
+"ry" = 8.33
+"J" = 4620
+
+[shape."Pipe20XS"]
+"EDI_Std_Nomenclature" = "Pipe20SCH30"
+"AISC_Manual_Label" = "Pipe20XS"
+"W" = 104
+"A" = 27.6
+"OD" = 20
+"ID" = 19.1
+"tnom" = 0.5
+"tdes" = 0.465
+"D/t" = 43
+"Ix" = 1320
+"Zx" = 172
+"Sx" = 132
+"rx" = 6.91
+"Iy" = 1320
+"Zy" = 172
+"Sy" = 132
+"ry" = 6.91
+"J" = 2640
+
+[shape."Pipe18XS"]
+"EDI_Std_Nomenclature" = "Pipe18XS"
+"AISC_Manual_Label" = "Pipe18XS"
+"W" = 93.5
+"A" = 24.8
+"OD" = 18
+"ID" = 17.1
+"tnom" = 0.5
+"tdes" = 0.465
+"D/t" = 38.7
+"Ix" = 956
+"Zx" = 139
+"Sx" = 106
+"rx" = 6.21
+"Iy" = 956
+"Zy" = 139
+"Sy" = 106
+"ry" = 6.21
+"J" = 1910
+
+[shape."Pipe16XS"]
+"EDI_Std_Nomenclature" = "Pipe16SCH40"
+"AISC_Manual_Label" = "Pipe16XS"
+"W" = 82.9
+"A" = 22
+"OD" = 16
+"ID" = 15.1
+"tnom" = 0.5
+"tdes" = 0.465
+"D/t" = 34.4
+"Ix" = 665
+"Zx" = 109
+"Sx" = 83.1
+"rx" = 5.5
+"Iy" = 665
+"Zy" = 109
+"Sy" = 83.1
+"ry" = 5.5
+"J" = 1330
+
+[shape."Pipe14XS"]
+"EDI_Std_Nomenclature" = "Pipe14XS"
+"AISC_Manual_Label" = "Pipe14XS"
+"W" = 72.2
+"A" = 19.2
+"OD" = 14
+"ID" = 13.1
+"tnom" = 0.5
+"tdes" = 0.465
+"D/t" = 30.1
+"Ix" = 440
+"Zx" = 82.7
+"Sx" = 62.9
+"rx" = 4.79
+"Iy" = 440
+"Zy" = 82.7
+"Sy" = 62.9
+"ry" = 4.79
+"J" = 880
+
+[shape."Pipe12XS"]
+"EDI_Std_Nomenclature" = "Pipe12XS"
+"AISC_Manual_Label" = "Pipe12XS"
+"W" = 65.5
+"A" = 17.5
+"OD" = 12.75
+"ID" = 11.8
+"tnom" = 0.5
+"tdes" = 0.465
+"D/t" = 27.4
+"Ix" = 339
+"Zx" = 70.2
+"Sx" = 53.2
+"rx" = 4.35
+"Iy" = 339
+"Zy" = 70.2
+"Sy" = 53.2
+"ry" = 4.35
+"J" = 678
+
+[shape."Pipe10XS"]
+"EDI_Std_Nomenclature" = "Pipe10SCH80"
+"AISC_Manual_Label" = "Pipe10XS"
+"W" = 54.8
+"A" = 15.1
+"OD" = 10.75
+"ID" = 9.75
+"tnom" = 0.5
+"tdes" = 0.465
+"D/t" = 23.1
+"Ix" = 199
+"Zx" = 49.2
+"Sx" = 37
+"rx" = 3.64
+"Iy" = 199
+"Zy" = 49.2
+"Sy" = 37
+"ry" = 3.64
+"J" = 398
+
+[shape."Pipe8XS"]
+"EDI_Std_Nomenclature" = "Pipe8SCH80"
+"AISC_Manual_Label" = "Pipe8XS"
+"W" = 43.4
+"A" = 11.9
+"OD" = 8.625
+"ID" = 7.63
+"tnom" = 0.5
+"tdes" = 0.465
+"D/t" = 18.5
+"Ix" = 100
+"Zx" = 31
+"Sx" = 23.1
+"rx" = 2.89
+"Iy" = 100
+"Zy" = 31
+"Sy" = 23.1
+"ry" = 2.89
+"J" = 199
+
+[shape."Pipe6XS"]
+"EDI_Std_Nomenclature" = "Pipe6SCH80"
+"AISC_Manual_Label" = "Pipe6XS"
+"W" = 28.6
+"A" = 7.83
+"OD" = 6.625
+"ID" = 5.76
+"tnom" = 0.43199999999999994
+"tdes" = 0.403
+"D/t" = 16.4
+"Ix" = 38.3
+"Zx" = 15.6
+"Sx" = 11.6
+"rx" = 2.2
+"Iy" = 38.3
+"Zy" = 15.6
+"Sy" = 11.6
+"ry" = 2.2
+"J" = 76.6
+
+[shape."Pipe5XS"]
+"EDI_Std_Nomenclature" = "Pipe5SCH80"
+"AISC_Manual_Label" = "Pipe5XS"
+"W" = 20.8
+"A" = 5.73
+"OD" = 5.563
+"ID" = 4.81
+"tnom" = 0.375
+"tdes" = 0.349
+"D/t" = 15.9
+"Ix" = 19.5
+"Zx" = 9.5
+"Sx" = 7.02
+"rx" = 1.85
+"Iy" = 19.5
+"Zy" = 9.5
+"Sy" = 7.02
+"ry" = 1.85
+"J" = 39
+
+[shape."Pipe4XS"]
+"EDI_Std_Nomenclature" = "Pipe4SCH80"
+"AISC_Manual_Label" = "Pipe4XS"
+"W" = 15
+"A" = 4.14
+"OD" = 4.5
+"ID" = 3.83
+"tnom" = 0.33699999999999997
+"tdes" = 0.315
+"D/t" = 14.3
+"Ix" = 9.12
+"Zx" = 5.53
+"Sx" = 4.05
+"rx" = 1.48
+"Iy" = 9.12
+"Zy" = 5.53
+"Sy" = 4.05
+"ry" = 1.48
+"J" = 18.2
+
+[shape."Pipe3-1/2XS"]
+"EDI_Std_Nomenclature" = "Pipe3-1/2SCH80"
+"AISC_Manual_Label" = "Pipe3-1/2XS"
+"W" = 12.5
+"A" = 3.43
+"OD" = 4
+"ID" = 3.36
+"tnom" = 0.31800000000000006
+"tdes" = 0.296
+"D/t" = 13.5
+"Ix" = 5.94
+"Zx" = 4.07
+"Sx" = 2.97
+"rx" = 1.31
+"Iy" = 5.94
+"Zy" = 4.07
+"Sy" = 2.97
+"ry" = 1.31
+"J" = 11.9
+
+[shape."Pipe3XS"]
+"EDI_Std_Nomenclature" = "Pipe3SCH80"
+"AISC_Manual_Label" = "Pipe3XS"
+"W" = 10.3
+"A" = 2.83
+"OD" = 3.5
+"ID" = 2.9
+"tnom" = 0.3
+"tdes" = 0.28
+"D/t" = 12.5
+"Ix" = 3.7
+"Zx" = 2.91
+"Sx" = 2.11
+"rx" = 1.14
+"Iy" = 3.7
+"Zy" = 2.91
+"Sy" = 2.11
+"ry" = 1.14
+"J" = 7.4
+
+[shape."Pipe2-1/2XS"]
+"EDI_Std_Nomenclature" = "Pipe2-1/2SCH80"
+"AISC_Manual_Label" = "Pipe2-1/2XS"
+"W" = 7.67
+"A" = 2.1
+"OD" = 2.875
+"ID" = 2.32
+"tnom" = 0.276
+"tdes" = 0.257
+"D/t" = 11.2
+"Ix" = 1.83
+"Zx" = 1.77
+"Sx" = 1.27
+"rx" = 0.93
+"Iy" = 1.83
+"Zy" = 1.77
+"Sy" = 1.27
+"ry" = 0.93
+"J" = 3.66
+
+[shape."Pipe2XS"]
+"EDI_Std_Nomenclature" = "Pipe2SCH80"
+"AISC_Manual_Label" = "Pipe2XS"
+"W" = 5.03
+"A" = 1.4
+"OD" = 2.375
+"ID" = 1.94
+"tnom" = 0.21799999999999997
+"tdes" = 0.204
+"D/t" = 11.7
+"Ix" = 0.827
+"Zx" = 0.964
+"Sx" = 0.696
+"rx" = 0.771
+"Iy" = 0.827
+"Zy" = 0.964
+"Sy" = 0.696
+"ry" = 0.771
+"J" = 1.65
+
+[shape."Pipe1-1/2XS"]
+"EDI_Std_Nomenclature" = "Pipe1-1/2SCH80"
+"AISC_Manual_Label" = "Pipe1-1/2XS"
+"W" = 3.63
+"A" = 1
+"OD" = 1.9
+"ID" = 1.5
+"tnom" = 0.2
+"tdes" = 0.186
+"D/t" = 10.2
+"Ix" = 0.372
+"Zx" = 0.549
+"Sx" = 0.392
+"rx" = 0.61
+"Iy" = 0.372
+"Zy" = 0.549
+"Sy" = 0.392
+"ry" = 0.61
+"J" = 0.744
+
+[shape."Pipe1-1/4XS"]
+"EDI_Std_Nomenclature" = "Pipe1-1/4SCH80"
+"AISC_Manual_Label" = "Pipe1-1/4XS"
+"W" = 3
+"A" = 0.837
+"OD" = 1.66
+"ID" = 1.28
+"tnom" = 0.19099999999999995
+"tdes" = 0.178
+"D/t" = 9.33
+"Ix" = 0.231
+"Zx" = 0.393
+"Sx" = 0.278
+"rx" = 0.528
+"Iy" = 0.231
+"Zy" = 0.393
+"Sy" = 0.278
+"ry" = 0.528
+"J" = 0.462
+
+[shape."Pipe1XS"]
+"EDI_Std_Nomenclature" = "Pipe1SCH80"
+"AISC_Manual_Label" = "Pipe1XS"
+"W" = 2.17
+"A" = 0.602
+"OD" = 1.315
+"ID" = 0.957
+"tnom" = 0.179
+"tdes" = 0.166
+"D/t" = 7.92
+"Ix" = 0.101
+"Zx" = 0.221
+"Sx" = 0.154
+"rx" = 0.41
+"Iy" = 0.101
+"Zy" = 0.221
+"Sy" = 0.154
+"ry" = 0.41
+"J" = 0.202
+
+[shape."Pipe3/4XS"]
+"EDI_Std_Nomenclature" = "Pipe3/4SCH80"
+"AISC_Manual_Label" = "Pipe3/4XS"
+"W" = 1.48
+"A" = 0.407
+"OD" = 1.05
+"ID" = 0.742
+"tnom" = 0.15400000000000003
+"tdes" = 0.143
+"D/t" = 7.34
+"Ix" = 0.043
+"Zx" = 0.119
+"Sx" = 0.0818
+"rx" = 0.325
+"Iy" = 0.043
+"Zy" = 0.119
+"Sy" = 0.0818
+"ry" = 0.325
+"J" = 0.086
+
+[shape."Pipe1/2XS"]
+"EDI_Std_Nomenclature" = "Pipe1/2SCH80"
+"AISC_Manual_Label" = "Pipe1/2XS"
+"W" = 1.09
+"A" = 0.303
+"OD" = 0.84
+"ID" = 0.546
+"tnom" = 0.14699999999999996
+"tdes" = 0.137
+"D/t" = 6.13
+"Ix" = 0.019
+"Zx" = 0.0686
+"Sx" = 0.0462
+"rx" = 0.253
+"Iy" = 0.019
+"Zy" = 0.0686
+"Sy" = 0.0462
+"ry" = 0.253
+"J" = 0.038
+
+[shape."Pipe12XXS"]
+"EDI_Std_Nomenclature" = "Pipe12SCH120"
+"AISC_Manual_Label" = "Pipe12XXS"
+"W" = 126
+"A" = 35.4
+"OD" = 12.75
+"ID" = 10.9
+"tnom" = 1
+"tdes" = 0.93
+"D/t" = 13.8
+"Ix" = 625
+"Zx" = 134
+"Sx" = 97.6
+"rx" = 4.2
+"Iy" = 625
+"Zy" = 134
+"Sy" = 97.6
+"ry" = 4.2
+"J" = 1250
+
+[shape."Pipe10XXS"]
+"EDI_Std_Nomenclature" = "Pipe10SCH140"
+"AISC_Manual_Label" = "Pipe10XXS"
+"W" = 104
+"A" = 28.8
+"OD" = 10.75
+"ID" = 8.94
+"tnom" = 1
+"tdes" = 0.93
+"D/t" = 11.6
+"Ix" = 354
+"Zx" = 90.9
+"Sx" = 65.6
+"rx" = 3.51
+"Iy" = 354
+"Zy" = 90.9
+"Sy" = 65.6
+"ry" = 3.51
+"J" = 709
+
+[shape."Pipe8XXS"]
+"EDI_Std_Nomenclature" = "Pipe8XXS"
+"AISC_Manual_Label" = "Pipe8XXS"
+"W" = 72.5
+"A" = 20
+"OD" = 8.625
+"ID" = 6.88
+"tnom" = 0.875
+"tdes" = 0.816
+"D/t" = 10.6
+"Ix" = 154
+"Zx" = 49.9
+"Sx" = 35.8
+"rx" = 2.78
+"Iy" = 154
+"Zy" = 49.9
+"Sy" = 35.8
+"ry" = 2.78
+"J" = 308
+
+[shape."Pipe6XXS"]
+"EDI_Std_Nomenclature" = "Pipe6XXS"
+"AISC_Manual_Label" = "Pipe6XXS"
+"W" = 53.2
+"A" = 14.7
+"OD" = 6.625
+"ID" = 4.9
+"tnom" = 0.8639999999999999
+"tdes" = 0.805
+"D/t" = 8.23
+"Ix" = 63.5
+"Zx" = 27.4
+"Sx" = 19.2
+"rx" = 2.08
+"Iy" = 63.5
+"Zy" = 27.4
+"Sy" = 19.2
+"ry" = 2.08
+"J" = 127
+
+[shape."Pipe5XXS"]
+"EDI_Std_Nomenclature" = "Pipe5XXS"
+"AISC_Manual_Label" = "Pipe5XXS"
+"W" = 38.6
+"A" = 10.7
+"OD" = 5.563
+"ID" = 4.06
+"tnom" = 0.75
+"tdes" = 0.699
+"D/t" = 7.96
+"Ix" = 32.2
+"Zx" = 16.7
+"Sx" = 11.6
+"rx" = 1.74
+"Iy" = 32.2
+"Zy" = 16.7
+"Sy" = 11.6
+"ry" = 1.74
+"J" = 64.4
+
+[shape."Pipe4XXS"]
+"EDI_Std_Nomenclature" = "Pipe4XXS"
+"AISC_Manual_Label" = "Pipe4XXS"
+"W" = 27.6
+"A" = 7.66
+"OD" = 4.5
+"ID" = 3.15
+"tnom" = 0.6739999999999999
+"tdes" = 0.628
+"D/t" = 7.17
+"Ix" = 14.7
+"Zx" = 9.5
+"Sx" = 6.53
+"rx" = 1.39
+"Iy" = 14.7
+"Zy" = 9.5
+"Sy" = 6.53
+"ry" = 1.39
+"J" = 29.4
+
+[shape."Pipe3XXS"]
+"EDI_Std_Nomenclature" = "Pipe3XXS"
+"AISC_Manual_Label" = "Pipe3XXS"
+"W" = 18.6
+"A" = 5.17
+"OD" = 3.5
+"ID" = 2.3
+"tnom" = 0.6
+"tdes" = 0.559
+"D/t" = 6.26
+"Ix" = 5.79
+"Zx" = 4.89
+"Sx" = 3.31
+"rx" = 1.06
+"Iy" = 5.79
+"Zy" = 4.89
+"Sy" = 3.31
+"ry" = 1.06
+"J" = 11.6
+
+[shape."Pipe2-1/2XXS"]
+"EDI_Std_Nomenclature" = "Pipe2-1/2XXS"
+"AISC_Manual_Label" = "Pipe2-1/2XXS"
+"W" = 13.7
+"A" = 3.83
+"OD" = 2.875
+"ID" = 1.77
+"tnom" = 0.552
+"tdes" = 0.514
+"D/t" = 5.59
+"Ix" = 2.78
+"Zx" = 2.91
+"Sx" = 1.94
+"rx" = 0.854
+"Iy" = 2.78
+"Zy" = 2.91
+"Sy" = 1.94
+"ry" = 0.854
+"J" = 5.56
+
+[shape."Pipe2XXS"]
+"EDI_Std_Nomenclature" = "Pipe2XXS"
+"AISC_Manual_Label" = "Pipe2XXS"
+"W" = 9.04
+"A" = 2.51
+"OD" = 2.375
+"ID" = 1.5
+"tnom" = 0.43600000000000005
+"tdes" = 0.406
+"D/t" = 5.85
+"Ix" = 1.27
+"Zx" = 1.6
+"Sx" = 1.07
+"rx" = 0.711
+"Iy" = 1.27
+"Zy" = 1.6
+"Sy" = 1.07
+"ry" = 0.711
+"J" = 2.54
