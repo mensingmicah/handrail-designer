@@ -23,7 +23,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Callable
 
-from handrail.calc import PI, Line, Sheet, Sym, fmt_sig, sqrt
+from handrail.calc import PI, Const, Line, Sheet, Sym, fmt_sig, sqrt
 from handrail.checks import (
     COMBO, DB, DIRECTIONS, DISTRIBUTED, FY_ENTRY, LOAD_TYPES, CONCENTRATED,
     Case, Check, Loading, SectionStop, combo_text, flexural_capacity,
@@ -294,4 +294,48 @@ def check_5(registry: Registry, project: Project, post: PipeSection, loading: Lo
                 chk.cases.append(_upward(registry, project, loading, cap, lt))
             else:
                 chk.cases.append(_moment_case(registry, project, post, loading, cap, direction, lt))
+    return chk
+
+
+# ---------------------------------------------------------------------------
+# Check 6: cantilever deflection, live load only, horizontal cases
+# ---------------------------------------------------------------------------
+
+
+def _deflection_case(registry, project, post, loading, direction, load_type) -> Case:
+    sh = Sheet(registry)
+    combo = registry.get("ej.combo.deflection.L_only")
+    Lp = sh.given('L_"post"', loading.L_post, "Cantilever length, h - t_p", "Loading")
+    E = sh.code_value("E", "material.steel.E", "Modulus of elasticity")
+    I = sh.given("I", post.I, "Moment of inertia", DB)
+    V = _live_at_post(sh, "V_L", load_type, loading, project, f"horizontal ({direction.lower()}) at the top of the post")
+    DL = sh.line("Delta_L", V * Lp**3 / (3 * E * I), "Live-load deflection at the top of the post",
+                 cite_ids=("aisc_manual.t3-23.case22.delta",), unit="inch")
+    D = sh.line("Delta", sh.factor(combo.id, "L") * DL, "Live load only; dead load acts axially", unit="inch")
+    r = project.post_deflection.ratio
+    lim = Const(int(r) if float(r).is_integer() else r)
+    Dallow = sh.line('Delta_"allow"', Lp / lim, f"Limit (h - t_p)/{lim.value}",
+                     cite_ids=("ej.deflection.limit.post",), unit="inch")
+    ratio = sh.line('"Ratio"', D / Dallow, "Deflection / limit", cite_ids=("ej.deflection.limit.post",), ratio=True)
+    return Case(direction, load_type, "checked", f"{combo_text(combo)}, horizontal\n{combo.cite}",
+                demand=D.value, capacity=Dallow.value, ratio=ratio.value, lines=sh.lines)
+
+
+def check_6(registry: Registry, project: Project, post: PipeSection, loading: Loading) -> Check:
+    chk = Check(6, "Post deflection", "Delta", 'Delta_"allow"')
+    if project.post_deflection.bypass:
+        chk.bypassed = True
+        return chk
+    for direction in DIRECTIONS:
+        if direction in ("Downward", "Upward"):
+            chk.cases.append(Case(direction, None, "not checked",
+                                  remark="Vertical load: no lateral deflection of the post"))
+            continue
+        for lt in LOAD_TYPES:
+            if lt == DISTRIBUTED and loading.exempt:
+                exemption = registry.get("asce7.guard.uniform.exemption.intro")
+                chk.cases.append(Case(direction, lt, "exempt",
+                                      remark=f"Uniform load not considered ({exemption.cite})"))
+                continue
+            chk.cases.append(_deflection_case(registry, project, post, loading, direction, lt))
     return chk

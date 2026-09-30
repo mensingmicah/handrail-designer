@@ -260,3 +260,56 @@ def test_tension_entries_are_not_listed_when_no_upward_case_is_checked():
     checks.run(project(rail="Pipe12STD", loads=loads), reg)
     used = {e.id for e in reg.used}
     assert "aisc360.eq.D2-1" not in used and "aisc360.D2.omega_t" not in used
+
+
+# ---------------------------------------------------------------------------
+# Check 6: cantilever deflection
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture
+def check6():
+    return checks.run(project(), Registry()).checks[3]
+
+
+def test_deflection_matches_plain_calc(check6):
+    assert check6.number == 6
+    EI = E * 1000 * 0.627
+    allow = 41.5 / 60
+    for c in check6.checked:
+        V = {"Concentrated": P, "Distributed": W_L * 72}[c.load_type]
+        delta = V * 41.5**3 / (3 * EI)
+        assert c.demand.m_as("inch") == pytest.approx(delta, rel=1e-12), c.label
+        assert c.capacity.m_as("inch") == pytest.approx(allow, rel=1e-12)
+        assert c.ratio == pytest.approx(delta / allow, rel=1e-12)
+
+
+def test_deflection_envelope_checks_the_horizontal_cases_only(check6):
+    assert [(c.direction, c.load_type, c.status) for c in check6.cases] == [
+        ("Downward", None, "not checked"),
+        ("Outward", "Concentrated", "checked"), ("Outward", "Distributed", "checked"),
+        ("Inward", "Concentrated", "checked"), ("Inward", "Distributed", "checked"),
+        ("Upward", None, "not checked"),
+        ("Longitudinal", "Concentrated", "checked"), ("Longitudinal", "Distributed", "checked"),
+    ]
+    for c in check6.cases:
+        if c.status == "not checked":
+            assert c.remark == "Vertical load: no lateral deflection of the post"
+
+
+def test_deflection_limit_ratio_is_the_engineers_input():
+    chk = checks.run(project(post_deflection=DeflectionLimit(ratio=90)), Registry()).checks[3]
+    for c in chk.checked:
+        assert c.capacity.m_as("inch") == pytest.approx(41.5 / 90, rel=1e-12)
+
+
+def test_post_deflection_bypass_computes_nothing():
+    chk = checks.run(project(post_deflection=DeflectionLimit(ratio=60, bypass=True)), Registry()).checks[3]
+    assert chk.bypassed and chk.cases == [] and chk.verdict == "Bypassed by engineer"
+
+
+def test_post_deflection_cites_the_post_limit_not_the_rail_limit(check6):
+    reg = Registry()
+    post_cite, rail_cite = reg.get("ej.deflection.limit.post").cite, reg.get("ej.deflection.limit").cite
+    allow = next(ln for ln in check6.controlling.lines if ln.symbol == 'Delta_"allow"')
+    assert post_cite in allow.cite and rail_cite not in allow.cite

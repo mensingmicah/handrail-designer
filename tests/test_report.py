@@ -58,8 +58,18 @@ def test_bypassed_check_shows_no_calculation():
     res, reg = run(rail_deflection=DeflectionLimit(bypass=True))
     src = report.build_source(res, reg, CLEAN)
     assert "Bypassed by engineer" in src
-    assert "Check 2: Top rail deflection" in src
-    assert "Delta_L" not in src
+    check_2 = src.split("= Check 2: Top rail deflection")[1].split("\n= ")[0]
+    assert "Bypassed by engineer" in check_2
+    assert "Delta_L" not in check_2
+    assert "Delta_L" in src  # Check 6 still computes: the bypass is per check
+
+
+def test_bypassed_post_deflection_shows_no_calculation():
+    res, reg = run(post_deflection=DeflectionLimit(ratio=60, bypass=True))
+    src = report.build_source(res, reg, CLEAN)
+    check_6 = src.split("= Check 6: Post deflection")[1].split("\n= ")[0]
+    assert "Bypassed by engineer" in check_6
+    assert "Delta_L" not in check_6
 
 
 def test_pdf_compiles_with_hostile_project_text(tmp_path):
