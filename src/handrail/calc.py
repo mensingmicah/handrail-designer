@@ -22,8 +22,9 @@ from handrail.registry import Entry, Registry
 from handrail.units import Q_, ureg
 
 # ---------------------------------------------------------------------------
-# Number and unit display (docs/BRIEF.md, Output: 3 significant figures,
-# ratios to 2 decimals, fixed units lb, lb-in, ksi, in, in^3, in^4)
+# Number and unit display (docs/BRIEF.md, Output: 4 significant figures,
+# ratios to 2 decimals or 3 when they would read 1.00, fixed units lb, lb-in,
+# ksi, in, in^3, in^4)
 # ---------------------------------------------------------------------------
 
 # (pint unit to display in, Typst unit text, exponent printed on the unit)
@@ -39,7 +40,7 @@ _DISPLAY = [
 ]
 
 
-def fmt_sig(x: float, sig: int = 3) -> str:
+def fmt_sig(x: float, sig: int = 4) -> str:
     """Format to ``sig`` significant figures, with thousands separators."""
     if x == 0 or not math.isfinite(x):
         return "0" if x == 0 else str(x)
@@ -78,7 +79,10 @@ def mtext(s: str) -> str:
 
 
 def fmt_ratio(x: float) -> str:
-    return f"{x:.2f}"
+    """Two decimals, or three when two would read 1.00, so a ratio just over 1.0
+    never prints as "1.00" beside NG (docs/BRIEF.md, Output)."""
+    two = f"{x:.2f}"
+    return f"{x:.3f}" if two == "1.00" else two
 
 
 def display(q) -> tuple[float, str, int | None]:

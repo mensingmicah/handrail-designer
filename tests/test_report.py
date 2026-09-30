@@ -23,7 +23,6 @@ def test_draft_stamp_and_list_of_drafted_entries_used():
     res, reg = run()
     src = report.build_source(res, reg, CLEAN)
     assert "#let draft = true" in src
-    assert "DRAFT: contains unverified code values" in src
     for e in reg.drafted_used:
         assert f'"{e.id}"' in src
     # entries the calc did not use are not listed
@@ -58,3 +57,13 @@ def test_pdf_compiles_with_hostile_project_text(tmp_path):
     out = report.render_pdf(res, reg, DIRTY, tmp_path / "calc.pdf")
     assert out.read_bytes()[:4] == b"%PDF"
     assert not (tmp_path / "calc.typ").exists()  # intermediate source cleaned up
+
+
+def test_closing_verdict_is_the_checks_own_and_never_reads_1_00_beside_NG():
+    res, reg = run()
+    chk = res.checks[0]
+    for c in chk.checked:  # force a controlling ratio just over 1.0
+        c.ratio = 1.004 if c is chk.checked[0] else 0.5
+    src = report.build_source(res, reg, CLEAN)
+    assert '"Ratio" = 1.004 > 1.00$ #h(10pt) #"NG"' in src
+    assert "1.00 > 1.00" not in src

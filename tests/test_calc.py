@@ -10,29 +10,41 @@ from handrail.units import Q_
     "x, text",
     [
         (4200, "4,200"),
-        (14735.2, "14,700"),
+        (14735.2, "14,740"),
+        (8823.353, "8,823"),
         (29000, "29,000"),
-        (0.293, "0.293"),
-        (0.0012345, "0.00123"),
-        (1.6666, "1.67"),
-        (9.996, "10.0"),
-        (84, "84.0"),
-        (-3.14159, "-3.14"),
+        (0.293, "0.2930"),
+        (0.0012345, "0.001234"),
+        (1.6666, "1.667"),
+        (9.9996, "10.00"),
+        (84, "84.00"),
+        (-3.14159, "-3.142"),
     ],
 )
-def test_three_significant_figures(x, text):
+def test_four_significant_figures(x, text):
     assert fmt_sig(x) == text
 
 
-def test_ratio_two_decimals():
-    assert fmt_ratio(0.8765) == "0.88"
+@pytest.mark.parametrize(
+    "x, text",
+    [
+        (0.8765, "0.88"),
+        (0.994, "0.99"),
+        (0.996, "0.996"),   # would read 1.00: show three decimals
+        (1.0, "1.000"),
+        (1.004, "1.004"),
+        (1.006, "1.01"),
+    ],
+)
+def test_ratio_two_decimals_or_three_near_one(x, text):
+    assert fmt_ratio(x) == text
 
 
 def test_display_units_are_fixed():
     assert fmt_quantity(Q_(350, "lbf * ft")) == '"4,200 lb-in"'
-    assert fmt_quantity(Q_(35000, "psi")) == '"35.0 ksi"'
-    assert fmt_quantity(Q_(0.293, "in^4")) == '"0.293 in"^4'
-    assert fmt_quantity(Q_(50, "lbf/ft")) == '"4.17 lb/in"'
+    assert fmt_quantity(Q_(35000, "psi")) == '"35.00 ksi"'
+    assert fmt_quantity(Q_(0.293, "in^4")) == '"0.2930 in"^4'
+    assert fmt_quantity(Q_(50, "lbf/ft")) == '"4.167 lb/in"'
 
 
 def test_one_definition_gives_value_formula_and_substitution():
@@ -43,7 +55,7 @@ def test_one_definition_gives_value_formula_and_substitution():
     line = sheet.lines[-1]
     assert M.value.m_as("lbf*inch") == pytest.approx(4200)
     assert line.symbolic == 'frac(P L, "4")'
-    assert line.substituted == 'frac(("200 lb") ("84.0 in"), "4")'
+    assert line.substituted == 'frac(("200.0 lb") ("84.00 in"), "4")'
     assert line.result == '"4,200 lb-in"'
 
 

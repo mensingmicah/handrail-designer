@@ -148,10 +148,10 @@ def _check(chk: Check) -> str:
     ctrl = chk.controlling
     out.append(f"#heading(level: 2, {typst_str(f'Controlling case: {ctrl.label} ({ctrl.combination})')})")
     out.append(_lines(ctrl.lines))
-    ok = ctrl.ratio <= 1.0
-    cmp = "<=" if ok else ">"
+    # The verdict is decided once, by the Check; the page only prints it.
+    cmp = "<=" if chk.ok else ">"
     out.append(f"#align(right, text(size: 12pt, weight: \"bold\")[$\"Ratio\" = {fmt_ratio(ctrl.ratio)} {cmp} 1.00$ "
-               f"#h(10pt) {'OK' if ok else 'NG'}])")
+               f"#h(10pt) #{typst_str(chk.verdict)}])")
     return "\n\n".join(out)
 
 
