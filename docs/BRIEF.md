@@ -59,10 +59,12 @@ Out of scope for v1 (push back if I try to add these):
 - Distributed-load exemption: a checkbox. Ticking it opens a short text box
   where the engineer states that the guard falls under the ASCE 7-22
   §4.5.1.1 exemption; that text prints on the loading page. An info box next
-  to the checkbox explains the exemption's requirements; its text is a
-  registry entry for me to fill in and review.
+  to the checkbox explains the exemption's requirements; its text comes from
+  registry entries.
 - Post height h, from top of concrete to the top rail centerline; span (post
-  to post, center to center); baseplate thickness
+  to post, center to center); baseplate thickness t_p and plan dimensions
+  B × N. B and N give the baseplate weight and print beside the anchor
+  reaction sets.
 - For now the span is assumed to be the tributary length for the post
 - Top rail and post sections: pick an AISC designation, or define a custom
   section by dimensions. For tubes, the engineer says whether the entered wall
@@ -249,15 +251,18 @@ checks may be added later.
 - A reserved header area at the top, not filled in v1
 - A footer on every page with the tool version and the code-value registry
   version the calc ran with
+- A calc that uses any drafted (unverified) registry entry prints "DRAFT:
+  contains unverified code values" on every page and lists those entries
 - The inputs are saved as a plain-text project file alongside the PDF;
   reopening it regenerates the calc exactly
 
 ## Verification
 
 - Each of my hand calcs becomes an automated test case: its inputs and my
-  hand-calculated values. Every change reruns all cases, and a mismatch
-  fails. The first slice's hand calc is test case 1; each later feature
-  arrives with at least one hand-checked case.
+  hand-calculated values. Every change reruns all cases, and any value more
+  than 0.5% (relative) from my hand value fails. The first slice's hand calc
+  is test case 1; each later feature arrives with at least one hand-checked
+  case.
 - Section properties come from a file extracted by script from the
   unmodified AISC Shapes Database, and a test confirms the extracted file
   matches the original row for row.

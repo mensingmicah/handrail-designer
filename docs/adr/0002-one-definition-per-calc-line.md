@@ -1,0 +1,3 @@
+# One definition per calc line
+
+Each line of the printed calc (symbol, formula, citation, margin note) is defined once. The engine evaluates that definition and records the substituted values and result, and the PDF prints that record. We rejected the usual split, where an engine computes numbers and a separate report template writes the formula text, because the two can drift. For example, the code changes to PL/4 while the template still prints wL²/8, and the printed calc no longer describes what was computed. A checker has no way to see that from the page. We also rejected the `handcalcs` library: it is built around Jupyter and LaTeX, has no citations or margin notes, and doesn't fit "compute every case in the envelope, print the controlling one."

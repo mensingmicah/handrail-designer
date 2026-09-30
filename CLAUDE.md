@@ -22,10 +22,15 @@ on, or write, auto-memory for it.
 
 ## Rules
 
-1. Code values live only in the code-value registry, each cited by document,
-   edition and section. Claude creates an entry with its citation and a blank
-   value; only I enter values. The tool stops with an error naming any blank
-   entry it needs. Never fill a value from memory or from web search.
+1. Code values and code provision text live only in the code-value registry
+   (registry/code-values.toml). Claude may draft entries from memory or the
+   web. Each drafted entry records the value or text; the document, edition
+   and exact section, table or equation; the source, either "memory" or the
+   URL; status "drafted"; and blank verified-by and date fields that only I
+   fill in. Every drafted entry is listed in the review list at the top of
+   the registry. Any calc that uses a drafted entry prints "DRAFT: contains
+   unverified code values" on every page and lists those entries. The tool
+   stops with an error naming any entry it needs that does not exist.
 2. If the tool's result disagrees with my hand calc, stop and tell me. Don't
    change the tool to match until we know which one is wrong.
 3. Nothing client-identifying in the repo: no client names, project numbers,

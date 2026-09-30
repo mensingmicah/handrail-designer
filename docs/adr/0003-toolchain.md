@@ -1,0 +1,3 @@
+# Toolchain: Typst, pint, TOML, uv
+
+The PDF is typeset with Typst through its Python package, because it installs with no system libraries on Windows or a server and it typesets real math. We rejected WeasyPrint (it needs GTK on Windows), headless Chrome (a large browser download), LaTeX (a heavy install with cryptic errors) and ReportLab (math and layout drawn by hand). Every quantity carries its unit through `pint`, so a units slip such as feet read as inches raises an error instead of producing a plausible wrong number. The registry and project files are TOML: readable, commentable, and immune to the Excel date-mangling that CSV invites. uv manages the Python environment from a lock file, so the engineer's PC and the future server run identical library versions.

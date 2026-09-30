@@ -1,0 +1,136 @@
+# Code-value registry. See CLAUDE.md rule 1.
+#
+# Every code value and every piece of code provision text the tool uses lives
+# here. Claude may draft entries; only Micah fills verified_by and
+# verified_date, and sets status = "verified" when he does.
+#
+# status:  "drafted"  written by Claude, not yet checked against the standard
+#          "verified" checked by Micah against the standard
+# source:  "memory", or the URL the entry was drafted from
+#
+# Any calc that uses a drafted entry prints "DRAFT: contains unverified code
+# values" on every page and lists those entries.
+
+# ---------------------------------------------------------------------------
+# REVIEW LIST: every entry with status = "drafted". Review top to bottom.
+# Remove an id from this list when you mark its entry verified.
+# ---------------------------------------------------------------------------
+review = [
+  "material.steel.density",
+  "material.steel.E",
+  "asce7.guard.uniform.exemption.intro",
+  "asce7.guard.uniform.exemption.1",
+  "asce7.guard.uniform.exemption.2",
+  "asce7.guard.uniform.exemption.3",
+]
+
+# ---------------------------------------------------------------------------
+# Material properties
+# ---------------------------------------------------------------------------
+
+[[entry]]
+id = "material.steel.density"
+value = 490
+unit = "lb/ft^3"
+document = "AISC Steel Construction Manual"
+edition = "16th Edition"
+section = "Part 17, table of weights and specific gravities (table number not recalled)"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-09-30
+verified_by = ""
+verified_date = ""
+note = """
+Value entered by Micah in the design interview; the citation is drafted. \
+I could not recall the Part 17 table number, and I believe Part 1 also \
+states this density as the basis for tabulated shape weights. Confirm which \
+location to cite."""
+
+[[entry]]
+id = "material.steel.E"
+value = 29000
+unit = "ksi"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "Symbols (definition of E, modulus of elasticity of steel)"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-09-30
+verified_by = ""
+verified_date = ""
+note = "Value entered by Micah in the design interview; the citation is drafted."
+
+# ---------------------------------------------------------------------------
+# ASCE 7-22 guard loads: distributed-load exemption (info box text)
+#
+# The info box next to the exemption checkbox shows the intro followed by the
+# numbered exceptions. These are paraphrases, not verbatim quotations.
+# ---------------------------------------------------------------------------
+
+[[entry]]
+id = "asce7.guard.uniform.exemption.intro"
+value = "The uniform load need not be considered for the following occupancies:"
+unit = "text"
+document = "ASCE/SEI 7-22, Minimum Design Loads and Associated Criteria for Buildings and Other Structures"
+edition = "2022"
+section = "§4.5.1.1, Exceptions"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-09-30
+verified_by = ""
+verified_date = ""
+note = "Paraphrase."
+
+[[entry]]
+id = "asce7.guard.uniform.exemption.1"
+value = "One- and two-family dwellings."
+unit = "text"
+document = "ASCE/SEI 7-22, Minimum Design Loads and Associated Criteria for Buildings and Other Structures"
+edition = "2022"
+section = "§4.5.1.1, Exception 1"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-09-30
+verified_by = ""
+verified_date = ""
+note = "Paraphrase."
+
+[[entry]]
+id = "asce7.guard.uniform.exemption.2"
+value = "Factory, industrial, and storage occupancies, in areas that are not accessible to the public and that serve an occupant load not greater than 50."
+unit = "text"
+document = "ASCE/SEI 7-22, Minimum Design Loads and Associated Criteria for Buildings and Other Structures"
+edition = "2022"
+section = "§4.5.1.1, Exception 2"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-09-30
+verified_by = ""
+verified_date = ""
+note = """
+CHECK THIS ONE FIRST. The wording is from my memory of ASCE 7-16. A \
+search-engine summary of the ASCE 7-22 text on ASCE Amplify (login-gated, \
+so I could not read the page itself) claimed this exception was removed in \
+a later printing or supplement of ASCE 7-22. That claim is unconfirmed and \
+conflicts with my memory. If the exception is gone, delete this entry and \
+renumber."""
+
+[[entry]]
+id = "asce7.guard.uniform.exemption.3"
+value = "Roofs not intended for occupancy."
+unit = "text"
+document = "ASCE/SEI 7-22, Minimum Design Loads and Associated Criteria for Buildings and Other Structures"
+edition = "2022"
+section = "§4.5.1.1, Exception 3"
+source = "https://amplify.asce.org/popup-data?apath=%2Fasceworks%2Fstandard%2F9780784415788%2Fpart%2Fprovisions%2Fstandard-chapter%2Fs4%2Fstandard-sec-ver%2Fs4.5.1.1.ver.atom"
+status = "drafted"
+drafted_on = 2026-09-30
+verified_by = ""
+verified_date = ""
+note = """
+Not in my memory of ASCE 7-16; new in 7-22 as far as I can tell. The \
+wording comes from a search-engine summary of the linked page, which is \
+login-gated, so I did not read it directly. Corroborated only loosely by \
+an ICC slide (2024 IBC §1607.9, 'consistent with ASCE 7-22 §4.5') noting \
+the uniform load 'does not apply to unoccupiable roofs': \
+https://www.iccsafe.org/wp-content/uploads/DemystifyingLoads_24IBC_ASCE7-22_EC-85122-Part1.pdf"""
