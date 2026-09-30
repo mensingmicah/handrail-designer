@@ -54,6 +54,29 @@ def fmt_sig(x: float, sig: int = 3) -> str:
     return f"{r:,.{decimals}f}"
 
 
+def typst_str(s: str) -> str:
+    """A Typst string literal. User text goes into Typst only this way, so it is
+    printed as text and never read as markup or code."""
+    out = []
+    for ch in str(s):
+        if ch == "\\":
+            out.append("\\\\")
+        elif ch == '"':
+            out.append('\\"')
+        elif ch == "\n":
+            out.append("\\n")
+        elif ord(ch) < 32:
+            out.append(" ")
+        else:
+            out.append(ch)
+    return '"' + "".join(out) + '"'
+
+
+def mtext(s: str) -> str:
+    """Upright text inside Typst math."""
+    return typst_str(s)
+
+
 def fmt_ratio(x: float) -> str:
     return f"{x:.2f}"
 

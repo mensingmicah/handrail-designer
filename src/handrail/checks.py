@@ -22,7 +22,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from handrail.calc import Const, Line, Sheet, Sym, absolute, fmt_quantity_plain, minimum, sqrt
+from handrail.calc import Const, Line, Sheet, Sym, absolute, fmt_quantity_plain, minimum, mtext, sqrt
 from handrail.project import Member, Project, ProjectError
 from handrail.registry import Registry
 from handrail.shapes import PipeSection
@@ -70,8 +70,8 @@ class Case:
 class Check:
     number: int
     title: str
-    demand_label: str
-    capacity_label: str
+    demand_label: str    # Typst math
+    capacity_label: str  # Typst math
     cases: list[Case] = field(default_factory=list)
     capacity_lines: list[Line] = field(default_factory=list)
     flags: list[str] = field(default_factory=list)
@@ -164,11 +164,12 @@ def build_loading(project: Project, registry: Registry, rail: PipeSection) -> Lo
         )
         w_L = None
     elif ld.uniform_plf is None:
-        w_L = sh.code_value("w_L", code_w.id, "Uniform guard load, any direction; not concurrent with P").value
+        w_L = sh.code_value("w_L", code_w.id, f"Uniform guard load, {code_w.value} lb/ft, any direction; "
+                            "not concurrent with P").value
     else:
         w_L = sh.input(
             "w_L", Q_(ld.uniform_plf, "lbf/ft"),
-            f"Uniform guard load, engineer override (code value {code_w.value} lb/ft)",
+            f"Uniform guard load, engineer override: {ld.uniform_plf:g} lb/ft (code value {code_w.value} lb/ft)",
             cite=f"Input; {code_w.cite}",
         ).value
 
@@ -183,11 +184,11 @@ def section_lines(registry: Registry, rail: PipeSection) -> list[Line]:
     sh.given('t_"nom"', rail.tnom, "Nominal wall thickness", DB)
     sh.given('t_"des"', rail.tdes, "Design wall thickness", DB)
     sh.given("A", rail.A, "Area (design wall)", DB)
-    sh.given("W", rail.W, "Nominal weight, lb/ft (nominal wall)", DB)
+    sh.given("W", rail.W, f"Nominal weight: tabulated {rail.W.m_as('lbf/ft'):g} lb/ft (nominal wall)", DB)
     sh.given("I", rail.I, "Moment of inertia", DB)
     sh.given("S", rail.S, "Elastic section modulus", DB)
     sh.given("Z", rail.Z, "Plastic section modulus", DB)
-    sh.given("D/t", rail.D_t, "Diameter-to-thickness ratio, tabulated", DB)
+    sh.given("D slash t", rail.D_t, "Diameter-to-thickness ratio, tabulated", DB)
     return sh.lines
 
 
@@ -199,7 +200,7 @@ def section_lines(registry: Registry, rail: PipeSection) -> list[Line]:
 def flexural_capacity(sh: Sheet, rail: PipeSection, grade: str) -> tuple[Sym, list[str]]:
     """Classify the section and return M_n/Omega_b. Raises SectionStop."""
     sh.decision(
-        f"{rail.label}, {grade}", "Designed as round HSS",
+        mtext(f"{rail.label}, {grade}"), "Designed as round HSS",
         "Pipe is designed under the round HSS provisions",
         cite_ids=("aisc360.pipe_as_round_hss",),
     )
@@ -236,7 +237,7 @@ def flexural_capacity(sh: Sheet, rail: PipeSection, grade: str) -> tuple[Sym, li
     if D_t <= lp.value:
         sh.decision(f"lambda = {D_t:g} <= lambda_p = {lp.value:.3g}", "Compact",
                     "Section classification", cite_ids=("aisc360.B4.1b.classification",))
-        sh.decision("Compact wall", "Local buckling does not apply",
+        sh.decision(mtext("Compact wall"), "Local buckling does not apply",
                     "", cite_ids=("aisc360.F8.nominal_strength",))
         Mn = sh.line("M_n", Mp, "Nominal flexural strength", cite_ids=("aisc360.F8.nominal_strength",),
                      unit="lbf*inch")
@@ -303,7 +304,6 @@ def _bending_case(registry, project, rail, loading, direction, load_type) -> Cas
                     cite=f"0.6D + 1.0L: {EJ}, not an ASCE combination", unit="lbf*inch")
 
     ratio = sh.line('"Ratio"', M / Ma_allow, "Demand / capacity", ratio=True)
-    sh.decision(f"Ratio = {ratio.value:.2f}", "OK" if ratio.value <= 1.0 else "NG", "")
     return Case(direction, load_type, "checked", BENDING_COMBO[direction],
                 demand=M.value, capacity=Ma_allow.value, ratio=ratio.value, lines=sh.lines)
 
@@ -347,7 +347,6 @@ def _deflection_case(registry, project, rail, loading, direction, load_type) -> 
     Dallow = sh.line('Delta_"allow"', L / lim, f"Limit L/{lim.value}",
                      cite=f"Deflection limit: {EJ}, not code", unit="inch")
     ratio = sh.line('"Ratio"', D / Dallow, "Deflection / limit", ratio=True)
-    sh.decision(f"Ratio = {ratio.value:.2f}", "OK" if ratio.value <= 1.0 else "NG", "")
     return Case(direction, load_type, "checked", DEFLECTION_COMBO[direction],
                 demand=D.value, capacity=Dallow.value, ratio=ratio.value, lines=sh.lines)
 
@@ -376,13 +375,13 @@ def _envelope(case_fn, registry, project, rail, loading) -> list[Case]:
 def check_1(registry, project, rail, loading) -> Check:
     cap = Sheet(registry)
     _, flags = flexural_capacity(cap, rail, project.top_rail.grade)
-    chk = Check(1, "Top rail bending", "M_a", "M_n/Ω_b", capacity_lines=cap.lines, flags=flags)
+    chk = Check(1, "Top rail bending", "M_a", "M_n / Omega_b", capacity_lines=cap.lines, flags=flags)
     chk.cases = _envelope(_bending_case, registry, project, rail, loading)
     return chk
 
 
 def check_2(registry, project, rail, loading) -> Check:
-    chk = Check(2, "Top rail deflection", "Δ", "Δ_allow")
+    chk = Check(2, "Top rail deflection", "Delta", 'Delta_"allow"')
     if project.rail_deflection.bypass:
         chk.bypassed = True
         return chk
