@@ -19,7 +19,7 @@ from dataclasses import dataclass, field
 from typing import Callable
 
 from handrail.registry import Entry, Registry
-from handrail.units import Q_, ureg
+from handrail.units import ureg
 
 # ---------------------------------------------------------------------------
 # Number and unit display (docs/BRIEF.md, Output: 4 significant figures,
@@ -206,7 +206,6 @@ def _plain_number(x: float) -> str:
 _FUNC_EVAL: dict[str, Callable] = {
     "sqrt": lambda a: a**0.5,
     "min": min,
-    "max": max,
     "abs": abs,
 }
 

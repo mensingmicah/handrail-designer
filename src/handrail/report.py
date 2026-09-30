@@ -191,9 +191,6 @@ def build_source(results: Results, registry: Registry, stamp: Stamp) -> str:
     src.append(_table([], [["Project", info.name], ["Phase", info.phase], ["Description", info.description]],
                       "(auto, 1fr)").replace("columns: (auto, 1fr), ", "columns: (auto, 1fr), stroke: none, "))
     src.append("Loading is per ASCE 7-22.")
-    if results.warnings:
-        for w in results.warnings:
-            src.append(f"#flag({typst_str('Warning: ' + w)})")
     src.append("== Assumptions")
     items = [f"+ #{typst_str(a)}" for a in LOCKED_ASSUMPTIONS]
     items += [f"+ #{typst_str(a)} _(added by engineer)_" for a in info.assumptions]

@@ -116,7 +116,6 @@ class Results:
     loading: Loading
     section_lines: list[Line]
     checks: list[Check]
-    warnings: list[str]
 
 
 # ---------------------------------------------------------------------------
@@ -124,19 +123,17 @@ class Results:
 # ---------------------------------------------------------------------------
 
 
-def material_warnings(registry: Registry, member: Member) -> list[str]:
-    grades = registry.get("material.grades.pipe").value
-    warnings = []
-    if member.grade not in grades:
-        warnings.append(
-            f"{member.grade} is not a standard grade for pipe "
-            f"({registry.get('material.grades.pipe').cite}): unusual pairing."
-        )
+def require_supported_grade(member: Member) -> None:
+    """Refuse a grade this slice has no Fy entry for.
+
+    The brief's unusual-pairing warning (a grade outside the shape's standard
+    list) returns when a slice accepts more than one grade; with A53 Gr B the
+    only grade allowed, it could never fire.
+    """
     if member.grade not in FY_ENTRY:
         raise ProjectError(
             f"top rail grade {member.grade!r}: slice 1 supports {', '.join(FY_ENTRY)} only"
         )
-    return warnings
 
 
 def build_loading(project: Project, registry: Registry, rail: PipeSection) -> Loading:
@@ -426,8 +423,8 @@ def run(project: Project, registry: Registry) -> Results:
     from handrail import shapes
 
     rail = shapes.pipe(project.top_rail.section)
-    warnings = material_warnings(registry, project.top_rail)
+    require_supported_grade(project.top_rail)
     loading = build_loading(project, registry, rail)
     props = section_lines(registry, rail)
     checks = [check_1(registry, project, rail, loading), check_2(registry, project, rail, loading)]
-    return Results(project, rail, loading, props, checks, warnings)
+    return Results(project, rail, loading, props, checks)
