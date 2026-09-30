@@ -152,7 +152,9 @@ substrate, labeled for direct input into anchor software (see decisions).
   Other Structures
 
 The output lists the specification, not the design method, since LRFD member
-checks may be added later.
+checks may be added later. The design method is stated separately in the
+front matter, as a registry-cited line ("Design method: ASD per AISC 360-22
+§B3.2"), so the references list stays the same when LRFD is added.
 
 ## Engineering decisions already made
 

@@ -66,6 +66,8 @@ review = [
   "ej.combo.deflection.D_plus_L",
   "ej.combo.deflection.L_only",
   "ej.deflection.limit",
+  "aisc360.B3.2.asd",
+  "aisc360.F8.no_ltb",
 ]
 
 # ---------------------------------------------------------------------------
@@ -677,3 +679,44 @@ drafted_on = 2026-09-30
 verified_by = ""
 verified_date = ""
 note = "The default ratio (120) is an input default in the project reader, not a code value."
+
+# ---------------------------------------------------------------------------
+# Design method and §F8 limit states (Micah's PDF backcheck)
+# ---------------------------------------------------------------------------
+
+[[entry]]
+id = "aisc360.B3.2.asd"
+value = "ASD"
+unit = "text"
+cite = "AISC 360-22 §B3.2"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§B3.2, Design for Strength Using Allowable Strength Design (ASD)"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-09-30
+verified_by = ""
+verified_date = ""
+note = """
+The design method the member checks use, printed in the front matter as \
+"Design method: ASD per AISC 360-22 §B3.2". Section number from memory of \
+360-16 §B3.2 (360-16 §B3.1 is LRFD); assumed unchanged in 360-22. The \
+references list still names only the specification (docs/BRIEF.md)."""
+
+[[entry]]
+id = "aisc360.F8.no_ltb"
+value = "For round HSS, the nominal flexural strength is governed by yielding and local buckling only; lateral-torsional buckling is not a limit state, so Lb and Cb do not enter."
+unit = "provision"
+cite = "AISC 360-22 §F8"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§F8, Round HSS: limit states listed (yielding, §F8.1; local buckling, §F8.2)"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-09-30
+verified_by = ""
+verified_date = ""
+note = """
+Paraphrase from memory of 360-16 §F8, which lists only yielding and local \
+buckling for round HSS. Stated as its own entry so Check 1 can print it \
+explicitly beside the classification."""

@@ -115,3 +115,20 @@ def test_a_slash_symbol_is_refused():
     a, b = Sym("M_n", Q_(1, "lbf*inch")), Sym("Omega_b", 1.67)
     with pytest.raises(ValueError, match="frac"):
         sh.line("M_n / Omega_b", a / b, note="", cite="")
+
+
+def test_front_matter_states_the_design_method_from_the_registry():
+    res, reg = run()
+    src = report.build_source(res, reg, CLEAN)
+    e = reg.get("aisc360.B3.2.asd")
+    assert f'"Design method: {e.value} per {e.cite}"' in src
+    # Read before the DRAFT list is taken, so it is listed while it is drafted.
+    assert f'"{e.id}"' in src
+
+
+def test_check_1_states_that_ltb_does_not_apply():
+    res, reg = run()
+    lines = res.checks[0].controlling.lines
+    ltb = [ln for ln in lines if ln.kind == "decision" and "Lateral-torsional" in (ln.text or "")]
+    assert len(ltb) == 1
+    assert ltb[0].cite == reg.get("aisc360.F8.no_ltb").cite

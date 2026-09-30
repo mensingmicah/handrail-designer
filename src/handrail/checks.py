@@ -239,6 +239,11 @@ def flexural_capacity(registry: Registry, rail: PipeSection, grade: str) -> Capa
         f"lambda = {D_t:g} < lambda_\"lim\" = {fmt_sig(lim.value)}", "Applies",
         "Applicability", cite_ids=(app.id,),
     )
+    sh.decision(
+        mtext("Round HSS"), "Lateral-torsional buckling does not apply",
+        "Limit states: yielding and local buckling only; Lb and Cb do not enter",
+        cite_ids=("aisc360.F8.no_ltb",),
+    )
 
     Z = sh.given("Z", rail.Z, "Plastic section modulus", DB)
     Mp = sh.line("M_p", Fy * Z, "Plastic moment (yielding)", cite_ids=("aisc360.eq.F8-1",),

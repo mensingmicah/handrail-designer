@@ -172,6 +172,11 @@ def _summary(checks: list[Check]) -> str:
 def build_source(results: Results, registry: Registry, stamp: Stamp) -> str:
     proj = results.project
     info = proj.info
+    # Every registry read must happen before the DRAFT list is taken, or the
+    # entry prints on the page without being listed as drafted.
+    # The design method is stated as a registry-cited line; the references list
+    # names only the specification, so adding LRFD later does not change it.
+    asd = registry.get("aisc360.B3.2.asd")
     drafted = registry.drafted_used
     code, reg = stamp.footer_parts()
     fills = {
@@ -192,6 +197,7 @@ def build_source(results: Results, registry: Registry, stamp: Stamp) -> str:
     src.append(_table([], [["Project", info.name], ["Phase", info.phase], ["Description", info.description]],
                       "(auto, 1fr)").replace("columns: (auto, 1fr), ", "columns: (auto, 1fr), stroke: none, "))
     src.append("Loading is per ASCE 7-22.")
+    src.append(f"#text(weight: \"bold\", {typst_str(f'Design method: {asd.value} per {asd.cite}')})")
     src.append("== Assumptions")
     items = [f"+ #{typst_str(a)}" for a in LOCKED_ASSUMPTIONS]
     items += [f"+ #{typst_str(a)} _(added by engineer)_" for a in info.assumptions]
