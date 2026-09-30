@@ -453,7 +453,10 @@ def check_2(registry, project, rail, loading) -> Check:
 
 
 def run(project: Project, registry: Registry) -> Results:
+    # Imported here, not at the top: post.py builds on this module's Case,
+    # Check and Loading, so a top-level import would be circular.
     from handrail import shapes
+    from handrail.post import check_5
 
     rail = shapes.pipe(project.top_rail.section)
     post = shapes.pipe(project.post.section)
@@ -462,5 +465,6 @@ def run(project: Project, registry: Registry) -> Results:
     loading = build_loading(project, registry, rail, post)
     props = section_lines(registry, rail)
     post_props = section_lines(registry, post, with_r=True)
-    checks = [check_1(registry, project, rail, loading), check_2(registry, project, rail, loading)]
+    checks = [check_1(registry, project, rail, loading), check_2(registry, project, rail, loading),
+              check_5(registry, project, post, loading)]
     return Results(project, rail, post, loading, props, post_props, checks)

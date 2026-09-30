@@ -66,14 +66,14 @@ def results():
 
 def test_every_case_matches_plain_calc(results):
     expected = plain()
-    for chk in results.checks:
+    for chk in results.checks[:2]:  # Checks 1 and 2 (the rail)
         for c in chk.checked:
             assert c.ratio == pytest.approx(expected[(chk.number, c.direction, c.load_type)], rel=1e-9), (
                 chk.number, c.label)
 
 
 def test_envelope_lists_every_direction_and_load_type(results):
-    for chk in results.checks:
+    for chk in results.checks[:2]:  # Checks 1 and 2 (the rail)
         labels = [(c.direction, c.load_type, c.status) for c in chk.cases]
         assert labels == [
             ("Downward", "Concentrated", "checked"), ("Downward", "Distributed", "checked"),
@@ -86,7 +86,7 @@ def test_envelope_lists_every_direction_and_load_type(results):
 
 def test_controlling_is_the_highest_ratio(results):
     expected = plain()
-    for chk in results.checks:
+    for chk in results.checks[:2]:  # Checks 1 and 2 (the rail)
         top = max(v for (n, *_), v in expected.items() if n == chk.number)
         assert chk.controlling.ratio == pytest.approx(top)
 
@@ -115,14 +115,15 @@ def test_tie_between_load_types_goes_to_first_in_envelope_order():
 
 def test_outward_and_inward_tie_exactly_for_a_round_section(results):
     # This is why the tie rule matters: the two cases produce identical ratios.
-    for chk in results.checks:
+    for chk in results.checks[:2]:  # Checks 1 and 2 (the rail)
         by = {(c.direction, c.load_type): c.ratio for c in chk.checked}
         for lt in ("Concentrated", "Distributed"):
             assert by[("Outward", lt)] == by[("Inward", lt)]
 
 
 def test_noncompact_section_uses_eq_F8_2_and_is_flagged():
-    res = checks.run(project(section="Pipe26STD", span="12'-0\""), Registry())
+    # A 103 lb/ft rail needs a post that keeps alpha Pr/Pe under the second-order limit.
+    res = checks.run(project(section="Pipe26STD", span="12'-0\"", post="Pipe12STD"), Registry())
     chk1 = res.checks[0]
     assert chk1.flags and "NONCOMPACT" in chk1.flags[0]
     expected = plain("Pipe26STD", L=144.0)
@@ -157,7 +158,7 @@ def test_beyond_F8_limit_is_a_hard_stop():
 
 def test_exemption_removes_distributed_cases():
     res = checks.run(project(loads=Loads(uniform_exempt=True, exemption_statement="Roof not occupied.")), Registry())
-    for chk in res.checks:
+    for chk in res.checks[:2]:  # Checks 1 and 2 (the rail)
         dist = [c for c in chk.cases if c.load_type == "Distributed"]
         assert dist and all(c.status == "exempt" for c in dist)
     assert res.loading.w_L is None
@@ -245,7 +246,7 @@ def test_every_formula_line_prints_a_citation(results):
 @pytest.mark.parametrize("section, span, listed", [("Pipe2STD", "6'-0\"", False), ("Pipe26STD", "12'-0\"", True)])
 def test_eq_F8_2_is_listed_as_used_only_for_a_noncompact_section(section, span, listed):
     reg = Registry()
-    res = checks.run(project(section=section, span=span), reg)
+    res = checks.run(project(section=section, span=span, post="Pipe12STD"), reg)  # compact post
     assert bool(res.checks[0].flags) is listed  # noncompact flag raised only for Pipe26STD
     used = {e.id for e in reg.used}
     assert ("aisc360.eq.F8-2" in used) is listed

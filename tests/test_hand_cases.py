@@ -43,7 +43,7 @@ def _line_value(lines, symbol):
 def tool_values(res):
     """Tool values keyed like the [hand] tables, in the same units."""
     r = res.rail
-    c1, c2 = res.checks
+    c1, c2 = res.checks[:2]
     v = {
         "section.D_in": r.OD.m_as("inch"),
         "section.tdes_in": r.tdes.m_as("inch"),

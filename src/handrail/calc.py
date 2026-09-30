@@ -202,6 +202,27 @@ class Const(Expr):
         return [self.entry] if self.entry else []
 
 
+@dataclass(eq=False)
+class MathConst(Expr):
+    """A mathematical constant, such as pi: printed by name in both the symbolic
+    and the substituted form, so it is never shown rounded. Not a code value."""
+
+    typst: str
+    value: float
+
+    def eval(self):
+        return self.value
+
+    def symbolic(self) -> str:
+        return self.typst
+
+    def substituted(self) -> str:
+        return self.typst
+
+
+PI = MathConst("pi", math.pi)
+
+
 def _plain_number(x: float) -> str:
     """Exact coefficient text as written: 0.07, 4, 384, 1.0 (never rounded)."""
     if isinstance(x, int):
@@ -355,6 +376,11 @@ class Sheet:
         """A registry coefficient used inside a formula; cited on that line."""
         e = self.registry.get(entry_id)
         return Const(e.quantity, e)
+
+    def fraction(self, entry_id: str) -> Expr:
+        """A registry coefficient held as {numerator, denominator}; prints as a fraction."""
+        e = self.registry.get(entry_id)
+        return Const(e.value["numerator"], e) / Const(e.value["denominator"], e)
 
     def factor(self, entry_id: str, key: str) -> Const:
         """One load factor out of a registry 'factors' entry."""

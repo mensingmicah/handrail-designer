@@ -87,7 +87,7 @@ def test_closing_line_prints_the_checks_verdict_not_a_recomputed_one(monkeypatch
     res, reg = run()
     monkeypatch.setattr(Check, "verdict", property(lambda self: "SENTINEL"))
     src = report.build_source(res, reg, CLEAN)
-    assert src.count('#h(10pt) #"SENTINEL"') == 2  # Checks 1 and 2
+    assert src.count('#h(10pt) #"SENTINEL"') == len(res.checks)  # one closing line per check
 
 
 def _printed_equations(lines):

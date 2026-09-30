@@ -1158,7 +1158,7 @@ note = "1/(1 - 0.05) = 1.053, so the amplification neglected is at most about 5%
 
 [[entry]]
 id = "ej.second_order.negligible"
-value = "Second-order effects negligible: alphaPr/Pe = {ratio}; amplification taken as 1.0."
+value = "Second-order effects negligible: αPr/Pe = {ratio}; amplification taken as 1.0."
 unit = "text"
 cite = "Engineering judgement (EOR): second-order limit"
 document = "Engineering decision of the engineer of record"
