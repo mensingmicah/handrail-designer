@@ -146,8 +146,7 @@ def _check(chk: Check) -> str:
                "controlling case only.")
     out.append(_envelope(chk))
     ctrl = chk.controlling
-    combination = ctrl.combination.replace("
-", "; ")  # table cells break the label; a heading doesn't
+    combination = ctrl.combination.replace("\n", "; ")  # table cells break the label; a heading doesn't
     out.append(f"#heading(level: 2, {typst_str(f'Controlling case: {ctrl.label} ({combination})')})")
     out.append(_lines(ctrl.lines))
     # The verdict is decided once, by the Check; the page only prints it.
