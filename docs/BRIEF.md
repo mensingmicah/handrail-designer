@@ -71,12 +71,15 @@ Out of scope for v1 (push back if I try to add these):
   thickness is nominal or design. For rectangular sections, the engineer sets
   which axis resists the horizontal guard load.
 - Intermediate rail section (optional). Defaults to the top rail section.
-- Material grade for rail, post and baseplate. Grade lists and defaults per
-  shape type come from AISC Manual Table 2-4; a grade outside that table's
-  standard grades for the shape is an unusual pairing and gets a warning, not
-  a block. A500 (Gr B, Gr C) is offered for round and rectangular HSS only,
-  never for solid bars. Defaults: bars A36, pipe A53 Gr B, baseplate A36.
-  Every Fy and Fu is a registry entry.
+- Material grade for rail, post and baseplate. The standard grade lists for
+  pipe, round HSS and rectangular HSS are registry entries
+  (material.grades.pipe, material.grades.hss_round, material.grades.hss_rect;
+  AISC Manual Table 2-4); a grade outside the list for the shape is an
+  unusual pairing and gets a warning, not a block. The grade list for solid
+  bars and baseplate is not yet in the registry. A500 (Gr B, Gr C) is offered
+  for round and rectangular HSS only, never for solid bars, and the defaults
+  are bars A36, pipe A53 Gr B, baseplate A36: these are my engineering
+  decisions, not registry entries. Every Fy and Fu is a registry entry.
 - Welds at the rail to post and post to baseplate connections: fillet welds,
   size entered, E70XX electrode by default. Round posts are welded all
   around. Rectangular posts (HSS or bar) are welded all around or on one

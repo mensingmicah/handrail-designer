@@ -81,7 +81,7 @@ A number or provision text taken from a referenced standard, held as an entry in
 _Avoid_: Constant, default
 
 **Drafted entry**:
-A registry entry written by Claude from memory or the web and not yet verified by the engineer of record; any calc using one is marked DRAFT.
+A registry entry written by Claude from memory or the web, or supplied directly by the engineer of record (source "engineer"), and not yet verified by the engineer of record; any calc using one is marked DRAFT.
 
 **Verified entry**:
 A registry entry the engineer of record has checked against the standard and signed off with name and date.

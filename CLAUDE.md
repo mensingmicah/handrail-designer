@@ -25,9 +25,10 @@ on, or write, auto-memory for it.
 1. Code values and code provision text live only in the code-value registry
    (registry/code-values.toml). Claude may draft entries from memory or the
    web. Each drafted entry records the value or text; the document, edition
-   and exact section, table or equation; the source, either "memory" or the
-   URL; status "drafted"; and blank verified-by and date fields that only I
-   fill in. Every drafted entry is listed in the review list at the top of
+   and exact section, table or equation; the source, one of "memory", the
+   URL, or "engineer" for a value I supplied directly; status "drafted"; and
+   blank verified-by and date fields that only I fill in. An entry with
+   source "engineer" stays "drafted" until I verify it, like any other. Every drafted entry is listed in the review list at the top of
    the registry. Any calc that uses a drafted entry prints "DRAFT: contains
    unverified code values" on every page and lists those entries. The tool
    stops with an error naming any entry it needs that does not exist.

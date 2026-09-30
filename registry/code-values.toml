@@ -6,7 +6,9 @@
 #
 # status:  "drafted"  written by Claude, not yet checked against the standard
 #          "verified" checked by Micah against the standard
-# source:  "memory", or the URL the entry was drafted from
+# source:  "memory", the URL the entry was drafted from, or "engineer" for a
+#          value Micah supplied directly. An "engineer" entry stays "drafted"
+#          until he verifies it.
 #
 # Any calc that uses a drafted entry prints "DRAFT: contains unverified code
 # values" on every page and lists those entries.
@@ -18,6 +20,9 @@
 review = [
   "material.steel.density",
   "material.steel.E",
+  "material.grades.pipe",
+  "material.grades.hss_round",
+  "material.grades.hss_rect",
   "asce7.guard.uniform.exemption.intro",
   "asce7.guard.uniform.exemption.1",
   "asce7.guard.uniform.exemption.2",
@@ -41,10 +46,19 @@ drafted_on = 2026-09-30
 verified_by = ""
 verified_date = ""
 note = """
-Value entered by Micah in the design interview; the citation is drafted. \
-I could not recall the Part 17 table number, and I believe Part 1 also \
-states this density as the basis for tabulated shape weights. Confirm which \
-location to cite."""
+Value 490 supplied by Micah in the design interview; the citation is \
+drafted. I found no AISC text stating it: web searches only returned \
+secondary pages repeating 490 lb/ft^3, and I could not recall or find the \
+Part 17 table number (I believe Part 1 also states this density as the basis \
+for tabulated shape weights). Check by computation, not a citation: in the \
+AISC Shapes Database v16.0, W/A for W, S, HP, C, MC, L and WT shapes is \
+3.35 to 3.45 lb/ft per in^2, which is 483 to 497 lb/ft^3 (490 lb/ft^3 = \
+3.403 lb/ft per in^2), so 490 is consistent. Confirm which manual location \
+to cite. Separate warning: tabulated W for HSS and PIPE is about 3.57 to \
+3.78 times A (515 to 545 lb/ft^3 equivalent), because W is computed from \
+nominal wall and A from design wall. Density times A is therefore not the \
+tabulated weight for those shapes; see the brief's dead-load bullet for \
+custom sections."""
 
 [[entry]]
 id = "material.steel.E"
@@ -52,13 +66,85 @@ value = 29000
 unit = "ksi"
 document = "AISC 360-22, Specification for Structural Steel Buildings"
 edition = "2022"
-section = "Symbols (definition of E, modulus of elasticity of steel)"
+section = "Symbols (definition of E, modulus of elasticity of steel); the same definition is repeated in the nomenclature of the member chapters, for example Chapter F"
+source = "https://user.eng.umd.edu/~ccfu/ref/a360-16-spec-and-commentary.pdf"
+status = "drafted"
+drafted_on = 2026-09-30
+verified_by = ""
+verified_date = ""
+note = """
+Value 29,000 ksi supplied by Micah in the design interview and it matches \
+the AISC text I found: "E = modulus of elasticity of steel = 29,000 ksi \
+(200 000 MPa)". But the copy I read is AISC 360-16, not 360-22, so I have \
+not seen the 360-22 wording; I assume it is unchanged. Confirm the symbols \
+entry and its section against 360-22."""
+
+# ---------------------------------------------------------------------------
+# Standard steel grades per shape type (AISC Manual Table 2-4)
+#
+# A grade outside the list for its shape is an unusual pairing: the tool warns
+# but does not block. Fy and Fu are separate entries. The defaults per shape
+# and the A500-for-HSS-only restriction are engineering decisions in the brief,
+# not registry entries. Solid bars and baseplate grades are not drafted here.
+# ---------------------------------------------------------------------------
+
+[[entry]]
+id = "material.grades.pipe"
+value = ["A53 Gr B"]
+unit = "list"
+document = "AISC Steel Construction Manual"
+edition = "16th Edition"
+section = "Part 2, Table 2-4, Applicable ASTM Specifications for Various Structural Shapes, Pipe column"
 source = "memory"
 status = "drafted"
 drafted_on = 2026-09-30
 verified_by = ""
 verified_date = ""
-note = "Value entered by Micah in the design interview; the citation is drafted."
+note = """
+From memory. Secondary web pages (a Table 2-4 tutorial and a search \
+summary) agree that the preferred pipe specification is A53 Gr B with Fy = 35 \
+ksi and Fu = 60 ksi; I could not open the table itself. I believe A53 Gr B \
+is the only pipe specification in the column; confirm nothing else is marked."""
+
+[[entry]]
+id = "material.grades.hss_round"
+value = ["A500 Gr B", "A500 Gr C", "A501 Gr A", "A501 Gr B", "A618 Gr I", "A618 Gr II", "A618 Gr III", "A847", "A1085 Gr A", "A1065 Gr 50", "A1065 Gr 70"]
+unit = "list"
+document = "AISC Steel Construction Manual"
+edition = "16th Edition"
+section = "Part 2, Table 2-4, Applicable ASTM Specifications for Various Structural Shapes, Round HSS column"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-09-30
+verified_by = ""
+verified_date = ""
+note = """
+From memory, and only the A500 Gr B and Gr C members are corroborated by web \
+summaries (A500 Gr B is the round HSS entry there, Fy = 42 ksi, Fu = 58 \
+ksi). Web summaries also name A501, A618, A847, A1065 and A1085 as HSS \
+specifications, but I could not open the table. Lower confidence: the \
+grade names for A501, A618 and A1065 (the A1065 grades in particular), and \
+whether each is marked for round HSS. The tool offers only A500 Gr B and \
+Gr C in v1; the other members matter only for the unusual-pairing warning. \
+Check this one against the printed table."""
+
+[[entry]]
+id = "material.grades.hss_rect"
+value = ["A500 Gr B", "A500 Gr C", "A501 Gr A", "A501 Gr B", "A618 Gr I", "A618 Gr II", "A618 Gr III", "A847", "A1085 Gr A", "A1065 Gr 50", "A1065 Gr 70"]
+unit = "list"
+document = "AISC Steel Construction Manual"
+edition = "16th Edition"
+section = "Part 2, Table 2-4, Applicable ASTM Specifications for Various Structural Shapes, Rectangular HSS column"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-09-30
+verified_by = ""
+verified_date = ""
+note = """
+From memory, same confidence as material.grades.hss_round. Web summaries give \
+A500 Gr B as the rectangular HSS entry with Fy = 46 ksi and Fu = 58 ksi. I \
+wrote the same members as for round HSS but I do not know that the two \
+columns match; check them separately against the printed table."""
 
 # ---------------------------------------------------------------------------
 # ASCE 7-22 guard loads: distributed-load exemption (info box text)
