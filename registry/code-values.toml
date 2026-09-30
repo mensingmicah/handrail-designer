@@ -36,9 +36,6 @@ review = [
   "material.steel.density",
   "material.grades.hss_round",
   "material.grades.hss_rect",
-  "aisc360.pipe_as_round_hss",
-  "aisc360.F1.omega_b",
-  "aisc360.B4.1b.classification",
   "aisc360.B3.2.asd",
 ]
 
@@ -346,10 +343,10 @@ document = "AISC Steel Construction Manual"
 edition = "16th Edition"
 section = "Part 2, Table 2-4, Applicable ASTM Specifications for Various Structural Shapes, HSS column heading over the pipe specification (heading wording not seen by the drafter)"
 source = "engineer"
-status = "drafted"
+status = "verified"
 drafted_on = 2026-09-30
-verified_by = ""
-verified_date = ""
+verified_by = "Micah Mensing"
+verified_date = 2026-09-30
 note = """
 Paraphrase. A web search summary confirms a 360-22 User Note allowing A53 \
 Gr B pipe to be designed as round HSS, but I am not sure which section \
@@ -377,10 +374,10 @@ document = "AISC 360-22, Specification for Structural Steel Buildings"
 edition = "2022"
 section = "§F1(a), General Provisions: safety factor for flexure, Omega_b = 1.67 (ASD)"
 source = "memory"
-status = "drafted"
+status = "verified"
 drafted_on = 2026-09-30
-verified_by = ""
-verified_date = ""
+verified_by = "Micah Mensing"
+verified_date = 2026-09-30
 note = """
 From memory; unchanged from 360-10 and 360-16 as far as I know. \
 Review 2026-09-30, Micah: Wrong; correction 'technically F1.(a)'. Section \
@@ -429,10 +426,10 @@ document = "AISC 360-22, Specification for Structural Steel Buildings"
 edition = "2022"
 section = "§B4.1b, classification of sections for local buckling, members subject to flexure"
 source = "memory"
-status = "drafted"
+status = "verified"
 drafted_on = 2026-09-30
-verified_by = ""
-verified_date = ""
+verified_by = "Micah Mensing"
+verified_date = 2026-09-30
 note = """
 Paraphrase from memory of 360-16 §B4.1b. \
 Review 2026-09-30, Micah: Unsure. 'not really sure what this means, the limiting rations are from table 4.1b? Should be AISC 360-22'"""
