@@ -79,10 +79,16 @@ def mtext(s: str) -> str:
 
 
 def fmt_ratio(x: float) -> str:
-    """Two decimals, or three when two would read 1.00, so a ratio just over 1.0
-    never prints as "1.00" beside NG (docs/BRIEF.md, Output)."""
+    """Ratio display (docs/BRIEF.md, Output): two decimals; three when two
+    would read 1.00; four when a failing ratio (over 1.0) would still read
+    1.000 at three."""
     two = f"{x:.2f}"
-    return f"{x:.3f}" if two == "1.00" else two
+    if two != "1.00":
+        return two
+    three = f"{x:.3f}"
+    if three == "1.000" and x > 1.0:
+        return f"{x:.4f}"
+    return three
 
 
 def display(q) -> tuple[float, str, int | None]:

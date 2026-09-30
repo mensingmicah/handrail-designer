@@ -31,7 +31,9 @@ def test_four_significant_figures(x, text):
         (0.8765, "0.88"),
         (0.994, "0.99"),
         (0.996, "0.996"),   # would read 1.00: show three decimals
-        (1.0, "1.000"),
+        (1.0, "1.000"),     # exactly 1.0 passes: three decimals
+        (0.9996, "1.000"),  # passing: the four-decimal rule is for failing ratios only
+        (1.0004, "1.0004"), # failing but reads 1.000 at three: show four
         (1.004, "1.004"),
         (1.006, "1.01"),
     ],

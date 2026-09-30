@@ -67,3 +67,14 @@ def test_closing_verdict_is_the_checks_own_and_never_reads_1_00_beside_NG():
     src = report.build_source(res, reg, CLEAN)
     assert '"Ratio" = 1.004 > 1.00$ #h(10pt) #"NG"' in src
     assert "1.00 > 1.00" not in src
+
+
+def test_closing_line_prints_the_checks_verdict_not_a_recomputed_one(monkeypatch):
+    # A sentinel verdict proves the page prints Check.verdict rather than
+    # recomputing OK/NG from the ratio.
+    from handrail.checks import Check
+
+    res, reg = run()
+    monkeypatch.setattr(Check, "verdict", property(lambda self: "SENTINEL"))
+    src = report.build_source(res, reg, CLEAN)
+    assert src.count('#h(10pt) #"SENTINEL"') == 2  # Checks 1 and 2

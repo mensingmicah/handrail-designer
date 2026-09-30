@@ -262,9 +262,10 @@ checks may be added later.
   shows a "Bypassed by engineer" row for it.
 - Full internal precision; values displayed to 4 significant figures, so a
   checker can reproduce each intermediate and substituted value from the
-  numbers printed before it. Ratios to 2 decimals, or 3 when the rounded
-  ratio would read 1.00, so a ratio just over 1.0 never prints as 1.00
-  beside NG. Fixed units in v1: lb, lb-in, ksi, in, in³, in⁴.
+  numbers printed before it. Ratios to 2 decimals; 3 when the rounded
+  ratio would read 1.00; 4 when a failing ratio (over 1.0) would still
+  read 1.000, so a ratio just over 1.0 shows its excess beside NG.
+  Fixed units in v1: lb, lb-in, ksi, in, in³, in⁴.
 - A reserved header area at the top, not filled in v1
 - A footer on every page with the tool version and the code-value registry
   version the calc ran with
