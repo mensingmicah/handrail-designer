@@ -1,0 +1,161 @@
+# Test case 2: Micah's hand calc (docs/plans/slice-2.md, D7).
+#
+# Test case 1's rail and span (Pipe1-1/2STD top rail, A53 Gr B, 7'-0" span,
+# default ASCE 7-22 loads) on a Pipe1-1/2STD post, A53 Gr B, h = 42 in,
+# t_p = 1/2 in. Post deflection limit (h - t_p)/60.
+#
+# Chapter E branch: Lc = 2.1 x 42 = 88.2 in, Lc/r about 141, above
+# 4.71 sqrt(E/Fy) = 135.6 for A53 Gr B, so Eq. E3-3 (elastic buckling).
+# This is also the geometry in D1 whose downward distributed case would
+# exceed alpha Pr/Pe = 0.05; downward has no moment and is not checked
+# against that limit.
+#
+# Checks 1 and 2 are identical to test case 1 (same rail and span) and are
+# not recorded here; only the post groups are (plan, Tests).
+#
+# Replace each "pending" with the hand-calculated value, in the unit named
+# by the key's suffix (lb, lbin = lb-in, in, in2, in3, in4, ksi, plf). Give
+# ratios to 3 significant figures, not rounded to 2 decimals. Every number
+# must be within 0.5% (relative) of the tool's value.
+#
+# Text values, in quotes:
+#   check5.Fcr_equation      "E3-2" or "E3-3"
+#   check5.equation.<case>   "Pr/Pc" (downward, Chapter E), "Pr/Pt" (upward,
+#                            Chapter D), "H1-1a" or "H1-1b" (moment cases)
+#   check5/6.controlling     e.g. "outward, concentrated"
+#
+# Sign convention: Pr is a magnitude. It is compression in every case but
+# upward, where it is the net tension 1.0L - 0.6D.
+#
+# A pending value skips its test without showing the tool's value. A
+# mismatch fails and, per CLAUDE.md rule 2, stops the work: neither side is
+# changed until we know which one is wrong.
+
+[project]
+name = "Test case 2"
+phase = "Verification"
+description = "Pipe1-1/2STD post, h = 42 in, t_p = 1/2 in, on case 1's rail and span"
+
+[geometry]
+span = "7'-0\""
+post_height = 42
+baseplate_thickness = "1/2"
+
+[top_rail]
+section = "Pipe1-1/2STD"
+grade = "A53 Gr B"
+
+[post]
+section = "Pipe1-1/2STD"
+grade = "A53 Gr B"
+
+[deflection.rail]
+limit_L_over = 120
+bypass = false
+
+[deflection.post]
+limit_L_over = 60
+bypass = false
+
+# ---------------------------------------------------------------------------
+# Hand values
+# ---------------------------------------------------------------------------
+
+[hand.post]
+# Post section properties used (AISC Shapes Database v16.0, as published)
+D_in = "pending"
+tdes_in = "pending"
+A_in2 = "pending"
+W_plf = "pending"
+I_in4 = "pending"
+S_in3 = "pending"
+Z_in3 = "pending"
+r_in = "pending"
+D_t = "pending"
+D_post_lb = "pending"         # post dead load, W x (h - t_p)
+P_D_lb = "pending"            # D at the post: rail w_D x span + D_post
+
+[hand.check5]
+Lc_in = "pending"
+Lc_over_r = "pending"
+Fe_ksi = "pending"
+Fcr_ksi = "pending"
+Fcr_equation = "pending"      # "E3-2" or "E3-3"
+Pn_lb = "pending"             # compression, Eq. E3-1
+Pc_lb = "pending"
+Pt_lb = "pending"             # tension yielding, Pn/Omega_t
+Mn_lbin = "pending"
+Mc_lbin = "pending"
+controlling = "pending"       # e.g. "outward, concentrated"
+
+[hand.check5.Pr_lb]           # required axial strength (magnitude), each case
+downward_concentrated = "pending"
+downward_distributed = "pending"
+outward_concentrated = "pending"
+outward_distributed = "pending"
+inward_concentrated = "pending"
+inward_distributed = "pending"
+upward_concentrated = "pending"
+upward_distributed = "pending"
+longitudinal_concentrated = "pending"
+longitudinal_distributed = "pending"
+
+[hand.check5.Mr_lbin]         # required moment, moment cases only
+outward_concentrated = "pending"
+outward_distributed = "pending"
+inward_concentrated = "pending"
+inward_distributed = "pending"
+longitudinal_concentrated = "pending"
+longitudinal_distributed = "pending"
+
+[hand.check5.equation]        # "Pr/Pc", "Pr/Pt", "H1-1a" or "H1-1b"
+downward_concentrated = "pending"
+downward_distributed = "pending"
+outward_concentrated = "pending"
+outward_distributed = "pending"
+inward_concentrated = "pending"
+inward_distributed = "pending"
+upward_concentrated = "pending"
+upward_distributed = "pending"
+longitudinal_concentrated = "pending"
+longitudinal_distributed = "pending"
+
+[hand.check5.ratio]
+downward_concentrated = "pending"
+downward_distributed = "pending"
+outward_concentrated = "pending"
+outward_distributed = "pending"
+inward_concentrated = "pending"
+inward_distributed = "pending"
+upward_concentrated = "pending"
+upward_distributed = "pending"
+longitudinal_concentrated = "pending"
+longitudinal_distributed = "pending"
+
+[hand.check5.alpha_Pr_over_Pe]   # alpha Pr/Pe, moment cases only
+outward_concentrated = "pending"
+outward_distributed = "pending"
+inward_concentrated = "pending"
+inward_distributed = "pending"
+longitudinal_concentrated = "pending"
+longitudinal_distributed = "pending"
+
+[hand.check6]
+Delta_allow_in = "pending"
+controlling = "pending"       # e.g. "outward, concentrated"
+
+[hand.check6.deflection_in]   # horizontal cases, live load only
+outward_concentrated = "pending"
+outward_distributed = "pending"
+inward_concentrated = "pending"
+inward_distributed = "pending"
+longitudinal_concentrated = "pending"
+longitudinal_distributed = "pending"
+
+[hand.check6.ratio]
+outward_concentrated = "pending"
+outward_distributed = "pending"
+inward_concentrated = "pending"
+inward_distributed = "pending"
+longitudinal_concentrated = "pending"
+longitudinal_distributed = "pending"

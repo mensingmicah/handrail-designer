@@ -5,6 +5,14 @@ hand-calculated values. Every hand value must be within 0.5% (relative) of
 the tool's value. A "pending" value is skipped, and the skip message never
 shows the tool's value, so the hand calc stays independent.
 
+A case records whole groups of values ([hand.section], [hand.check1],
+[hand.post], [hand.check5], ...). Every value in a group the case records
+must have a hand key; a group the case leaves out is not checked (test
+case 1 records no post values, and cases 2 and 3 no rail values).
+
+Text values (which equation governed, the controlling direction) are
+compared as text; every other value must be a number.
+
 A failure here is a CLAUDE.md rule 2 stop: do not change the tool (or the
 hand value) until we know which one is wrong.
 """
@@ -15,6 +23,7 @@ from pathlib import Path
 import pytest
 
 from handrail import checks, project
+from handrail.checks import CONCENTRATED
 from handrail.registry import Registry
 
 CASES = sorted((Path(__file__).parent / "cases").glob("case-*.toml"))
@@ -40,10 +49,69 @@ def _line_value(lines, symbol):
     return next(ln.value for ln in lines if ln.symbol == symbol and ln.kind == "value")
 
 
+def _check(res, number):
+    return next(c for c in res.checks if c.number == number)
+
+
+def _case(chk, direction, load_type=CONCENTRATED):
+    return next(c for c in chk.checked if c.direction == direction and c.load_type == load_type)
+
+
+def _equation(text: str) -> str:
+    """The equation a case used, as a hand calc names it: 'Eq. H1-1b' -> 'H1-1b',
+    'Pr/Pc (Ch. E)' -> 'Pr/Pc'."""
+    return text.removeprefix("Eq. ").split(" (")[0]
+
+
+def _post_values(res):
+    p, ld = res.post, res.loading
+    c5, c6 = _check(res, 5), _check(res, 6)
+    # Capacities, read from the printed lines of the case that prints them.
+    down, out = _case(c5, "Downward").lines, _case(c5, "Outward").lines
+    branch = next(ln.text for ln in down if ln.kind == "decision" and "buckling: Eq." in (ln.text or ""))
+    v = {
+        "post.D_in": p.OD.m_as("inch"),
+        "post.tdes_in": p.tdes.m_as("inch"),
+        "post.A_in2": p.A.m_as("in^2"),
+        "post.W_plf": p.W.m_as("lbf/ft"),
+        "post.I_in4": p.I.m_as("in^4"),
+        "post.S_in3": p.S.m_as("in^3"),
+        "post.Z_in3": p.Z.m_as("in^3"),
+        "post.r_in": p.r.m_as("inch"),
+        "post.D_t": p.D_t,
+        "post.D_post_lb": _line_value(ld.lines, 'D_"post"').m_as("lbf"),
+        "post.P_D_lb": ld.P_D.m_as("lbf"),
+        "check5.Lc_in": _line_value(down, "L_c").m_as("inch"),
+        "check5.Lc_over_r": _line_value(down, "frac(L_c, r)"),
+        "check5.Fe_ksi": _line_value(down, "F_e").m_as("ksi"),
+        "check5.Fcr_ksi": _line_value(down, 'F_"cr"').m_as("ksi"),
+        "check5.Fcr_equation": branch.split("Eq. ")[1],
+        "check5.Pn_lb": _line_value(down, "P_n").m_as("lbf"),
+        "check5.Pc_lb": _line_value(down, "P_c").m_as("lbf"),
+        "check5.Pt_lb": _case(c5, "Upward").P_allow.m_as("lbf"),
+        "check5.Mn_lbin": _line_value(out, "M_n").m_as("lbf*inch"),
+        "check5.Mc_lbin": _line_value(out, "M_c").m_as("lbf*inch"),
+    }
+    for c in c5.checked:
+        k = _case_key(c)
+        v[f"check5.Pr_lb.{k}"] = c.Pr.m_as("lbf")
+        v[f"check5.equation.{k}"] = _equation(c.equation)
+        v[f"check5.ratio.{k}"] = c.ratio
+        if c.Mr is not None:
+            v[f"check5.Mr_lbin.{k}"] = c.Mr.m_as("lbf*inch")
+            v[f"check5.alpha_Pr_over_Pe.{k}"] = c.second_order
+    if not c6.bypassed:
+        v["check6.Delta_allow_in"] = c6.controlling.capacity.m_as("inch")
+        for c in c6.checked:
+            v[f"check6.deflection_in.{_case_key(c)}"] = c.demand.m_as("inch")
+            v[f"check6.ratio.{_case_key(c)}"] = c.ratio
+    return v
+
+
 def tool_values(res):
     """Tool values keyed like the [hand] tables, in the same units."""
     r = res.rail
-    c1, c2 = res.checks[:2]
+    c1, c2 = _check(res, 1), _check(res, 2)
     v = {
         "section.D_in": r.OD.m_as("inch"),
         "section.tdes_in": r.tdes.m_as("inch"),
@@ -64,7 +132,16 @@ def tool_values(res):
         for c in c2.checked:
             v[f"check2.deflection_in.{_case_key(c)}"] = c.demand.m_as("inch")
             v[f"check2.ratio.{_case_key(c)}"] = c.ratio
+    v.update(_post_values(res))
     return v
+
+
+CONTROLLING = {f"check{n}.controlling": n for n in (1, 2, 5, 6)}
+TEXT_KEYS = ("controlling", "equation", "Fcr_equation")
+
+
+def _is_text(key: str) -> bool:
+    return any(part in TEXT_KEYS for part in key.split("."))
 
 
 def _flatten(d, prefix=""):
@@ -105,13 +182,21 @@ def test_hand_value(runs, path, key):
 
 def compare(path, key, hand, res):
     """Assert one hand value against the tool (raises AssertionError on a rule 2 stop)."""
-    if key.endswith("controlling"):
-        chk = res.checks[0 if key.startswith("check1") else 1]
+    if key in CONTROLLING:
+        chk = _check(res, CONTROLLING[key])
         ctrl = chk.controlling
-        # Outward and inward tie exactly for a round section: accept any case tied with the controlling one.
+        # Outward, inward (and, for the post, longitudinal) tie exactly for a round
+        # section: accept any case tied with the controlling one.
         tied = {c.label.lower() for c in chk.checked if abs(c.ratio - ctrl.ratio) <= 1e-9 * ctrl.ratio}
         assert hand.strip().lower() in tied, (
             f"RULE 2 STOP. {path.name} {key}: hand = {hand!r}, tool = {sorted(tied)}"
+        )
+        return
+
+    if _is_text(key):
+        tool = tool_values(res)[key]
+        assert isinstance(hand, str) and hand.strip().lower() == tool.lower(), (
+            f"RULE 2 STOP. {path.name} {key}: hand = {hand!r}, tool = {tool!r}"
         )
         return
 
@@ -127,12 +212,14 @@ def compare(path, key, hand, res):
 
 
 def assert_hand_keys_match(path, hand_raw, res):
-    """Every [hand] key names a tool value, and every tool value has a [hand] key.
+    """Every [hand] key names a tool value, and every tool value in a group the
+    case records has a [hand] key.
 
     The second half matters: a deleted hand value must not silently stop
-    being tested. Each tool value needs a hand key, as a number or "pending".
+    being tested. Each such tool value needs a hand key, as a number or "pending".
     """
-    tool = set(tool_values(res)) | {"check1.controlling", "check2.controlling"}
+    groups = set(hand_raw)
+    tool = {k for k in set(tool_values(res)) | set(CONTROLLING) if k.split(".")[0] in groups}
     hand = {key for key, _ in _flatten(hand_raw)}
     unknown = sorted(hand - tool)
     assert not unknown, f"{path.name}: [hand] keys that match no tool value: {unknown}"
@@ -179,3 +266,36 @@ def test_an_unknown_hand_key_is_caught():
     raw["hand"]["check1"]["ratio"]["sideways_concentrated"] = 0.5
     with pytest.raises(AssertionError, match=r"match no tool value: \['check1.ratio.sideways_concentrated'\]"):
         assert_hand_keys_match(case, raw["hand"], res)
+
+
+def _dev_post_run():
+    raw = {"project": {"name": "self-test"},
+           "geometry": {"span": "6'-0\"", "post_height": 42, "baseplate_thickness": "1/2"},
+           "top_rail": {"section": "Pipe2STD"}, "post": {"section": "Pipe2STD"}}
+    return checks.run(project.from_dict(raw), Registry())
+
+
+def test_post_comparisons_catch_a_mismatch():
+    """Self-test on the dev section (Pipe2STD post), not a hand case: numbers,
+    equation names and the controlling direction all stop on a mismatch."""
+    res = _dev_post_run()
+    tool = tool_values(res)
+    ratio = tool["check5.ratio.outward_concentrated"]
+    compare(Path("self-test"), "check5.ratio.outward_concentrated", ratio * 1.004, res)
+    with pytest.raises(AssertionError, match="RULE 2 STOP"):
+        compare(Path("self-test"), "check5.ratio.outward_concentrated", ratio * 1.01, res)
+    eq = tool["check5.equation.outward_concentrated"]
+    compare(Path("self-test"), "check5.equation.outward_concentrated", eq.upper(), res)
+    wrong = "H1-1a" if eq == "H1-1b" else "H1-1b"
+    with pytest.raises(AssertionError, match="RULE 2 STOP"):
+        compare(Path("self-test"), "check5.equation.outward_concentrated", wrong, res)
+    with pytest.raises(AssertionError, match="RULE 2 STOP"):
+        compare(Path("self-test"), "check5.controlling", "upward, concentrated", res)
+
+
+def test_a_group_a_case_records_must_be_complete():
+    res = _dev_post_run()
+    hand = {"check6": {"Delta_allow_in": 1.0, "controlling": "x",
+                       "deflection_in": {}, "ratio": {}}}
+    with pytest.raises(AssertionError, match=r"no \[hand\] key: \['check6.deflection_in.inward_concentrated'"):
+        assert_hand_keys_match(Path("self-test"), hand, res)
