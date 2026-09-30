@@ -11,7 +11,7 @@ settles the slice's open questions, and it can reorder or split the slice.
 | Slice | Covers | Depends on | Size | New hand cases | Issues |
 | --- | --- | --- | --- | --- | --- |
 | 1 (done, v0.1.0) | Checks 1–2, pipe top rail | — | L | 1 | — |
-| 2 | Checks 5–6: the post (pipe) | 1 | M | 1 | #4 |
+| 2 | Checks 5–6: the post (pipe) | 1 | M | 2 | #4 |
 | 3 | Checks 3 and 7: both welds (pipe rail on pipe post) | 2 | M | 1 | — |
 | 4 | Check 4 (intermediate rail) and the anchor reaction sets | 2 (3 for a full package) | S–M | 1 | — |
 | 5 | Round section family: round HSS, custom round tube, solid round bar | 4 | M | 2 | #3 |
@@ -139,7 +139,7 @@ for the section abstraction up front than for a refactor in slices 5–7.
 bypassable). Dead load of the post, with the top rail's dead load passed to
 the post over the span as its tributary length. Check 5: axial and flexure
 at the base, over the envelope. Downward puts live axial compression into
-the post. Outward and inward put live moment L·h with dead-load axial.
+the post. Outward and inward put live moment L·(h − t_p) with dead-load axial.
 Longitudinal is numerically equal to transverse for a round post but is
 listed as its own case. Upward checks tension yielding (§D2) and is shown
 even though it will not control. Compression per §E3 with the recommended
@@ -154,14 +154,16 @@ summary pages all grow to cover the post. Folds in issue #4.
 **Size.** M. About 18–23 new registry entries (Chapter E equations and
 limits, Ωc, Ωt, K, the B4.1a round limit, the H1.1 equations and their
 0.2 threshold, Table 3-23 cantilever cases, the L/60 limit as
-engineering judgement, and the second-order entries below). One hand case
-(case 2): a pipe post with a pipe rail. The hand case records αPr/Pe.
+engineering judgement, and the second-order entries below). Two hand cases
+(cases 2 and 3): a Pipe1-1/2STD post and a Pipe2STD post, one for each
+Chapter E branch (E3-3 and E3-2).
 
 **Decided: second-order effects** (Micah, 2026-09-30). The tool does not
 implement Appendix 8 amplification. For the post it computes αPr/Pe and
 prints one line: "Second-order effects negligible: αPr/Pe = [value];
-amplification taken as 1.0." If αPr/Pe exceeds 0.05 in any case, the calc
-stops and names the ratio and the limit, in the same way as the
+amplification taken as 1.0." This covers the cases that have moment and
+axial load together (outward, inward, longitudinal). If αPr/Pe exceeds 0.05
+in any of them, the calc stops and names the ratio and the limit, in the same way as the
 slender-section stop. The supporting provision (α for ASD and the Pe
 expression, AISC 360-22 Appendix 8) is drafted into the registry on the
 slice 2 branch. The 0.05 limit is its own entry, marked engineering
@@ -170,14 +172,12 @@ neglected is at most about 5%. Pe is computed with KL = 2.1h, the same
 effective length as the compression check. The post is a cantilever, so its
 second-order effect is sway (P-Δ). Pe at K = 1 (the Appendix 8 B1 form)
 would be about 4.4 times larger and would understate the ratio by that
-factor. The slice 2 plan carries all of this as decided.
+factor.
 
-**To settle in the slice plan.**
-- Where the post's self-weight enters the axial load (full weight at the
-  base is the simple, conservative choice).
-- Whether the Cb provision for the post (§F1, cantilever) is drafted now or
-  when a section with LTB arrives (slice 6 or 7). Round sections have no
-  LTB, so I'd defer it.
+**Plan.** docs/plans/slice-2.md, with every decision settled. It also covers
+post self-weight (full weight at the base, over h − t_p), Cb (deferred to
+the first LTB-susceptible section), and Lc/r above 200 (a visible flag, not
+a stop).
 
 ### Slice 3: welds (Checks 3 and 7), pipe rail on pipe post
 
@@ -197,7 +197,7 @@ per AISC Manual Table 2-5) and Fu for A53 Gr B.
 **Size.** M. About 15 new registry entries (§J2.4 strength, the
 directional-increase equation and its limits, the Chapter K restriction,
 J2.2b and Table J2.4 size limits, §J4.2 rupture, Ω for each, FEXX, Fu for
-two grades). One hand case (case 3).
+two grades). One hand case.
 
 **To settle in the slice plan.**
 - The eccentricity e for Check 3 with a coped post: which dimension "rail
@@ -227,7 +227,7 @@ package, but not for this slice's code.
 
 **Size.** S–M. About 6–8 new registry entries (component load, 0.9D + 1.6L
 as engineering judgement, the stated assumptions that newly apply). One hand
-case (case 4): the complete all-pipe guard, all seven checks and the
+case: the complete all-pipe guard, all seven checks and the
 reactions. This case is the milestone.
 
 ### Slice 5: round section family

@@ -1,0 +1,302 @@
+# Slice 2 plan: the post (Checks 5 and 6), AISC pipe
+
+Status: **planned, not started.** Every decision below was settled by Micah
+on 2026-09-30 (docs/ROADMAP.md, "Choosing slice 2"; slice 2 planning).
+Where this plan differs from the brief (docs/BRIEF.md) or CLAUDE.md, those
+govern, and the difference is a defect in the plan.
+
+## Goal
+
+Add the post to the calc: Check 5 (combined axial and flexure, cantilever)
+and Check 6 (cantilever deflection) for an AISC pipe post in A53 Gr B, run
+over the full envelope, printed in a PDF Micah can backcheck by hand. This
+slice adds the first load path between two members: the top rail's dead
+load, and the guard loads it collects, go into the post. The section layer
+stays at pipe, so a mismatch against a hand calc can only come from the new
+post engineering. Checks 1 and 2 are unchanged, and test case 1 must pass
+exactly as it does today.
+
+## Decisions settled for this slice
+
+**D1. Second-order effects: a ratio and a stop, not an amplifier.** The
+tool does not implement Appendix 8 amplification. In each case that has
+moment and axial load together (outward, inward, longitudinal), it computes
+αPr/Pe and prints one line:
+
+> Second-order effects negligible: αPr/Pe = [value]; amplification taken
+> as 1.0.
+
+If αPr/Pe exceeds 0.05 in any of those cases, the calc stops. The stop names
+the case, the ratio and the limit, the same way the slender-section stop
+does. The downward and upward cases are left out on purpose. They have no
+moment to amplify. Downward axial compression is covered by the Chapter E
+check at K = 2.1, and upward is tension. Without that exclusion, a
+Pipe1-1/2STD post at h = 42 in with a 7'-0" span would stop on the downward
+distributed case (1.6 × 378 lb / 10.78 kip = 0.056), which is an ordinary
+guard.
+
+- α = 1.6 (ASD) and the Pe expression, π²EI/Lc², come from AISC 360-22
+  Appendix 8. Both are code entries.
+- Pe uses Lc = 2.1h, the same effective length as the compression check
+  (D3), with EI, not the reduced EI\* of the direct analysis method. This
+  departs from Appendix 8 as written: B1 uses K1 = 1, and B2 uses the story
+  stiffness. The post is a cantilever, so its second-order effect is sway
+  (P-Δ). Pe at K = 1 would be about 4.4 times larger and would understate
+  the ratio by that factor. Because the choice of length is Micah's, it is
+  recorded in an engineering-judgement entry, and the printed line cites
+  that entry as well as Appendix 8.
+- The 0.05 limit is its own entry, source "engineer", together with the
+  printed sentence. 1/(1 − 0.05) = 1.053, so the amplification neglected is
+  at most about 5%.
+- Where it shows: αPr/Pe prints in the full calc lines of the controlling
+  case, if that case has moment. It also gets its own column in the Check 5
+  envelope table, with "—" for downward and upward, so the value is visible
+  for every case the stop checks. The column carries only the value; the
+  printed sentence goes in the calc lines.
+
+**D2. Post self-weight: full weight at the base, over h − t_p.** The post
+dead load is D_post = W × (h − t_p), the tabulated W over the length from
+the top of the baseplate to the top rail centerline. That is the same
+cantilever length Check 6 and the Check 7 moment arm use. All of it acts as
+axial load at the critical section. The axial dead load at the post is
+D = w_D,rail × s + D_post, with the span s as the tributary length (locked
+assumption).
+
+**D3. Compression effective length: Lc = K·h with K = 2.1.** K is the
+recommended design value for a fixed-free column, from AISC 360-22
+Commentary Appendix 7, Table C-A-7.1. The table and case are recorded in
+the entry. The length is h, not h − t_p. That is Micah's ruling, slightly
+conservative, and the same Lc is used for Pe (D1).
+
+**D4. The critical section is at the top of the baseplate.** Horizontal
+guard loads applied at the top of the post produce M = V·(h − t_p) in
+Check 5. This follows from the locked assumption "the post is fixed at the
+top of the baseplate", and it matches the brief's Check 6 length and the
+Check 7 moment arm.
+
+**D5. Cb is deferred.** The brief sets post Lb = h under the §F1 cantilever
+provision, but round sections have no lateral-torsional buckling limit
+state. Cb is drafted in the first slice that brings an LTB-susceptible
+section (slice 6 or 7, docs/ROADMAP.md). For the post, Check 5 prints
+`aisc360.F8.no_ltb`, just as Check 1 does for the rail.
+
+**D6. Lc/r above 200: a visible flag, not a stop.** Lc/r always prints. When
+it exceeds the §E2 User Note's recommended 200, a flag prints beside the
+value and in the Check 5 summary row, the way a noncompact section is
+flagged, and the calc continues. A Pipe1STD post at h = 42 in reaches about
+209.
+
+**D7. Two post hand cases, one per Chapter E branch.** At h = 42 in,
+Lc = 88.2 in and 4.71√(E/Fy) = 135.6 for A53 Gr B:
+
+- Pipe1-1/2STD post: Lc/r = 141, Eq. E3-3 (elastic buckling).
+- Pipe2STD post: Lc/r = 112, Eq. E3-2.
+
+Both are common guard posts, so neither branch is left tested only against
+the machinery, as F8-2 was in slice 1.
+
+**D8. Axial-only cases use their own chapter, not Chapter H.** Downward has
+axial compression with no moment, so its ratio is Pr/Pc (Chapter E).
+Using Eq. H1-1b with Mr = 0 would report half of that. Upward is Pr/Pt,
+with Pt from §D2 yielding on the gross section. Chapter H applies only in
+the cases that have moment.
+
+**D9. The post is required.** From this slice on, every project file has a
+post, post height and baseplate thickness. That matches v1, which always
+checks one post. Test case 1 and `examples/slice-1.toml` gain post inputs.
+Case 1's recorded hand values are for Checks 1 and 2 only, and they must
+pass unchanged. A changed value is a rule 2 stop.
+
+## What the slice does
+
+### Input
+
+The project file gains these fields (bare numbers are inches, as
+everywhere):
+
+- `[geometry]`: `post_height` (h, from top of concrete to the top rail
+  centerline) and `baseplate_thickness` (t_p). The reader rejects
+  t_p ≥ h and non-positive values with a clear message.
+- `[post]`: `section` (AISC pipe designation) and `grade` (A53 Gr B only,
+  enforced by the same check the rail uses).
+- `[deflection.post]`: `limit_L_over` (default 60, an input default, not a
+  code value) and `bypass`.
+
+The dimensions page echoes h and t_p as entered and normalized, and prints
+the derived h − t_p and Lc.
+
+### Engineering
+
+**Section properties** for the post come from the database as published:
+D, t_des, A, W, I, S, Z, r, D/t. The pipe section type gains `r` (column
+`rx`, already in the extracted file), so no re-extraction is needed.
+
+**Classification** runs before capacity. Flexure uses Table B4.1b round HSS
+and the §F8 D/t limit, as slice 1 already does. Compression uses Table
+B4.1a round HSS, λr = 0.11E/Fy. Slender in either is a hard stop that names
+the element, the ratio and the limit. Compression has no noncompact
+category. A noncompact section in flexure computes and is flagged, as in
+slice 1.
+
+**Capacities:**
+- Compression: Fe per Eq. E3-4, then Fcr per Eq. E3-2 or Eq. E3-3,
+  whichever applies at 4.71√(E/Fy). Pn = Fcr·Ag (Eq. E3-1), and Pc = Pn/Ωc
+  (§E1).
+- Tension: Pn = Fy·Ag (Eq. D2-1), and Pt = Pn/Ωt (§D2).
+- Flexure: Mn per §F8 through the existing flexural-capacity code, with
+  Mc = Mn/Ωb.
+
+**Envelope.** Both guard loads apply at the top of the post (brief,
+loads-and-envelope.md). The concentrated load is P. The distributed load
+reaches the post as w·s. These are separate load types, never concurrent,
+and the exemption flag removes the distributed load, as in slice 1.
+
+| Case | Axial Pr at top of baseplate | Moment Mr | Check 5 | Check 6 |
+| --- | --- | --- | --- | --- |
+| Downward | D + L, compression | 0 | Pr/Pc (D8) | Listed: vertical, no lateral deflection |
+| Outward, inward | D, compression | L·(h − t_p) | §H1.1, plus αPr/Pe (D1) | L only |
+| Longitudinal | D, compression | L·(h − t_p) | §H1.1, plus αPr/Pe (D1) | L only |
+| Upward | 1.0L − 0.6D, tension | 0 | Pr/Pt (D8) | Listed: vertical, no lateral deflection |
+
+- Downward, outward, inward and longitudinal use the ASCE 7-22 ASD D + L
+  combination (`asce7.combo.asd.D_plus_L`).
+- Upward uses 0.6D + 1.0L, labeled engineering judgement. It reuses
+  `ej.combo.bending.upward`. The entry's note is broadened to say the same
+  combination applies to the post's axial load. Notes do not print, and the
+  printed cite already says "upward case".
+- If 0.6D ≥ L, the upward case shows "no net tension; compression covered
+  by downward" and is not checked.
+- Outward and inward are identical for a round post, and longitudinal
+  equals transverse. All are listed so the envelope is explicit, and
+  longitudinal is a real, checked case for the post. For the top rail it
+  stays "rail carries axially; not checked".
+- In the moment cases, Pr/Pc selects Eq. H1-1a (Pr/Pc ≥ 0.2) or Eq. H1-1b.
+
+**Deflection (Check 6)**: Δ = V·(h − t_p)³/(3EI), live load only
+(`ej.combo.deflection.L_only`), in the three horizontal cases. The limit is
+(h − t_p)/60 unless edited, or "Bypassed by engineer" when bypassed. The
+entry `ej.deflection.limit` is reworded to cover both uses: the rail span,
+and the post cantilever length h − t_p. A reworded entry goes back to
+drafted, so if Micah has verified it by then, it needs verifying again.
+
+### Output (PDF)
+
+The existing layout, extended:
+
+- **Dimensions:** h, t_p, h − t_p, Lc.
+- **Section properties:** a post block beside the rail block.
+- **Loading:** the post dead load line and D at the post.
+- **Checks 5 and 6:** they follow Checks 1 and 2, with the same structure:
+  an envelope table (Check 5 adds the αPr/Pe column), then the full calc
+  lines for the controlling case, ending with the ratio and OK or NG. The
+  Check 5 lines name the interaction equation used, or state that the case
+  is axial only.
+- **Summary table:** rows for Checks 1, 2, 5 and 6.
+
+Checks 3, 4 and 7 and the reactions are not printed.
+
+## Registry entries this slice will draft
+
+Each is drafted with its exact citation and source, and listed in the
+review list. Equation numbers and table cases below are from memory, and
+the entries record them for verification.
+
+- AISC 360-22 §E1: Ωc
+- §E3: Eq. E3-1, Eq. E3-2, Eq. E3-3, Eq. E3-4, and the 4.71√(E/Fy) branch
+  limit
+- §E2 User Note: Lc/r ≤ 200 recommended (provision text, for the D6 flag)
+- Table B4.1a, round HSS in compression: λr
+- Commentary Appendix 7, Table C-A-7.1: K = 2.1, the recommended design
+  value for a fixed-free column
+- §D2: Eq. D2-1 and Ωt
+- §H1.1: Eq. H1-1a, Eq. H1-1b, and the Pr/Pc = 0.2 threshold
+- Appendix 8: α = 1.6 for ASD, and the Pe expression
+- Engineering judgement (source "engineer"): Pe computed at Lc = 2.1h; the
+  0.05 limit together with the printed sentence (D1)
+- AISC Manual Table 3-23, cantilever with a concentrated load at the free
+  end: maximum moment and free-end deflection, with case numbers
+- Reworded: `ej.deflection.limit`. Note broadened (no printed change):
+  `ej.combo.bending.upward`.
+
+That is about 20 entries, within the roadmap's estimate of 18–23.
+
+## Tests
+
+- **Test cases 2 and 3 (Micah's hand calcs):** a Pipe1-1/2STD post and a
+  Pipe2STD post (D7). Micah picks the rail, span and h, and does the hand
+  calc before seeing tool output. Hand values to record for each:
+  - post section properties used, including r; D_post and D at the post
+  - Lc, Lc/r, Fe, Fcr (and which equation), Pn, Pc, Pt, Mn, Mc
+  - for each envelope case: Pr, Mr, the equation used and the ratio
+  - αPr/Pe for each moment case
+  - for each horizontal case: Δ, plus Δ_allow and each ratio
+  - the controlling direction for each check
+
+  The Check 1 and 2 values are optional in these cases. Every value
+  recorded must fall within 0.5% relative of the tool's. A mismatch is a
+  rule 2 stop.
+- **Test case 1:** post inputs added (D9). Its existing hand values pass
+  unchanged.
+- **Hard stops:**
+  - slender in compression (B4.1a) stops, naming the ratio and the limit
+  - αPr/Pe > 0.05 in a moment case stops, naming the case, the ratio and
+    the limit
+  - a downward case with αPr/Pe > 0.05 does not stop (Pipe1-1/2STD at
+    h = 42 in with a 7'-0" span, distributed load), so the D1 scope is held
+  - t_p ≥ h is rejected at input
+- **Flags and branches:**
+  - Lc/r > 200 prints the flag and the calc continues (Pipe1STD at
+    h = 42 in)
+  - the upward case with no net tension shows the "no net tension" status
+  - the downward ratio is Pr/Pc, not the H1-1b value
+- **Eq. H1-1a is tested for machinery only.** In the moment cases Pr is
+  dead load only, so no realistic guard post reaches Pr/Pc ≥ 0.2, and both
+  hand cases will use H1-1b. H1-1a gets a same-author arithmetic test, like
+  F8-2 in slice 1. This gap has no realistic trigger in v1 and is recorded
+  here rather than as an issue.
+
+## Build order
+
+The branch is `slice-2`. Each step is committed and pushed when its tests
+pass.
+
+1. **Issue #4 cleanup** (the `.magnitude` sign test, the stale
+   docs/BRIEF.md references, the stale registry note). All existing tests
+   pass unchanged.
+2. **Project file:** the post, geometry and deflection.post fields, with
+   validation. Update test case 1 and `examples/slice-1.toml` (D9).
+3. **Registry entries** drafted, and the review list updated.
+4. **Post section:** add `r` to the pipe section type; build the post dead
+   load and D at the post.
+5. **Check 5:** B4.1a classification, Chapter E, §D2, §H1.1, the envelope,
+   the αPr/Pe line and stop, and the Lc/r flag.
+6. **Check 6:** cantilever deflection over the horizontal cases.
+7. **Report:** dimensions, section properties, loading, the Check 5 and 6
+   pages, and the summary rows.
+8. **Test cases 2 and 3** wired in with Micah's hand values.
+9. **Pull request** to main, with the calc-code-review skill run on the
+   branch first.
+
+## What Micah does
+
+- Choose the rail, span and h for test cases 2 and 3, and do the hand calcs.
+- Verify the entries this slice drafts, as the slice closes (roadmap,
+  "Registry verification along the way").
+- Backcheck the slice PDF, and approve the pull request.
+
+## Done when
+
+- `uv run handrail calc examples/slice-1.toml` produces a PDF with Checks 1,
+  2, 5 and 6 as described above.
+- All tests pass, including test cases 1, 2 and 3 at 0.5%.
+- Micah has backchecked the PDF and agrees with it.
+- Micah has verified this slice's registry entries.
+
+## Not in slice 2
+
+- Checks 3, 4 and 7, welds, and the intermediate rail
+- Anchor reaction sets, baseplate B × N, and baseplate grade
+- Cb and every LTB provision (D5)
+- Appendix 8 amplification (D1)
+- Sections other than AISC pipe, and grades other than A53 Gr B
+- The input form
