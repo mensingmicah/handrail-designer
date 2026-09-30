@@ -174,10 +174,10 @@ def test_unsupported_grade_is_refused():
         checks.run(p, Registry())
 
 
-def test_drafted_entries_used_are_tracked():
+def test_entries_used_are_tracked():
     reg = Registry()
     checks.run(project(), reg)
-    used = {e.id for e in reg.drafted_used}
+    used = {e.id for e in reg.used}
     for needed in ("asce7.guard.concentrated", "asce7.guard.uniform", "material.A53_GrB.Fy",
                    "aisc360.F1.omega_b", "aisc360.eq.F8-1", "aisc_manual.t3-23.case7.M",
                    "aisc_manual.t3-23.case1.delta", "asce7.combo.asd.D_plus_L"):
@@ -244,7 +244,7 @@ def test_eq_F8_2_is_listed_as_used_only_for_a_noncompact_section(section, span, 
     reg = Registry()
     res = checks.run(project(section=section, span=span), reg)
     assert bool(res.checks[0].flags) is listed  # noncompact flag raised only for Pipe26STD
-    used = {e.id for e in reg.drafted_used}
+    used = {e.id for e in reg.used}
     assert ("aisc360.eq.F8-2" in used) is listed
     assert ("aisc360.eq.F8-2.coeff" in used) is listed
 

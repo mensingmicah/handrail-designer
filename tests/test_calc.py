@@ -81,7 +81,7 @@ def test_registry_coefficients_are_cited_and_tracked():
     sheet.line("x", E / Fy, note="", cite_ids=("material.steel.E",))
     assert sheet.lines[-1].cite == "AISC 360-22, Symbols"
     assert sheet.lines[-1].value == pytest.approx(29000 / 35)  # dimensionless -> float
-    assert "material.steel.E" in [e.id for e in reg.drafted_used]
+    assert "material.steel.E" in [e.id for e in reg.used]
 
 
 def test_mixing_incompatible_units_raises():

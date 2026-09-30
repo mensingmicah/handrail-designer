@@ -34,40 +34,8 @@
 # ---------------------------------------------------------------------------
 review = [
   "material.steel.density",
-  "material.steel.E",
-  "material.grades.pipe",
   "material.grades.hss_round",
   "material.grades.hss_rect",
-  "asce7.guard.uniform.exemption.intro",
-  "asce7.guard.uniform.exemption.1",
-  "asce7.guard.uniform.exemption.2",
-  "asce7.guard.uniform.exemption.3",
-  "asce7.guard.concentrated",
-  "asce7.guard.uniform",
-  "asce7.combo.asd.D_plus_L",
-  "material.A53_GrB.Fy",
-  "aisc360.pipe_as_round_hss",
-  "aisc360.F1.omega_b",
-  "aisc360.B4.1b.round_hss.lambda_p",
-  "aisc360.B4.1b.round_hss.lambda_r",
-  "aisc360.B4.1b.classification",
-  "aisc360.F8.applicability",
-  "aisc360.F8.nominal_strength",
-  "aisc360.eq.F8-1",
-  "aisc360.eq.F8-2",
-  "aisc360.eq.F8-2.coeff",
-  "aisc_manual.t3-23.case1.M",
-  "aisc_manual.t3-23.case1.delta",
-  "aisc_manual.t3-23.case7.M",
-  "aisc_manual.t3-23.case7.delta",
-  "aisc360.eq.B3-2",
-  "ej.bending.srss_round",
-  "ej.combo.bending.upward",
-  "ej.combo.deflection.D_plus_L",
-  "ej.combo.deflection.L_only",
-  "ej.deflection.limit",
-  "aisc360.B3.2.asd",
-  "aisc360.F8.no_ltb",
 ]
 
 # ---------------------------------------------------------------------------
@@ -100,7 +68,8 @@ to cite. Separate warning: tabulated W for HSS and PIPE is about 3.57 to \
 3.78 times A (515 to 545 lb/ft^3 equivalent), because W is computed from \
 nominal wall and A from design wall. Density times A is therefore not the \
 tabulated weight for those shapes; see the brief's dead-load bullet for \
-custom sections."""
+custom sections. \
+Review 2026-09-30, Micah: Unsure. 'this is just engineering practice not really covered in AISC I would just state that this is an assumed or engineering judgement value'"""
 
 [[entry]]
 id = "material.steel.E"
@@ -111,10 +80,10 @@ document = "AISC 360-22, Specification for Structural Steel Buildings"
 edition = "2022"
 section = "Symbols (definition of E, modulus of elasticity of steel); the same definition is repeated in the nomenclature of the member chapters, for example Chapter F"
 source = "https://user.eng.umd.edu/~ccfu/ref/a360-16-spec-and-commentary.pdf"
-status = "drafted"
+status = "verified"
 drafted_on = 2026-09-30
-verified_by = ""
-verified_date = ""
+verified_by = "Micah Mensing"
+verified_date = 2026-09-30
 note = """
 Value 29,000 ksi supplied by Micah in the design interview and it matches \
 the AISC text I found: "E = modulus of elasticity of steel = 29,000 ksi \
@@ -140,10 +109,10 @@ document = "AISC Steel Construction Manual"
 edition = "16th Edition"
 section = "Part 2, Table 2-4, Applicable ASTM Specifications for Various Structural Shapes, Pipe column"
 source = "memory"
-status = "drafted"
+status = "verified"
 drafted_on = 2026-09-30
-verified_by = ""
-verified_date = ""
+verified_by = "Micah Mensing"
+verified_date = 2026-09-30
 note = """
 From memory. Secondary web pages (a Table 2-4 tutorial and a search \
 summary) agree that the preferred pipe specification is A53 Gr B with Fy = 35 \
@@ -171,7 +140,12 @@ specifications, but I could not open the table. Lower confidence: the \
 grade names for A501, A618 and A1065 (the A1065 grades in particular), and \
 whether each is marked for round HSS. The tool offers only A500 Gr B and \
 Gr C in v1; the other members matter only for the unusual-pairing warning. \
-Check this one against the printed table."""
+Check this one against the printed table. \
+Review 2026-09-30, Micah: Unsure. 'A500 gr. B should just be the default. I wouldn’t incude any unusual specifications for now, just A36 a500B/C a53 a992 a572. Table reference is correct' \
+Decision 2026-09-30, Micah: leave drafted and settle in slice 5. Fy and Fu \
+for each grade belong in separate entries, not in this list. Which grades \
+the tool offers, and the default, are brief decisions; this entry only \
+mirrors the Table 2-4 column."""
 
 [[entry]]
 id = "material.grades.hss_rect"
@@ -190,7 +164,12 @@ note = """
 From memory, same confidence as material.grades.hss_round. Web summaries give \
 A500 Gr B as the rectangular HSS entry with Fy = 46 ksi and Fu = 58 ksi. I \
 wrote the same members as for round HSS but I do not know that the two \
-columns match; check them separately against the printed table."""
+columns match; check them separately against the printed table. \
+Review 2026-09-30, Micah: Wrong. 'A500 gr. B differs from found to rectangular, Fy for round is 46 and Fy for rectangular is 50 different FU values as well. Table reference is correct'. Correction not applied: it gives Fy and Fu values, not a corrected grade list, and those values need confirming (see the PR). \
+Decision 2026-09-30, Micah: leave drafted and settle in slice 5. Fy and Fu \
+for each grade belong in separate entries, not in this list. Which grades \
+the tool offers, and the default, are brief decisions; this entry only \
+mirrors the Table 2-4 column."""
 
 # ---------------------------------------------------------------------------
 # ASCE 7-22 guard loads: distributed-load exemption (info box text)
@@ -208,10 +187,10 @@ document = "ASCE/SEI 7-22, Minimum Design Loads and Associated Criteria for Buil
 edition = "2022"
 section = "§4.5.1.1, Exceptions"
 source = "memory"
-status = "drafted"
+status = "verified"
 drafted_on = 2026-09-30
-verified_by = ""
-verified_date = ""
+verified_by = "Micah Mensing"
+verified_date = 2026-09-30
 note = "Paraphrase."
 
 [[entry]]
@@ -223,10 +202,10 @@ document = "ASCE/SEI 7-22, Minimum Design Loads and Associated Criteria for Buil
 edition = "2022"
 section = "§4.5.1.1, Exception 1"
 source = "memory"
-status = "drafted"
+status = "verified"
 drafted_on = 2026-09-30
-verified_by = ""
-verified_date = ""
+verified_by = "Micah Mensing"
+verified_date = 2026-09-30
 note = "Paraphrase."
 
 [[entry]]
@@ -238,10 +217,10 @@ document = "ASCE/SEI 7-22, Minimum Design Loads and Associated Criteria for Buil
 edition = "2022"
 section = "§4.5.1.1, Exception 2"
 source = "memory"
-status = "drafted"
+status = "verified"
 drafted_on = 2026-09-30
-verified_by = ""
-verified_date = ""
+verified_by = "Micah Mensing"
+verified_date = 2026-09-30
 note = """
 CHECK THIS ONE FIRST. The wording is from my memory of ASCE 7-16. A \
 search-engine summary of the ASCE 7-22 text on ASCE Amplify (login-gated, \
@@ -259,10 +238,10 @@ document = "ASCE/SEI 7-22, Minimum Design Loads and Associated Criteria for Buil
 edition = "2022"
 section = "§4.5.1.1, Exception 3"
 source = "https://amplify.asce.org/popup-data?apath=%2Fasceworks%2Fstandard%2F9780784415788%2Fpart%2Fprovisions%2Fstandard-chapter%2Fs4%2Fstandard-sec-ver%2Fs4.5.1.1.ver.atom"
-status = "drafted"
+status = "verified"
 drafted_on = 2026-09-30
-verified_by = ""
-verified_date = ""
+verified_by = "Micah Mensing"
+verified_date = 2026-09-30
 note = """
 Not in my memory of ASCE 7-16; new in 7-22 as far as I can tell. The \
 wording comes from a search-engine summary of the linked page, which is \
@@ -284,10 +263,10 @@ document = "ASCE/SEI 7-22, Minimum Design Loads and Associated Criteria for Buil
 edition = "2022"
 section = "§4.5.1, Loads on Handrail and Guard Systems (single concentrated load applied in any direction at any point on the handrail or top rail)"
 source = "memory"
-status = "drafted"
+status = "verified"
 drafted_on = 2026-09-30
-verified_by = ""
-verified_date = ""
+verified_by = "Micah Mensing"
+verified_date = 2026-09-30
 note = """
 200 lb from memory. A web search summary (not the standard itself) places \
 the concentrated load in the parent §4.5.1, the uniform load in §4.5.1.1 and \
@@ -303,10 +282,10 @@ document = "ASCE/SEI 7-22, Minimum Design Loads and Associated Criteria for Buil
 edition = "2022"
 section = "§4.5.1.1, Uniform Load (applied in any direction along the handrail or top rail; not concurrent with the §4.5.1 concentrated load)"
 source = "memory"
-status = "drafted"
+status = "verified"
 drafted_on = 2026-09-30
-verified_by = ""
-verified_date = ""
+verified_by = "Micah Mensing"
+verified_date = 2026-09-30
 note = """
 50 lb/ft from memory; a web search summary of the ASCE Amplify page for \
 §4.5.1.1 (login-gated, not read directly) agrees, including that it need not \
@@ -322,10 +301,10 @@ document = "ASCE/SEI 7-22, Minimum Design Loads and Associated Criteria for Buil
 edition = "2022"
 section = "§2.4.1, Basic Combinations (allowable stress design), combination 2: D + L"
 source = "memory"
-status = "drafted"
+status = "verified"
 drafted_on = 2026-09-30
-verified_by = ""
-verified_date = ""
+verified_by = "Micah Mensing"
+verified_date = 2026-09-30
 note = """
 From memory of the §2.4.1 list in ASCE 7-16; I believe 7-22 keeps D + L as \
 combination 2 of §2.4.1 but have not seen the 7-22 text. Used for the \
@@ -346,10 +325,10 @@ document = "AISC Steel Construction Manual"
 edition = "16th Edition"
 section = "Part 2, Table 2-4, Applicable ASTM Specifications for Various Structural Shapes, Pipe, ASTM A53 Gr B, minimum yield stress Fy"
 source = "memory"
-status = "drafted"
+status = "verified"
 drafted_on = 2026-09-30
-verified_by = ""
-verified_date = ""
+verified_by = "Micah Mensing"
+verified_date = 2026-09-30
 note = """
 From memory; secondary web summaries noted under material.grades.pipe also \
 give Fy = 35 ksi for A53 Gr B. I did not open the table."""
@@ -358,22 +337,28 @@ give Fy = 35 ksi for A53 Gr B. I did not open the table."""
 id = "aisc360.pipe_as_round_hss"
 value = "ASTM A53 Gr B pipe may be designed using the provisions of the Specification for round HSS."
 unit = "provision"
-cite = "AISC 360-22 §A3.1a, User Note"
-document = "AISC 360-22, Specification for Structural Steel Buildings"
-edition = "2022"
-section = "§A3.1a, Structural Steel Materials, User Note (location not confirmed)"
-source = "memory"
-status = "drafted"
+cite = "AISC Manual Table 2-4"
+document = "AISC Steel Construction Manual"
+edition = "16th Edition"
+section = "Part 2, Table 2-4, Applicable ASTM Specifications for Various Structural Shapes, HSS column heading over the pipe specification (heading wording not seen by the drafter)"
+source = "engineer"
+status = "verified"
 drafted_on = 2026-09-30
-verified_by = ""
-verified_date = ""
+verified_by = "Micah Mensing"
+verified_date = 2026-09-30
 note = """
 Paraphrase. A web search summary confirms a 360-22 User Note allowing A53 \
 Gr B pipe to be designed as round HSS, but I am not sure which section \
 holds it; §A3.1a is my best guess. This is the basis for applying \
 Table B4.1b round HSS limits and §F8 to AISC pipe. The database tdes for \
 pipe already reflects the 0.93 tnom reduction, and the tool uses the \
-database properties as published."""
+database properties as published. \
+Review 2026-09-30, Micah: Wrong. 'this is just defined in the code it doesn’t need a code section'. Correction not applied: pending a decision on whether to drop the provision or cite the A3.1a listing (see the PR). \
+Decision 2026-09-30, Micah: keep the entry. The permission is stated in \
+several places; cite the Table 2-4 HSS heading. Re-cited from 360-22 \
+§A3.1a User Note to Manual Table 2-4; source changed to engineer since \
+Micah supplied the location. Value text unchanged: confirm on \
+verification that the paraphrase matches what the heading supports."""
 
 # ---------------------------------------------------------------------------
 # AISC 360-22 flexure: round HSS (and pipe, per aisc360.pipe_as_round_hss)
@@ -383,16 +368,20 @@ database properties as published."""
 id = "aisc360.F1.omega_b"
 value = 1.67
 unit = ""
-cite = "AISC 360-22 §F1"
+cite = "AISC 360-22 §F1(a)"
 document = "AISC 360-22, Specification for Structural Steel Buildings"
 edition = "2022"
-section = "§F1, General Provisions: safety factor for flexure, Omega_b = 1.67 (ASD)"
+section = "§F1(a), General Provisions: safety factor for flexure, Omega_b = 1.67 (ASD)"
 source = "memory"
-status = "drafted"
+status = "verified"
 drafted_on = 2026-09-30
-verified_by = ""
-verified_date = ""
-note = "From memory; unchanged from 360-10 and 360-16 as far as I know."
+verified_by = "Micah Mensing"
+verified_date = 2026-09-30
+note = """
+From memory; unchanged from 360-10 and 360-16 as far as I know. \
+Review 2026-09-30, Micah: Wrong; correction 'technically F1.(a)'. Section \
+changed from §F1 to §F1(a); value unchanged. Left drafted until Micah \
+verifies the corrected citation."""
 
 [[entry]]
 id = "aisc360.B4.1b.round_hss.lambda_p"
@@ -403,10 +392,10 @@ document = "AISC 360-22, Specification for Structural Steel Buildings"
 edition = "2022"
 section = "Table B4.1b, Width-to-Thickness Ratios: Compression Elements, Members Subject to Flexure; round HSS, limiting ratio lambda_p = 0.07E/Fy"
 source = "memory"
-status = "drafted"
+status = "verified"
 drafted_on = 2026-09-30
-verified_by = ""
-verified_date = ""
+verified_by = "Micah Mensing"
+verified_date = 2026-09-30
 note = """
 Coefficient on E/Fy. A web search summary agrees with 0.07E/Fy. I am not \
 sure of the case number: 20 is my memory of 360-16 and I have not seen the \
@@ -421,10 +410,10 @@ document = "AISC 360-22, Specification for Structural Steel Buildings"
 edition = "2022"
 section = "Table B4.1b, Members Subject to Flexure; round HSS, limiting ratio lambda_r = 0.31E/Fy"
 source = "memory"
-status = "drafted"
+status = "verified"
 drafted_on = 2026-09-30
-verified_by = ""
-verified_date = ""
+verified_by = "Micah Mensing"
+verified_date = 2026-09-30
 note = "Coefficient on E/Fy; same confidence and case-number caveat as lambda_p."
 
 [[entry]]
@@ -436,11 +425,13 @@ document = "AISC 360-22, Specification for Structural Steel Buildings"
 edition = "2022"
 section = "§B4.1b, classification of sections for local buckling, members subject to flexure"
 source = "memory"
-status = "drafted"
+status = "verified"
 drafted_on = 2026-09-30
-verified_by = ""
-verified_date = ""
-note = "Paraphrase from memory of 360-16 §B4.1b."
+verified_by = "Micah Mensing"
+verified_date = 2026-09-30
+note = """
+Paraphrase from memory of 360-16 §B4.1b. \
+Review 2026-09-30, Micah: Unsure. 'not really sure what this means, the limiting rations are from table 4.1b? Should be AISC 360-22'"""
 
 [[entry]]
 id = "aisc360.F8.applicability"
@@ -451,10 +442,10 @@ document = "AISC 360-22, Specification for Structural Steel Buildings"
 edition = "2022"
 section = "§F8, Round HSS, scope: applies to round HSS having D/t less than 0.45E/Fy"
 source = "memory"
-status = "drafted"
+status = "verified"
 drafted_on = 2026-09-30
-verified_by = ""
-verified_date = ""
+verified_by = "Micah Mensing"
+verified_date = 2026-09-30
 note = "Coefficient on E/Fy, from memory of 360-16 §F8."
 
 [[entry]]
@@ -466,10 +457,10 @@ document = "AISC 360-22, Specification for Structural Steel Buildings"
 edition = "2022"
 section = "§F8, Round HSS, introductory text and §F8.2 Local Buckling (a)"
 source = "memory"
-status = "drafted"
+status = "verified"
 drafted_on = 2026-09-30
-verified_by = ""
-verified_date = ""
+verified_by = "Micah Mensing"
+verified_date = 2026-09-30
 note = "Paraphrase from memory of 360-16 §F8."
 
 [[entry]]
@@ -481,10 +472,10 @@ document = "AISC 360-22, Specification for Structural Steel Buildings"
 edition = "2022"
 section = "§F8.1, Yielding, Equation F8-1"
 source = "memory"
-status = "drafted"
+status = "verified"
 drafted_on = 2026-09-30
-verified_by = ""
-verified_date = ""
+verified_by = "Micah Mensing"
+verified_date = 2026-09-30
 note = "From memory of 360-16; equation number assumed unchanged in 360-22."
 
 [[entry]]
@@ -496,10 +487,10 @@ document = "AISC 360-22, Specification for Structural Steel Buildings"
 edition = "2022"
 section = "§F8.2(b), Local Buckling, sections with noncompact walls, Equation F8-2"
 source = "memory"
-status = "drafted"
+status = "verified"
 drafted_on = 2026-09-30
-verified_by = ""
-verified_date = ""
+verified_by = "Micah Mensing"
+verified_date = 2026-09-30
 note = "From memory of 360-16; the coefficient is aisc360.eq.F8-2.coeff."
 
 [[entry]]
@@ -511,10 +502,10 @@ document = "AISC 360-22, Specification for Structural Steel Buildings"
 edition = "2022"
 section = "§F8.2(b), Equation F8-2: coefficient on E/(D/t)"
 source = "memory"
-status = "drafted"
+status = "verified"
 drafted_on = 2026-09-30
-verified_by = ""
-verified_date = ""
+verified_by = "Micah Mensing"
+verified_date = 2026-09-30
 note = "From memory of 360-16."
 
 # ---------------------------------------------------------------------------
@@ -530,10 +521,10 @@ document = "AISC Steel Construction Manual"
 edition = "16th Edition"
 section = "Part 3, Table 3-23, Case 1, Simple Beam - Uniformly Distributed Load, M max (at center)"
 source = "memory"
-status = "drafted"
+status = "verified"
 drafted_on = 2026-09-30
-verified_by = ""
-verified_date = ""
+verified_by = "Micah Mensing"
+verified_date = 2026-09-30
 note = "Case number corroborated by a web search summary; not read from the Manual."
 
 [[entry]]
@@ -545,10 +536,10 @@ document = "AISC Steel Construction Manual"
 edition = "16th Edition"
 section = "Part 3, Table 3-23, Case 1, Simple Beam - Uniformly Distributed Load, Delta max (at center)"
 source = "memory"
-status = "drafted"
+status = "verified"
 drafted_on = 2026-09-30
-verified_by = ""
-verified_date = ""
+verified_by = "Micah Mensing"
+verified_date = 2026-09-30
 note = "Same confidence as aisc_manual.t3-23.case1.M."
 
 [[entry]]
@@ -560,10 +551,10 @@ document = "AISC Steel Construction Manual"
 edition = "16th Edition"
 section = "Part 3, Table 3-23, Case 7, Simple Beam - Concentrated Load at Center, M max (at point of load)"
 source = "memory"
-status = "drafted"
+status = "verified"
 drafted_on = 2026-09-30
-verified_by = ""
-verified_date = ""
+verified_by = "Micah Mensing"
+verified_date = 2026-09-30
 note = "Case number corroborated by a web search summary; not read from the Manual."
 
 [[entry]]
@@ -575,10 +566,10 @@ document = "AISC Steel Construction Manual"
 edition = "16th Edition"
 section = "Part 3, Table 3-23, Case 7, Simple Beam - Concentrated Load at Center, Delta max (at point of load)"
 source = "memory"
-status = "drafted"
+status = "verified"
 drafted_on = 2026-09-30
-verified_by = ""
-verified_date = ""
+verified_by = "Micah Mensing"
+verified_date = 2026-09-30
 note = "Same confidence as aisc_manual.t3-23.case7.M."
 
 [[entry]]
@@ -590,10 +581,10 @@ document = "AISC 360-22, Specification for Structural Steel Buildings"
 edition = "2022"
 section = "§B3.2, Design for Strength Using Allowable Strength Design (ASD), Equation B3-2"
 source = "memory"
-status = "drafted"
+status = "verified"
 drafted_on = 2026-09-30
-verified_by = ""
-verified_date = ""
+verified_by = "Micah Mensing"
+verified_date = 2026-09-30
 note = "From memory of 360-16 §B3.2; equation number assumed unchanged in 360-22. Cited on the Mn/Omega_b line and the bending ratio."
 
 # ---------------------------------------------------------------------------
@@ -614,10 +605,10 @@ document = "Engineering decision of the engineer of record"
 edition = "docs/BRIEF.md"
 section = "Engineering decisions already made: biaxial bending (round HSS and pipe, and every round section)"
 source = "engineer"
-status = "drafted"
+status = "verified"
 drafted_on = 2026-09-30
-verified_by = ""
-verified_date = ""
+verified_by = "Micah Mensing"
+verified_date = 2026-09-30
 note = "Exact for a round section, which has the same capacity about every axis."
 
 [[entry]]
@@ -629,10 +620,10 @@ document = "Engineering decision of the engineer of record"
 edition = "docs/BRIEF.md"
 section = "Engineering decisions already made: upward case uses a minimum-dead-load ASD combination, net on the vertical axis"
 source = "engineer"
-status = "drafted"
+status = "verified"
 drafted_on = 2026-09-30
-verified_by = ""
-verified_date = ""
+verified_by = "Micah Mensing"
+verified_date = 2026-09-30
 note = "ASCE 7-22 has no combination for this case; crediting reduced dead load is deliberate (brief)."
 
 [[entry]]
@@ -644,10 +635,10 @@ document = "Engineering decision of the engineer of record"
 edition = "docs/BRIEF.md"
 section = "Checks, 2: top rail deflection, downward case D + L on the vertical axis"
 source = "engineer"
-status = "drafted"
+status = "verified"
 drafted_on = 2026-09-30
-verified_by = ""
-verified_date = ""
+verified_by = "Micah Mensing"
+verified_date = 2026-09-30
 note = "Serviceability, not an ASD strength combination; labeled engineering judgement per Micah (PR #2 ruling)."
 
 [[entry]]
@@ -659,10 +650,10 @@ document = "Engineering decision of the engineer of record"
 edition = "docs/BRIEF.md; docs/plans/slice-1.md D2"
 section = "Checks, 2: horizontal cases live load only; upward case live load only (plan D2)"
 source = "engineer"
-status = "drafted"
+status = "verified"
 drafted_on = 2026-09-30
-verified_by = ""
-verified_date = ""
+verified_by = "Micah Mensing"
+verified_date = 2026-09-30
 note = "Dead load is on the other axis for the horizontal cases, and is not credited against the upward case."
 
 [[entry]]
@@ -674,10 +665,10 @@ document = "Engineering decision of the engineer of record"
 edition = "docs/BRIEF.md"
 section = "Inputs: deflection limits (engineering experience, not code)"
 source = "engineer"
-status = "drafted"
+status = "verified"
 drafted_on = 2026-09-30
-verified_by = ""
-verified_date = ""
+verified_by = "Micah Mensing"
+verified_date = 2026-09-30
 note = "The default ratio (120) is an input default in the project reader, not a code value."
 
 # ---------------------------------------------------------------------------
@@ -693,15 +684,16 @@ document = "AISC 360-22, Specification for Structural Steel Buildings"
 edition = "2022"
 section = "§B3.2, Design for Strength Using Allowable Strength Design (ASD)"
 source = "memory"
-status = "drafted"
+status = "verified"
 drafted_on = 2026-09-30
-verified_by = ""
-verified_date = ""
+verified_by = "Micah Mensing"
+verified_date = 2026-09-30
 note = """
 The design method the member checks use, printed in the front matter as \
 "Design method: ASD per AISC 360-22 §B3.2". Section number from memory of \
 360-16 §B3.2 (360-16 §B3.1 is LRFD); assumed unchanged in 360-22. The \
-references list still names only the specification (docs/BRIEF.md)."""
+references list still names only the specification (docs/BRIEF.md). \
+Review 2026-09-30, Micah: Unsure. 'not really sure what this is. ASD is just a design procedute.'"""
 
 [[entry]]
 id = "aisc360.F8.no_ltb"
@@ -712,10 +704,10 @@ document = "AISC 360-22, Specification for Structural Steel Buildings"
 edition = "2022"
 section = "§F8, Round HSS: limit states listed (yielding, §F8.1; local buckling, §F8.2)"
 source = "memory"
-status = "drafted"
+status = "verified"
 drafted_on = 2026-09-30
-verified_by = ""
-verified_date = ""
+verified_by = "Micah Mensing"
+verified_date = 2026-09-30
 note = """
 Paraphrase from memory of 360-16 §F8, which lists only yielding and local \
 buckling for round HSS. Stated as its own entry so Check 1 can print it \

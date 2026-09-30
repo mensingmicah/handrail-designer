@@ -1,5 +1,7 @@
 """PDF rendering: stamps, footer, and a real compile (dev section, not test case 1)."""
 
+import dataclasses
+
 import pytest
 
 from handrail import checks, dimensions, report
@@ -15,16 +17,22 @@ def run(**kw):
     return checks.run(p, reg), reg
 
 
+def mark_drafted(reg, *ids):
+    """Treat entries as drafted, so these tests don't depend on the live review status."""
+    for i in ids:
+        reg.entries[i] = dataclasses.replace(reg.entries[i], status="drafted")
+
+
 CLEAN = Stamp("0.1.0", "abc1234", False, "def5678", False)
 DIRTY = Stamp("0.1.0", "abc1234", True, "def5678", True)
 
 
 def test_draft_stamp_and_list_of_drafted_entries_used():
     res, reg = run()
+    mark_drafted(reg, "aisc360.F1.omega_b", "asce7.guard.uniform.exemption.2")
     src = report.build_source(res, reg, CLEAN)
     assert "#let draft = true" in src
-    for e in reg.drafted_used:
-        assert f'"{e.id}"' in src
+    assert '"aisc360.F1.omega_b"' in src
     # entries the calc did not use are not listed
     assert '"asce7.guard.uniform.exemption.2"' not in src
 
@@ -119,6 +127,7 @@ def test_a_slash_symbol_is_refused():
 
 def test_front_matter_states_the_design_method_from_the_registry():
     res, reg = run()
+    mark_drafted(reg, "aisc360.B3.2.asd")
     src = report.build_source(res, reg, CLEAN)
     e = reg.get("aisc360.B3.2.asd")
     assert f'"Design method: {e.value} per {e.cite}"' in src

@@ -86,20 +86,27 @@ value and in the Check 5 summary row, the way a noncompact section is
 flagged, and the calc continues. A Pipe1STD post at h = 42 in reaches about
 209.
 
-**D7. Two post hand cases, one per Chapter E branch.** At h = 42 in,
-Lc = 88.2 in and 4.71√(E/Fy) = 135.6 for A53 Gr B:
+**D7. Two post hand cases, one per Chapter E branch.** Both use test case
+1's rail and span (Pipe1-1/2STD top rail, A53 Gr B, 7'-0" span, default
+loads), with h = 42 in and t_p = 1/2 in. At h = 42 in, Lc = 88.2 in and
+4.71√(E/Fy) = 135.6 for A53 Gr B:
 
-- Pipe1-1/2STD post: Lc/r = 141, Eq. E3-3 (elastic buckling).
-- Pipe2STD post: Lc/r = 112, Eq. E3-2.
+- Test case 2, Pipe1-1/2STD post: Lc/r = 141, Eq. E3-3 (elastic buckling).
+- Test case 3, Pipe2STD post: Lc/r = 112, Eq. E3-2.
 
 Both are common guard posts, so neither branch is left tested only against
-the machinery, as F8-2 was in slice 1.
+the machinery, as F8-2 was in slice 1. Case 2 is also the geometry in D1
+whose downward distributed case exceeds 0.05. So it checks, against a hand
+calc, that the second-order stop covers only the moment cases.
 
 **D8. Axial-only cases use their own chapter, not Chapter H.** Downward has
 axial compression with no moment, so its ratio is Pr/Pc (Chapter E).
 Using Eq. H1-1b with Mr = 0 would report half of that. Upward is Pr/Pt,
 with Pt from §D2 yielding on the gross section. Chapter H applies only in
-the cases that have moment.
+the cases that have moment. The ratio line carries a margin note: on
+downward, "axial only; Chapter E ratio reported", and on upward, the same
+wording with Chapter D, "axial only; Chapter D ratio reported", because the
+upward case is tension.
 
 **D9. The post is required.** From this slice on, every project file has a
 post, post height and baseplate thickness. That matches v1, which always
@@ -175,9 +182,10 @@ and the exemption flag removes the distributed load, as in slice 1.
 **Deflection (Check 6)**: Δ = V·(h − t_p)³/(3EI), live load only
 (`ej.combo.deflection.L_only`), in the three horizontal cases. The limit is
 (h − t_p)/60 unless edited, or "Bypassed by engineer" when bypassed. The
-entry `ej.deflection.limit` is reworded to cover both uses: the rail span,
-and the post cantilever length h − t_p. A reworded entry goes back to
-drafted, so if Micah has verified it by then, it needs verifying again.
+limit cites a new entry, `ej.deflection.limit.post`: allowable deflection
+is the cantilever length h − t_p divided by the limit ratio the engineer
+enters. `ej.deflection.limit` stays as it is and stays with the rail span,
+so its verification is not reopened.
 
 ### Output (PDF)
 
@@ -189,8 +197,8 @@ The existing layout, extended:
 - **Checks 5 and 6:** they follow Checks 1 and 2, with the same structure:
   an envelope table (Check 5 adds the αPr/Pe column), then the full calc
   lines for the controlling case, ending with the ratio and OK or NG. The
-  Check 5 lines name the interaction equation used, or state that the case
-  is axial only.
+  Check 5 lines name the interaction equation used. In the axial-only
+  cases, they carry the D8 margin note instead.
 - **Summary table:** rows for Checks 1, 2, 5 and 6.
 
 Checks 3, 4 and 7 and the reactions are not printed.
@@ -215,16 +223,18 @@ the entries record them for verification.
   0.05 limit together with the printed sentence (D1)
 - AISC Manual Table 3-23, cantilever with a concentrated load at the free
   end: maximum moment and free-end deflection, with case numbers
-- Reworded: `ej.deflection.limit`. Note broadened (no printed change):
-  `ej.combo.bending.upward`.
+- Engineering judgement (source "engineer"): `ej.deflection.limit.post`,
+  the post cantilever deflection limit (default L/60, an input default)
+- Note broadened (no printed change): `ej.combo.bending.upward`
 
 That is about 20 entries, within the roadmap's estimate of 18–23.
 
 ## Tests
 
-- **Test cases 2 and 3 (Micah's hand calcs):** a Pipe1-1/2STD post and a
-  Pipe2STD post (D7). Micah picks the rail, span and h, and does the hand
-  calc before seeing tool output. Hand values to record for each:
+- **Test cases 2 and 3 (Micah's hand calcs):** case 1's rail and span with
+  h = 42 in and t_p = 1/2 in. Case 2 has a Pipe1-1/2STD post, and case 3 a
+  Pipe2STD post (D7). Micah does the hand calcs before seeing tool output.
+  Hand values to record for each:
   - post section properties used, including r; D_post and D at the post
   - Lc, Lc/r, Fe, Fcr (and which equation), Pn, Pc, Pt, Mn, Mc
   - for each envelope case: Pr, Mr, the equation used and the ratio
@@ -235,20 +245,22 @@ That is about 20 entries, within the roadmap's estimate of 18–23.
   The Check 1 and 2 values are optional in these cases. Every value
   recorded must fall within 0.5% relative of the tool's. A mismatch is a
   rule 2 stop.
-- **Test case 1:** post inputs added (D9). Its existing hand values pass
-  unchanged.
+- **Test case 1:** post inputs added (D9), the same post as case 2
+  (Pipe1-1/2STD, h = 42 in, t_p = 1/2 in). Case 1 records no post values.
+  Its existing hand values pass unchanged.
 - **Hard stops:**
   - slender in compression (B4.1a) stops, naming the ratio and the limit
   - αPr/Pe > 0.05 in a moment case stops, naming the case, the ratio and
     the limit
-  - a downward case with αPr/Pe > 0.05 does not stop (Pipe1-1/2STD at
-    h = 42 in with a 7'-0" span, distributed load), so the D1 scope is held
+  - a downward case with αPr/Pe > 0.05 does not stop (test case 2's
+    geometry, distributed load), so the D1 scope is held
   - t_p ≥ h is rejected at input
 - **Flags and branches:**
   - Lc/r > 200 prints the flag and the calc continues (Pipe1STD at
     h = 42 in)
   - the upward case with no net tension shows the "no net tension" status
-  - the downward ratio is Pr/Pc, not the H1-1b value
+  - the downward ratio is Pr/Pc, not the H1-1b value, and the D8 margin
+    notes print on both axial-only cases
 - **Eq. H1-1a is tested for machinery only.** In the moment cases Pr is
   dead load only, so no realistic guard post reaches Pr/Pc ≥ 0.2, and both
   hand cases will use H1-1b. H1-1a gets a same-author arithmetic test, like
@@ -279,7 +291,7 @@ pass.
 
 ## What Micah does
 
-- Choose the rail, span and h for test cases 2 and 3, and do the hand calcs.
+- Do the hand calcs for test cases 2 and 3 (inputs set in D7).
 - Verify the entries this slice drafts, as the slice closes (roadmap,
   "Registry verification along the way").
 - Backcheck the slice PDF, and approve the pull request.
