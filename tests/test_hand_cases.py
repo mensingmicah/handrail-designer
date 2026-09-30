@@ -52,8 +52,9 @@ def tool_values(res):
         "section.Z_in3": r.Z.m_as("in^3"),
         "section.D_t": r.D_t,
         "section.w_D_plf": res.loading.w_D.m_as("lbf/ft"),
-        "check1.Mn_lbin": _line_value(c1.capacity_lines, "M_n").m_as("lbf*inch"),
-        "check1.Mn_over_Omega_lbin": _line_value(c1.capacity_lines, "M_n / Omega_b").m_as("lbf*inch"),
+        # Read from the controlling case's printed lines: compare what the PDF shows.
+        "check1.Mn_lbin": _line_value(c1.controlling.lines, "M_n").m_as("lbf*inch"),
+        "check1.Mn_over_Omega_lbin": _line_value(c1.controlling.lines, "M_n / Omega_b").m_as("lbf*inch"),
     }
     for c in c1.checked:
         v[f"check1.moment_lbin.{_case_key(c)}"] = c.demand.m_as("lbf*inch")

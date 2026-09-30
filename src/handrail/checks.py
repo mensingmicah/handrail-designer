@@ -73,7 +73,6 @@ class Check:
     demand_label: str    # Typst math
     capacity_label: str  # Typst math
     cases: list[Case] = field(default_factory=list)
-    capacity_lines: list[Line] = field(default_factory=list)
     flags: list[str] = field(default_factory=list)
     bypassed: bool = False
 
@@ -198,8 +197,18 @@ def section_lines(registry: Registry, rail: PipeSection) -> list[Line]:
 # ---------------------------------------------------------------------------
 
 
-def flexural_capacity(sh: Sheet, rail: PipeSection, grade: str) -> tuple[Sym, list[str]]:
-    """Classify the section and return M_n/Omega_b. Raises SectionStop."""
+@dataclass
+class Capacity:
+    """Allowable flexural strength, computed once and shared by every case."""
+
+    allow: Sym          # M_n/Omega_b, as a symbol the demand lines divide by
+    lines: list[Line]   # printed at the head of the controlling case
+    flags: list[str]
+
+
+def flexural_capacity(registry: Registry, rail: PipeSection, grade: str) -> Capacity:
+    """Classify the section and compute M_n/Omega_b. Raises SectionStop."""
+    sh = Sheet(registry)
     sh.decision(
         mtext(f"{rail.label}, {grade}"), "Designed as round HSS",
         "Pipe is designed under the round HSS provisions",
@@ -257,7 +266,7 @@ def flexural_capacity(sh: Sheet, rail: PipeSection, grade: str) -> tuple[Sym, li
                      cite_ids=("aisc360.F8.nominal_strength",), unit="lbf*inch")
     Om = sh.code_value("Omega_b", "aisc360.F1.omega_b", "Safety factor for flexure (ASD)")
     Ma = sh.line("M_n / Omega_b", Mn / Om, "Allowable flexural strength", unit="lbf*inch")
-    return Ma, flags
+    return Capacity(allow=Ma, lines=sh.lines, flags=flags)
 
 
 def _live_moment(sh: Sheet, load_type: str, L: Sym, loading: Loading) -> Sym:
@@ -278,10 +287,11 @@ BENDING_COMBO = {
 }
 
 
-def _bending_case(registry, project, rail, loading, direction, load_type) -> Case:
+def _bending_case(registry, project, rail, loading, cap: Capacity, direction, load_type) -> Case:
     sh = Sheet(registry)
     sh.heading("Capacity")
-    Ma_allow, _ = flexural_capacity(sh, rail, project.top_rail.grade)
+    sh.lines.extend(cap.lines)
+    Ma_allow = cap.allow
     sh.heading(f"Demand: {direction.lower()}, {load_type.lower()} load")
     L = sh.given("L", project.span.value, "Span, simple beam", "Input")
     wD = sh.given("w_D", loading.w_D, "Top rail self-weight", "Loading")
@@ -374,10 +384,13 @@ def _envelope(case_fn, registry, project, rail, loading) -> list[Case]:
 
 
 def check_1(registry, project, rail, loading) -> Check:
-    cap = Sheet(registry)
-    _, flags = flexural_capacity(cap, rail, project.top_rail.grade)
-    chk = Check(1, "Top rail bending", "M_a", "M_n / Omega_b", capacity_lines=cap.lines, flags=flags)
-    chk.cases = _envelope(_bending_case, registry, project, rail, loading)
+    cap = flexural_capacity(registry, rail, project.top_rail.grade)
+    chk = Check(1, "Top rail bending", "M_a", "M_n / Omega_b", flags=cap.flags)
+
+    def case(registry, project, rail, loading, direction, load_type):
+        return _bending_case(registry, project, rail, loading, cap, direction, load_type)
+
+    chk.cases = _envelope(case, registry, project, rail, loading)
     return chk
 
 

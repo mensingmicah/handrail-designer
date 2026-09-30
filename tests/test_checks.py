@@ -108,17 +108,13 @@ def _fake(D_t):
 
 
 def test_slender_wall_is_a_hard_stop_naming_ratio_and_limit():
-    from handrail.calc import Sheet
-
     with pytest.raises(SectionStop, match=r"slender.*D/t = 300.*lambda_r = 0.31E/Fy = 256"):
-        checks.flexural_capacity(Sheet(Registry()), _fake(300), "A53 Gr B")
+        checks.flexural_capacity(Registry(), _fake(300), "A53 Gr B")
 
 
 def test_beyond_F8_limit_is_a_hard_stop():
-    from handrail.calc import Sheet
-
     with pytest.raises(SectionStop, match=r"D/t = 400.*§F8 limit 0.45E/Fy = 372"):
-        checks.flexural_capacity(Sheet(Registry()), _fake(400), "A53 Gr B")
+        checks.flexural_capacity(Registry(), _fake(400), "A53 Gr B")
 
 
 def test_exemption_removes_distributed_cases():
@@ -169,3 +165,11 @@ def test_all_case_lines_compile_in_typst(tmp_path, results):
     src = tmp_path / "t.typ"
     src.write_text("\n".join(out), encoding="utf-8")
     assert typst.compile(str(src))[:4] == b"%PDF"
+
+
+def test_capacity_is_printed_once_at_the_head_of_every_bending_case(results):
+    chk1 = results.checks[0]
+    heads = [c.lines[1:4] for c in chk1.checked]
+    # the same Line objects in every case: capacity was computed once, not per case
+    assert all(x is y for h in heads for x, y in zip(h, heads[0]))
+    assert sum(1 for ln in chk1.controlling.lines if ln.symbol == "M_n") == 1
