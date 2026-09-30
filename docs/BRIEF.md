@@ -55,40 +55,69 @@ Out of scope for v1 (push back if I try to add these):
 
 - Project info: name, phase, one-line description, assumptions text (we should provide some basic assumptions about steel weight etc.),
   reference documents
-- Post height (ground to center of top rail), span (post to post, center to
-  center)
+- Post height h, from top of concrete to the top rail centerline; span (post
+  to post, center to center); baseplate thickness
 - For now the span is assumed to be the tributary length for the post
 - Top rail and post sections: pick an AISC designation, or define a custom
   section by dimensions. For tubes, the engineer says whether the entered wall
   thickness is nominal or design. For rectangular sections, the engineer sets
   which axis resists the horizontal guard load.
 - Intermediate rail section (optional). Defaults to the top rail section.
-- Material grade for rail, post and baseplate, with sensible defaults. Bars
-  default to A36. An unusual grade pairing gets a warning, not a block; the
-  engineer may pick a nonstandard grade for a shape (for example A500 Gr B or
-  Gr C for a bar).
-- Weld size and type at the rail to post connection and the post to base connection. for now it can be a two sided or all around fillet weld.
+- Material grade for rail, post and baseplate. Grade lists and defaults per
+  shape type come from AISC Manual Table 2-4; a grade outside that table's
+  standard grades for the shape is an unusual pairing and gets a warning, not
+  a block. A500 (Gr B, Gr C) is offered for round and rectangular HSS only,
+  never for solid bars. Defaults: bars A36, pipe A53 Gr B, baseplate A36.
+  Every Fy and Fu is a registry entry.
+- Welds at the rail to post and post to baseplate connections: fillet welds,
+  size entered, E70XX electrode by default. Round posts are welded all
+  around. Rectangular posts (HSS or bar) are welded all around or on one
+  pair of faces, which the engineer picks by the section's width or depth
+  faces.
 - Guard loads (concentrated, distributed, component), defaulting to code
   values, editable
 - Deflection limits: L/120 for the rail span and L/60 for the post
   cantilever by default. These are engineering experience, not code. Each is editable
   and each can be bypassed by checkbox.
 - Dimensions must accept the forms engineers actually type: 5' 6-1/8",
-  66.125 in, 3 ft 6 in, 42
+  66.125 in, 3 ft 6 in, 42. A bare number is inches in every field. The
+  normalized value is echoed in gray next to the box (42 → 3'-6") and again
+  on the calc's dimensions page.
 
 ## Checks
 
 1. Top rail bending (simple span)
-2. Top rail deflection
+2. Top rail deflection: downward case D + L on the vertical axis; horizontal
+   cases live load only on the horizontal axis; run over the full envelope
 3. Top Rail weld to post
 4. Intermediate rail component check: the ASCE 7-22 §4.5.1.2 component load,
    applied horizontally at midspan of the intermediate rail spanning between
    posts. It acts alone: not combined with dead load and not concurrent with
    the top-rail loads. Computed every time, even when the intermediate rail
-   is the same section as the top rail.
+   is the same section as the top rail. Includes a deflection check under
+   the component load, default L/120, editable and bypassable. If there is
+   no intermediate rail, the check shows "none".
 5. Post combined axial and flexure (cantilever)
-6. Post deflection (cantilever)
+6. Post deflection (cantilever), horizontal live load only
 7. Post weld to baseplate
+
+Weld checks (3 and 7) use the elastic method, treating the weld as a line.
+The AISC 360-22 §J2.4 directional strength increase is allowed for fillet
+welds, based on the angle between the weld force and the weld axis; its
+limits on weld groups loaded at varying angles, and any Chapter K
+restrictions for welds to HSS, are registry entries to verify, and the
+increase is not assumed to apply everywhere. Base metal: per inch of weld,
+weld shear strength on the throat is compared with base metal shear rupture
+over the thickness on the fusion face (§J2.4 with §J4.2), for both
+connected parts (post wall and rail, or post wall and baseplate); the lower
+governs. Minimum and maximum fillet sizes are pass/fail lines. The rail to
+post weld length is the post perimeter, conservative against the true
+saddle length. The post to baseplate weld moment arm is h minus the
+baseplate thickness.
+
+Flexural capacity: top rail Lb = span, with Cb from the §F1 moment diagram
+for each load case. Post Lb = h using the §F1 cantilever provision. Post
+compression uses the recommended design K.
 
 Plus reporting, not pass/fail: factored (LRFD) base reactions for a concrete
 substrate, labeled for direct input into anchor software (see decisions).
@@ -106,12 +135,19 @@ checks may be added later.
 
 - Load direction: the guard load is applied in whichever direction produces
   the worst case for the component being checked. The cases are outward,
-  inward, downward and upward. Each check runs the envelope of direction
+  inward, downward, upward and longitudinal (parallel to the rail). Each check runs the envelope of direction
   cases, finds its own controlling direction and reports it; two checks
   controlled by different directions is expected, not a conflict. For some
   members the controlling case has live load parallel to dead load; for
   others (a flat bar loaded about its weak axis, for example) a horizontal
   case may control.
+- Longitudinal is a real load case, not only a reaction row. It enters the
+  post interaction, post deflection and both welds, since a rectangular post
+  may take it on the weak axis. Both guard loads apply at the top of the
+  post, the same way as the transverse case: the concentrated load, and the
+  distributed load times the tributary length. The longitudinal distributed
+  load is engineering judgement. The top rail carries it axially and is not
+  checked for it.
 - Downward is kept. It is the only case where live load shares the dead-load
   bending axis in the rail, and the only case that puts live axial
   compression into the post.
@@ -128,10 +164,15 @@ checks may be added later.
 - Dead and live effects stay separate until each check combines them, so one
   analysis produces both the ASD member checks and the factored reactions.
 - Base reactions (v1, concrete substrate only): LRFD, for direct input into
-  anchor software. Two sets are reported: the worst-case moment
-  (0.9D + 1.6L, horizontal) and the worst-case vertical tension
-  (0.9D + 1.6L, upward), the latter only if there is net tension. Each set
-  is simultaneous: the shear, axial and moment that occur together in that
+  anchor software; no service reactions in v1. Three sets are reported, as
+  separate, non-interacting load cases: (1) transverse load, 0.9D + 1.6L;
+  (2) longitudinal load, 0.9D + 1.6L; (3) upward load, 0.9D + 1.6L, only if
+  there is net tension. Both combinations are engineering judgement, not
+  ASCE combinations, and are labeled that way. Reactions are reported on
+  their own axes at the top of concrete (moment arm h), with a note that
+  loads can reverse; the engineer sets direction in the anchor software.
+  Dead load includes the top rail, the post and the intermediate rail. Each
+  set is simultaneous: the shear, axial and moment that occur together in that
   case, never a max of each component. A max-of-everything row is a load
   case that never happens and misleads the anchor software.
 - Section classification runs before capacity. Compact computes normally.
@@ -141,11 +182,25 @@ checks may be added later.
   that names the element, its ratio and the limit. Slender-member checks may
   be added later if the need shows up.
 
-## Open engineering questions (mine to answer)
+- Biaxial SRSS applies to every round section, solid round bar included.
+- Standard-section properties are used exactly as published in the
+  database, even when the grade (A1085, for example) implies a different
+  design wall thickness; the output notes it. Custom rectangular tubes use
+  the AISC corner-radius convention, a registry entry. Custom tubes convert
+  nominal to design wall thickness per AISC 360-22 §B4.2, a registry entry.
 
-1. Top rail deflection: dead plus live, with the controlling case being live
-   load in line with dead load. Still open: whether the perpendicular
-   (horizontal) case can be ignored for every section and orientation.
+## Stated assumptions (printed in the output)
+
+- No shear checks in any member.
+- Interior post; the tributary length is the span. End posts and rail
+  overhangs are not checked.
+- The top rail runs continuously over the post; the post is coped and
+  welded to its underside. The rail is designed as a simple span.
+- The intermediate rail's connection to the post, and the component load's
+  effect on the post, are not checked.
+- Guard loads are not combined with floor or roof live load; wind, snow and
+  ice are not considered.
+- Base reactions can reverse; direction is set in the anchor software.
 
 ## Future versions (not v1)
 
@@ -156,6 +211,7 @@ checks may be added later.
   AISI S100, the current NDS.
 - LRFD member checks.
 - Slender-section checks.
+- A settings tab where the engineer picks display units.
 
 ## Output
 
@@ -169,5 +225,9 @@ checks may be added later.
   for a sketch or photo), dimensions, section properties, loading, the seven
   checks, a summary table (demand, capacity, ratio, controlling direction,
   pass/fail for each check), then the reaction tables
-- Each check ends with its ratio and OK, or NG. If bypassed, do not show the calculation
+- Each check ends with its ratio and OK, or NG. Only deflection checks can
+  be bypassed. A bypassed check shows no calculation, and the summary table
+  shows a "Bypassed by engineer" row for it.
+- Full internal precision; values displayed to 3 significant figures, ratios
+  to 2 decimals. Fixed units in v1: lb, lb-in, ksi, in, in³, in⁴.
 - A reserved header area at the top, not filled in v1

@@ -35,6 +35,10 @@ A section with any element beyond the slender limit in flexure or compression; t
 Post-to-post distance, center to center; also the tributary length for the post.
 _Avoid_: Tributary area, bay
 
+**Post height (h)**:
+Distance from top of concrete to the top rail centerline.
+_Avoid_: Guard height, rail height
+
 ### Loads
 
 **Guard load**:
@@ -46,7 +50,15 @@ The ASCE 7-22 §4.5.1.2 load applied horizontally to an intermediate rail, actin
 _Avoid_: Infill load
 
 **Direction case**:
-One of outward, inward, downward or upward: the direction a guard load is applied in.
+One of outward, inward, downward, upward or longitudinal: the direction a guard load is applied in.
+
+**Transverse**:
+Horizontal and perpendicular to the rail; covers the outward and inward direction cases.
+_Avoid_: Perpendicular (ambiguous when describing a moment)
+
+**Longitudinal**:
+Horizontal and parallel to the rail.
+_Avoid_: Parallel (ambiguous when describing a moment)
 
 **Envelope**:
 The full set of direction cases and load types a check is evaluated over.
@@ -61,7 +73,7 @@ _Avoid_: ASCE combination (for these)
 ### Output
 
 **Anchor reaction set**:
-One simultaneous set of factored base shear, axial and moment from a single case, for input into anchor software.
+One simultaneous set of factored base shear, axial and moment from a single case, for input into anchor software; named by load direction (transverse, longitudinal, upward).
 _Avoid_: Max reactions, reaction envelope
 
 **Code value**:
