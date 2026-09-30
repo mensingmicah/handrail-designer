@@ -25,7 +25,7 @@ REQUIRED = (
 )
 STATUSES = ("drafted", "verified")
 # Units that mark an entry as something other than a physical quantity.
-NON_QUANTITY_UNITS = ("text", "list", "equation", "provision", "factors")
+NON_QUANTITY_UNITS = ("text", "list", "equation", "provision", "factors", "fraction")
 
 
 class RegistryError(Exception):
