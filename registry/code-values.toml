@@ -36,7 +36,6 @@ review = [
   "material.steel.density",
   "material.grades.hss_round",
   "material.grades.hss_rect",
-  "aisc360.B3.2.asd",
 ]
 
 # ---------------------------------------------------------------------------
@@ -685,10 +684,10 @@ document = "AISC 360-22, Specification for Structural Steel Buildings"
 edition = "2022"
 section = "§B3.2, Design for Strength Using Allowable Strength Design (ASD)"
 source = "memory"
-status = "drafted"
+status = "verified"
 drafted_on = 2026-09-30
-verified_by = ""
-verified_date = ""
+verified_by = "Micah Mensing"
+verified_date = 2026-09-30
 note = """
 The design method the member checks use, printed in the front matter as \
 "Design method: ASD per AISC 360-22 §B3.2". Section number from memory of \
