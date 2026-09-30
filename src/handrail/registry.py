@@ -59,7 +59,7 @@ class Entry:
         if self.unit in NON_QUANTITY_UNITS:
             raise RegistryError(f"{self.id} is a {self.unit} entry, not a quantity")
         if self.unit == "":
-            return float(self.value)
+            return self.value  # int or float, kept as written so it prints as written
         return Q_(self.value, self.unit)
 
 

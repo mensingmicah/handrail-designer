@@ -47,6 +47,19 @@ review = [
   "asce7.combo.asd.D_plus_L",
   "material.A53_GrB.Fy",
   "aisc360.pipe_as_round_hss",
+  "aisc360.F1.omega_b",
+  "aisc360.B4.1b.round_hss.lambda_p",
+  "aisc360.B4.1b.round_hss.lambda_r",
+  "aisc360.B4.1b.classification",
+  "aisc360.F8.applicability",
+  "aisc360.F8.nominal_strength",
+  "aisc360.eq.F8-1",
+  "aisc360.eq.F8-2",
+  "aisc360.eq.F8-2.coeff",
+  "aisc_manual.t3-23.case1.M",
+  "aisc_manual.t3-23.case1.delta",
+  "aisc_manual.t3-23.case7.M",
+  "aisc_manual.t3-23.case7.delta",
 ]
 
 # ---------------------------------------------------------------------------
@@ -353,3 +366,209 @@ holds it; §A3.1a is my best guess. This is the basis for applying \
 Table B4.1b round HSS limits and §F8 to AISC pipe. The database tdes for \
 pipe already reflects the 0.93 tnom reduction, and the tool uses the \
 database properties as published."""
+
+# ---------------------------------------------------------------------------
+# AISC 360-22 flexure: round HSS (and pipe, per aisc360.pipe_as_round_hss)
+# ---------------------------------------------------------------------------
+
+[[entry]]
+id = "aisc360.F1.omega_b"
+value = 1.67
+unit = ""
+cite = "AISC 360-22 §F1"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§F1, General Provisions: safety factor for flexure, Omega_b = 1.67 (ASD)"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-09-30
+verified_by = ""
+verified_date = ""
+note = "From memory; unchanged from 360-10 and 360-16 as far as I know."
+
+[[entry]]
+id = "aisc360.B4.1b.round_hss.lambda_p"
+value = 0.07
+unit = ""
+cite = "AISC 360-22 Table B4.1b, Case 20"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "Table B4.1b, Width-to-Thickness Ratios: Compression Elements, Members Subject to Flexure; round HSS, limiting ratio lambda_p = 0.07E/Fy"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-09-30
+verified_by = ""
+verified_date = ""
+note = """
+Coefficient on E/Fy. A web search summary agrees with 0.07E/Fy. I am not \
+sure of the case number: 20 is my memory of 360-16 and I have not seen the \
+360-22 table. The ratio is D/t, with t the design wall thickness."""
+
+[[entry]]
+id = "aisc360.B4.1b.round_hss.lambda_r"
+value = 0.31
+unit = ""
+cite = "AISC 360-22 Table B4.1b, Case 20"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "Table B4.1b, Members Subject to Flexure; round HSS, limiting ratio lambda_r = 0.31E/Fy"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-09-30
+verified_by = ""
+verified_date = ""
+note = "Coefficient on E/Fy; same confidence and case-number caveat as lambda_p."
+
+[[entry]]
+id = "aisc360.B4.1b.classification"
+value = "For flexure, a section is compact if no element exceeds lambda_p, noncompact if any element exceeds lambda_p but none exceeds lambda_r, and has slender elements if any element exceeds lambda_r."
+unit = "provision"
+cite = "AISC 360-22 §B4.1b"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§B4.1b, classification of sections for local buckling, members subject to flexure"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-09-30
+verified_by = ""
+verified_date = ""
+note = "Paraphrase from memory of 360-16 §B4.1b."
+
+[[entry]]
+id = "aisc360.F8.applicability"
+value = 0.45
+unit = ""
+cite = "AISC 360-22 §F8"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§F8, Round HSS, scope: applies to round HSS having D/t less than 0.45E/Fy"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-09-30
+verified_by = ""
+verified_date = ""
+note = "Coefficient on E/Fy, from memory of 360-16 §F8."
+
+[[entry]]
+id = "aisc360.F8.nominal_strength"
+value = "Mn is the lower value obtained from the limit states of yielding (plastic moment) and local buckling; local buckling does not apply to compact sections."
+unit = "provision"
+cite = "AISC 360-22 §F8"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§F8, Round HSS, introductory text and §F8.2 Local Buckling (a)"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-09-30
+verified_by = ""
+verified_date = ""
+note = "Paraphrase from memory of 360-16 §F8."
+
+[[entry]]
+id = "aisc360.eq.F8-1"
+value = "Yielding: Mn = Mp, the plastic moment from Fy and the plastic section modulus"
+unit = "equation"
+cite = "AISC 360-22 Eq. F8-1"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§F8.1, Yielding, Equation F8-1"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-09-30
+verified_by = ""
+verified_date = ""
+note = "From memory of 360-16; equation number assumed unchanged in 360-22."
+
+[[entry]]
+id = "aisc360.eq.F8-2"
+value = "Local buckling, sections with noncompact walls: nominal flexural strength from the elastic section modulus"
+unit = "equation"
+cite = "AISC 360-22 Eq. F8-2"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§F8.2(b), Local Buckling, sections with noncompact walls, Equation F8-2"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-09-30
+verified_by = ""
+verified_date = ""
+note = "From memory of 360-16; the coefficient is aisc360.eq.F8-2.coeff."
+
+[[entry]]
+id = "aisc360.eq.F8-2.coeff"
+value = 0.021
+unit = ""
+cite = "AISC 360-22 Eq. F8-2"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§F8.2(b), Equation F8-2: coefficient on E/(D/t)"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-09-30
+verified_by = ""
+verified_date = ""
+note = "From memory of 360-16."
+
+# ---------------------------------------------------------------------------
+# Beam formulas: AISC Manual Table 3-23, Shears, Moments and Deflections
+# ---------------------------------------------------------------------------
+
+[[entry]]
+id = "aisc_manual.t3-23.case1.M"
+value = "Simple beam, uniformly distributed load: maximum moment, at center"
+unit = "equation"
+cite = "AISC Manual Table 3-23, Case 1"
+document = "AISC Steel Construction Manual"
+edition = "16th Edition"
+section = "Part 3, Table 3-23, Case 1, Simple Beam - Uniformly Distributed Load, M max (at center)"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-09-30
+verified_by = ""
+verified_date = ""
+note = "Case number corroborated by a web search summary; not read from the Manual."
+
+[[entry]]
+id = "aisc_manual.t3-23.case1.delta"
+value = "Simple beam, uniformly distributed load: maximum deflection, at center"
+unit = "equation"
+cite = "AISC Manual Table 3-23, Case 1"
+document = "AISC Steel Construction Manual"
+edition = "16th Edition"
+section = "Part 3, Table 3-23, Case 1, Simple Beam - Uniformly Distributed Load, Delta max (at center)"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-09-30
+verified_by = ""
+verified_date = ""
+note = "Same confidence as aisc_manual.t3-23.case1.M."
+
+[[entry]]
+id = "aisc_manual.t3-23.case7.M"
+value = "Simple beam, concentrated load at center: maximum moment, at point of load"
+unit = "equation"
+cite = "AISC Manual Table 3-23, Case 7"
+document = "AISC Steel Construction Manual"
+edition = "16th Edition"
+section = "Part 3, Table 3-23, Case 7, Simple Beam - Concentrated Load at Center, M max (at point of load)"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-09-30
+verified_by = ""
+verified_date = ""
+note = "Case number corroborated by a web search summary; not read from the Manual."
+
+[[entry]]
+id = "aisc_manual.t3-23.case7.delta"
+value = "Simple beam, concentrated load at center: maximum deflection, at point of load"
+unit = "equation"
+cite = "AISC Manual Table 3-23, Case 7"
+document = "AISC Steel Construction Manual"
+edition = "16th Edition"
+section = "Part 3, Table 3-23, Case 7, Simple Beam - Concentrated Load at Center, Delta max (at point of load)"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-09-30
+verified_by = ""
+verified_date = ""
+note = "Same confidence as aisc_manual.t3-23.case7.M."

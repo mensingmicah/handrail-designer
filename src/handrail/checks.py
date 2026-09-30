@@ -1,0 +1,401 @@
+"""Checks 1 and 2: top rail bending and top rail deflection, over the envelope.
+
+Every direction case and load type is computed and kept (the envelope table
+lists them all); only the controlling case's calc lines are printed in full
+(docs/plans/slice-1.md, D2).
+
+Load types: the concentrated load P at midspan and the distributed load w
+are separate and never concurrent (ASCE 7-22 §4.5.1.1).
+
+Direction cases (docs/BRIEF.md, decisions; slice 1 plan):
+- Downward: D + L on the vertical axis.
+- Outward, inward: D on the vertical axis, L on the horizontal axis. Bending
+  combines them by SRSS against one capacity, exact for a round section.
+  Deflection is L only, on the horizontal axis. Both are listed although
+  they are identical for a round section, so the envelope is explicit.
+- Upward: bending 0.6D + 1.0L, net on the vertical axis (engineering
+  judgement); deflection L only.
+- Longitudinal: the rail carries it axially; listed, not checked.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+
+from handrail.calc import Const, Line, Sheet, Sym, absolute, fmt_quantity_plain, minimum, sqrt
+from handrail.project import Member, Project, ProjectError
+from handrail.registry import Registry
+from handrail.shapes import PipeSection
+from handrail.units import Q_
+
+DIRECTIONS = ("Downward", "Outward", "Inward", "Upward", "Longitudinal")
+CONCENTRATED, DISTRIBUTED = "Concentrated", "Distributed"
+LOAD_TYPES = (CONCENTRATED, DISTRIBUTED)
+
+DB = "AISC Shapes Database v16.0"
+EJ = "engineering judgement"
+COMBO = "asce7.combo.asd.D_plus_L"
+
+# Fy entry for each grade this slice supports.
+FY_ENTRY = {"A53 Gr B": "material.A53_GrB.Fy"}
+
+
+class SectionStop(Exception):
+    """A hard stop: the tool will not check this section (slender, or out of range)."""
+
+
+# ---------------------------------------------------------------------------
+# Results
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class Case:
+    direction: str
+    load_type: str | None
+    status: str  # "checked", "exempt", "not checked"
+    combination: str = ""
+    demand: object = None
+    capacity: object = None
+    ratio: float | None = None
+    lines: list[Line] = field(default_factory=list)
+    remark: str = ""
+
+    @property
+    def label(self) -> str:
+        return f"{self.direction}, {self.load_type.lower()}" if self.load_type else self.direction
+
+
+@dataclass
+class Check:
+    number: int
+    title: str
+    demand_label: str
+    capacity_label: str
+    cases: list[Case] = field(default_factory=list)
+    capacity_lines: list[Line] = field(default_factory=list)
+    flags: list[str] = field(default_factory=list)
+    bypassed: bool = False
+
+    @property
+    def checked(self) -> list[Case]:
+        return [c for c in self.cases if c.status == "checked"]
+
+    @property
+    def controlling(self) -> Case | None:
+        # Highest ratio; ties go to the first case in envelope order.
+        best = None
+        for c in self.checked:
+            if best is None or c.ratio > best.ratio:
+                best = c
+        return best
+
+    @property
+    def ok(self) -> bool:
+        return self.bypassed or self.controlling.ratio <= 1.0
+
+    @property
+    def verdict(self) -> str:
+        if self.bypassed:
+            return "Bypassed by engineer"
+        return "OK" if self.ok else "NG"
+
+
+@dataclass
+class Loading:
+    P: object          # concentrated guard load
+    w_L: object        # uniform guard load, or None when exempt
+    w_D: object        # top rail self-weight
+    exempt: bool
+    exemption_statement: str
+    lines: list[Line]
+
+
+@dataclass
+class Results:
+    project: Project
+    rail: PipeSection
+    loading: Loading
+    section_lines: list[Line]
+    checks: list[Check]
+    warnings: list[str]
+
+
+# ---------------------------------------------------------------------------
+# Material, loading, section properties
+# ---------------------------------------------------------------------------
+
+
+def material_warnings(registry: Registry, member: Member) -> list[str]:
+    grades = registry.get("material.grades.pipe").value
+    warnings = []
+    if member.grade not in grades:
+        warnings.append(
+            f"{member.grade} is not a standard grade for pipe "
+            f"({registry.get('material.grades.pipe').cite}): unusual pairing."
+        )
+    if member.grade not in FY_ENTRY:
+        raise ProjectError(
+            f"top rail grade {member.grade!r}: slice 1 supports {', '.join(FY_ENTRY)} only"
+        )
+    return warnings
+
+
+def build_loading(project: Project, registry: Registry, rail: PipeSection) -> Loading:
+    sh = Sheet(registry)
+    ld = project.loads
+
+    code_P = registry.get("asce7.guard.concentrated")
+    if ld.concentrated_lbf is None:
+        P = sh.code_value("P", code_P.id, "Concentrated guard load, any direction, any point on the top rail")
+    else:
+        P = sh.input(
+            "P", Q_(ld.concentrated_lbf, "lbf"),
+            f"Concentrated guard load, engineer override (code value {fmt_quantity_plain(code_P.quantity)})",
+            cite=f"Input; {code_P.cite}",
+        )
+
+    code_w = registry.get("asce7.guard.uniform")
+    if ld.uniform_exempt:
+        sh.decision(
+            "w_L", "Not considered",
+            f"Uniform guard load exempted by the engineer: {ld.exemption_statement}",
+            cite=registry.get("asce7.guard.uniform.exemption.intro").cite,
+        )
+        w_L = None
+    elif ld.uniform_plf is None:
+        w_L = sh.code_value("w_L", code_w.id, "Uniform guard load, any direction; not concurrent with P").value
+    else:
+        w_L = sh.input(
+            "w_L", Q_(ld.uniform_plf, "lbf/ft"),
+            f"Uniform guard load, engineer override (code value {code_w.value} lb/ft)",
+            cite=f"Input; {code_w.cite}",
+        ).value
+
+    w_D = sh.given("w_D", rail.W, f"Top rail self-weight: tabulated W = {rail.W.m_as('lbf/ft'):g} lb/ft", DB).value
+    return Loading(P=P.value, w_L=w_L, w_D=w_D, exempt=ld.uniform_exempt,
+                   exemption_statement=ld.exemption_statement, lines=sh.lines)
+
+
+def section_lines(registry: Registry, rail: PipeSection) -> list[Line]:
+    sh = Sheet(registry)
+    sh.given("D", rail.OD, f"{rail.label}: outside diameter", DB)
+    sh.given('t_"nom"', rail.tnom, "Nominal wall thickness", DB)
+    sh.given('t_"des"', rail.tdes, "Design wall thickness", DB)
+    sh.given("A", rail.A, "Area (design wall)", DB)
+    sh.given("W", rail.W, "Nominal weight, lb/ft (nominal wall)", DB)
+    sh.given("I", rail.I, "Moment of inertia", DB)
+    sh.given("S", rail.S, "Elastic section modulus", DB)
+    sh.given("Z", rail.Z, "Plastic section modulus", DB)
+    sh.given("D/t", rail.D_t, "Diameter-to-thickness ratio, tabulated", DB)
+    return sh.lines
+
+
+# ---------------------------------------------------------------------------
+# Check 1: flexural capacity (AISC 360-22 §F8) and demand
+# ---------------------------------------------------------------------------
+
+
+def flexural_capacity(sh: Sheet, rail: PipeSection, grade: str) -> tuple[Sym, list[str]]:
+    """Classify the section and return M_n/Omega_b. Raises SectionStop."""
+    sh.decision(
+        f"{rail.label}, {grade}", "Designed as round HSS",
+        "Pipe is designed under the round HSS provisions",
+        cite_ids=("aisc360.pipe_as_round_hss",),
+    )
+    Fy = sh.code_value("F_y", FY_ENTRY[grade], f"Yield stress, {grade}")
+    E = sh.code_value("E", "material.steel.E", "Modulus of elasticity")
+    lam = sh.given("lambda", rail.D_t, "lambda = D/t, tabulated (design wall)", DB)
+    lim = sh.line("lambda_\"lim\"", sh.coeff("aisc360.F8.applicability") * E / Fy,
+                  "§F8 applies to D/t below this limit")
+    lp = sh.line("lambda_p", sh.coeff("aisc360.B4.1b.round_hss.lambda_p") * E / Fy,
+                 "Compact limit, round HSS in flexure")
+    lr = sh.line("lambda_r", sh.coeff("aisc360.B4.1b.round_hss.lambda_r") * E / Fy,
+                 "Noncompact limit, round HSS in flexure")
+
+    D_t, name = rail.D_t, rail.label
+    if not D_t < lim.value:
+        raise SectionStop(
+            f"{name}: D/t = {D_t:g} is not less than the AISC 360-22 §F8 limit "
+            f"0.45E/Fy = {lim.value:.1f}. The tool does not check this section."
+        )
+    if D_t > lr.value:
+        raise SectionStop(
+            f"{name}: wall is slender in flexure, D/t = {D_t:g} > lambda_r = 0.31E/Fy = "
+            f"{lr.value:.1f} (AISC 360-22 Table B4.1b). The tool does not check slender sections."
+        )
+    sh.decision(
+        f"lambda = {D_t:g} < lambda_\"lim\" = {lim.value:.3g}", "§F8 applies",
+        "Applicability", cite_ids=("aisc360.F8.applicability",),
+    )
+
+    Z = sh.given("Z", rail.Z, "Plastic section modulus", DB)
+    Mp = sh.line("M_p", Fy * Z, "Plastic moment (yielding)", cite_ids=("aisc360.eq.F8-1",),
+                 unit="lbf*inch")
+    flags = []
+    if D_t <= lp.value:
+        sh.decision(f"lambda = {D_t:g} <= lambda_p = {lp.value:.3g}", "Compact",
+                    "Section classification", cite_ids=("aisc360.B4.1b.classification",))
+        sh.decision("Compact wall", "Local buckling does not apply",
+                    "", cite_ids=("aisc360.F8.nominal_strength",))
+        Mn = sh.line("M_n", Mp, "Nominal flexural strength", cite_ids=("aisc360.F8.nominal_strength",),
+                     unit="lbf*inch")
+    else:
+        sh.decision(f"lambda_p = {lp.value:.3g} < lambda = {D_t:g} <= lambda_r = {lr.value:.3g}",
+                    "NONCOMPACT", "Section classification: reduced capacity",
+                    cite_ids=("aisc360.B4.1b.classification",))
+        flags.append(
+            f"NONCOMPACT: {name} D/t = {D_t:g} exceeds lambda_p = {lp.value:.3g} "
+            f"(lambda_r = {lr.value:.3g}); Mn reduced by local buckling, Eq. F8-2."
+        )
+        S = sh.given("S", rail.S, "Elastic section modulus", DB)
+        Mlb = sh.line("M_(n,\"LB\")", (sh.coeff("aisc360.eq.F8-2.coeff") * E / lam + Fy) * S,
+                      "Local buckling, noncompact wall", cite_ids=("aisc360.eq.F8-2",), unit="lbf*inch")
+        Mn = sh.line("M_n", minimum(Mp, Mlb), "Lower of yielding and local buckling",
+                     cite_ids=("aisc360.F8.nominal_strength",), unit="lbf*inch")
+    Om = sh.code_value("Omega_b", "aisc360.F1.omega_b", "Safety factor for flexure (ASD)")
+    Ma = sh.line("M_n / Omega_b", Mn / Om, "Allowable flexural strength", unit="lbf*inch")
+    return Ma, flags
+
+
+def _live_moment(sh: Sheet, load_type: str, L: Sym, loading: Loading) -> Sym:
+    if load_type == CONCENTRATED:
+        P = sh.given("P", loading.P, "Concentrated guard load at midspan", "Loading")
+        return sh.line("M_L", P * L / 4, "Live-load moment, midspan",
+                       cite_ids=("aisc_manual.t3-23.case7.M",), unit="lbf*inch")
+    w = sh.given("w_L", loading.w_L, "Uniform guard load", "Loading")
+    return sh.line("M_L", w * L**2 / 8, "Live-load moment, midspan",
+                   cite_ids=("aisc_manual.t3-23.case1.M",), unit="lbf*inch")
+
+
+BENDING_COMBO = {
+    "Downward": "D + L, vertical (ASCE 7-22 §2.4.1)",
+    "Outward": "D vertical, L horizontal, SRSS",
+    "Inward": "D vertical, L horizontal, SRSS",
+    "Upward": f"0.6D + 1.0L, net vertical ({EJ})",
+}
+
+
+def _bending_case(registry, project, rail, loading, direction, load_type) -> Case:
+    sh = Sheet(registry)
+    sh.heading("Capacity")
+    Ma_allow, _ = flexural_capacity(sh, rail, project.top_rail.grade)
+    sh.heading(f"Demand: {direction.lower()}, {load_type.lower()} load")
+    L = sh.given("L", project.span.value, "Span, simple beam", "Input")
+    wD = sh.given("w_D", loading.w_D, "Top rail self-weight", "Loading")
+    MD = sh.line("M_D", wD * L**2 / 8, "Dead-load moment, midspan",
+                 cite_ids=("aisc_manual.t3-23.case1.M",), unit="lbf*inch")
+    ML = _live_moment(sh, load_type, L, loading)
+
+    if direction == "Downward":
+        M = sh.line("M_a", sh.factor(COMBO, "D") * MD + sh.factor(COMBO, "L") * ML,
+                    "Required flexural strength: D and L on the same axis", unit="lbf*inch")
+    elif direction in ("Outward", "Inward"):
+        Mv = sh.line("M_(a,v)", sh.factor(COMBO, "D") * MD, "Vertical axis: dead load", unit="lbf*inch")
+        Mh = sh.line("M_(a,h)", sh.factor(COMBO, "L") * ML, f"Horizontal axis: guard load {direction.lower()}",
+                     unit="lbf*inch")
+        M = sh.line("M_a", sqrt(Mv**2 + Mh**2),
+                    "Resultant moment, SRSS: exact for a round section, one capacity",
+                    cite="Biaxial bending of round sections (brief)", unit="lbf*inch")
+    else:  # Upward
+        M = sh.line("M_a", absolute(Const(0.6) * MD - Const(1.0) * ML),
+                    "Net vertical moment, guard load opposing dead load",
+                    cite=f"0.6D + 1.0L: {EJ}, not an ASCE combination", unit="lbf*inch")
+
+    ratio = sh.line('"Ratio"', M / Ma_allow, "Demand / capacity", ratio=True)
+    sh.decision(f"Ratio = {ratio.value:.2f}", "OK" if ratio.value <= 1.0 else "NG", "")
+    return Case(direction, load_type, "checked", BENDING_COMBO[direction],
+                demand=M.value, capacity=Ma_allow.value, ratio=ratio.value, lines=sh.lines)
+
+
+# ---------------------------------------------------------------------------
+# Check 2: deflection
+# ---------------------------------------------------------------------------
+
+DEFLECTION_COMBO = {
+    "Downward": f"D + L, vertical ({EJ})",
+    "Outward": "L only, horizontal",
+    "Inward": "L only, horizontal",
+    "Upward": "L only, vertical",
+}
+
+
+def _deflection_case(registry, project, rail, loading, direction, load_type) -> Case:
+    sh = Sheet(registry)
+    L = sh.given("L", project.span.value, "Span, simple beam", "Input")
+    E = sh.code_value("E", "material.steel.E", "Modulus of elasticity")
+    I = sh.given("I", rail.I, "Moment of inertia", DB)
+    if load_type == CONCENTRATED:
+        P = sh.given("P", loading.P, "Concentrated guard load at midspan", "Loading")
+        DL = sh.line("Delta_L", P * L**3 / (48 * E * I), "Live-load deflection, midspan",
+                     cite_ids=("aisc_manual.t3-23.case7.delta",), unit="inch")
+    else:
+        w = sh.given("w_L", loading.w_L, "Uniform guard load", "Loading")
+        DL = sh.line("Delta_L", 5 * w * L**4 / (384 * E * I), "Live-load deflection, midspan",
+                     cite_ids=("aisc_manual.t3-23.case1.delta",), unit="inch")
+    if direction == "Downward":
+        wD = sh.given("w_D", loading.w_D, "Top rail self-weight", "Loading")
+        DD = sh.line("Delta_D", 5 * wD * L**4 / (384 * E * I), "Dead-load deflection, midspan",
+                     cite_ids=("aisc_manual.t3-23.case1.delta",), unit="inch")
+        D = sh.line("Delta", DD + DL, "D + L, same (vertical) axis", cite=f"D + L: {EJ}", unit="inch")
+    else:
+        note = "Live load only" + (": opposes dead load, dead load not credited" if direction == "Upward" else "")
+        D = sh.line("Delta", DL, note, cite="Live load only (brief, Check 2)", unit="inch")
+
+    r = project.rail_deflection.ratio
+    lim = Const(int(r) if float(r).is_integer() else r)
+    Dallow = sh.line('Delta_"allow"', L / lim, f"Limit L/{lim.value}",
+                     cite=f"Deflection limit: {EJ}, not code", unit="inch")
+    ratio = sh.line('"Ratio"', D / Dallow, "Deflection / limit", ratio=True)
+    sh.decision(f"Ratio = {ratio.value:.2f}", "OK" if ratio.value <= 1.0 else "NG", "")
+    return Case(direction, load_type, "checked", DEFLECTION_COMBO[direction],
+                demand=D.value, capacity=Dallow.value, ratio=ratio.value, lines=sh.lines)
+
+
+# ---------------------------------------------------------------------------
+# Envelope
+# ---------------------------------------------------------------------------
+
+
+def _envelope(case_fn, registry, project, rail, loading) -> list[Case]:
+    cases = []
+    for direction in DIRECTIONS:
+        if direction == "Longitudinal":
+            cases.append(Case(direction, None, "not checked",
+                              remark="Rail carries the longitudinal load axially; not checked"))
+            continue
+        for lt in LOAD_TYPES:
+            if lt == DISTRIBUTED and loading.exempt:
+                cases.append(Case(direction, lt, "exempt",
+                                  remark="Uniform load not considered (ASCE 7-22 §4.5.1.1 exemption)"))
+                continue
+            cases.append(case_fn(registry, project, rail, loading, direction, lt))
+    return cases
+
+
+def check_1(registry, project, rail, loading) -> Check:
+    cap = Sheet(registry)
+    _, flags = flexural_capacity(cap, rail, project.top_rail.grade)
+    chk = Check(1, "Top rail bending", "M_a", "M_n/Ω_b", capacity_lines=cap.lines, flags=flags)
+    chk.cases = _envelope(_bending_case, registry, project, rail, loading)
+    return chk
+
+
+def check_2(registry, project, rail, loading) -> Check:
+    chk = Check(2, "Top rail deflection", "Δ", "Δ_allow")
+    if project.rail_deflection.bypass:
+        chk.bypassed = True
+        return chk
+    chk.cases = _envelope(_deflection_case, registry, project, rail, loading)
+    return chk
+
+
+def run(project: Project, registry: Registry) -> Results:
+    from handrail import shapes
+
+    rail = shapes.pipe(project.top_rail.section)
+    warnings = material_warnings(registry, project.top_rail)
+    loading = build_loading(project, registry, rail)
+    props = section_lines(registry, rail)
+    checks = [check_1(registry, project, rail, loading), check_2(registry, project, rail, loading)]
+    return Results(project, rail, loading, props, checks, warnings)

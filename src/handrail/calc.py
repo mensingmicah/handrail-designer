@@ -170,9 +170,9 @@ class Const(Expr):
 
 
 def _plain_number(x: float) -> str:
-    """Exact coefficient text: 0.07, 4, 384 (never rounded to 3 s.f.)."""
-    if float(x).is_integer():
-        return f"{int(x):,}"
+    """Exact coefficient text as written: 0.07, 4, 384, 1.0 (never rounded)."""
+    if isinstance(x, int):
+        return f"{x:,}"
     return repr(float(x))
 
 
@@ -180,6 +180,7 @@ _FUNC_EVAL: dict[str, Callable] = {
     "sqrt": lambda a: a**0.5,
     "min": min,
     "max": max,
+    "abs": abs,
 }
 
 
@@ -240,6 +241,8 @@ class Func(Expr):
         parts = [getattr(a, part)() for a in self.args]
         if self.name == "sqrt":
             return f"sqrt({parts[0]})"
+        if self.name == "abs":
+            return f"abs({parts[0]})"
         return f'"{self.name}"({", ".join(parts)})'
 
     def symbolic(self):
@@ -254,6 +257,10 @@ class Func(Expr):
 
 def sqrt(x: Expr) -> Expr:
     return Func("sqrt", (_wrap(x),))
+
+
+def absolute(x: Expr) -> Expr:
+    return Func("abs", (_wrap(x),))
 
 
 def minimum(*xs: Expr) -> Expr:
