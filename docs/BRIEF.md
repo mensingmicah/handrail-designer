@@ -152,7 +152,9 @@ substrate, labeled for direct input into anchor software (see decisions).
   Other Structures
 
 The output lists the specification, not the design method, since LRFD member
-checks may be added later.
+checks may be added later. The design method is stated separately in the
+front matter, as a registry-cited line ("Design method: ASD per AISC 360-22
+§B3.2"), so the references list stays the same when LRFD is added.
 
 ## Engineering decisions already made
 
@@ -260,8 +262,12 @@ checks may be added later.
 - Each check ends with its ratio and OK, or NG. Only deflection checks can
   be bypassed. A bypassed check shows no calculation, and the summary table
   shows a "Bypassed by engineer" row for it.
-- Full internal precision; values displayed to 3 significant figures, ratios
-  to 2 decimals. Fixed units in v1: lb, lb-in, ksi, in, in³, in⁴.
+- Full internal precision; values displayed to 4 significant figures, so a
+  checker can reproduce each intermediate and substituted value from the
+  numbers printed before it. Ratios to 2 decimals; 3 when the rounded
+  ratio would read 1.00; 4 when a failing ratio (over 1.0) would still
+  read 1.000, so a ratio just over 1.0 shows its excess beside NG.
+  Fixed units in v1: lb, lb-in, ksi, in, in³, in⁴.
 - A reserved header area at the top, not filled in v1
 - A footer on every page with the tool version and the code-value registry
   version the calc ran with

@@ -1,0 +1,36 @@
+# Handrail Designer project file (slice 1: top rail bending and deflection).
+#
+# Loading is per ASCE 7-22.
+#
+# Generate the calc:   uv run handrail calc examples/slice-1.toml
+# The PDF is written beside this file (examples/slice-1.pdf).
+#
+# Dimensions accept 5' 6-1/8", 66.125 in, 3 ft 6 in, or a bare number,
+# which is inches. Loads are in lb and lb/ft.
+
+[project]
+name = "Slice 1 example"
+phase = "Development"
+description = "Pipe top rail, interior span"
+references = []           # e.g. ["Architectural drawings, sheet A-501"]
+assumptions = []          # added to the tool's locked assumptions
+
+[geometry]
+span = "6'-0\""           # post to post, center to center
+
+[top_rail]
+section = "Pipe2STD"      # AISC designation (AISC Shapes Database v16.0)
+grade = "A53 Gr B"        # slice 1 supports A53 Gr B only
+
+[loads]
+# Leave these out to use the ASCE 7-22 values from the registry.
+# concentrated_lb = 200
+# uniform_plf = 50
+
+[loads.uniform_exemption]
+applies = false
+statement = ""            # required when applies = true: why §4.5.1.1 exempts this guard
+
+[deflection.rail]
+limit_L_over = 120        # limit = L / 120 (engineering judgement, not code)
+bypass = false
