@@ -81,15 +81,24 @@ slice uses; later slices add fields:
   when bypassed.
 - **What is and isn't a registry entry**: the beam formulas (PL/4, wL²/8,
   PL³/48EI, 5wL⁴/384EI) are registry entries citing AISC Manual Table 3-23
-  (D1). The L/120 limit and the engineering-judgement combination are
-  Micah's decisions recorded in the brief, not registry entries.
+  (D1). Engineering-judgement formulas are registry entries too, with
+  source "engineer" and status drafted (Micah's ruling on the PR #2
+  review, which resolves the conflict between this bullet and CLAUDE.md
+  rule 1): SRSS for round sections, the upward 0.6D + 1.0L combination,
+  the deflection D + L and live-only combinations, and Δ_allow = L/ratio.
+  Combination labels are generated from the same factors the expressions
+  use. The deflection D + L is labeled engineering judgement
+  (serviceability, not an ASD strength combination). The default ratio
+  (120) stays an input default, not a code value.
 
 ### Output (PDF)
 
 - A "DEVELOPMENT — NOT FOR CONSTRUCTION" watermark on every page
 - The "DRAFT: contains unverified code values" stamp on every page, with a
   list of the drafted entries used. Every entry starts as drafted, so the
-  stamp will be present until Micah verifies them all.
+  stamp will be present until Micah verifies them all. The list prints once,
+  in the front matter, and the stamp on every page points to it (confirmed
+  by Micah on the PR #2 review).
 - A reserved, empty header area. The footer shows the tool version (git
   commit), the registry version (git commit of the registry file) and
   "page x of y". If the code or the registry has uncommitted changes when
@@ -154,6 +163,13 @@ number):
   - a missing entry is a hard stop naming the entry
   - a calc using a drafted entry carries the DRAFT stamp and list
 - **Classification**: a slender or out-of-range D/t is a hard stop
+- **Eq. F8-2 is tested for machinery only.** Test case 1 is compact, so no
+  hand calc covers the noncompact branch (Eq. F8-2 and the min(Mp, Mn,LB)
+  step of §F8). `tests/test_checks.py` checks it against a plain-arithmetic
+  rewrite by the same author, which proves the calc-line machinery but not
+  the equation: a wrong coefficient in both would pass. A noncompact hand
+  case is added when thin-wall round HSS arrives (GitHub issue #3; Micah's
+  ruling on the PR #2 review).
 - **Units**: an attempt to mix incompatible units raises an error
 
 ## Build order
