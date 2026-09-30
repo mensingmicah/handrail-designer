@@ -6,10 +6,12 @@ is checked against a second, independent implementation.
 """
 
 import dataclasses
+import re
 
 import pytest
 
 from handrail import checks, dimensions, shapes
+from handrail.calc import fmt_sig
 from handrail.checks import SectionStop
 from handrail.project import DeflectionLimit, Loads, Member, Project, ProjectInfo
 from handrail.registry import Registry
@@ -108,13 +110,23 @@ def _fake(D_t):
 
 
 def test_slender_wall_is_a_hard_stop_naming_ratio_and_limit():
-    with pytest.raises(SectionStop, match=r"slender.*D/t = 300.*lambda_r = 0.31E/Fy = 256"):
-        checks.flexural_capacity(Registry(), _fake(300), "A53 Gr B")
+    reg = Registry()
+    lr = reg.get("aisc360.B4.1b.round_hss.lambda_r")
+    E, Fy = reg.get("material.steel.E").value, reg.get("material.A53_GrB.Fy").value
+    expected = (rf"slender.*D/t = 300 > lambda_r = {re.escape(str(lr.value))}E/Fy = "
+                rf"{re.escape(fmt_sig(lr.value * E / Fy))} \({re.escape(lr.cite)}\)")
+    with pytest.raises(SectionStop, match=expected):
+        checks.flexural_capacity(reg, _fake(300), "A53 Gr B")
 
 
 def test_beyond_F8_limit_is_a_hard_stop():
-    with pytest.raises(SectionStop, match=r"D/t = 400.*§F8 limit 0.45E/Fy = 372"):
-        checks.flexural_capacity(Registry(), _fake(400), "A53 Gr B")
+    reg = Registry()
+    app = reg.get("aisc360.F8.applicability")
+    E, Fy = reg.get("material.steel.E").value, reg.get("material.A53_GrB.Fy").value
+    expected = (rf"D/t = 400 is not less than the {re.escape(app.cite)} limit "
+                rf"{re.escape(str(app.value))}E/Fy = {re.escape(fmt_sig(app.value * E / Fy))}")
+    with pytest.raises(SectionStop, match=expected):
+        checks.flexural_capacity(reg, _fake(400), "A53 Gr B")
 
 
 def test_exemption_removes_distributed_cases():
@@ -173,3 +185,32 @@ def test_capacity_is_printed_once_at_the_head_of_every_bending_case(results):
     # the same Line objects in every case: capacity was computed once, not per case
     assert all(x is y for h in heads for x, y in zip(h, heads[0]))
     assert sum(1 for ln in chk1.controlling.lines if ln.symbol == "M_n") == 1
+
+
+def test_combination_labels_are_generated_from_the_factors_used():
+    reg = Registry()
+    res = checks.run(project(), reg)
+    up = next(c for c in res.checks[0].checked if c.direction == "Upward")
+    f = reg.get("ej.combo.bending.upward").value
+    assert up.combination.startswith(f"{float(f['D'])!r}D + {float(f['L'])!r}L")
+    # ...and the printed expression multiplies by exactly those factors
+    Ma = next(ln for ln in up.lines if ln.symbol == "M_a")
+    assert f'"{float(f["D"])!r}" M_D' in Ma.symbolic and f'"{float(f["L"])!r}" M_L' in Ma.symbolic
+    down = next(c for c in res.checks[1].checked if c.direction == "Downward")
+    assert reg.get("ej.combo.deflection.D_plus_L").cite in down.combination
+
+
+def test_upward_margin_note_states_the_net_sense(results):
+    up = [c for c in results.checks[0].checked if c.direction == "Upward"]
+    for c in up:
+        Ma = next(ln for ln in c.lines if ln.symbol == "M_a")
+        assert "net upward" in Ma.note  # guard load exceeds 0.6 x dead load for this rail
+
+
+def test_every_formula_line_prints_a_citation(results):
+    """Rule 1: every computed line cites a registry entry (or its source for givens)."""
+    for chk in results.checks:
+        for c in chk.checked:
+            for ln in c.lines:
+                if ln.kind == "value" and ln.symbolic and ln.symbolic != ln.symbol:
+                    assert ln.cite, f"no citation on {ln.symbol} = {ln.symbolic}"

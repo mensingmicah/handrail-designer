@@ -60,6 +60,12 @@ review = [
   "aisc_manual.t3-23.case1.delta",
   "aisc_manual.t3-23.case7.M",
   "aisc_manual.t3-23.case7.delta",
+  "aisc360.eq.B3-2",
+  "ej.bending.srss_round",
+  "ej.combo.bending.upward",
+  "ej.combo.deflection.D_plus_L",
+  "ej.combo.deflection.L_only",
+  "ej.deflection.limit",
 ]
 
 # ---------------------------------------------------------------------------
@@ -572,3 +578,102 @@ drafted_on = 2026-09-30
 verified_by = ""
 verified_date = ""
 note = "Same confidence as aisc_manual.t3-23.case7.M."
+
+[[entry]]
+id = "aisc360.eq.B3-2"
+value = "ASD: the required strength does not exceed the allowable strength, Rn/Omega"
+unit = "equation"
+cite = "AISC 360-22 Eq. B3-2"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§B3.2, Design for Strength Using Allowable Strength Design (ASD), Equation B3-2"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-09-30
+verified_by = ""
+verified_date = ""
+note = "From memory of 360-16 §B3.2; equation number assumed unchanged in 360-22. Cited on the Mn/Omega_b line and the bending ratio."
+
+# ---------------------------------------------------------------------------
+# Engineering judgement of the engineer of record (source "engineer")
+#
+# Not code values: formulas and combinations Micah adopted in docs/BRIEF.md
+# and the slice 1 plan. They are entries so every formula the calc prints
+# has one citation source (CLAUDE.md rule 1), and so a combination's printed
+# label is generated from the same factors its expression uses.
+# ---------------------------------------------------------------------------
+
+[[entry]]
+id = "ej.bending.srss_round"
+value = "Biaxial bending of a round section: resultant of the vertical and horizontal moments by the square root of the sum of the squares, against a single flexural capacity"
+unit = "equation"
+cite = "Engineering judgement (EOR): SRSS, round section"
+document = "Engineering decision of the engineer of record"
+edition = "docs/BRIEF.md"
+section = "Engineering decisions already made: biaxial bending (round HSS and pipe, and every round section)"
+source = "engineer"
+status = "drafted"
+drafted_on = 2026-09-30
+verified_by = ""
+verified_date = ""
+note = "Exact for a round section, which has the same capacity about every axis."
+
+[[entry]]
+id = "ej.combo.bending.upward"
+value = { D = 0.6, L = 1.0 }
+unit = "factors"
+cite = "Engineering judgement (EOR): upward case, not an ASCE combination"
+document = "Engineering decision of the engineer of record"
+edition = "docs/BRIEF.md"
+section = "Engineering decisions already made: upward case uses a minimum-dead-load ASD combination, net on the vertical axis"
+source = "engineer"
+status = "drafted"
+drafted_on = 2026-09-30
+verified_by = ""
+verified_date = ""
+note = "ASCE 7-22 has no combination for this case; crediting reduced dead load is deliberate (brief)."
+
+[[entry]]
+id = "ej.combo.deflection.D_plus_L"
+value = { D = 1.0, L = 1.0 }
+unit = "factors"
+cite = "Engineering judgement (EOR): serviceability"
+document = "Engineering decision of the engineer of record"
+edition = "docs/BRIEF.md"
+section = "Checks, 2: top rail deflection, downward case D + L on the vertical axis"
+source = "engineer"
+status = "drafted"
+drafted_on = 2026-09-30
+verified_by = ""
+verified_date = ""
+note = "Serviceability, not an ASD strength combination; labeled engineering judgement per Micah (PR #2 ruling)."
+
+[[entry]]
+id = "ej.combo.deflection.L_only"
+value = { L = 1.0 }
+unit = "factors"
+cite = "Engineering judgement (EOR): serviceability, live load only"
+document = "Engineering decision of the engineer of record"
+edition = "docs/BRIEF.md; docs/plans/slice-1.md D2"
+section = "Checks, 2: horizontal cases live load only; upward case live load only (plan D2)"
+source = "engineer"
+status = "drafted"
+drafted_on = 2026-09-30
+verified_by = ""
+verified_date = ""
+note = "Dead load is on the other axis for the horizontal cases, and is not credited against the upward case."
+
+[[entry]]
+id = "ej.deflection.limit"
+value = "Allowable deflection: span divided by the limit ratio the engineer enters (default L/120 for the rail span, editable, bypassable)"
+unit = "equation"
+cite = "Engineering judgement (EOR): deflection limit, not code"
+document = "Engineering decision of the engineer of record"
+edition = "docs/BRIEF.md"
+section = "Inputs: deflection limits (engineering experience, not code)"
+source = "engineer"
+status = "drafted"
+drafted_on = 2026-09-30
+verified_by = ""
+verified_date = ""
+note = "The default ratio (120) is an input default in the project reader, not a code value."

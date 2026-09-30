@@ -22,9 +22,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from handrail.calc import Const, Line, Sheet, Sym, absolute, fmt_quantity_plain, minimum, mtext, sqrt
+from handrail.calc import Const, Line, Sheet, Sym, absolute, fmt_quantity_plain, fmt_sig, minimum, mtext, sqrt
 from handrail.project import Member, Project, ProjectError
-from handrail.registry import Registry
+from handrail.registry import Entry, Registry
 from handrail.shapes import PipeSection
 from handrail.units import Q_
 
@@ -33,7 +33,6 @@ CONCENTRATED, DISTRIBUTED = "Concentrated", "Distributed"
 LOAD_TYPES = (CONCENTRATED, DISTRIBUTED)
 
 DB = "AISC Shapes Database v16.0"
-EJ = "engineering judgement"
 COMBO = "asce7.combo.asd.D_plus_L"
 
 # Fy entry for each grade this slice supports.
@@ -207,8 +206,17 @@ class Capacity:
 
 
 def flexural_capacity(registry: Registry, rail: PipeSection, grade: str) -> Capacity:
-    """Classify the section and compute M_n/Omega_b. Raises SectionStop."""
+    """Classify the section and compute M_n/Omega_b. Raises SectionStop.
+
+    Every coefficient and citation in the printed lines and the stop
+    messages is read from its registry entry (CLAUDE.md rule 1).
+    """
     sh = Sheet(registry)
+    app = registry.get("aisc360.F8.applicability")
+    lp_e = registry.get("aisc360.B4.1b.round_hss.lambda_p")
+    lr_e = registry.get("aisc360.B4.1b.round_hss.lambda_r")
+    f82 = registry.get("aisc360.eq.F8-2")
+
     sh.decision(
         mtext(f"{rail.label}, {grade}"), "Designed as round HSS",
         "Pipe is designed under the round HSS provisions",
@@ -217,27 +225,24 @@ def flexural_capacity(registry: Registry, rail: PipeSection, grade: str) -> Capa
     Fy = sh.code_value("F_y", FY_ENTRY[grade], f"Yield stress, {grade}")
     E = sh.code_value("E", "material.steel.E", "Modulus of elasticity")
     lam = sh.given("lambda", rail.D_t, "lambda = D/t, tabulated (design wall)", DB)
-    lim = sh.line("lambda_\"lim\"", sh.coeff("aisc360.F8.applicability") * E / Fy,
-                  "§F8 applies to D/t below this limit")
-    lp = sh.line("lambda_p", sh.coeff("aisc360.B4.1b.round_hss.lambda_p") * E / Fy,
-                 "Compact limit, round HSS in flexure")
-    lr = sh.line("lambda_r", sh.coeff("aisc360.B4.1b.round_hss.lambda_r") * E / Fy,
-                 "Noncompact limit, round HSS in flexure")
+    lim = sh.line("lambda_\"lim\"", sh.coeff(app.id) * E / Fy, "Applicability limit on D/t")
+    lp = sh.line("lambda_p", sh.coeff(lp_e.id) * E / Fy, "Compact limit, round HSS in flexure")
+    lr = sh.line("lambda_r", sh.coeff(lr_e.id) * E / Fy, "Noncompact limit, round HSS in flexure")
 
     D_t, name = rail.D_t, rail.label
     if not D_t < lim.value:
         raise SectionStop(
-            f"{name}: D/t = {D_t:g} is not less than the AISC 360-22 §F8 limit "
-            f"0.45E/Fy = {lim.value:.1f}. The tool does not check this section."
+            f"{name}: D/t = {D_t:g} is not less than the {app.cite} limit "
+            f"{app.value}E/Fy = {fmt_sig(lim.value)}. The tool does not check this section."
         )
     if D_t > lr.value:
         raise SectionStop(
-            f"{name}: wall is slender in flexure, D/t = {D_t:g} > lambda_r = 0.31E/Fy = "
-            f"{lr.value:.1f} (AISC 360-22 Table B4.1b). The tool does not check slender sections."
+            f"{name}: wall is slender in flexure, D/t = {D_t:g} > lambda_r = {lr_e.value}E/Fy = "
+            f"{fmt_sig(lr.value)} ({lr_e.cite}). The tool does not check slender sections."
         )
     sh.decision(
-        f"lambda = {D_t:g} < lambda_\"lim\" = {lim.value:.3g}", "§F8 applies",
-        "Applicability", cite_ids=("aisc360.F8.applicability",),
+        f"lambda = {D_t:g} < lambda_\"lim\" = {fmt_sig(lim.value)}", "Applies",
+        "Applicability", cite_ids=(app.id,),
     )
 
     Z = sh.given("Z", rail.Z, "Plastic section modulus", DB)
@@ -245,27 +250,28 @@ def flexural_capacity(registry: Registry, rail: PipeSection, grade: str) -> Capa
                  unit="lbf*inch")
     flags = []
     if D_t <= lp.value:
-        sh.decision(f"lambda = {D_t:g} <= lambda_p = {lp.value:.3g}", "Compact",
+        sh.decision(f"lambda = {D_t:g} <= lambda_p = {fmt_sig(lp.value)}", "Compact",
                     "Section classification", cite_ids=("aisc360.B4.1b.classification",))
         sh.decision(mtext("Compact wall"), "Local buckling does not apply",
                     "", cite_ids=("aisc360.F8.nominal_strength",))
         Mn = sh.line("M_n", Mp, "Nominal flexural strength", cite_ids=("aisc360.F8.nominal_strength",),
                      unit="lbf*inch")
     else:
-        sh.decision(f"lambda_p = {lp.value:.3g} < lambda = {D_t:g} <= lambda_r = {lr.value:.3g}",
+        sh.decision(f"lambda_p = {fmt_sig(lp.value)} < lambda = {D_t:g} <= lambda_r = {fmt_sig(lr.value)}",
                     "NONCOMPACT", "Section classification: reduced capacity",
                     cite_ids=("aisc360.B4.1b.classification",))
         flags.append(
-            f"NONCOMPACT: {name} D/t = {D_t:g} exceeds lambda_p = {lp.value:.3g} "
-            f"(lambda_r = {lr.value:.3g}); Mn reduced by local buckling, Eq. F8-2."
+            f"NONCOMPACT: {name} D/t = {D_t:g} exceeds lambda_p = {fmt_sig(lp.value)} "
+            f"(lambda_r = {fmt_sig(lr.value)}); Mn reduced by local buckling, {f82.cite}."
         )
         S = sh.given("S", rail.S, "Elastic section modulus", DB)
         Mlb = sh.line("M_(n,\"LB\")", (sh.coeff("aisc360.eq.F8-2.coeff") * E / lam + Fy) * S,
-                      "Local buckling, noncompact wall", cite_ids=("aisc360.eq.F8-2",), unit="lbf*inch")
+                      "Local buckling, noncompact wall", cite_ids=(f82.id,), unit="lbf*inch")
         Mn = sh.line("M_n", minimum(Mp, Mlb), "Lower of yielding and local buckling",
                      cite_ids=("aisc360.F8.nominal_strength",), unit="lbf*inch")
     Om = sh.code_value("Omega_b", "aisc360.F1.omega_b", "Safety factor for flexure (ASD)")
-    Ma = sh.line("M_n / Omega_b", Mn / Om, "Allowable flexural strength", unit="lbf*inch")
+    Ma = sh.line("M_n / Omega_b", Mn / Om, "Allowable flexural strength",
+                 cite_ids=("aisc360.eq.B3-2",), unit="lbf*inch")
     return Capacity(allow=Ma, lines=sh.lines, flags=flags)
 
 
@@ -279,12 +285,16 @@ def _live_moment(sh: Sheet, load_type: str, L: Sym, loading: Loading) -> Sym:
                    cite_ids=("aisc_manual.t3-23.case1.M",), unit="lbf*inch")
 
 
-BENDING_COMBO = {
-    "Downward": "D + L, vertical (ASCE 7-22 §2.4.1)",
-    "Outward": "D vertical, L horizontal, SRSS",
-    "Inward": "D vertical, L horizontal, SRSS",
-    "Upward": f"0.6D + 1.0L, net vertical ({EJ})",
-}
+def combo_text(entry: Entry, axes: dict[str, str] | None = None, joiner: str = " + ") -> str:
+    """Combination label generated from the factors the expression uses: '0.6D + 1.0L'.
+
+    With ``axes`` ({"D": "vertical", "L": "horizontal"}), each term carries its axis.
+    """
+    terms = []
+    for load, factor in entry.value.items():
+        term = f"{float(factor)!r}{load}"
+        terms.append(f"{term} {axes[load]}" if axes else term)
+    return joiner.join(terms)
 
 
 def _bending_case(registry, project, rail, loading, cap: Capacity, direction, load_type) -> Case:
@@ -300,35 +310,37 @@ def _bending_case(registry, project, rail, loading, cap: Capacity, direction, lo
     ML = _live_moment(sh, load_type, L, loading)
 
     if direction == "Downward":
-        M = sh.line("M_a", sh.factor(COMBO, "D") * MD + sh.factor(COMBO, "L") * ML,
+        combo = registry.get(COMBO)
+        M = sh.line("M_a", sh.factor(combo.id, "D") * MD + sh.factor(combo.id, "L") * ML,
                     "Required flexural strength: D and L on the same axis", unit="lbf*inch")
+        label = f"{combo_text(combo)}, vertical\n{combo.cite}"
     elif direction in ("Outward", "Inward"):
-        Mv = sh.line("M_(a,v)", sh.factor(COMBO, "D") * MD, "Vertical axis: dead load", unit="lbf*inch")
-        Mh = sh.line("M_(a,h)", sh.factor(COMBO, "L") * ML, f"Horizontal axis: guard load {direction.lower()}",
+        combo, srss = registry.get(COMBO), registry.get("ej.bending.srss_round")
+        Mv = sh.line("M_(a,v)", sh.factor(combo.id, "D") * MD, "Vertical axis: dead load", unit="lbf*inch")
+        Mh = sh.line("M_(a,h)", sh.factor(combo.id, "L") * ML, f"Horizontal axis: guard load {direction.lower()}",
                      unit="lbf*inch")
         M = sh.line("M_a", sqrt(Mv**2 + Mh**2),
-                    "Resultant moment, SRSS: exact for a round section, one capacity",
-                    cite="Biaxial bending of round sections (brief)", unit="lbf*inch")
+                    "Resultant moment: exact for a round section, one capacity",
+                    cite_ids=(srss.id,), unit="lbf*inch")
+        label = (f"{combo_text(combo, {'D': 'vertical', 'L': 'horizontal'}, ', ')}, SRSS\n"
+                 f"{combo.cite}; {srss.cite}")
     else:  # Upward
-        M = sh.line("M_a", absolute(Const(0.6) * MD - Const(1.0) * ML),
-                    "Net vertical moment, guard load opposing dead load",
-                    cite=f"0.6D + 1.0L: {EJ}, not an ASCE combination", unit="lbf*inch")
+        combo = registry.get("ej.combo.bending.upward")
+        fD, fL = sh.factor(combo.id, "D"), sh.factor(combo.id, "L")
+        net = fD.value * MD.value - fL.value * ML.value  # dead load acts down, guard load up
+        sense = "net upward" if net < 0 else "net downward"
+        M = sh.line("M_a", absolute(fD * MD - fL * ML),
+                    f"Net vertical moment, guard load opposing dead load: {sense}", unit="lbf*inch")
+        label = f"{combo_text(combo)}, net vertical\n{combo.cite}"
 
-    ratio = sh.line('"Ratio"', M / Ma_allow, "Demand / capacity", ratio=True)
-    return Case(direction, load_type, "checked", BENDING_COMBO[direction],
+    ratio = sh.line('"Ratio"', M / Ma_allow, "Demand / capacity", cite_ids=("aisc360.eq.B3-2",), ratio=True)
+    return Case(direction, load_type, "checked", label,
                 demand=M.value, capacity=Ma_allow.value, ratio=ratio.value, lines=sh.lines)
 
 
 # ---------------------------------------------------------------------------
 # Check 2: deflection
 # ---------------------------------------------------------------------------
-
-DEFLECTION_COMBO = {
-    "Downward": f"D + L, vertical ({EJ})",
-    "Outward": "L only, horizontal",
-    "Inward": "L only, horizontal",
-    "Upward": "L only, vertical",
-}
 
 
 def _deflection_case(registry, project, rail, loading, direction, load_type) -> Case:
@@ -345,20 +357,26 @@ def _deflection_case(registry, project, rail, loading, direction, load_type) -> 
         DL = sh.line("Delta_L", 5 * w * L**4 / (384 * E * I), "Live-load deflection, midspan",
                      cite_ids=("aisc_manual.t3-23.case1.delta",), unit="inch")
     if direction == "Downward":
+        combo = registry.get("ej.combo.deflection.D_plus_L")
         wD = sh.given("w_D", loading.w_D, "Top rail self-weight", "Loading")
         DD = sh.line("Delta_D", 5 * wD * L**4 / (384 * E * I), "Dead-load deflection, midspan",
                      cite_ids=("aisc_manual.t3-23.case1.delta",), unit="inch")
-        D = sh.line("Delta", DD + DL, "D + L, same (vertical) axis", cite=f"D + L: {EJ}", unit="inch")
+        D = sh.line("Delta", sh.factor(combo.id, "D") * DD + sh.factor(combo.id, "L") * DL,
+                    "D and L on the same (vertical) axis", unit="inch")
+        axis = "vertical"
     else:
+        combo = registry.get("ej.combo.deflection.L_only")
         note = "Live load only" + (": opposes dead load, dead load not credited" if direction == "Upward" else "")
-        D = sh.line("Delta", DL, note, cite="Live load only (brief, Check 2)", unit="inch")
+        D = sh.line("Delta", sh.factor(combo.id, "L") * DL, note, unit="inch")
+        axis = "vertical" if direction == "Upward" else "horizontal"
+    label = f"{combo_text(combo)}, {axis}\n{combo.cite}"
 
     r = project.rail_deflection.ratio
     lim = Const(int(r) if float(r).is_integer() else r)
     Dallow = sh.line('Delta_"allow"', L / lim, f"Limit L/{lim.value}",
-                     cite=f"Deflection limit: {EJ}, not code", unit="inch")
-    ratio = sh.line('"Ratio"', D / Dallow, "Deflection / limit", ratio=True)
-    return Case(direction, load_type, "checked", DEFLECTION_COMBO[direction],
+                     cite_ids=("ej.deflection.limit",), unit="inch")
+    ratio = sh.line('"Ratio"', D / Dallow, "Deflection / limit", cite_ids=("ej.deflection.limit",), ratio=True)
+    return Case(direction, load_type, "checked", label,
                 demand=D.value, capacity=Dallow.value, ratio=ratio.value, lines=sh.lines)
 
 
@@ -376,8 +394,9 @@ def _envelope(case_fn, registry, project, rail, loading) -> list[Case]:
             continue
         for lt in LOAD_TYPES:
             if lt == DISTRIBUTED and loading.exempt:
+                exemption = registry.get("asce7.guard.uniform.exemption.intro")
                 cases.append(Case(direction, lt, "exempt",
-                                  remark="Uniform load not considered (ASCE 7-22 §4.5.1.1 exemption)"))
+                                  remark=f"Uniform load not considered ({exemption.cite})"))
                 continue
             cases.append(case_fn(registry, project, rail, loading, direction, lt))
     return cases
