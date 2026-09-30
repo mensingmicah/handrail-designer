@@ -262,7 +262,9 @@ class BinOp(Expr):
         if self.op == "/":
             return f"frac({a}, {b})"  # a fraction bar needs no parentheses
         if self.op == "^":
-            return f"{_paren(self.a, a, _ATOM)}^({b})"
+            # A fraction symbol, such as Lc/r, needs parentheses to take an exponent.
+            base = f"({a})" if a.startswith("frac(") else _paren(self.a, a, _ATOM)
+            return f"{base}^({b})"
         if self.op == "*":
             sep = " dot " if part == "substituted" and not _starts_paren(b) else " "
             return f"{_paren(self.a, a, _MUL)}{sep}{_paren(self.b, b, _MUL)}"

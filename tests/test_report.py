@@ -153,3 +153,68 @@ def test_check_1_states_that_ltb_does_not_apply():
     ltb = [ln for ln in lines if ln.kind == "decision" and "Lateral-torsional" in (ln.text or "")]
     assert len(ltb) == 1
     assert ltb[0].cite == reg.get("aisc360.F8.no_ltb").cite
+
+
+# ---------------------------------------------------------------------------
+# Slice 2: the post pages
+# ---------------------------------------------------------------------------
+
+
+def test_dimensions_page_echoes_h_and_tp_and_prints_the_derived_lengths():
+    res, reg = run()
+    src = report.build_source(res, reg, CLEAN)
+    assert '"Post height h, top of concrete to top rail centerline", "42", "3\'-6\\"", "42.00 in"' in src
+    assert '"Baseplate thickness t_p", "1/2", "1/2\\"", "0.5000 in"' in src
+    assert '"Post cantilever length h - t_p", "41.50 in", "Loading"' in src
+    assert '"Effective length Lc = K h", "88.20 in", "Check 5"' in src
+
+
+def test_section_properties_page_has_a_post_block_with_r():
+    res, reg = run()
+    src = report.build_source(res, reg, CLEAN)
+    props = src.split("= Section properties")[1].split("\n= ")[0]
+    assert '"Post: Pipe2STD, A53 Gr B."' in props
+    assert "Radius of gyration" in props
+
+
+def test_check_5_envelope_prints_alpha_ratio_only_for_moment_cases():
+    res, reg = run()
+    chk5 = res.checks[2]
+    table = report._envelope_5(chk5)
+    for c in chk5.checked:
+        if c is not chk5.controlling:  # the controlling row is bold, so its cells are wrapped
+            assert f'"{c.direction}", "{c.load_type}"' in table
+    # downward and upward rows carry a dash in the Mr and alpha Pr/Pe columns
+    assert table.count('"—"') == 2 * 4
+    assert '"Eq. H1-1b"' in table and '"Pr/Pc (Ch. E)"' in table and '"Pr/Pt (Ch. D)"' in table
+
+
+def test_summary_prints_the_check_5_axial_and_moment_terms():
+    res, reg = run()
+    src = report.build_source(res, reg, CLEAN)
+    summary = src.split("= Summary")[1]
+    c = res.checks[2].controlling
+    assert c.Mr is not None
+    assert f'"Pr = {report.fmt_quantity_plain(c.Pr)}; Mr = {report.fmt_quantity_plain(c.Mr)}"' in summary
+    assert f'"Pc = {report.fmt_quantity_plain(c.P_allow)}; Mc = {report.fmt_quantity_plain(c.M_allow)}"' in summary
+    for n in ("1. ", "2. ", "5. ", "6. "):
+        assert f'"{n}' in summary
+
+
+def test_slenderness_flag_prints_in_the_check_5_summary_row():
+    p = Project(info=ProjectInfo(name="t"), span=dimensions.parse("6'-0\""),
+                top_rail=Member("Pipe2STD", "A53 Gr B"), post=Member("Pipe1STD", "A53 Gr B"),
+                post_height=dimensions.parse("42"), baseplate_thickness=dimensions.parse("1/2"))
+    reg = Registry()
+    res = checks.run(p, reg)
+    src = report.build_source(res, reg, CLEAN)
+    summary = src.split("= Summary")[1]
+    assert "(Lc/r = 208.5 > 200, flagged)" in summary
+    assert "SLENDERNESS: Pipe1STD" in src  # the flag box on the Check 5 page
+
+
+def test_second_order_sentence_is_printed_in_the_controlling_moment_case():
+    res, reg = run()
+    src = report._lines(res.checks[2].controlling.lines)
+    assert "Second-order effects negligible: αPr/Pe = " in src
+    assert "amplification taken as 1.0." in src

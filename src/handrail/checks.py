@@ -73,6 +73,7 @@ class Check:
     capacity_label: str  # Typst math
     cases: list[Case] = field(default_factory=list)
     flags: list[str] = field(default_factory=list)
+    summary_flag: str = ""  # short flag text printed in the summary row (e.g. Lc/r above 200)
     bypassed: bool = False
 
     @property
@@ -184,7 +185,8 @@ def build_loading(project: Project, registry: Registry, rail: PipeSection, post:
     tp = sh.given("t_p", project.baseplate_thickness.value, "Baseplate thickness", "Input")
     L_post = sh.line('L_"post"', h - tp, "Post cantilever length, top of baseplate to top rail centerline",
                      cite="Stated assumption: post fixed at the top of the baseplate", unit="inch")
-    W_post = sh.given('W_"post"', post.W, f"Post self-weight: {post.label}, tabulated W", DB)
+    W_post = sh.given('W_"post"', post.W,
+                      f"Post self-weight: {post.label}, tabulated W = {post.W.m_as('lbf/ft'):g} lb/ft", DB)
     D_post = sh.line('D_"post"', W_post * L_post, "Post dead load, full weight at the base",
                      cite_ids=(dl,), unit="lbf")
     s = sh.given("L", project.span.value, "Span: the tributary length for the post (stated assumption)", "Input")

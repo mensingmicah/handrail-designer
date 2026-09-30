@@ -43,6 +43,8 @@ class PostCase(Case):
     Pr: object = None                 # required axial strength (sense gives its direction)
     sense: str = ""                   # "compression" or "tension"
     Mr: object = None                 # required flexural strength; None in the axial-only cases
+    P_allow: object = None            # Pc (compression) or Pt (tension)
+    M_allow: object = None            # Mc; None in the axial-only cases
     equation: str = ""                # the equation the ratio comes from, as printed
     second_order: float | None = None  # alpha Pr/Pe, moment cases only
 
@@ -60,6 +62,7 @@ class Compression:
     Lc: Sym
     Pc: Sym
     flags: list[str]
+    summary_flag: str
 
 
 def compression_capacity(registry: Registry, project: Project, post: PipeSection) -> Compression:
@@ -90,12 +93,13 @@ def compression_capacity(registry: Registry, project: Project, post: PipeSection
 
     note_e = registry.get("aisc360.E2.user_note.slenderness")
     limit = registry.get("aisc360.E2.user_note.slenderness.limit").value
-    flags = []
+    flags, summary_flag = [], ""
     if slenderness.value > limit:
         sh.decision(f"frac(L_c, r) = {fmt_sig(slenderness.value)} > {limit}", "FLAG: exceeds the recommended limit",
                     f"{note_e.value} Flagged; the calc continues (plan D6).", cite_ids=(note_e.id,))
         flags.append(f"SLENDERNESS: {post.label} Lc/r = {fmt_sig(slenderness.value)} exceeds {limit}, "
                      f"the limit recommended by the {note_e.cite}. Flagged; the calc continues.")
+        summary_flag = f"Lc/r = {fmt_sig(slenderness.value)} > {limit}, flagged"
     else:
         sh.decision(f"frac(L_c, r) = {fmt_sig(slenderness.value)} <= {limit}", "Within the recommended limit",
                     note_e.value, cite_ids=(note_e.id,))
@@ -107,7 +111,8 @@ def compression_capacity(registry: Registry, project: Project, post: PipeSection
     if slenderness.value <= lim.value:
         sh.decision(f"frac(L_c, r) = {fmt_sig(slenderness.value)} <= {fmt_sig(lim.value)}",
                     "Inelastic buckling: Eq. E3-2", "", cite_ids=("aisc360.E3.branch_limit",))
-        Fcr = sh.line('F_"cr"', sh.coeff("aisc360.eq.E3-2.base") ** (Fy / Fe) * Fy, "Critical stress",
+        FyFe = sh.line("frac(F_y, F_e)", Fy / Fe, "Exponent in Eq. E3-2", cite_ids=("aisc360.eq.E3-2",))
+        Fcr = sh.line('F_"cr"', sh.coeff("aisc360.eq.E3-2.base") ** FyFe * Fy, "Critical stress",
                       cite_ids=("aisc360.eq.E3-2",), unit="ksi")
     else:
         sh.decision(f"frac(L_c, r) = {fmt_sig(slenderness.value)} > {fmt_sig(lim.value)}",
@@ -118,7 +123,8 @@ def compression_capacity(registry: Registry, project: Project, post: PipeSection
     Pn = sh.line("P_n", Fcr * A, "Nominal compressive strength", cite_ids=("aisc360.eq.E3-1",), unit="lbf")
     Om = sh.code_value("Omega_c", "aisc360.E1.omega_c", "Safety factor for compression (ASD)")
     Pc = sh.line("P_c", Pn / Om, "Allowable compressive strength", cite_ids=("aisc360.eq.B3-2",), unit="lbf")
-    return Compression(head=head.lines, body=sh.lines, E=E, Lc=Lc, Pc=Pc, flags=flags)
+    return Compression(head=head.lines, body=sh.lines, E=E, Lc=Lc, Pc=Pc, flags=flags,
+                       summary_flag=summary_flag)
 
 
 @dataclass
@@ -196,7 +202,7 @@ def _downward(registry, project, loading, cap: Capacity5, load_type) -> PostCase
                     ratio=True)
     return PostCase("Downward", load_type, "checked", f"{combo_text(combo)}, axial\n{combo.cite}",
                     demand=Pr.value, capacity=Pc.value, ratio=ratio.value, lines=sh.lines,
-                    Pr=Pr.value, sense="compression", equation="Pr/Pc (Ch. E)")
+                    Pr=Pr.value, sense="compression", P_allow=Pc.value, equation="Pr/Pc (Ch. E)")
 
 
 def _moment_case(registry, project, post, loading, cap: Capacity5, direction, load_type) -> PostCase:
@@ -231,12 +237,12 @@ def _moment_case(registry, project, post, loading, cap: Capacity5, direction, lo
             f"The tool does not amplify for second-order effects."
         )
     sentence = registry.get("ej.second_order.negligible")
-    sh.decision(f"frac(alpha P_r, P_e) = {fmt_sig(a_ratio.value)} <= {lim.value}",
-                sentence.value.format(ratio=fmt_sig(a_ratio.value)), "", cite_ids=(lim.id, sentence.id))
+    sh.decision(f"frac(alpha P_r, P_e) <= {lim.value}",
+                sentence.value.format(ratio=fmt_sig(a_ratio.value)), "", cite_ids=(lim.id,))
 
     Pc, Mc = comp.Pc, cap.Mc
-    PrPc = sh.line("frac(P_r, P_c)", Pr / Pc, "Axial ratio, selects the interaction equation")
     t = registry.get("aisc360.H1.1.threshold")
+    PrPc = sh.line("frac(P_r, P_c)", Pr / Pc, "Axial ratio, selects the interaction equation", cite_ids=(t.id,))
     if PrPc.value >= t.value:
         sh.decision(f"frac(P_r, P_c) = {fmt_sig(PrPc.value)} >= {t.value}", "Eq. H1-1a", "", cite_ids=(t.id,))
         ratio = sh.line('"Ratio"', PrPc + sh.fraction("aisc360.eq.H1-1a.coeff") * (Mr / Mc),
@@ -250,7 +256,8 @@ def _moment_case(registry, project, post, loading, cap: Capacity5, direction, lo
     axes = {"D": "axial", "L": "horizontal"}
     return PostCase(direction, load_type, "checked", f"{combo_text(combo, axes, ', ')}\n{combo.cite}",
                     demand=Mr.value, capacity=Mc.value, ratio=ratio.value, lines=sh.lines,
-                    Pr=Pr.value, sense="compression", Mr=Mr.value, equation=f"Eq. {equation}",
+                    Pr=Pr.value, sense="compression", Mr=Mr.value, P_allow=Pc.value, M_allow=Mc.value,
+                    equation=f"Eq. {equation}",
                     second_order=a_ratio.value)
 
 
@@ -276,12 +283,13 @@ def _upward(registry, project, loading, cap: Capacity5, load_type) -> PostCase:
                     cite_ids=("aisc360.eq.B3-2",), ratio=True)
     return PostCase("Upward", load_type, "checked", label,
                     demand=Pr.value, capacity=tension.Pt.value, ratio=ratio.value, lines=sh.lines,
-                    Pr=Pr.value, sense="tension", equation="Pr/Pt (Ch. D)")
+                    Pr=Pr.value, sense="tension", P_allow=tension.Pt.value, equation="Pr/Pt (Ch. D)")
 
 
 def check_5(registry: Registry, project: Project, post: PipeSection, loading: Loading) -> Check:
     cap = _capacity(registry, project, post)
-    chk = Check(5, "Post combined axial and flexure", "P_r, M_r", "P_c, M_c", flags=cap.flags)
+    chk = Check(5, "Post combined axial and flexure", "P_r, M_r", "P_c, M_c", flags=cap.flags,
+                summary_flag=cap.compression.summary_flag)
     for direction in DIRECTIONS:
         for lt in LOAD_TYPES:
             if lt == DISTRIBUTED and loading.exempt:
