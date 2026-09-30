@@ -31,63 +31,77 @@ bypass = false
 
 # ---------------------------------------------------------------------------
 # Hand values
+#
+# Provenance: every value below comes from Micah's independent hand calc,
+# done before he saw any tool output, with two exceptions recorded here:
+#
+# - check1.moment_lbin.upward_distributed: entered as 355.048, a
+#   transcription typo; Micah confirmed 3,555.05 lb-in (his own ratio,
+#   0.403, was already consistent with 3,555.05).
+# - The four upward deflection values (check2.deflection_in and
+#   check2.ratio, upward_concentrated and upward_distributed): the hand
+#   calc credited 0.6D against the upward deflection. After comparison,
+#   Micah kept plan D2 (upward deflection is live load only) and replaced
+#   them with his live-only values, his Delta_L before the 0.6D credit.
+#   These four were corrected to the rule after seeing the tool's values,
+#   so they are not an independent check of the tool.
 # ---------------------------------------------------------------------------
 
 [hand.section]
 # Section properties used (AISC Shapes Database v16.0, as published)
-D_in = "pending"
-tdes_in = "pending"
-I_in4 = "pending"
-S_in3 = "pending"
-Z_in3 = "pending"
-D_t = "pending"
-w_D_plf = "pending"            # rail dead load = tabulated W
+D_in = 1.9
+tdes_in = 0.135
+I_in4 = 0.293
+S_in3 = 0.309
+Z_in3 = 0.421
+D_t = 14.1
+w_D_plf = 2.72            # rail dead load = tabulated W
 
 [hand.check1]
-Mn_lbin = "pending"
-Mn_over_Omega_lbin = "pending"
-controlling = "pending"        # e.g. "downward, concentrated"
+Mn_lbin = 14735
+Mn_over_Omega_lbin = 8823.353
+controlling = "downward, concentrated"        # e.g. "downward, concentrated"
 
 [hand.check1.moment_lbin]      # required moment M_a for each envelope case
-downward_concentrated = "pending"
-downward_distributed = "pending"
-outward_concentrated = "pending"
-outward_distributed = "pending"
-inward_concentrated = "pending"
-inward_distributed = "pending"
-upward_concentrated = "pending"
-upward_distributed = "pending"
+downward_concentrated = 4399.92
+downward_distributed = 3874.92
+outward_concentrated = 4204.755
+outward_distributed = 3680.434
+inward_concentrated = 4204.755
+inward_distributed = 3680.434
+upward_concentrated = 4080.048
+upward_distributed = 3555.05          # typo 355.048 corrected by Micah
 
 [hand.check1.ratio]
-downward_concentrated = "pending"
-downward_distributed = "pending"
-outward_concentrated = "pending"
-outward_distributed = "pending"
-inward_concentrated = "pending"
-inward_distributed = "pending"
-upward_concentrated = "pending"
-upward_distributed = "pending"
+downward_concentrated = 0.499
+downward_distributed = 0.439
+outward_concentrated = 0.477
+outward_distributed = 0.417
+inward_concentrated = 0.477
+inward_distributed = 0.417
+upward_concentrated = 0.462
+upward_distributed = 0.403
 
 [hand.check2]
-Delta_allow_in = "pending"
-controlling = "pending"        # e.g. "downward, distributed"
+Delta_allow_in = 0.7
+controlling = "downward, distributed"        # e.g. "downward, distributed"
 
 [hand.check2.deflection_in]    # deflection for each envelope case
-downward_concentrated = "pending"
-downward_distributed = "pending"
-outward_concentrated = "pending"
-outward_distributed = "pending"
-inward_concentrated = "pending"
-inward_distributed = "pending"
-upward_concentrated = "pending"
-upward_distributed = "pending"
+downward_concentrated = 0.308
+downward_distributed = 0.335
+outward_concentrated = 0.291
+outward_distributed = 0.318
+inward_concentrated = 0.291
+inward_distributed = 0.318
+upward_concentrated = 0.2906          # corrected to live-only (D2), see note
+upward_distributed = 0.3179          # corrected to live-only (D2), see note
 
 [hand.check2.ratio]
-downward_concentrated = "pending"
-downward_distributed = "pending"
-outward_concentrated = "pending"
-outward_distributed = "pending"
-inward_concentrated = "pending"
-inward_distributed = "pending"
-upward_concentrated = "pending"
-upward_distributed = "pending"
+downward_concentrated = 0.44
+downward_distributed = 0.479
+outward_concentrated = 0.415
+outward_distributed = 0.454
+inward_concentrated = 0.415
+inward_distributed = 0.454
+upward_concentrated = 0.415          # corrected to live-only (D2), see note
+upward_distributed = 0.454          # corrected to live-only (D2), see note
