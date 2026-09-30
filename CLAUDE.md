@@ -23,7 +23,10 @@ on, or write, auto-memory for it.
 ## Rules
 
 1. Code values and code provision text live only in the code-value registry
-   (registry/code-values.toml). Claude may draft entries from memory or the
+   (registry/code-values.toml). Every formula or equation the tool uses also
+   has a registry entry giving its reference (beam formulas cite AISC Manual
+   Table 3-23); the equation itself is implemented once in the code and
+   prints that citation. Claude may draft entries from memory or the
    web. Each drafted entry records the value or text; the document, edition
    and exact section, table or equation; the source, one of "memory", the
    URL, or "engineer" for a value I supplied directly; status "drafted"; and

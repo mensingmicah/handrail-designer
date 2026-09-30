@@ -56,6 +56,9 @@ Out of scope for v1 (push back if I try to add these):
   and additional assumptions. The tool's own stated assumptions are locked
   and always printed; the engineer can add to them but not edit or remove
   them.
+- A note on the input page states that loading is per ASCE 7-22 only (not
+  local IBC amendments or exceptions). The PDF covers this through its code
+  references.
 - Distributed-load exemption: a checkbox. Ticking it opens a short text box
   where the engineer states that the guard falls under the ASCE 7-22
   §4.5.1.1 exemption; that text prints on the loading page. An info box next
@@ -99,7 +102,8 @@ Out of scope for v1 (push back if I try to add these):
 
 1. Top rail bending (simple span)
 2. Top rail deflection: downward case D + L on the vertical axis; horizontal
-   cases live load only on the horizontal axis; run over the full envelope
+   cases live load only on the horizontal axis; upward case live load only,
+   computed and shown though it will not control; run over the full envelope
 3. Top rail weld to post: horizontal shear V plus the moment V·e, where e is
    the distance from the rail centerline to the weld plane. Downward load
    passes through the weld; no credit is taken for bearing at the cope.

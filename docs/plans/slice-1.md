@@ -12,44 +12,28 @@ needs: project file, dimension parser, section data, code-value registry,
 calc lines, envelope, PDF, and the hand-calc test. Every later slice adds
 checks and shapes to layers that already work.
 
-## Two decisions needed before building
+## Decisions settled for this slice
 
-**D1. How code equations relate to the registry.** Rule 1 puts code values
-and provision text in the registry. Code *equations* (AISC 360-22 Eq. F8-1,
-for example) are neither a single number nor text. The options:
+**D1. Equations have registry entries.** Every formula or equation the tool
+uses carries a registry entry with its reference, the same as any other code
+reference: document, edition, exact equation or table, source and status.
+That applies to AISC 360-22 equations (Eq. F8-1, for example) and equally to
+the beam formulas, which cite AISC Manual Table 3-23. The equation itself is
+implemented once in Python as a calc-line definition (ADR 0002), and the
+calc line prints the registry citation. Equation entries appear in the
+review list and trigger the DRAFT stamp like any other entry. The hand-calc
+tests check that each equation is implemented correctly.
 
-- (a) Each equation is implemented once in Python as a calc-line definition
-  (ADR 0002). Its citation, source and status live in the registry as an
-  entry of kind "equation", which appears in the review list, and whose
-  status drives the DRAFT stamp like any other entry. Numeric coefficients
-  inside the equation live with it in the code; the hand-calc tests check
-  the implementation.
-- (b) Equations are written as text expressions in the registry and the
-  engine evaluates them. Everything code-derived is in one file, but the
-  equations lose the checks and tooling Python provides, and a typo becomes
-  a runtime error instead of an error caught while editing.
-- (c) Equations live only in Python with a citation, outside the registry.
-  Simplest, but they never enter the review list or the DRAFT logic.
-
-Recommendation: (a).
-
-**D2. Deflection in the upward case.** The brief fixes the downward case
-(D + L) and the horizontal cases (live only) but not upward. For a round
-section upward never controls, but the envelope table still needs a
-defined number. The options:
-
-- (a) Live only, the same as the horizontal cases
-- (b) L − D, the service condition
-- (c) L − 0.6D, mirroring the strength combination
-
-Recommendation: (a). It is simplest to hand-check, conservative, and
-consistent with the horizontal cases.
+**D2. Upward-case deflection is live load only.** It is computed and shown
+in the envelope table, and it will not control.
 
 ## What the slice does
 
 ### Input
 
-A TOML project file that Micah edits by hand. One command produces the PDF:
+A TOML project file that Micah edits by hand. Its header comment states
+that loading is per ASCE 7-22; the input form will carry the same note when
+it is built. One command produces the PDF:
 
 ```
 uv run handrail calc examples/slice-1.toml
@@ -88,13 +72,13 @@ slice uses; later slices add fields:
     judgement"
   - Longitudinal: listed as "rail carries axially; not checked"
 - **Deflection (Check 2)**: simple-span formulas. Downward is D + L. Outward
-  and inward are live only. Upward per D2. The limit is L/120 unless edited,
-  and "Bypassed by engineer" when bypassed.
-- **Mechanics versus code**: the beam formulas (PL/4, wL²/8, PL³/48EI,
-  5wL⁴/384EI) are statics, not code values, so they carry a mechanics
-  citation, not a registry entry. The L/120 limit and the engineering-
-  judgement combination are Micah's decisions recorded in the brief, not
-  registry entries.
+  and inward are live only. Upward is live only (D2), shown as not
+  controlling. The limit is L/120 unless edited, and "Bypassed by engineer"
+  when bypassed.
+- **What is and isn't a registry entry**: the beam formulas (PL/4, wL²/8,
+  PL³/48EI, 5wL⁴/384EI) are registry entries citing AISC Manual Table 3-23
+  (D1). The L/120 limit and the engineering-judgement combination are
+  Micah's decisions recorded in the brief, not registry entries.
 
 ### Output (PDF)
 
@@ -132,9 +116,13 @@ and listed in the review list:
 - Ωb (AISC 360-22 §F1)
 - Table B4.1b round HSS in flexure: λp and λr
 - §F8 applicability limit on D/t
-- §F8 yielding and local buckling equations (per D1)
+- §F8 yielding and local buckling equations
+- Beam formulas for the simple span: midspan moment and midspan deflection
+  under a concentrated load at midspan and under a uniform load (AISC Manual
+  Table 3-23, with case numbers)
 - The basis for designing pipe as round HSS
-- Already drafted: steel density, E, and the four exemption text entries
+- Already drafted: steel density, E, the pipe grade list, and the four
+  exemption text entries
 
 ## Tests
 
@@ -182,10 +170,10 @@ Each step is committed and pushed when its tests pass.
 
 ## What Micah does
 
-- Answer D1 and D2.
 - Choose the pipe size and span for test case 1, and do the hand calc.
-- Review the registry review list in one pass. The build can proceed while
-  entries are drafted, because every PDF carries the DRAFT stamp.
+- Review the registry review list in one pass after the slice is complete,
+  starting with exemption 2. The build proceeds with drafted entries,
+  because every PDF carries the DRAFT stamp.
 - Backcheck the slice PDF.
 
 ## Done when

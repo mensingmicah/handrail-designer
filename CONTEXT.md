@@ -77,7 +77,7 @@ One simultaneous set of factored base shear, axial and moment from a single case
 _Avoid_: Max reactions, reaction envelope
 
 **Code value**:
-A number or provision text taken from a referenced standard, held as an entry in the code-value registry with its exact citation and source.
+A number, equation or provision text taken from a referenced standard, held as an entry in the code-value registry with its exact citation and source.
 _Avoid_: Constant, default
 
 **Drafted entry**:
