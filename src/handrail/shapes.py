@@ -1,6 +1,6 @@
 """Standard section properties, read from the derived AISC database files.
 
-Properties are used exactly as published (docs/BRIEF.md, decisions). Each
+Properties are used exactly as published (docs/brief/checks.md, decisions). Each
 value is returned as a pint quantity in the units the database states.
 """
 

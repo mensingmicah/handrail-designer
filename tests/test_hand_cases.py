@@ -1,4 +1,4 @@
-"""Hand-calc test cases (docs/BRIEF.md, Verification).
+"""Hand-calc test cases (docs/brief/verification.md).
 
 Each tests/cases/case-NN.toml holds a project's inputs and the engineer's
 hand-calculated values. Every hand value must be within 0.5% (relative) of

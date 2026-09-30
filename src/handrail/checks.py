@@ -7,7 +7,7 @@ lists them all); only the controlling case's calc lines are printed in full
 Load types: the concentrated load P at midspan and the distributed load w
 are separate and never concurrent (ASCE 7-22 §4.5.1.1).
 
-Direction cases (docs/BRIEF.md, decisions; slice 1 plan):
+Direction cases (docs/brief/loads-and-envelope.md; slice 1 plan):
 - Downward: D + L on the vertical axis.
 - Outward, inward: D on the vertical axis, L on the horizontal axis. Bending
   combines them by SRSS against one capacity, exact for a round section.
@@ -26,6 +26,7 @@ from handrail.calc import Const, Line, Sheet, Sym, absolute, fmt_quantity_plain,
 from handrail.project import Member, Project, ProjectError
 from handrail.registry import Entry, Registry
 from handrail.shapes import PipeSection
+from handrail.units import Q_
 
 DIRECTIONS = ("Downward", "Outward", "Inward", "Upward", "Longitudinal")
 CONCENTRATED, DISTRIBUTED = "Concentrated", "Distributed"
@@ -332,7 +333,7 @@ def _bending_case(registry, project, rail, loading, cap: Capacity, direction, lo
         # One expression gives both the printed magnitude and the stated sense (ADR 0002).
         # Dead load acts down (+), the guard load up (-).
         net = sh.factor(combo.id, "D") * MD - sh.factor(combo.id, "L") * ML
-        sense = "net upward" if net.eval().magnitude < 0 else "net downward"
+        sense = "net upward" if net.eval() < Q_(0, "lbf*inch") else "net downward"
         M = sh.line("M_a", absolute(net),
                     f"Net vertical moment, guard load opposing dead load: {sense}", unit="lbf*inch")
         label = f"{combo_text(combo)}, net vertical\n{combo.cite}"

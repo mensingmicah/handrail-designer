@@ -1,6 +1,6 @@
 """Parse dimensions in the forms engineers type, and echo them back.
 
-Accepted forms (docs/BRIEF.md, Inputs), with a bare number meaning inches:
+Accepted forms (docs/brief/inputs.md), with a bare number meaning inches:
 
     5' 6-1/8"    5'-6 1/8"    66.125 in    3 ft 6 in    42    1/2    7'
 

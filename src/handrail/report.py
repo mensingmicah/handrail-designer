@@ -17,7 +17,7 @@ from handrail.checks import Check, Results
 from handrail.registry import Registry
 from handrail.version import Stamp
 
-# The tool's own stated assumptions (docs/BRIEF.md). Locked: always printed;
+# The tool's own stated assumptions (docs/brief/output.md). Locked: always printed;
 # the engineer can add to them in the project file but not edit or remove them.
 LOCKED_ASSUMPTIONS = (
     "No shear checks in any member.",

@@ -590,7 +590,8 @@ note = "From memory of 360-16 §B3.2; equation number assumed unchanged in 360-2
 # ---------------------------------------------------------------------------
 # Engineering judgement of the engineer of record (source "engineer")
 #
-# Not code values: formulas and combinations Micah adopted in docs/BRIEF.md
+# Not code values: formulas and combinations Micah adopted in docs/brief/
+# (loads-and-envelope.md and checks.md)
 # and the slice 1 plan. They are entries so every formula the calc prints
 # has one citation source (CLAUDE.md rule 1), and so a combination's printed
 # label is generated from the same factors its expression uses.

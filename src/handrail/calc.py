@@ -22,7 +22,7 @@ from handrail.registry import Entry, Registry
 from handrail.units import ureg
 
 # ---------------------------------------------------------------------------
-# Number and unit display (docs/BRIEF.md, Output: 4 significant figures,
+# Number and unit display (docs/brief/output.md: 4 significant figures,
 # ratios to 2 decimals or 3 when they would read 1.00, fixed units lb, lb-in,
 # ksi, in, in^3, in^4)
 # ---------------------------------------------------------------------------
@@ -79,7 +79,7 @@ def mtext(s: str) -> str:
 
 
 def fmt_ratio(x: float) -> str:
-    """Ratio display (docs/BRIEF.md, Output): two decimals; three when two
+    """Ratio display (docs/brief/output.md): two decimals; three when two
     would read 1.00; four when a failing ratio (over 1.0) would still read
     1.000 at three."""
     two = f"{x:.2f}"
