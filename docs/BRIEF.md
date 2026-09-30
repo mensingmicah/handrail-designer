@@ -1,9 +1,7 @@
 # Handrail Designer — Product Brief
 
 This brief says what the tool must do and which engineering decisions are
-already made. It says nothing about how to build the tool: platform,
-language, libraries and architecture are all open, and I want the tradeoffs
-explained before any are chosen.
+already made. How the tool is built is recorded separately, in docs/adr/.
 
 ## What it is
 
@@ -33,8 +31,9 @@ In scope:
 - ASD member checks
 - ASCE 7-22 guard loading, with an option to exempt the occupancies where the
   distributed load need not be considered
-- Dead load of rail and post: the AISC tabulated weight for database shapes,
-  computed from section area for sections defined by dimensions
+- Dead load of rails, post and baseplate: the AISC tabulated weight for
+  database shapes, computed from area and steel density (a registry entry)
+  for sections defined by dimensions and for the baseplate
 
 Out of scope for v1 (push back if I try to add these):
 - Anchorage or substrate checks of any kind. The tool stops at the baseplate
@@ -53,8 +52,15 @@ Out of scope for v1 (push back if I try to add these):
 
 ## Inputs
 
-- Project info: name, phase, one-line description, assumptions text (we should provide some basic assumptions about steel weight etc.),
-  reference documents
+- Project info: name, phase, one-line description, reference documents,
+  and additional assumptions. The tool's own stated assumptions are locked
+  and always printed; the engineer can add to them but not edit or remove
+  them.
+- Distributed-load exemption: a checkbox. Ticking it opens a short text box
+  where the engineer states that the guard falls under the ASCE 7-22
+  §4.5.1.1 exemption; that text prints on the loading page. An info box next
+  to the checkbox explains the exemption's requirements; its text is a
+  registry entry for me to fill in and review.
 - Post height h, from top of concrete to the top rail centerline; span (post
   to post, center to center); baseplate thickness
 - For now the span is assumed to be the tributary length for the post
@@ -89,7 +95,9 @@ Out of scope for v1 (push back if I try to add these):
 1. Top rail bending (simple span)
 2. Top rail deflection: downward case D + L on the vertical axis; horizontal
    cases live load only on the horizontal axis; run over the full envelope
-3. Top Rail weld to post
+3. Top rail weld to post: horizontal shear V plus the moment V·e, where e is
+   the distance from the rail centerline to the weld plane. Downward load
+   passes through the weld; no credit is taken for bearing at the cope.
 4. Intermediate rail component check: the ASCE 7-22 §4.5.1.2 component load,
    applied horizontally at midspan of the intermediate rail spanning between
    posts. It acts alone: not combined with dead load and not concurrent with
@@ -98,7 +106,8 @@ Out of scope for v1 (push back if I try to add these):
    the component load, default L/120, editable and bypassable. If there is
    no intermediate rail, the check shows "none".
 5. Post combined axial and flexure (cantilever)
-6. Post deflection (cantilever), horizontal live load only
+6. Post deflection (cantilever), horizontal live load only, over the
+   cantilever length h − t_p; the L/60 limit uses the same length
 7. Post weld to baseplate
 
 Weld checks (3 and 7) use the elastic method, treating the weld as a line.
@@ -117,7 +126,9 @@ baseplate thickness.
 
 Flexural capacity: top rail Lb = span, with Cb from the §F1 moment diagram
 for each load case. Post Lb = h using the §F1 cantilever provision. Post
-compression uses the recommended design K.
+compression uses the recommended design K. In the upward case the post is
+checked for axial tension (yielding on the gross section); it is computed
+and shown in the envelope summary even though it will not control.
 
 Plus reporting, not pass/fail: factored (LRFD) base reactions for a concrete
 substrate, labeled for direct input into anchor software (see decisions).
@@ -201,6 +212,7 @@ checks may be added later.
 - Guard loads are not combined with floor or roof live load; wind, snow and
   ice are not considered.
 - Base reactions can reverse; direction is set in the anchor software.
+- The baseplate is rigid; the post is fixed at the top of the baseplate.
 
 ## Future versions (not v1)
 
@@ -217,6 +229,10 @@ checks may be added later.
 
 - A PDF calculation package I can seal and a checker can follow with a
   calculator
+- Each check opens with an envelope summary: every case checked, with its
+  demand, capacity and ratio, so non-controlling cases are visibly checked.
+  The full calculation with every intermediate value follows for the
+  controlling case only.
 - Every computed line shows symbol, expression, value and unit, with a code
   citation and a short margin note
 - Every check shows its intermediate values, not just a ratio. If I can't
@@ -231,3 +247,17 @@ checks may be added later.
 - Full internal precision; values displayed to 3 significant figures, ratios
   to 2 decimals. Fixed units in v1: lb, lb-in, ksi, in, in³, in⁴.
 - A reserved header area at the top, not filled in v1
+- A footer on every page with the tool version and the code-value registry
+  version the calc ran with
+- The inputs are saved as a plain-text project file alongside the PDF;
+  reopening it regenerates the calc exactly
+
+## Verification
+
+- Each of my hand calcs becomes an automated test case: its inputs and my
+  hand-calculated values. Every change reruns all cases, and a mismatch
+  fails. The first slice's hand calc is test case 1; each later feature
+  arrives with at least one hand-checked case.
+- Section properties come from a file extracted by script from the
+  unmodified AISC Shapes Database, and a test confirms the extracted file
+  matches the original row for row.
