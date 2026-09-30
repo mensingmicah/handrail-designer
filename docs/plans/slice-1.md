@@ -1,6 +1,6 @@
 # Slice 1 plan: top rail bending and deflection, AISC pipe
 
-Status: **proposed, awaiting Micah's approval. Nothing is built.**
+Status: **approved. Build in progress on branch `slice-1`.**
 
 ## Goal
 
@@ -24,8 +24,12 @@ calc line prints the registry citation. Equation entries appear in the
 review list and trigger the DRAFT stamp like any other entry. The hand-calc
 tests check that each equation is implemented correctly.
 
-**D2. Upward-case deflection is live load only.** It is computed and shown
-in the envelope table, and it will not control.
+**D2. Every direction case is computed and shown; only the controlling
+case prints in full.** In both checks, every direction case in the envelope,
+upward included, is computed and listed in the check's envelope table with
+its demand, capacity and ratio. Only the controlling case gets the full calc
+lines. Upward-case deflection is live load only; it is expected not to
+control, but it is computed and shown like every other case.
 
 ## What the slice does
 
@@ -88,7 +92,9 @@ slice uses; later slices add fields:
   stamp will be present until Micah verifies them all.
 - A reserved, empty header area. The footer shows the tool version (git
   commit), the registry version (git commit of the registry file) and
-  "page x of y".
+  "page x of y". If the code or the registry has uncommitted changes when
+  the calc runs, the footer prints "uncommitted changes" next to the
+  affected commit ID, so a printed calc can always be traced to exact code.
 - Front matter: project info; the locked assumptions, plus any added; the
   references (AISC 360-22, ASCE 7-22, AISC Manual 16th Ed., AISC Shapes
   Database v16.0); an image-area placeholder (image upload is a later slice)

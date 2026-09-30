@@ -45,8 +45,11 @@ on, or write, auto-memory for it.
 
 ## Git
 
-Commit directly on main; no feature branch needed. After any commit, push
-to origin/main without asking. Never force-push.
+Calc code goes on a branch and reaches main only through a pull request I
+approve. Calc code means anything that can change a printed calc: src/,
+tests/, data/, and registry/ (a registry value feeds the calc). Docs-only
+changes (docs/, CLAUDE.md, CONTEXT.md) can still be committed directly on
+main and pushed to origin/main without asking. Never force-push.
 
 ## Agent skills
 
