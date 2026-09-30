@@ -324,10 +324,11 @@ def _bending_case(registry, project, rail, loading, cap: Capacity, direction, lo
                  f"{combo.cite}; {srss.cite}")
     else:  # Upward
         combo = registry.get("ej.combo.bending.upward")
-        fD, fL = sh.factor(combo.id, "D"), sh.factor(combo.id, "L")
-        net = fD.value * MD.value - fL.value * ML.value  # dead load acts down, guard load up
-        sense = "net upward" if net < 0 else "net downward"
-        M = sh.line("M_a", absolute(fD * MD - fL * ML),
+        # One expression gives both the printed magnitude and the stated sense (ADR 0002).
+        # Dead load acts down (+), the guard load up (-).
+        net = sh.factor(combo.id, "D") * MD - sh.factor(combo.id, "L") * ML
+        sense = "net upward" if net.eval().magnitude < 0 else "net downward"
+        M = sh.line("M_a", absolute(net),
                     f"Net vertical moment, guard load opposing dead load: {sense}", unit="lbf*inch")
         label = f"{combo_text(combo)}, net vertical\n{combo.cite}"
 

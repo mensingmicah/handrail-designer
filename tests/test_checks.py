@@ -15,6 +15,7 @@ from handrail.calc import fmt_sig
 from handrail.checks import SectionStop
 from handrail.project import DeflectionLimit, Loads, Member, Project, ProjectInfo
 from handrail.registry import Registry
+from handrail.units import Q_
 
 E, FY, OMEGA = 29000.0, 35.0, 1.67  # ksi, ksi, - (registry values, restated for the plain calc)
 P, W_L = 200.0, 50.0 / 12  # lb, lb/in
@@ -246,3 +247,16 @@ def test_eq_F8_2_is_listed_as_used_only_for_a_noncompact_section(section, span, 
     used = {e.id for e in reg.drafted_used}
     assert ("aisc360.eq.F8-2" in used) is listed
     assert ("aisc360.eq.F8-2.coeff" in used) is listed
+
+
+def test_upward_margin_note_states_net_downward_when_dead_load_wins():
+    # Heavy rail, small guard load: 0.6 M_D exceeds M_L, so the net moment acts down.
+    loads = Loads(concentrated=Q_(10, "lbf"), uniform=Q_(1, "lbf/ft"))
+    res = checks.run(project(section="Pipe12STD", loads=loads), Registry())
+    for c in res.checks[0].checked:
+        if c.direction == "Upward":
+            Ma = next(ln for ln in c.lines if ln.symbol == "M_a")
+            MD = next(ln for ln in c.lines if ln.symbol == "M_D").value
+            ML = next(ln for ln in c.lines if ln.symbol == "M_L").value
+            assert 0.6 * MD > ML  # the premise of the test
+            assert "net downward" in Ma.note
