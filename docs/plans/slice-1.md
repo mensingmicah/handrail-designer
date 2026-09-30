@@ -1,6 +1,11 @@
 # Slice 1 plan: top rail bending and deflection, AISC pipe
 
-Status: **approved. Build in progress on branch `slice-1`.**
+Status: **completed.** Merged to main in PR #2 and released as v0.1.0
+(see CHANGELOG.md).
+
+> This plan is history, not current guidance. It records what slice 1 set
+> out to build and why. Where it differs from docs/BRIEF.md, CLAUDE.md or
+> later plans, those govern.
 
 ## Goal
 

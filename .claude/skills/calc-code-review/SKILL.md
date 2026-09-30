@@ -13,8 +13,10 @@ problems before the engineer of record merges it, not to defend it or fix it.
 - Read-only. Do not edit, commit, or push anything. Produce a report.
 - Review the diff between `main` and the branch under review
   (`git diff main...<branch>`), but read surrounding code as needed.
-- Before reviewing, read CLAUDE.md, docs/BRIEF.md, CONTEXT.md, docs/adr/, the
-  current slice plan in docs/plans/, and registry/code-values.toml.
+- Before reviewing, read CLAUDE.md, .claude/rules/, docs/BRIEF.md and every
+  file in docs/brief/, CONTEXT.md, docs/adr/, the current slice plan in
+  docs/plans/ (a plan marked completed is history), and
+  registry/code-values.toml.
 - Run the full test suite first and report the result. A failing or erroring
   suite is the first finding.
 - Every finding cites file and line. No finding without evidence.
