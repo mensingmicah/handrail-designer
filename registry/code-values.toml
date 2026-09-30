@@ -12,6 +12,21 @@
 #
 # Any calc that uses a drafted entry prints "DRAFT: contains unverified code
 # values" on every page and lists those entries.
+#
+# Fields: id, value, unit, cite, document, edition, section, source, status,
+# drafted_on, verified_by, verified_date, and an optional note.
+# cite:    the short citation the calc prints beside each line that uses the
+#          entry; section holds the full location.
+# unit:    a pint unit string (forces are "lbf", since pint's "lb" is mass),
+#          "" for a dimensionless number, or one of "text", "list",
+#          "equation", "provision", "factors".
+# An "equation" or "provision" entry cites a formula or rule that is
+# implemented once in the code (ADR 0002); its value describes what is cited
+# and deliberately does not restate the formula, so the two cannot drift.
+# Numeric coefficients inside equations are separate entries.
+#
+# The tool refuses to load this file if the review list below is not exactly
+# the set of drafted entries.
 
 # ---------------------------------------------------------------------------
 # REVIEW LIST: every entry with status = "drafted". Review top to bottom.
@@ -27,6 +42,11 @@ review = [
   "asce7.guard.uniform.exemption.1",
   "asce7.guard.uniform.exemption.2",
   "asce7.guard.uniform.exemption.3",
+  "asce7.guard.concentrated",
+  "asce7.guard.uniform",
+  "asce7.combo.asd.D_plus_L",
+  "material.A53_GrB.Fy",
+  "aisc360.pipe_as_round_hss",
 ]
 
 # ---------------------------------------------------------------------------
@@ -37,6 +57,7 @@ review = [
 id = "material.steel.density"
 value = 490
 unit = "lb/ft^3"
+cite = "AISC Manual 16th Ed., Part 17"
 document = "AISC Steel Construction Manual"
 edition = "16th Edition"
 section = "Part 17, table of weights and specific gravities (table number not recalled)"
@@ -64,6 +85,7 @@ custom sections."""
 id = "material.steel.E"
 value = 29000
 unit = "ksi"
+cite = "AISC 360-22, Symbols"
 document = "AISC 360-22, Specification for Structural Steel Buildings"
 edition = "2022"
 section = "Symbols (definition of E, modulus of elasticity of steel); the same definition is repeated in the nomenclature of the member chapters, for example Chapter F"
@@ -92,6 +114,7 @@ entry and its section against 360-22."""
 id = "material.grades.pipe"
 value = ["A53 Gr B"]
 unit = "list"
+cite = "AISC Manual Table 2-4"
 document = "AISC Steel Construction Manual"
 edition = "16th Edition"
 section = "Part 2, Table 2-4, Applicable ASTM Specifications for Various Structural Shapes, Pipe column"
@@ -110,6 +133,7 @@ is the only pipe specification in the column; confirm nothing else is marked."""
 id = "material.grades.hss_round"
 value = ["A500 Gr B", "A500 Gr C", "A501 Gr A", "A501 Gr B", "A618 Gr I", "A618 Gr II", "A618 Gr III", "A847", "A1085 Gr A", "A1065 Gr 50", "A1065 Gr 70"]
 unit = "list"
+cite = "AISC Manual Table 2-4"
 document = "AISC Steel Construction Manual"
 edition = "16th Edition"
 section = "Part 2, Table 2-4, Applicable ASTM Specifications for Various Structural Shapes, Round HSS column"
@@ -132,6 +156,7 @@ Check this one against the printed table."""
 id = "material.grades.hss_rect"
 value = ["A500 Gr B", "A500 Gr C", "A501 Gr A", "A501 Gr B", "A618 Gr I", "A618 Gr II", "A618 Gr III", "A847", "A1085 Gr A", "A1065 Gr 50", "A1065 Gr 70"]
 unit = "list"
+cite = "AISC Manual Table 2-4"
 document = "AISC Steel Construction Manual"
 edition = "16th Edition"
 section = "Part 2, Table 2-4, Applicable ASTM Specifications for Various Structural Shapes, Rectangular HSS column"
@@ -157,6 +182,7 @@ columns match; check them separately against the printed table."""
 id = "asce7.guard.uniform.exemption.intro"
 value = "The uniform load need not be considered for the following occupancies:"
 unit = "text"
+cite = "ASCE 7-22 §4.5.1.1, Exceptions"
 document = "ASCE/SEI 7-22, Minimum Design Loads and Associated Criteria for Buildings and Other Structures"
 edition = "2022"
 section = "§4.5.1.1, Exceptions"
@@ -171,6 +197,7 @@ note = "Paraphrase."
 id = "asce7.guard.uniform.exemption.1"
 value = "One- and two-family dwellings."
 unit = "text"
+cite = "ASCE 7-22 §4.5.1.1, Exc. 1"
 document = "ASCE/SEI 7-22, Minimum Design Loads and Associated Criteria for Buildings and Other Structures"
 edition = "2022"
 section = "§4.5.1.1, Exception 1"
@@ -185,6 +212,7 @@ note = "Paraphrase."
 id = "asce7.guard.uniform.exemption.2"
 value = "Factory, industrial, and storage occupancies, in areas that are not accessible to the public and that serve an occupant load not greater than 50."
 unit = "text"
+cite = "ASCE 7-22 §4.5.1.1, Exc. 2"
 document = "ASCE/SEI 7-22, Minimum Design Loads and Associated Criteria for Buildings and Other Structures"
 edition = "2022"
 section = "§4.5.1.1, Exception 2"
@@ -205,6 +233,7 @@ renumber."""
 id = "asce7.guard.uniform.exemption.3"
 value = "Roofs not intended for occupancy."
 unit = "text"
+cite = "ASCE 7-22 §4.5.1.1, Exc. 3"
 document = "ASCE/SEI 7-22, Minimum Design Loads and Associated Criteria for Buildings and Other Structures"
 edition = "2022"
 section = "§4.5.1.1, Exception 3"
@@ -220,3 +249,107 @@ login-gated, so I did not read it directly. Corroborated only loosely by \
 an ICC slide (2024 IBC §1607.9, 'consistent with ASCE 7-22 §4.5') noting \
 the uniform load 'does not apply to unoccupiable roofs': \
 https://www.iccsafe.org/wp-content/uploads/DemystifyingLoads_24IBC_ASCE7-22_EC-85122-Part1.pdf"""
+
+# ---------------------------------------------------------------------------
+# ASCE 7-22 guard loads and ASD combination
+# ---------------------------------------------------------------------------
+
+[[entry]]
+id = "asce7.guard.concentrated"
+value = 200
+unit = "lbf"
+cite = "ASCE 7-22 §4.5.1"
+document = "ASCE/SEI 7-22, Minimum Design Loads and Associated Criteria for Buildings and Other Structures"
+edition = "2022"
+section = "§4.5.1, Loads on Handrail and Guard Systems (single concentrated load applied in any direction at any point on the handrail or top rail)"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-09-30
+verified_by = ""
+verified_date = ""
+note = """
+200 lb from memory. A web search summary (not the standard itself) places \
+the concentrated load in the parent §4.5.1, the uniform load in §4.5.1.1 and \
+the component load in §4.5.1.2 in ASCE 7-22, which matches the brief. \
+Confirm the concentrated load is in §4.5.1 and not its own subsection."""
+
+[[entry]]
+id = "asce7.guard.uniform"
+value = 50
+unit = "lbf/ft"
+cite = "ASCE 7-22 §4.5.1.1"
+document = "ASCE/SEI 7-22, Minimum Design Loads and Associated Criteria for Buildings and Other Structures"
+edition = "2022"
+section = "§4.5.1.1, Uniform Load (applied in any direction along the handrail or top rail; not concurrent with the §4.5.1 concentrated load)"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-09-30
+verified_by = ""
+verified_date = ""
+note = """
+50 lb/ft from memory; a web search summary of the ASCE Amplify page for \
+§4.5.1.1 (login-gated, not read directly) agrees, including that it need not \
+act concurrently with the concentrated load. The tool treats the two as \
+separate, non-concurrent load types on that basis."""
+
+[[entry]]
+id = "asce7.combo.asd.D_plus_L"
+value = { D = 1.0, L = 1.0 }
+unit = "factors"
+cite = "ASCE 7-22 §2.4.1, Comb. 2"
+document = "ASCE/SEI 7-22, Minimum Design Loads and Associated Criteria for Buildings and Other Structures"
+edition = "2022"
+section = "§2.4.1, Basic Combinations (allowable stress design), combination 2: D + L"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-09-30
+verified_by = ""
+verified_date = ""
+note = """
+From memory of the §2.4.1 list in ASCE 7-16; I believe 7-22 keeps D + L as \
+combination 2 of §2.4.1 but have not seen the 7-22 text. Used for the \
+downward case and, with dead and live on separate axes, the outward and \
+inward cases. The upward case's 0.6D + 1.0L is an engineering-judgement \
+combination (docs/BRIEF.md) and is not an entry."""
+
+# ---------------------------------------------------------------------------
+# Material strengths
+# ---------------------------------------------------------------------------
+
+[[entry]]
+id = "material.A53_GrB.Fy"
+value = 35
+unit = "ksi"
+cite = "AISC Manual Table 2-4"
+document = "AISC Steel Construction Manual"
+edition = "16th Edition"
+section = "Part 2, Table 2-4, Applicable ASTM Specifications for Various Structural Shapes, Pipe, ASTM A53 Gr B, minimum yield stress Fy"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-09-30
+verified_by = ""
+verified_date = ""
+note = """
+From memory; secondary web summaries noted under material.grades.pipe also \
+give Fy = 35 ksi for A53 Gr B. I did not open the table."""
+
+[[entry]]
+id = "aisc360.pipe_as_round_hss"
+value = "ASTM A53 Gr B pipe may be designed using the provisions of the Specification for round HSS."
+unit = "provision"
+cite = "AISC 360-22 §A3.1a, User Note"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§A3.1a, Structural Steel Materials, User Note (location not confirmed)"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-09-30
+verified_by = ""
+verified_date = ""
+note = """
+Paraphrase. A web search summary confirms a 360-22 User Note allowing A53 \
+Gr B pipe to be designed as round HSS, but I am not sure which section \
+holds it; §A3.1a is my best guess. This is the basis for applying \
+Table B4.1b round HSS limits and §F8 to AISC pipe. The database tdes for \
+pipe already reflects the 0.93 tnom reduction, and the tool uses the \
+database properties as published."""
