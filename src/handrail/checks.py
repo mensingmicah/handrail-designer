@@ -268,7 +268,7 @@ def flexural_capacity(registry: Registry, rail: PipeSection, grade: str) -> Capa
         Mn = sh.line("M_n", minimum(Mp, Mlb), "Lower of yielding and local buckling",
                      cite_ids=("aisc360.F8.nominal_strength",), unit="lbf*inch")
     Om = sh.code_value("Omega_b", "aisc360.F1.omega_b", "Safety factor for flexure (ASD)")
-    Ma = sh.line("M_n / Omega_b", Mn / Om, "Allowable flexural strength",
+    Ma = sh.line("frac(M_n, Omega_b)", Mn / Om, "Allowable flexural strength",
                  cite_ids=("aisc360.eq.B3-2",), unit="lbf*inch")
     return Capacity(allow=Ma, lines=sh.lines, flags=flags)
 

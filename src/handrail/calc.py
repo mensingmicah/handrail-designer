@@ -378,6 +378,11 @@ class Sheet:
         equation), any registry coefficients inside ``expr``, and ``cite``
         (a non-registry source, such as the brief).
         """
+        if "/" in typst:
+            # Typst typesets "a / b" and "frac(a, b)" identically, but as text they
+            # differ, so a slash symbol defeats the renderer's "don't repeat the
+            # symbol as its own formula" check (printed "Mn/Ωb = Mn/Ωb = ...").
+            raise ValueError(f"calc-line symbol {typst!r}: write fractions as frac(a, b), not a / b")
         value = expr.eval()
         if unit is not None:
             value = value.to(unit)

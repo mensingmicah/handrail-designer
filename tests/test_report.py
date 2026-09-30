@@ -78,3 +78,40 @@ def test_closing_line_prints_the_checks_verdict_not_a_recomputed_one(monkeypatch
     monkeypatch.setattr(Check, "verdict", property(lambda self: "SENTINEL"))
     src = report.build_source(res, reg, CLEAN)
     assert src.count('#h(10pt) #"SENTINEL"') == 2  # Checks 1 and 2
+
+
+def _printed_equations(lines):
+    """The display equations the renderer prints for these calc lines, split at "="."""
+    import re
+
+    src = report._lines(lines)
+    return [[part.replace(" ", "") for part in eq.split(" = ")]
+            for eq in re.findall(r"\$display\((.*?)\)\$\]", src)]
+
+
+def test_mn_over_omega_prints_its_symbol_once():
+    res, reg = run()
+    eqs = _printed_equations(res.checks[0].controlling.lines)
+    mn_om = [eq for eq in eqs if eq[0] == "frac(M_n,Omega_b)"]
+    assert len(mn_om) == 1
+    symbol, *rest = mn_om[0]
+    assert "frac(M_n,Omega_b)" not in rest  # printed once: symbol, then substitution, then result
+    assert rest[0].startswith("frac((")    # the substituted values come straight after the symbol
+
+
+def test_no_printed_line_repeats_a_part_side_by_side():
+    res, reg = run()
+    for chk in res.checks:
+        for eq in _printed_equations(chk.controlling.lines):
+            for a, b in zip(eq, eq[1:]):
+                assert a != b, f"repeated part in printed line: {' = '.join(eq)}"
+
+
+def test_a_slash_symbol_is_refused():
+    from handrail.calc import Sheet, Sym
+    from handrail.units import Q_
+
+    sh = Sheet(Registry())
+    a, b = Sym("M_n", Q_(1, "lbf*inch")), Sym("Omega_b", 1.67)
+    with pytest.raises(ValueError, match="frac"):
+        sh.line("M_n / Omega_b", a / b, note="", cite="")
