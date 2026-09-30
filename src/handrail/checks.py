@@ -146,11 +146,11 @@ def build_loading(project: Project, registry: Registry, rail: PipeSection) -> Lo
     ld = project.loads
 
     code_P = registry.get("asce7.guard.concentrated")
-    if ld.concentrated_lbf is None:
+    if ld.concentrated is None:
         P = sh.code_value("P", code_P.id, "Concentrated guard load, any direction, any point on the top rail")
     else:
         P = sh.input(
-            "P", Q_(ld.concentrated_lbf, "lbf"),
+            "P", ld.concentrated,
             f"Concentrated guard load, engineer override (code value {fmt_quantity_plain(code_P.quantity)})",
             cite=f"Input; {code_P.cite}",
         )
@@ -163,13 +163,14 @@ def build_loading(project: Project, registry: Registry, rail: PipeSection) -> Lo
             cite=registry.get("asce7.guard.uniform.exemption.intro").cite,
         )
         w_L = None
-    elif ld.uniform_plf is None:
+    elif ld.uniform is None:
         w_L = sh.code_value("w_L", code_w.id, f"Uniform guard load, {code_w.value} lb/ft, any direction; "
                             "not concurrent with P").value
     else:
         w_L = sh.input(
-            "w_L", Q_(ld.uniform_plf, "lbf/ft"),
-            f"Uniform guard load, engineer override: {ld.uniform_plf:g} lb/ft (code value {code_w.value} lb/ft)",
+            "w_L", ld.uniform,
+            f"Uniform guard load, engineer override: {ld.uniform.m_as('lbf/ft'):g} lb/ft "
+            f"(code value {code_w.quantity.m_as('lbf/ft'):g} lb/ft)",
             cite=f"Input; {code_w.cite}",
         ).value
 
