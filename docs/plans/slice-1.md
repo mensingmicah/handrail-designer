@@ -108,7 +108,9 @@ slice uses; later slices add fields:
 ## Registry entries this slice will draft
 
 These are added as drafted entries, each with an exact citation and source,
-and listed in the review list:
+and listed in the review list. A value read from a table cites the table
+(Fy from AISC Manual Table 2-4, beam formulas from Table 3-23 by case
+number):
 
 - ASCE 7-22 guard concentrated load and uniform load (values and sections)
 - ASCE 7-22 §2.4 ASD combination used for D + L

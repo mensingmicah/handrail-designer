@@ -33,7 +33,9 @@ In scope:
   distributed load need not be considered
 - Dead load of rails, post and baseplate: the AISC tabulated weight for
   database shapes, computed from area and steel density (a registry entry)
-  for sections defined by dimensions and for the baseplate
+  for sections defined by dimensions and for the baseplate. A custom tube's
+  weight uses the wall thickness as entered; its strength uses the design
+  thickness (see decisions).
 
 Out of scope for v1 (push back if I try to add these):
 - Anchorage or substrate checks of any kind. The tool stops at the baseplate
@@ -56,9 +58,8 @@ Out of scope for v1 (push back if I try to add these):
   and additional assumptions. The tool's own stated assumptions are locked
   and always printed; the engineer can add to them but not edit or remove
   them.
-- A note on the input page states that loading is per ASCE 7-22 only (not
-  local IBC amendments or exceptions). The PDF covers this through its code
-  references.
+- A note on the input page states that loading is per ASCE 7-22. The PDF
+  covers this through its code references.
 - Distributed-load exemption: a checkbox. Ticking it opens a short text box
   where the engineer states that the guard falls under the ASCE 7-22
   §4.5.1.1 exemption; that text prints on the loading page. An info box next
@@ -82,7 +83,9 @@ Out of scope for v1 (push back if I try to add these):
   bars and baseplate is not yet in the registry. A500 (Gr B, Gr C) is offered
   for round and rectangular HSS only, never for solid bars, and the defaults
   are bars A36, pipe A53 Gr B, baseplate A36: these are my engineering
-  decisions, not registry entries. Every Fy and Fu is a registry entry.
+  decisions, not registry entries. Every Fy and Fu is a registry entry
+  citing the AISC Manual: Table 2-4 for shapes (pipe, HSS), Table 2-5 for
+  plates and bars (for example, A36 Fy per Table 2-5).
 - Welds at the rail to post and post to baseplate connections: fillet welds,
   size entered, E70XX electrode by default. Round posts are welded all
   around. Rectangular posts (HSS or bar) are welded all around or on one
@@ -208,6 +211,10 @@ checks may be added later.
   design wall thickness; the output notes it. Custom rectangular tubes use
   the AISC corner-radius convention, a registry entry. Custom tubes convert
   nominal to design wall thickness per AISC 360-22 §B4.2, a registry entry.
+- Custom tube thickness: dead weight uses the wall thickness as entered.
+  Strength and section properties use the design thickness, reduced from
+  nominal when the input is marked nominal. This matches AISC's convention
+  (tabulated weight on nominal wall, properties on design wall).
 
 ## Stated assumptions (printed in the output)
 
