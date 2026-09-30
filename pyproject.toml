@@ -1,0 +1,28 @@
+[project]
+name = "handrail"
+version = "0.1.0"
+description = "Checker for baseplate-mounted steel guards; produces a hand-checkable calc package"
+authors = [
+    { name = "mensingmicah", email = "mensingmicah@gmail.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "openpyxl>=3.1.5",
+    "pint>=0.26.1",
+    "typst>=0.15.0",
+]
+
+[project.scripts]
+handrail = "handrail:main"
+
+[build-system]
+requires = ["uv_build>=0.12.21,<0.13.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
