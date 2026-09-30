@@ -87,12 +87,34 @@ def test_controlling_is_the_highest_ratio(results):
         assert chk.controlling.ratio == pytest.approx(top)
 
 
-def test_tie_goes_to_first_listed_direction(results):
-    # Outward and inward are identical for a round section; outward is listed first.
-    chk2 = results.checks[1]
-    horizontal = [c for c in chk2.checked if c.direction in ("Outward", "Inward")]
-    best = max(horizontal, key=lambda c: c.ratio)
-    assert best.direction == "Outward"
+def _check_with(*cases):
+    chk = checks.Check(1, "t", "M_a", "M_n")
+    chk.cases = [checks.Case(d, lt, "checked", ratio=r) for d, lt, r in cases]
+    return chk
+
+
+def test_tie_between_directions_goes_to_first_in_envelope_order():
+    chk = _check_with(("Downward", "Concentrated", 0.5), ("Outward", "Concentrated", 0.7),
+                      ("Inward", "Concentrated", 0.7))
+    assert chk.controlling.direction == "Outward"
+    # Order decides it, not the name: reversed, the first listed still wins.
+    chk = _check_with(("Inward", "Concentrated", 0.7), ("Outward", "Concentrated", 0.7))
+    assert chk.controlling.direction == "Inward"
+
+
+def test_tie_between_load_types_goes_to_first_in_envelope_order():
+    chk = _check_with(("Downward", "Concentrated", 0.7), ("Downward", "Distributed", 0.7))
+    assert chk.controlling.load_type == "Concentrated"
+    chk = _check_with(("Downward", "Distributed", 0.7), ("Downward", "Concentrated", 0.7))
+    assert chk.controlling.load_type == "Distributed"
+
+
+def test_outward_and_inward_tie_exactly_for_a_round_section(results):
+    # This is why the tie rule matters: the two cases produce identical ratios.
+    for chk in results.checks:
+        by = {(c.direction, c.load_type): c.ratio for c in chk.checked}
+        for lt in ("Concentrated", "Distributed"):
+            assert by[("Outward", lt)] == by[("Inward", lt)]
 
 
 def test_noncompact_section_uses_eq_F8_2_and_is_flagged():

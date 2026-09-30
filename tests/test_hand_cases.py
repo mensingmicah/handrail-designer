@@ -127,12 +127,16 @@ def compare(path, key, hand, res):
 
 
 @pytest.mark.parametrize("path", CASES, ids=[p.stem for p in CASES])
-def test_case_runs_and_every_hand_key_is_known(runs, path):
+def test_hand_keys_and_tool_values_match_both_ways(runs, path):
     hand_raw, res = runs(path)
-    known = set(tool_values(res))
-    for key, _ in _flatten(hand_raw):
-        if not key.endswith("controlling"):
-            assert key in known, f"{path.name}: [hand] key {key!r} does not match any tool value"
+    tool = set(tool_values(res)) | {"check1.controlling", "check2.controlling"}
+    hand = {key for key, _ in _flatten(hand_raw)}
+    unknown = sorted(hand - tool)
+    assert not unknown, f"{path.name}: [hand] keys that match no tool value: {unknown}"
+    # A deleted hand value must not silently stop being tested:
+    # every tool value needs a hand key, as a number or "pending".
+    missing = sorted(tool - hand)
+    assert not missing, f"{path.name}: tool values with no [hand] key: {missing}"
 
 
 def test_comparison_machinery_catches_a_mismatch():
@@ -147,3 +151,13 @@ def test_comparison_machinery_catches_a_mismatch():
         compare(Path("self-test"), "check1.ratio.downward_concentrated", good * 1.01, res)
     with pytest.raises(AssertionError, match="RULE 2 STOP"):
         compare(Path("self-test"), "check2.controlling", "upward, distributed", res)
+
+
+def test_a_deleted_hand_value_is_caught(tmp_path):
+    case = CASES[0]
+    raw = _load(case)
+    del raw["hand"]["check1"]["ratio"]["upward_distributed"]
+    res = checks.run(project.from_dict(raw), Registry())
+    tool = set(tool_values(res)) | {"check1.controlling", "check2.controlling"}
+    hand = {key for key, _ in _flatten(raw["hand"])}
+    assert tool - hand == {"check1.ratio.upward_distributed"}
