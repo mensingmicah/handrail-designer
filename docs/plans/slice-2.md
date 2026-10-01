@@ -300,7 +300,7 @@ pass.
    verification model changed.)
 9. **Verification harness:** independent-calc cases, with Micah's
    governing values as a subset; case 1 unchanged as a full-hand case
-   (the harness issue linked from #13).
+   (issue #14).
 10. **Micah verifies this slice's registry entries.**
 11. **Independent calcs** for cases 2 and 3, each run in a fresh session
     by the independent-calc skill.
