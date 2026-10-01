@@ -8,7 +8,7 @@ settles the slice's open questions, and it can reorder or split the slice.
 
 ## Summary
 
-| Slice | Covers | Depends on | Size | New hand cases | Issues |
+| Slice | Covers | Depends on | Size | New test cases | Issues |
 | --- | --- | --- | --- | --- | --- |
 | 1 (done, v0.1.0) | Checks 1–2, pipe top rail | — | L | 1 | — |
 | 2 | Checks 5–6: the post (pipe) | 1 | M | 2 | #4 |
@@ -24,9 +24,17 @@ settles the slice's open questions, and it can reorder or split the slice.
 Sizes are relative to slice 1, which also had to build every layer, so a
 later slice of the same size carries more engineering. A slice is marked by
 three things: how much check code it adds, how many registry entries it
-drafts (slice 1 drafted 35), and how many hand cases Micah has to produce.
+drafts (slice 1 drafted 35), and how many new test cases it needs.
 These are rough guesses. The first time a guess turns out wrong is slice 2,
 so revisit them once slice 2 is done.
+
+A test case costs Micah less than it did in slice 1. Case 1 was a full
+hand calc of every value. From slice 2 on, each test case is an
+independent-calc case (docs/brief/verification.md, ADR 0004): an agent
+writes the full calc, and Micah works only the governing case of each new
+check on his own, then reviews the independent calc and the PDF against
+the checklist. Micah's time per slice is now mostly the registry review,
+not arithmetic.
 
 After slice 4 the tool produces the full v1 package for one guard type:
 all seven checks, the summary table and the reaction sets, for an all-pipe
@@ -39,13 +47,13 @@ checks and new shapes at the same time.
 
 Two rules set the order. First, each slice adds one new kind of
 engineering to layers that already work (project file, dimension parser,
-section data, registry, calc lines, envelope, PDF, hand-case test).
+section data, registry, calc lines, envelope, PDF, test cases).
 Second, it reaches a PDF Micah can backcheck before the next slice starts.
 When the tool disagrees with a hand calc (rule 2), the question is which
 side is wrong. With one new thing per slice, there are few places to look.
 Slices 2–4 add members and connections while the section layer stays at
 pipe. Slices 5–7 then widen the section layer while the set of checks
-stays fixed. Every hand case from earlier slices reruns in every later
+stays fixed. Every test case from earlier slices reruns in every later
 slice. That rerun is the guard: generalizing a check to new shapes must
 leave the old cases unchanged.
 
@@ -56,7 +64,7 @@ and slices 5–7 will generalize them. The code term for this is
 refactor. If the section interface is designed now, with only pipe to go
 on, it is a guess at what rectangular HSS and bars will need, and a wrong
 guess is harder to fix than no guess. Generalizing once the second shape
-is actually in hand costs some rework, but the hand cases catch any change
+is actually in hand costs some rework, but the test cases catch any change
 to an old result. I think the rework is the cheaper risk. Alternative B
 below is the opposite bet.
 
@@ -154,7 +162,7 @@ summary pages all grow to cover the post. Folds in issue #4.
 **Size.** M. About 18–23 new registry entries (Chapter E equations and
 limits, Ωc, Ωt, K, the B4.1a round limit, the H1.1 equations and their
 0.2 threshold, Table 3-23 cantilever cases, the L/60 limit as
-engineering judgement, and the second-order entries below). Two hand cases
+engineering judgement, and the second-order entries below). Two test cases
 (cases 2 and 3): a Pipe1-1/2STD post and a Pipe2STD post, one for each
 Chapter E branch (E3-3 and E3-2), both on case 1's rail and span with
 h = 42 in and t_p = 1/2 in.
@@ -198,7 +206,7 @@ per AISC Manual Table 2-5) and Fu for A53 Gr B.
 **Size.** M. About 15 new registry entries (§J2.4 strength, the
 directional-increase equation and its limits, the Chapter K restriction,
 J2.2b and Table J2.4 size limits, §J4.2 rupture, Ω for each, FEXX, Fu for
-two grades). One hand case.
+two grades). One test case.
 
 **To settle in the slice plan.**
 - The eccentricity e for Check 3 with a coped post: which dimension "rail
@@ -227,7 +235,7 @@ printed beside them. The reaction tables go at the end of the PDF.
 package, but not for this slice's code.
 
 **Size.** S–M. About 6–8 new registry entries (component load, 0.9D + 1.6L
-as engineering judgement, the stated assumptions that newly apply). One hand
+as engineering judgement, the stated assumptions that newly apply). One test
 case: the complete all-pipe guard, all seven checks and the
 reactions. This case is the milestone.
 
@@ -246,7 +254,7 @@ noncompact case for Eq. F8-2.
 
 **Depends on.** Slice 4 (all checks exist to be generalized).
 
-**Size.** M. About 12–15 new registry entries. Two hand cases: the
+**Size.** M. About 12–15 new registry entries. Two test cases: the
 noncompact rail (#3) and a solid round bar or custom tube post.
 
 **To settle in the slice plan.** The base metal check for a weld to a
@@ -267,7 +275,7 @@ each pattern.
 **Depends on.** Slice 5 (the generic section interface).
 
 **Size.** L, the largest after slice 1. About 20 new registry entries.
-Two hand cases: a rectangular HSS post where longitudinal governs on the
+Two test cases: a rectangular HSS post where longitudinal governs on the
 weak axis, and a rectangular rail.
 
 ### Slice 7: solid rectangular bar
@@ -281,7 +289,7 @@ weak axis, the case the brief names where a horizontal case may control.
 **Depends on.** Slice 6 (rectangular axis input, biaxial H provisions,
 face-pair welds).
 
-**Size.** M. About 8–10 new registry entries. One or two hand cases (a
+**Size.** M. About 8–10 new registry entries. One or two test cases (a
 flat bar rail on its weak axis; a bar post where LTB matters).
 
 It would be reasonable to merge this into slice 6. I've kept it separate so
@@ -300,7 +308,7 @@ front-matter image area.
 section family is in.
 
 **Size.** L in software, zero in engineering: a local web server and form
-are a new layer for this codebase. No new hand cases. Every existing case
+are a new layer for this codebase. No new test cases. Every existing case
 must still pass from a project file that the form saved.
 
 ### Slice 9: v1 release

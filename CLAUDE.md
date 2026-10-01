@@ -28,12 +28,22 @@ on, or write, auto-memory for it.
    from memory or the web; each records its citation, source and status.
    Only I mark an entry verified. Any calc using a drafted entry prints the
    DRAFT stamp. Full rule: .claude/rules/code-values.md.
-2. If the tool's result disagrees with my hand calc, stop and tell me. Don't
-   change the tool to match until we know which one is wrong.
+2. If the tool's result disagrees with my hand calc or the independent calc,
+   stop and tell me. Don't change either side to match until we know which
+   one is wrong.
 3. Nothing client-identifying in the repo: no client names, project numbers,
    network paths, or job-specific references.
 4. Hold the v1 scope in docs/brief/scope.md. Push back when I try to expand
    it.
+5. Test case values (tests/cases/) come only from my hand calc or the
+   independent calc. Tool output never fills or edits one, whether a
+   printed number, a test failure message or `--json`. A value corrected
+   after comparison keeps a note saying so.
+6. The independent calc is written in a fresh session by the
+   independent-calc skill (.claude/skills/independent-calc/SKILL.md), which
+   never reads src/ or any tool output. A session that has read either
+   never writes or edits an independent calc. Verification model:
+   docs/brief/verification.md.
 
 ## Git
 

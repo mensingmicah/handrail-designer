@@ -1,7 +1,10 @@
 # Slice 2 plan: the post (Checks 5 and 6), AISC pipe
 
-Status: **planned, not started.** Every decision below was settled by Micah
-on 2026-09-30 (docs/ROADMAP.md, "Choosing slice 2"; slice 2 planning).
+Status: **in progress on the `slice-2` branch.** Every decision below was
+settled by Micah on 2026-09-30 (docs/ROADMAP.md, "Choosing slice 2"; slice
+2 planning). The verification steps were revised the same day for the new
+verification model (issue #13, ADR 0004): slice 2 is its first user, and
+its pull request waits for the harness change.
 Where this plan differs from the brief (docs/BRIEF.md) or CLAUDE.md, those
 govern, and the difference is a defect in the plan.
 
@@ -86,7 +89,7 @@ value and in the Check 5 summary row, the way a noncompact section is
 flagged, and the calc continues. A Pipe1STD post at h = 42 in reaches about
 209.
 
-**D7. Two post hand cases, one per Chapter E branch.** Both use test case
+**D7. Two post test cases, one per Chapter E branch.** Both use test case
 1's rail and span (Pipe1-1/2STD top rail, A53 Gr B, 7'-0" span, default
 loads), with h = 42 in and t_p = 1/2 in. At h = 42 in, Lc = 88.2 in and
 4.71√(E/Fy) = 135.6 for A53 Gr B:
@@ -96,8 +99,8 @@ loads), with h = 42 in and t_p = 1/2 in. At h = 42 in, Lc = 88.2 in and
 
 Both are common guard posts, so neither branch is left tested only against
 the machinery, as F8-2 was in slice 1. Case 2 is also the geometry in D1
-whose downward distributed case exceeds 0.05. So it checks, against a hand
-calc, that the second-order stop covers only the moment cases.
+whose downward distributed case exceeds 0.05. So it checks, against the
+independent calc, that the second-order stop covers only the moment cases.
 
 **D8. Axial-only cases use their own chapter, not Chapter H.** Downward has
 axial compression with no moment, so its ratio is Pr/Pc (Chapter E).
@@ -231,20 +234,28 @@ That is about 20 entries, within the roadmap's estimate of 18–23.
 
 ## Tests
 
-- **Test cases 2 and 3 (Micah's hand calcs):** case 1's rail and span with
-  h = 42 in and t_p = 1/2 in. Case 2 has a Pipe1-1/2STD post, and case 3 a
-  Pipe2STD post (D7). Micah does the hand calcs before seeing tool output.
-  Hand values to record for each:
-  - post section properties used, including r; D_post and D at the post
-  - Lc, Lc/r, Fe, Fcr (and which equation), Pn, Pc, Pt, Mn, Mc
-  - for each envelope case: Pr, Mr, the equation used and the ratio
-  - αPr/Pe for each moment case
-  - for each horizontal case: Δ, plus Δ_allow and each ratio
-  - the controlling direction for each check
+- **Test cases 2 and 3 (independent-calc cases, docs/brief/verification.md):**
+  case 1's rail and span with h = 42 in and t_p = 1/2 in. Case 2 has a
+  Pipe1-1/2STD post, and case 3 a Pipe2STD post (D7). For each case:
+  - The independent calc (.claude/skills/independent-calc/SKILL.md) records
+    a value for every key, after Micah has verified this slice's registry
+    entries:
+    - post section properties used, including r; D_post and D at the post
+    - Lc, Lc/r, Fe, Fcr (and which equation), Pn, Pc, Pt, Mn, Mc
+    - for each envelope case: Pr, Mr, the equation used and the ratio
+    - αPr/Pe for each moment case
+    - for each horizontal case: Δ, plus Δ_allow and each ratio
+    - the controlling direction for each check
+  - Micah works the governing case of Check 5 and of Check 6 on his own,
+    before opening the independent calc or any tool output, and records at
+    least each governing ratio and which case governs.
+  - Micah then reviews the independent calc and the slice PDF against the
+    checklist in docs/brief/verification.md.
 
-  The Check 1 and 2 values are optional in these cases. Every value
-  recorded must fall within 0.5% relative of the tool's. A mismatch is a
-  rule 2 stop.
+  The Check 1 and 2 values are not recorded in these cases; case 1 covers
+  them. Every recorded value must fall within 0.5% relative of the tool's.
+  A mismatch, against Micah's value or the independent calc, is a rule 2
+  stop.
 - **Test case 1:** post inputs added (D9), the same post as case 2
   (Pipe1-1/2STD, h = 42 in, t_p = 1/2 in). Case 1 records no post values.
   Its existing hand values pass unchanged.
@@ -285,23 +296,35 @@ pass.
 6. **Check 6:** cantilever deflection over the horizontal cases.
 7. **Report:** dimensions, section properties, loading, the Check 5 and 6
    pages, and the summary rows.
-8. **Test cases 2 and 3** wired in with Micah's hand values.
-9. **Pull request** to main, with the calc-code-review skill run on the
-   branch first.
+8. **Test cases 2 and 3** wired in, values pending. (Done before the
+   verification model changed.)
+9. **Verification harness:** independent-calc cases, with Micah's
+   governing values as a subset; case 1 unchanged as a full-hand case
+   (the harness issue linked from #13).
+10. **Micah verifies this slice's registry entries.**
+11. **Independent calcs** for cases 2 and 3, each run in a fresh session
+    by the independent-calc skill.
+12. **Micah's governing-case calcs and review** (What Micah does, below).
+13. **Pull request** to main, with the calc-code-review skill run on the
+    branch first.
 
 ## What Micah does
 
-- Do the hand calcs for test cases 2 and 3 (inputs set in D7).
-- Verify the entries this slice drafts, as the slice closes (roadmap,
-  "Registry verification along the way").
-- Backcheck the slice PDF, and approve the pull request.
+- Verify the entries this slice drafts, before the independent calcs run.
+- For test cases 2 and 3 (inputs set in D7), work the governing case of
+  Checks 5 and 6 on his own, before opening the independent calc or any
+  tool output.
+- Review each independent calc and the slice PDF against the checklist in
+  docs/brief/verification.md, and approve the pull request.
 
 ## Done when
 
 - `uv run handrail calc examples/slice-1.toml` produces a PDF with Checks 1,
   2, 5 and 6 as described above.
-- All tests pass, including test cases 1, 2 and 3 at 0.5%.
-- Micah has backchecked the PDF and agrees with it.
+- All tests pass, including test cases 1, 2 and 3 at 0.5%, with no
+  pending value in cases 2 and 3.
+- Micah has reviewed the independent calcs and the PDF, and agrees with
+  them.
 - Micah has verified this slice's registry entries.
 
 ## Not in slice 2

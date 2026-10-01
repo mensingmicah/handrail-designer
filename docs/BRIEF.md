@@ -14,7 +14,7 @@ the task; a whole-tool review reads all of them.
 | [checks.md](brief/checks.md) | The seven checks, flexural and compression capacity, upward tension; decisions on biaxial bending, section classification, section properties, custom tube thickness |
 | [welds.md](brief/welds.md) | Weld method for Checks 3 and 7: elastic line method, directional increase, base metal, fillet size limits, weld length and moment arm |
 | [output.md](brief/output.md) | Code references, stated assumptions printed in the output, PDF content, order, precision and units, DRAFT stamp, project file |
-| [verification.md](brief/verification.md) | Hand-calc test cases and the 0.5% tolerance; shapes database extraction test |
+| [verification.md](brief/verification.md) | Who verifies what: registry, independent calc, Micah's governing-case calc and review checklist; test cases and the 0.5% tolerance; shapes database extraction test |
 
 The brief's "Engineering decisions already made" are split between
 loads-and-envelope.md and checks.md; both files keep that heading.
