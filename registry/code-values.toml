@@ -342,7 +342,7 @@ From memory of the §2.4.1 list in ASCE 7-16; I believe 7-22 keeps D + L as \
 combination 2 of §2.4.1 but have not seen the 7-22 text. Used for the \
 downward case and, with dead and live on separate axes, the outward and \
 inward cases. The upward case's 0.6D + 1.0L is an engineering-judgement \
-combination (docs/BRIEF.md) and is not an entry."""
+combination, entry ej.combo.bending.upward (docs/brief/loads-and-envelope.md)."""
 
 # ---------------------------------------------------------------------------
 # Material strengths
@@ -635,7 +635,7 @@ value = "Biaxial bending of a round section: resultant of the vertical and horiz
 unit = "equation"
 cite = "Engineering judgement (EOR): SRSS, round section"
 document = "Engineering decision of the engineer of record"
-edition = "docs/BRIEF.md"
+edition = "docs/brief/checks.md"
 section = "Engineering decisions already made: biaxial bending (round HSS and pipe, and every round section)"
 source = "engineer"
 status = "verified"
@@ -650,7 +650,7 @@ value = { D = 0.6, L = 1.0 }
 unit = "factors"
 cite = "Engineering judgement (EOR): upward case, not an ASCE combination"
 document = "Engineering decision of the engineer of record"
-edition = "docs/BRIEF.md"
+edition = "docs/brief/loads-and-envelope.md"
 section = "Engineering decisions already made: upward case uses a minimum-dead-load ASD combination, net on the vertical axis"
 source = "engineer"
 status = "verified"
@@ -665,7 +665,7 @@ value = { D = 1.0, L = 1.0 }
 unit = "factors"
 cite = "Engineering judgement (EOR): serviceability"
 document = "Engineering decision of the engineer of record"
-edition = "docs/BRIEF.md"
+edition = "docs/brief/checks.md"
 section = "Checks, 2: top rail deflection, downward case D + L on the vertical axis"
 source = "engineer"
 status = "verified"
@@ -680,7 +680,7 @@ value = { L = 1.0 }
 unit = "factors"
 cite = "Engineering judgement (EOR): serviceability, live load only"
 document = "Engineering decision of the engineer of record"
-edition = "docs/BRIEF.md; docs/plans/slice-1.md D2"
+edition = "docs/brief/checks.md; docs/plans/slice-1.md D2"
 section = "Checks, 2: horizontal cases live load only; upward case live load only (plan D2)"
 source = "engineer"
 status = "verified"
@@ -695,7 +695,7 @@ value = "Allowable deflection: span divided by the limit ratio the engineer ente
 unit = "equation"
 cite = "Engineering judgement (EOR): deflection limit, not code"
 document = "Engineering decision of the engineer of record"
-edition = "docs/BRIEF.md"
+edition = "docs/brief/inputs.md"
 section = "Inputs: deflection limits (engineering experience, not code)"
 source = "engineer"
 status = "verified"
@@ -725,7 +725,7 @@ note = """
 The design method the member checks use, printed in the front matter as \
 "Design method: ASD per AISC 360-22 §B3.2". Section number from memory of \
 360-16 §B3.2 (360-16 §B3.1 is LRFD); assumed unchanged in 360-22. The \
-references list still names only the specification (docs/BRIEF.md). \
+references list still names only the specification (docs/brief/output.md). \
 Review 2026-09-30, Micah: Unsure. 'not really sure what this is. ASD is just a design procedute.'"""
 
 [[entry]]
