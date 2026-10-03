@@ -1,4 +1,4 @@
-# Test case 2: Micah's hand calc (docs/plans/slice-2.md, D7).
+# Test case 2 (docs/plans/slice-2.md, D7).
 #
 # Test case 1's rail and span (Pipe1-1/2STD top rail, A53 Gr B, 7'-0" span,
 # default ASCE 7-22 loads) on a Pipe1-1/2STD post, A53 Gr B, h = 42 in,
@@ -12,6 +12,15 @@
 #
 # Checks 1 and 2 are identical to test case 1 (same rail and span) and are
 # not recorded here; only the post groups are (plan, Tests).
+#
+# Values: an independent-calc case (docs/brief/verification.md). The
+# independent calc records every value the test compares in
+# tests/cases/independent/case-02.toml, written up beside it as case-02.md.
+# [hand] below holds Micah's governing-case values only, worked before he
+# opens the independent calc or any tool output: each check's controlling
+# case and its governing ratio (or deflection). Add any intermediate value
+# you work along the way under its key; the independent file names every
+# key the test compares.
 #
 # Replace each "pending" with the hand-calculated value, in the unit named
 # by the key's suffix (lb, lbin = lb-in, in, in2, in3, in4, ksi, plf). Give
@@ -57,105 +66,30 @@ bypass = false
 limit_L_over = 60
 bypass = false
 
-# ---------------------------------------------------------------------------
-# Hand values
-# ---------------------------------------------------------------------------
+[verification]
+kind = "independent-calc"
+covers = ["post", "check5", "check6"]
 
-[hand.post]
-# Post section properties used (AISC Shapes Database v16.0, as published)
-D_in = "pending"
-tdes_in = "pending"
-A_in2 = "pending"
-W_plf = "pending"
-I_in4 = "pending"
-S_in3 = "pending"
-Z_in3 = "pending"
-r_in = "pending"
-D_t = "pending"
-D_post_lb = "pending"         # post dead load, W x (h - t_p)
-P_D_lb = "pending"            # D at the post: rail w_D x span + D_post
+# ---------------------------------------------------------------------------
+# Hand values: Micah's governing case
+#
+# Outward, inward and longitudinal tie for a round post; any of them is
+# accepted as controlling. The ratio and deflection keys below name the
+# outward distributed case. If your calc finds another case governs,
+# rename them to that case (e.g. outward_concentrated).
+# ---------------------------------------------------------------------------
 
 [hand.check5]
-Lc_in = "pending"
-Lc_over_r = "pending"
-Fe_ksi = "pending"
-Fcr_ksi = "pending"
-Fcr_equation = "pending"      # "E3-2" or "E3-3"
-Pn_lb = "pending"             # compression, Eq. E3-1
-Pc_lb = "pending"
-Pt_lb = "pending"             # tension yielding, Pn/Omega_t
-Mn_lbin = "pending"
-Mc_lbin = "pending"
 controlling = "pending"       # e.g. "outward, concentrated"
 
-[hand.check5.Pr_lb]           # required axial strength (magnitude), each case
-downward_concentrated = "pending"
-downward_distributed = "pending"
-outward_concentrated = "pending"
-outward_distributed = "pending"
-inward_concentrated = "pending"
-inward_distributed = "pending"
-upward_concentrated = "pending"
-upward_distributed = "pending"
-longitudinal_concentrated = "pending"
-longitudinal_distributed = "pending"
-
-[hand.check5.Mr_lbin]         # required moment, moment cases only
-outward_concentrated = "pending"
-outward_distributed = "pending"
-inward_concentrated = "pending"
-inward_distributed = "pending"
-longitudinal_concentrated = "pending"
-longitudinal_distributed = "pending"
-
-[hand.check5.equation]        # "Pr/Pc", "Pr/Pt", "H1-1a" or "H1-1b"
-downward_concentrated = "pending"
-downward_distributed = "pending"
-outward_concentrated = "pending"
-outward_distributed = "pending"
-inward_concentrated = "pending"
-inward_distributed = "pending"
-upward_concentrated = "pending"
-upward_distributed = "pending"
-longitudinal_concentrated = "pending"
-longitudinal_distributed = "pending"
-
 [hand.check5.ratio]
-downward_concentrated = "pending"
-downward_distributed = "pending"
-outward_concentrated = "pending"
 outward_distributed = "pending"
-inward_concentrated = "pending"
-inward_distributed = "pending"
-upward_concentrated = "pending"
-upward_distributed = "pending"
-longitudinal_concentrated = "pending"
-longitudinal_distributed = "pending"
-
-[hand.check5.alpha_Pr_over_Pe]   # alpha Pr/Pe, moment cases only
-outward_concentrated = "pending"
-outward_distributed = "pending"
-inward_concentrated = "pending"
-inward_distributed = "pending"
-longitudinal_concentrated = "pending"
-longitudinal_distributed = "pending"
 
 [hand.check6]
-Delta_allow_in = "pending"
 controlling = "pending"       # e.g. "outward, concentrated"
 
 [hand.check6.deflection_in]   # horizontal cases, live load only
-outward_concentrated = "pending"
 outward_distributed = "pending"
-inward_concentrated = "pending"
-inward_distributed = "pending"
-longitudinal_concentrated = "pending"
-longitudinal_distributed = "pending"
 
 [hand.check6.ratio]
-outward_concentrated = "pending"
 outward_distributed = "pending"
-inward_concentrated = "pending"
-inward_distributed = "pending"
-longitudinal_concentrated = "pending"
-longitudinal_distributed = "pending"

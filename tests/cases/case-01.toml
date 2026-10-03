@@ -39,6 +39,12 @@ grade = "A53 Gr B"
 limit_L_over = 120
 bypass = false
 
+# Full-hand case (docs/brief/verification.md): every tool value in the
+# covered groups has a [hand] value.
+[verification]
+kind = "full-hand"
+covers = ["section", "check1", "check2"]
+
 # ---------------------------------------------------------------------------
 # Hand values
 #
