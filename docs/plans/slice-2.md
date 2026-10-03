@@ -301,8 +301,9 @@ pass.
 9. **Verification harness:** independent-calc cases, with Micah's
    governing values as a subset; case 1 unchanged as a full-hand case
    (issue #14). (Done; independent templates for cases 2 and 3 created
-   by tests/independent_template.py. Whether "no pending at merge" is a
-   test or a PR checklist item is decided in the PR.)
+   by tests/independent_template.py. "No pending at merge" is not a
+   test: the calc-code-review skill treats any remaining "pending" in
+   tests/cases/ as a must-fix.)
 10. **Micah verifies this slice's registry entries.**
 11. **Independent calcs** for cases 2 and 3, each run in a fresh session
     by the independent-calc skill.

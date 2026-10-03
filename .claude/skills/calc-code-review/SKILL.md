@@ -51,6 +51,9 @@ problems before the engineer of record merges it, not to defend it or fix it.
   independent calc (docs/brief/verification.md), never from tool output.
 - Flag tests that can never fail, tests that only check "no exception raised"
   where a value should be checked, and skipped or pending tests that hide gaps.
+- Any "pending" value remaining in tests/cases/ is a must-fix before merge.
+  This includes the independent-calc files in tests/cases/independent/. No
+  test enforces it (issue #14, item 7), so grep for it.
 - Check that hard stops (slender section, missing registry entry, bad input) have
   tests that confirm they stop.
 - Check that tolerance comparisons are relative and not applied after rounding.
