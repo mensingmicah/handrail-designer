@@ -14,8 +14,9 @@ for inputs the engineer didn't intend:
 - the post is required (every v1 calc checks one post), and the baseplate
   thickness must be less than the post height.
 
-A top-level [hand] table is allowed and ignored: hand-calc test cases keep
-their hand values in the same file as their inputs.
+Top-level [hand] and [verification] tables are allowed and ignored: test
+cases keep their hand values and their kind in the same file as their
+inputs (docs/brief/verification.md).
 """
 
 from __future__ import annotations
@@ -93,6 +94,7 @@ SCHEMA = {
     "deflection": {"rail": {"limit_L_over": None, "bypass": None},
                    "post": {"limit_L_over": None, "bypass": None}},
     "hand": "ignored",
+    "verification": "ignored",
 }
 
 

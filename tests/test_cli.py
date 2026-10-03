@@ -150,6 +150,7 @@ def test_overrides_reach_the_calc_with_units(tmp_path):
     assert proj.loads.uniform.m_as("lbf/inch") == pytest.approx(5.0)
 
 
-def test_hand_table_is_allowed_in_a_case_file():
-    case = Path(__file__).resolve().parent / "cases" / "case-01.toml"
+@pytest.mark.parametrize("name", ["case-01.toml", "case-02.toml"])
+def test_hand_and_verification_tables_are_allowed_in_a_case_file(name):
+    case = Path(__file__).resolve().parent / "cases" / name
     assert project.load(case).top_rail.section == "Pipe1-1/2STD"
