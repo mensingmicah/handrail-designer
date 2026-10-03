@@ -349,8 +349,10 @@ The cost of this choice:
 - A correction at the review means redoing the affected test case
   values.
 
-What it buys: one review pass over the whole registry, done once the
-set of entries has stopped changing.
+Why: Micah will not use the tool on real work until v1 is complete, so
+verifying slice by slice protects no real calc before release. One
+review is also more efficient once the set of entries has stopped
+changing (ADR 0005).
 
 ## Where the open issues go
 
