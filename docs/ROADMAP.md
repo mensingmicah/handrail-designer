@@ -33,8 +33,9 @@ hand calc of every value. From slice 2 on, each test case is an
 independent-calc case (docs/brief/verification.md, ADR 0004): an agent
 writes the full calc, and Micah works only the governing case of each new
 check on his own, then reviews the independent calc and the PDF against
-the checklist. Micah's time per slice is now mostly the registry review,
-not arithmetic.
+the checklist. Registry verification is no longer per slice either: it is
+one review in slice 9 (below), so Micah's time per slice is the
+governing-case calc and the review.
 
 After slice 4 the tool produces the full v1 package for one guard type:
 all seven checks, the summary table and the reaction sets, for an all-pipe
@@ -313,8 +314,13 @@ must still pass from a project file that the form saved.
 
 ### Slice 9: v1 release
 
-**Covers.** Every registry entry used by any v1 calc verified by Micah, so
-the DRAFT stamp disappears from a normal calc. Removing the "DEVELOPMENT —
+**Covers.** The final registry review: Micah verifies every drafted
+entry in one review, so the DRAFT stamp disappears from a normal calc.
+Afterwards the full test suite reruns. Any test case value that depended
+on a corrected entry is redone from the corrected entry, independent-calc
+values by a fresh independent calc and Micah's values by Micah, never by
+editing them to the tool's new output (docs/brief/verification.md, "The
+release registry review"). Removing the "DEVELOPMENT —
 NOT FOR CONSTRUCTION" watermark, which is Micah's call and his alone. A
 whole-tool calc-code review. Stated assumptions and the brief rechecked
 against what shipped. CHANGELOG v1.0.0.
@@ -322,16 +328,29 @@ against what shipped. CHANGELOG v1.0.0.
 **Depends on.** Everything above.
 
 **Size.** Little code, but most of the time is Micah's: by then the
-registry will hold roughly 110–130 entries. With verification done slice
-by slice (below), slice 9 is a final pass, not the whole review.
+registry will hold roughly 110–130 entries, most of them drafted. Add
+the time for any independent calcs that must be redone after a
+correction.
 
-## Registry verification along the way
+## Registry verification at release
 
-Decided (Micah, 2026-09-30): each slice's "done when" includes Micah
-verifying the registry entries that slice drafted. Micah is reviewing
-slice 1's 35 entries now. Leaving it all to slice 9 would have meant one
-review of over a hundred entries, after a wrong entry had been in every
-calc for months.
+Decided (Micah, 2026-10-03), replacing the 2026-09-30 decision to verify
+each slice's entries within the slice. No slice's "done when" includes
+registry verification. Every drafted entry is verified in one review in
+slice 9. Entries already verified (32 as of 2026-10-03) stay verified.
+
+The cost of this choice:
+
+- A wrong drafted entry stays in every calc, under the DRAFT stamp,
+  until slice 9.
+- The independent calcs in slices 2–8 work each drafted value from their
+  own reading of the code. A misreading they share with the tool's
+  drafted entry passes the test until the review finds it.
+- A correction at the review means redoing the affected test case
+  values.
+
+What it buys: one review pass over the whole registry, done once the
+set of entries has stopped changing.
 
 ## Where the open issues go
 

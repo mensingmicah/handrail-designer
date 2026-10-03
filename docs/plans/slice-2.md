@@ -4,7 +4,10 @@ Status: **in progress on the `slice-2` branch.** Every decision below was
 settled by Micah on 2026-09-30 (docs/ROADMAP.md, "Choosing slice 2"; slice
 2 planning). The verification steps were revised the same day for the new
 verification model (issue #13, ADR 0004): slice 2 is its first user, and
-its pull request waits for the harness change.
+its pull request waits for the harness change. Registry verification
+moved out of the slice on 2026-10-03: Micah verifies every drafted entry
+in one review in the v1 release slice (docs/ROADMAP.md, slice 9), so this
+slice's entries stay drafted and its PDFs print the DRAFT stamp.
 Where this plan differs from the brief (docs/BRIEF.md) or CLAUDE.md, those
 govern, and the difference is a defect in the plan.
 
@@ -238,8 +241,8 @@ That is about 20 entries, within the roadmap's estimate of 18–23.
   case 1's rail and span with h = 42 in and t_p = 1/2 in. Case 2 has a
   Pipe1-1/2STD post, and case 3 a Pipe2STD post (D7). For each case:
   - The independent calc (.claude/skills/independent-calc/SKILL.md) records
-    a value for every key, after Micah has verified this slice's registry
-    entries:
+    a value for every key. It reads verified entries only, so it works
+    every value this slice drafted from its own reading of the code:
     - post section properties used, including r; D_post and D at the post
     - Lc, Lc/r, Fe, Fcr (and which equation), Pn, Pc, Pt, Mn, Mc
     - for each envelope case: Pr, Mr, the equation used and the ratio
@@ -304,16 +307,14 @@ pass.
    by tests/independent_template.py. "No pending at merge" is not a
    test: the calc-code-review skill treats any remaining "pending" in
    tests/cases/ as a must-fix.)
-10. **Micah verifies this slice's registry entries.**
-11. **Independent calcs** for cases 2 and 3, each run in a fresh session
+10. **Independent calcs** for cases 2 and 3, each run in a fresh session
     by the independent-calc skill.
-12. **Micah's governing-case calcs and review** (What Micah does, below).
-13. **Pull request** to main, with the calc-code-review skill run on the
+11. **Micah's governing-case calcs and review** (What Micah does, below).
+12. **Pull request** to main, with the calc-code-review skill run on the
     branch first.
 
 ## What Micah does
 
-- Verify the entries this slice drafts, before the independent calcs run.
 - For test cases 2 and 3 (inputs set in D7), work the governing case of
   Checks 5 and 6 on his own, before opening the independent calc or any
   tool output.
@@ -328,7 +329,10 @@ pass.
   pending value in cases 2 and 3.
 - Micah has reviewed the independent calcs and the PDF, and agrees with
   them.
-- Micah has verified this slice's registry entries.
+
+The slice's registry entries are not verified here; they wait for the
+release review (slice 9), and the slice 2 PDFs print the DRAFT stamp
+until then.
 
 ## Not in slice 2
 

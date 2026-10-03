@@ -4,6 +4,7 @@ Part of the product brief; index in docs/BRIEF.md. How the tool's check
 code is verified as it is built: test cases, the independent calc, my own
 governing-case calc, my review, and the shapes database extraction test.
 Decided 2026-09-30 (issue #13; docs/adr/0004-verification-by-independent-calc.md).
+Registry verification moved to one review before release on 2026-10-03.
 
 Verification happens once per check, as the check is built. Once a check
 passes, every later job inherits it, and the test cases rerun on every
@@ -12,11 +13,15 @@ the guard fits the tool's assumptions) is separate and unchanged.
 
 ## Who verifies what
 
-- **Code values: me.** Every registry entry a slice drafts is verified by
-  me against the standard (CLAUDE.md rule 1). I verify a slice's drafted
-  entries before the independent calc runs, so the independent calc works
-  from verified values. Check code may be written against drafted entries
-  before then; a slice's entries can't all be known before the build starts.
+- **Code values: me, in one review before release.** I verify every
+  drafted registry entry against the standard (CLAUDE.md rule 1) in a
+  single review in the v1 release slice, not slice by slice (decided
+  2026-10-03; see "The release registry review" below). Until then the
+  check code runs on drafted entries and every calc prints the DRAFT
+  stamp. The independent calc reads verified entries only, so it works
+  every still-drafted value from its own reading of the code. When it
+  agrees with the tool on a drafted value, that agreement does not verify
+  the value: both may have the same misreading.
 - **Every value: the independent calc.** An agent in a clean context writes
   a complete calc of each new test case, working from the code, the brief,
   the plan's decisions and the case inputs, never from the tool's code or
@@ -34,14 +39,29 @@ the guard fits the tool's assumptions) is separate and unchanged.
 
 ## Order for each new check
 
-1. I verify the slice's drafted registry entries.
-2. The independent calc is written for each new test case.
-3. I work the governing case without looking at the independent calc or
+1. The independent calc is written for each new test case.
+2. I work the governing case without looking at the independent calc or
    the tool's output.
-4. I review the independent calc and the tool's printed calc against the
+3. I review the independent calc and the tool's printed calc against the
    checklist.
-5. The test compares the tool to every independent-calc value and to every
+4. The test compares the tool to every independent-calc value and to every
    value of mine.
+
+## The release registry review
+
+Before v1 I verify every drafted entry in one review. An entry I correct
+changes the tool's values, so the full test suite reruns afterwards.
+Correcting a note or edition changes no value. A value that depended on a
+corrected entry will now disagree with the tool. That is a rule 2 stop
+whose cause is already known: the entry was wrong. So the value is
+redone from the corrected entry:
+
+- independent-calc values, by a fresh independent calc (the skill);
+- my values, by me.
+
+No value is edited to match the tool's new output (CLAUDE.md rules 5 and
+6). Each redone value carries a note naming the registry correction that
+caused it.
 
 ## Test cases
 
