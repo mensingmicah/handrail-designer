@@ -27,7 +27,10 @@ Read exactly these, through the commands given where one is given:
 - **The brief:** docs/BRIEF.md and every file in docs/brief/.
 - **CONTEXT.md**, for the project's terms.
 - **The current slice plan** in docs/plans/ (the newest one not marked
-  completed): its decisions bind you exactly as they bind the tool.
+  completed): its decisions bind you exactly as they bind the tool. Use
+  the plan's decisions only. Ignore any computed values in it (ratios, Pe,
+  Lc/r, equation branches for specific cases); derive every number
+  yourself.
 - **Verified registry entries**, and only those:
 
   ```bash
@@ -35,7 +38,8 @@ Read exactly these, through the commands given where one is given:
   ```
 
 - **Section properties** from AISC's original workbook, one row per section
-  (US customary columns):
+  (US customary columns). Run it once for each section in the case (rail
+  and post):
 
   ```bash
   uv run python -c "import openpyxl,sys
@@ -50,8 +54,8 @@ Read exactly these, through the commands given where one is given:
   verified entry. Record the document, edition, section and source of each.
 
 Everything else in the repo is off limits: src/, tests/ beyond the
-commands here and the two files you write, the shapes TOML in data/, drafted registry entries, git history and
-diffs, and every tool output (PDF, Typst source, `--json`, test runs, the
+commands here and the two files you write, the shapes TOML in data/,
+drafted registry entries, git history and diffs, and every tool output (PDF, Typst source, `--json`, test runs, the
 `handrail` command). If the calc seems to need something only those hold,
 write it as an open question in the calc and carry on with your own
 reading.
@@ -95,12 +99,12 @@ reading.
    ```
 
    Replace each "pending" with your value, in the unit its suffix names.
-   Done when
-   every key has a value, and you have listed any key you could not fill
+   Done when every key has a value, and you have listed any key you could not fill
    and any value you computed that has no key. Both are findings for
    Micah: a check one side has and the other doesn't.
-8. **Write, commit and report.** Write the two files below, commit them on
-   the current branch (never main), and tell Micah: the files, every value
+8. **Write, commit and report.** Write the two files below and commit them
+   on the current branch (never main). Commit; do not push. The pre-push
+   hook runs the test suite, which can print tool values. Then tell Micah: the files, every value
    taken from your own reading rather than a verified entry, every open
    question, and the mapping gaps from step 7. Stop there; the comparison
    with the tool is run by someone else.
