@@ -47,7 +47,8 @@ problems before the engineer of record merges it, not to defend it or fix it.
 
 - Flag tautological tests: expected values computed by the code under test,
   copied from the tool's own output, or derived with the same formula the code
-  uses. Hand-calc expected values must come from Micah's hand calc.
+  uses. Test case values must come from Micah's hand calc or the
+  independent calc (docs/brief/verification.md), never from tool output.
 - Flag tests that can never fail, tests that only check "no exception raised"
   where a value should be checked, and skipped or pending tests that hide gaps.
 - Check that hard stops (slender section, missing registry entry, bad input) have

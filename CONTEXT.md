@@ -85,3 +85,17 @@ A registry entry written by Claude from memory or the web, or supplied directly 
 
 **Verified entry**:
 A registry entry the engineer of record has checked against the standard and signed off with name and date.
+
+### Verification
+
+**Test case**:
+A project's inputs plus the values the tool's results are compared against at 0.5%; either a full-hand case (every value from the engineer of record's hand calc) or an independent-calc case.
+_Avoid_: Hand case (for an independent-calc case)
+
+**Independent calc**:
+A complete calc of a test case written by an agent in a fresh session from the code, the brief, the plan's decisions, the case inputs and verified entries only, never from the tool's code or output.
+_Avoid_: Agent calc, second opinion
+
+**Governing-case calc**:
+The engineer of record's own calc of the case he expects to govern a new check, worked before he sees the independent calc or the tool's output.
+_Avoid_: Spot check (when meaning this)
