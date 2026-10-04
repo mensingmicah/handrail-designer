@@ -351,6 +351,8 @@ def render_template(case: Path, keys) -> str:
         "# (.claude/skills/independent-calc/SKILL.md) replaces each \"pending\" with",
         "# its own value, in the unit the key's suffix names, and fills",
         "# [provenance]. Tool output never fills a value here (CLAUDE.md rule 5).",
+        "# Forces are positive magnitudes; the case name gives the sense (an",
+        "# upward P_r is tension, recorded as a positive number).",
         "",
         "[provenance]",
         f'calc = "{PENDING}"           # "tests/cases/independent/{case.stem}.md"',

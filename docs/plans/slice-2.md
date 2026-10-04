@@ -362,8 +362,14 @@ pass.
    tests/cases/ as a must-fix.)
 10. **Independent calcs** for cases 2 and 3, each run in a fresh session
     by the independent-calc skill.
-11. **Micah's governing-case calcs and review** (What Micah does, below).
-12. **Pull request** to main, with the calc-code-review skill run on the
+11. **Front-matter assumptions:** print the two locked assumptions added
+    on 2026-10-03 from the case 2 independent calc's findings, notional
+    loads neglected (F-1, D10) and tributary length = span with rail
+    continuity neglected (F-2, D11), in the front matter with the others
+    (docs/brief/output.md). This changes printed calc text. Locked
+    assumptions stay out of the registry (issue #12, closed 2026-10-03).
+12. **Micah's governing-case calcs and review** (What Micah does, below).
+13. **Pull request** to main, with the calc-code-review skill run on the
     branch first.
 
 ## What Micah does

@@ -5,6 +5,8 @@
 # (.claude/skills/independent-calc/SKILL.md) replaces each "pending" with
 # its own value, in the unit the key's suffix names, and fills
 # [provenance]. Tool output never fills a value here (CLAUDE.md rule 5).
+# Forces are positive magnitudes; the case name gives the sense (an
+# upward P_r is tension, recorded as a positive number).
 
 [provenance]
 calc = "pending"           # "tests/cases/independent/case-03.md"
