@@ -7,6 +7,14 @@
 # [provenance]. Tool output never fills a value here (CLAUDE.md rule 5).
 # Forces are positive magnitudes; the case name gives the sense (an
 # upward P_r is tension, recorded as a positive number).
+# Text keys use these exact words (case does not matter):
+#   Fcr_equation: "E3-2" or "E3-3".
+#   check5.equation.*: "H1-1a" or "H1-1b" in the moment cases; "Pr/Pc"
+#     for downward (axial only, Chapter E); "Pr/Pt" for upward (axial
+#     only, Chapter D).
+#   controlling: direction, comma, load type, e.g. "outward, distributed".
+#     When cases tie exactly, name the first tied case in this file's key
+#     order; the test accepts any of the tied cases.
 
 [provenance]
 calc = "pending"           # "tests/cases/independent/case-03.md"

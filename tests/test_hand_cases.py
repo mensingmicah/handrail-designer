@@ -353,6 +353,14 @@ def render_template(case: Path, keys) -> str:
         "# [provenance]. Tool output never fills a value here (CLAUDE.md rule 5).",
         "# Forces are positive magnitudes; the case name gives the sense (an",
         "# upward P_r is tension, recorded as a positive number).",
+        "# Text keys use these exact words (case does not matter):",
+        "#   Fcr_equation: \"E3-2\" or \"E3-3\".",
+        "#   check5.equation.*: \"H1-1a\" or \"H1-1b\" in the moment cases; \"Pr/Pc\"",
+        "#     for downward (axial only, Chapter E); \"Pr/Pt\" for upward (axial",
+        "#     only, Chapter D).",
+        "#   controlling: direction, comma, load type, e.g. \"outward, distributed\".",
+        "#     When cases tie exactly, name the first tied case in this file's key",
+        "#     order; the test accepts any of the tied cases.",
         "",
         "[provenance]",
         f'calc = "{PENDING}"           # "tests/cases/independent/{case.stem}.md"',
@@ -493,10 +501,13 @@ def test_the_hand_subset_needs_the_governing_case(runs):
 
 
 def test_provenance_is_required_once_a_value_is_recorded(runs):
-    """Structure only: the placeholder 1.0 is never compared to the tool."""
+    """Structure only: the placeholder 1.0 is never compared to the tool.
+    Works on an in-memory copy with [provenance] cleared, so it holds
+    whether or not case-02's independent values are filled."""
     case = _case_file("case-02.toml")
     raw, res = runs(case)
     ind = _load(independent_path(case))
+    ind["provenance"] = {k: PENDING for k in ("calc", "written_on", "model", "commit")}
     ind["independent"]["post"]["D_in"] = 1.0
     with pytest.raises(AssertionError, match=r"\[provenance\] not filled: \['calc', 'written_on', 'model', 'commit'\]"):
         check_case(case, raw, res, ind)
