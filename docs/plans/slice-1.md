@@ -6,6 +6,13 @@ Status: **completed.** Merged to main in PR #2 and released as v0.1.0
 > This plan is history, not current guidance. It records what slice 1 set
 > out to build and why. Where it differs from docs/BRIEF.md, CLAUDE.md or
 > later plans, those govern.
+>
+> Its binding decisions now live elsewhere (moved 2026-10-04): D1 in
+> .claude/rules/code-values.md; D2 in docs/brief/output.md and checks.md;
+> the engineering decisions under "What the slice does" in
+> docs/brief/checks.md and loads-and-envelope.md; and the output decisions
+> (references list, DRAFT list, watermark, footer, dimensions page) in
+> docs/brief/output.md.
 
 ## Goal
 

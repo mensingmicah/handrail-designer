@@ -314,7 +314,11 @@ must still pass from a project file that the form saved.
 
 ### Slice 9: v1 release
 
-**Covers.** The release review, tracked as a checklist in issue #18
+**Covers.** First, a layout pass on the printed package: citation
+density and package length, issue #13 questions 5–10, deferred here by
+Micah on 2026-10-04. It goes before the release review because that
+review recomputes from the printed calc. Then the release review, tracked
+as a checklist in issue #18
 (label `release-blocker`): the release can't ship while any box is open.
 First the final registry review: Micah verifies every drafted entry in
 one review, so the DRAFT stamp disappears from a normal calc (ADR 0005).
@@ -372,6 +376,7 @@ unless a real problem forces a change (ADR 0006).
 | --- | --- | --- |
 | #4 Calc-code cleanup | Slice 3, the next calc branch | Items 1–3 were done on the slice 2 branch; the later items remain. |
 | #3 Noncompact hand case for Eq. F8-2 | Slice 5 | v1 scope (Micah, 2026-09-30). `future` label removed, because its trigger (thin-wall round HSS) is in v1 scope. |
+| #13 Questions 5–10: citations and package length | Slice 9, layout pass before the release review | Deferred by Micah, 2026-10-04. |
 | #1 Display-unit settings | After v1 | Matches its `future` label and scope.md. |
 
 ## After v1

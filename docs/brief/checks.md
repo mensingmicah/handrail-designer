@@ -59,3 +59,83 @@ loads-and-envelope.md).
   Strength and section properties use the design thickness, reduced from
   nominal when the input is marked nominal. This matches AISC's convention
   (tabulated weight on nominal wall, properties on design wall).
+- Pipe is designed under the AISC 360-22 round HSS provisions; the
+  registry records the basis. (Slice 1.)
+- A round section whose D/t is beyond the §F8 applicability limit is a
+  hard stop, the same as a slender section: it names the ratio and the
+  limit. (Slice 1.)
+- Round sections have no lateral-torsional buckling limit state, so Lb and
+  Cb do not enter their flexural capacity, and the check prints that
+  provision instead. Cb from the §F1 moment diagram is first needed for an
+  LTB-susceptible section. (Slice 2, D5.)
+- The Check 2 downward case combines D + L as an engineering-judgement
+  serviceability combination, labeled as such, not as an ASD strength
+  combination. (Slice 1.)
+
+### The post (Checks 5 and 6)
+
+Decided in slice 2; D numbers are that slice plan's decision numbers, kept
+for the record.
+
+- **Critical section.** The post is fixed at the top of the baseplate (a
+  stated assumption), so that is the critical section. Horizontal guard
+  loads at the top of the post produce M = V·(h − t_p), the same length as
+  the Check 6 cantilever and the Check 7 moment arm. (D4.)
+- **Compression.** Lc = K·h with K = 2.1, the recommended design value for
+  a fixed-free column (AISC 360-22 Commentary Appendix 7, Table C-A-7.1).
+  The length is h, not h − t_p: my ruling, slightly conservative. Chapter
+  E: Fe, then Fcr per Eq. E3-2 or E3-3 at the 4.71√(E/Fy) limit, Pn = Fcr·Ag
+  and Pc = Pn/Ωc. (D3.)
+- **Classification in compression** uses Table B4.1a for round HSS. Slender
+  is a hard stop; compression has no noncompact category. Flexure is
+  classified as for the rail.
+- **Lc/r above 200** (the §E2 User Note's recommended limit) is a visible
+  flag, not a stop. Lc/r always prints; above 200 a flag prints beside it
+  and in the Check 5 summary row, the way a noncompact section is flagged,
+  and the calc continues. (D6.)
+- **Tension** (upward case): yielding on the gross section, Pn = Fy·Ag and
+  Pt = Pn/Ωt (§D2). Tensile rupture is not a v1 check: a pipe welded all
+  around to the baseplate has U = 1.0 (Table D3.1, Case 1), so Ae = Ag,
+  and for A53 Gr B rupture does not govern over yielding. (Ruled
+  2026-10-03.)
+- **Interaction only where there is moment.** In the outward, inward and
+  longitudinal cases Check 5 uses §H1.1, Eq. H1-1a when Pr/Pc ≥ 0.2 and
+  Eq. H1-1b otherwise. The axial-only cases use their own chapter:
+  downward reports Pr/Pc (Chapter E) and upward reports Pr/Pt (Chapter D),
+  because H1-1b with Mr = 0 would report half the axial ratio. Their ratio
+  lines carry the margin note "axial only; Chapter E ratio reported" or
+  "axial only; Chapter D ratio reported". (D8.)
+- **Second-order effects: a ratio and a stop, not an amplifier.** The tool
+  does not implement Appendix 8 amplification. In each case with a lateral
+  design load (outward, inward, longitudinal) it computes αPr/Pe, with
+  α = 1.6 (ASD) and Pe = π²EI/Lc² from Appendix 8, using Lc = K·h (the
+  compression length) and EI, not the reduced EI\*. It prints:
+  "Second-order effects negligible: αPr/Pe = [value]; amplification taken
+  as 1.0." If αPr/Pe exceeds 0.05 in any of those cases, the calc stops,
+  naming the case, the ratio and the limit, like the slender-section stop.
+  The 0.05 limit is engineering judgement: 1/(1 − 0.05) = 1.053, so the
+  amplification neglected is at most about 5%. (D1.)
+  - The downward and upward cases are outside the gate: with notional
+    loads neglected they have no lateral design load, so no moment to
+    amplify. Downward compression is covered by Chapter E at K = 2.1, and
+    upward is tension.
+  - Using Lc = K·h for Pe departs from Appendix 8 as written (B1 uses
+    K1 = 1; B2 uses the story stiffness). The post is a cantilever, so its
+    second-order effect is sway (P-Δ); Pe at K = 1 would be 2.1² ≈ 4.4
+    times larger and understate the ratio by that factor. Pe at K·h is
+    also lower than the Appendix 8 story form, R_M·H·L/Δ_H with R_M = 0.85
+    and the cantilever stiffness 3EI/(h − t_p)², so it is the conservative
+    choice. The choice of length is recorded as an engineering-judgement
+    entry, and the printed line cites it as well as Appendix 8. (D1;
+    kept 2026-10-03.)
+- **Notional loads are neglected.** K = 2.1 is the effective length method
+  (AISC 360-22 Appendix 7), which as written calls for notional loads in
+  gravity-only combinations. In those combinations they produce a
+  negligible moment, and the reported axial-only ratio bounds the H1-1b
+  result. This is a stated assumption (output.md). (D10.)
+- **Check 6** is Δ = V·(h − t_p)³/(3EI), live load only, in the three
+  horizontal cases; the downward and upward cases are listed as vertical,
+  with no lateral deflection. The allowable deflection is (h − t_p)
+  divided by the limit ratio, default 60, editable and bypassable. The
+  post limit is its own engineering-judgement entry, separate from the
+  rail span limit.

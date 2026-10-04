@@ -5,10 +5,10 @@ as v0.2.0 (see CHANGELOG.md). Its registry entries are still drafted, and
 the [hand] values of test cases 2 and 3 are deferred; both wait for the
 release review (issue #18).
 
-> This plan is a record of what slice 2 set out to build and why. The
-> decisions below (D1–D12) describe what the tool does for the post, but
-> where this plan differs from docs/BRIEF.md, CLAUDE.md or a later plan,
-> those govern. The verification steps below are as the slice ran them;
+> This plan is a record of what slice 2 set out to build and why. Its
+> binding decisions were moved into the brief (see the note under
+> "Decisions settled for this slice"); where this plan differs from
+> docs/BRIEF.md, CLAUDE.md or a later plan, those govern. The verification steps below are as the slice ran them;
 > the current process is docs/brief/verification.md.
 
 ## Goal
@@ -23,6 +23,16 @@ post engineering. Checks 1 and 2 are unchanged, and test case 1 must pass
 exactly as it does today.
 
 ## Decisions settled for this slice
+
+> Moved into the brief on 2026-10-04; the brief is now where they bind.
+> D1, D3, D4, D5, D6, D8 and D10 are in docs/brief/checks.md ("The post");
+> D1's printed column also in output.md. D2 and D11 are in
+> loads-and-envelope.md, D9 in inputs.md, and D10–D12's assumptions in
+> output.md ("Stated assumptions"). So are the rulings under "Engineering"
+> below: tensile rupture not checked (checks.md), and the post envelope
+> table and any-direction coverage (loads-and-envelope.md). D7 chose the
+> test cases; it binds no tool behavior and stays here. The text below is
+> the record, with the case values each decision was worked from.
 
 **D1. Second-order effects: a ratio and a stop, not an amplifier.** The
 tool does not implement Appendix 8 amplification. In each case that has

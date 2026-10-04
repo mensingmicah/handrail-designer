@@ -28,6 +28,37 @@ combinations, dead/live separation, and the anchor reaction sets.
   for this case, so the output labels it "engineering judgement", not as an
   ASCE combination. Crediting a reduced dead load is deliberate: the point of
   the tool is to sharpen the pencil.
+- The concentrated and distributed guard loads are separate load types,
+  never concurrent, and each is run through the envelope. The
+  distributed-load exemption removes the distributed load. On the top
+  rail, the concentrated load P acts at midspan of the simple span and the
+  distributed load w along it. On the post, both act at the top: P, and
+  w·s with the span s as the tributary length. (Slices 1 and 2.)
+- Dead load at the post: D = w_D,rail·s + D_post, with D_post = W·(h − t_p),
+  the tabulated weight over the length from the top of the baseplate to
+  the top rail centerline. All of it acts as axial load at the critical
+  section. The span is the tributary length, with no increase for rail
+  continuity (a stated assumption, output.md). (Slice 2, D2 and D11.)
+- The post envelope, at the top of the baseplate:
+
+  | Case | Axial Pr | Moment Mr | Combination |
+  | --- | --- | --- | --- |
+  | Downward | D + L, compression | 0 | ASCE 7-22 ASD D + L |
+  | Outward, inward | D, compression | L·(h − t_p) | ASCE 7-22 ASD D + L |
+  | Longitudinal | D, compression | L·(h − t_p) | ASCE 7-22 ASD D + L |
+  | Upward | 1.0L − 0.6D, tension | 0 | 0.6D + 1.0L, engineering judgement |
+
+  Outward and inward are identical for a round post, and longitudinal
+  equals transverse, but all are listed so the envelope is explicit. If
+  0.6D ≥ L, the upward case shows "no net tension; compression covered by
+  downward" and is not checked. (Slice 2.)
+- For round sections the five direction cases cover the ASCE 7-22 "any
+  direction". An inclined load trades moment for axial load: in Eq. H1-1b
+  the worst inclination above horizontal is θ = atan[Mc/(2Pc·(h − t_p))],
+  and the ratio rises by the factor √(1 + tan²θ). That increase is
+  negligible whenever Mc is much smaller than 2Pc·(h − t_p), which holds
+  for guard posts, whose axial capacity far exceeds their lateral load.
+  (Ruled 2026-10-03.)
 - Dead and live effects stay separate until each check combines them, so one
   analysis produces both the ASD member checks and the factored reactions.
 - Base reactions (v1, concrete substrate only): LRFD, for direct input into

@@ -22,6 +22,9 @@ and how it is entered.
   reaction sets.
 - The span is the tributary length for the post, a stated assumption
   (output.md)
+- Every project has a post, post height and baseplate thickness: v1 always
+  checks one post. A baseplate thickness of zero or less, or not less than
+  h, is rejected at input. (Slice 2, D9.)
 - Top rail and post sections: pick an AISC designation, or define a custom
   section by dimensions. For tubes, the engineer says whether the entered wall
   thickness is nominal or design. For rectangular sections, the engineer sets

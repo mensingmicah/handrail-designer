@@ -14,6 +14,9 @@ checks may be added later. The design method is stated separately in the
 front matter, as a registry-cited line ("Design method: ASD per AISC 360-22
 §B3.2"), so the references list stays the same when LRFD is added.
 
+The front matter's references list also names the AISC Steel Construction
+Manual, 16th Edition, and the AISC Shapes Database v16.0. (Slice 1.)
+
 ## Stated assumptions (printed in the output)
 
 - No shear checks in any member.
@@ -64,6 +67,23 @@ front matter, as a registry-cited line ("Design method: ASD per AISC 360-22
 - A footer on every page with the tool version and the code-value registry
   version the calc ran with
 - A calc that uses any drafted (unverified) registry entry prints "DRAFT:
-  contains unverified code values" on every page and lists those entries
+  contains unverified code values" on every page and lists those entries.
+  The list prints once, in the front matter, and the stamp on every page
+  points to it. (Slice 1.)
+- Until the v1 release, every page carries a "DEVELOPMENT — NOT FOR
+  CONSTRUCTION" watermark; removing it is my call alone (docs/ROADMAP.md,
+  slice 9). (Slice 1.)
+- The footer's tool and registry versions are the git commits of the code
+  and of the registry file, with "page x of y". If either has uncommitted
+  changes when the calc runs, "uncommitted changes" prints beside that
+  commit, so a printed calc can always be traced to exact code. (Slice 1.)
+- The dimensions page shows each dimension as entered and normalized
+  (72 → 6'-0"). Each derived length (h − t_p, Lc) prints the note, formula
+  and value of the calc line that computed it. (Slices 1 and 2.)
+- The Check 5 envelope table has an αPr/Pe column, with "—" for the
+  downward and upward cases, so the value is visible for every case the
+  second-order stop checks; the printed sentence goes in the calc lines.
+  Each capacity (Pc or Pt, and Mc) prints under its demand. The Check 5
+  calc lines name the interaction equation used. (Slice 2, D1.)
 - The inputs are saved as a plain-text project file alongside the PDF;
   reopening it regenerates the calc exactly
