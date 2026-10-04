@@ -97,5 +97,5 @@ A complete calc of a test case written by an agent in a fresh session from the c
 _Avoid_: Agent calc, second opinion
 
 **Governing-case calc**:
-The engineer of record's own calc of the case he expects to govern a new check, worked before he sees the independent calc or the tool's output.
+The engineer of record's line-by-line recomputation, by calculator, of the tool's printed controlling case for a new check, with each provision checked against the code. Not blind; his recorded values are his own results, never copied from the tool's output. Blind independence comes from the independent calc.
 _Avoid_: Spot check (when meaning this)

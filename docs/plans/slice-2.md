@@ -302,9 +302,10 @@ That is about 20 entries, within the roadmap's estimate of 18–23.
     - αPr/Pe for each moment case
     - for each horizontal case: Δ, plus Δ_allow and each ratio
     - the controlling direction for each check
-  - Micah works the governing case of Check 5 and of Check 6 on his own,
-    before opening the independent calc or any tool output, and records at
-    least each governing ratio and which case governs.
+  - Micah recomputes the printed controlling case of Check 5 and of Check 6
+    line by line, checking each provision against the code, and records his
+    own results in [hand]: at least each governing ratio and which case
+    governs (docs/brief/verification.md, changed 2026-10-04).
   - Micah then reviews the independent calc and the slice PDF against the
     checklist in docs/brief/verification.md.
 
@@ -374,9 +375,9 @@ pass.
 
 ## What Micah does
 
-- For test cases 2 and 3 (inputs set in D7), work the governing case of
-  Checks 5 and 6 on his own, before opening the independent calc or any
-  tool output.
+- For test cases 2 and 3 (inputs set in D7), recompute the printed
+  controlling cases of Checks 5 and 6 line by line, and record the
+  recomputed values in [hand].
 - Review each independent calc and the slice PDF against the checklist in
   docs/brief/verification.md, and approve the pull request.
 

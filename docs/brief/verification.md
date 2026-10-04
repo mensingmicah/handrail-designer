@@ -27,12 +27,19 @@ the guard fits the tool's assumptions) is separate and unchanged.
   the plan's decisions and the case inputs, never from the tool's code or
   output. The procedure is the independent-calc skill
   (.claude/skills/independent-calc/SKILL.md).
-- **The governing case: me, on my own.** For each new check I work the
-  case I expect to govern (for the post: the horizontal load at the top
-  producing moment at the base), before I open the independent calc or any
-  tool output. I record at least the governing ratio (or deflection, for a
-  deflection check) and which case governs, plus any intermediate values I
-  work along the way.
+- **The governing case: me, by recomputation.** For each new check I follow
+  the tool's printed controlling case (for the post: the horizontal load at
+  the top producing moment at the base) and recompute every line myself
+  with a calculator, checking each provision against the code. My [hand]
+  values are my own recomputed results, never copied from the PDF
+  (CLAUDE.md rule 5). This check is not blind: blind independence comes
+  from the independent calc. Because it follows the printed case, it
+  confirms what the tool did rather than finding what the tool left out;
+  omissions are caught by the independent calc and checklist items 1–3. I
+  record at least the governing ratio (or deflection, for a deflection
+  check) and which case governs, plus any intermediate values I recompute.
+  (Changed 2026-10-04: until then this was a blind calc worked before
+  opening any tool output.)
 - **The process: me, by review.** I then backcheck the independent calc
   line by line, the way I review a junior engineer's calc, and read the
   tool's printed calc for the controlling case, using the checklist below.
@@ -40,8 +47,8 @@ the guard fits the tool's assumptions) is separate and unchanged.
 ## Order for each new check
 
 1. The independent calc is written for each new test case.
-2. I work the governing case without looking at the independent calc or
-   the tool's output.
+2. I recompute the tool's printed controlling case line by line, checking
+   each provision against the code, and record my own results in [hand].
 3. I review the independent calc and the tool's printed calc against the
    checklist.
 4. The test compares the tool to every independent-calc value and to every
