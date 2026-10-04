@@ -52,7 +52,7 @@ def plain(rail="Pipe2STD", L=72.0, post_section="Pipe2STD", h=42.0, tp=0.5, P=P,
     live = {"Concentrated": P, "Distributed": w * L}
     out = {}
     for lt, V in live.items():
-        out[("Downward", lt)] = ((PD + V) / Pc, "Pr/Pc (Ch. E)", None)
+        out[("Downward", lt)] = ((PD + V) / Pc, "Pr/Pc (Eq. E3-1)", None)
         a = ALPHA * PD / Pe
         if PD / Pc >= 0.2:
             ratio, eq = PD / Pc + 8 / 9 * V * Lp / Mc, "Eq. H1-1a"
@@ -60,7 +60,7 @@ def plain(rail="Pipe2STD", L=72.0, post_section="Pipe2STD", h=42.0, tp=0.5, P=P,
             ratio, eq = PD / (2 * Pc) + V * Lp / Mc, "Eq. H1-1b"
         for d in ("Outward", "Inward", "Longitudinal"):
             out[(d, lt)] = (ratio, eq, a)
-        out[("Upward", lt)] = ((V - 0.6 * PD) / Pt, "Pr/Pt (Ch. D)", None)
+        out[("Upward", lt)] = ((V - 0.6 * PD) / Pt, "Pr/Pt (Eq. D2-1)", None)
     return out
 
 
@@ -131,7 +131,7 @@ def test_downward_ratio_is_Pr_over_Pc_not_half_of_it(check5):
         if c.direction == "Downward":
             pr_pc = (c.Pr / c.capacity).m_as("dimensionless")
             assert c.ratio == pytest.approx(pr_pc, rel=1e-12)  # Eq. H1-1b with Mr = 0 would give pr_pc / 2
-            assert c.equation == "Pr/Pc (Ch. E)"
+            assert c.equation == "Pr/Pc (Eq. E3-1)"
 
 
 @pytest.mark.parametrize("direction, note", [("Downward", "Axial only; Chapter E ratio reported"),
@@ -152,7 +152,7 @@ def test_upward_with_no_net_tension_is_listed_not_checked():
     assert len(up) == 2
     for c in up:
         assert c.status == "not checked"
-        assert c.remark == "No net tension (0.6D >= L); compression covered by downward"
+        assert c.remark == "No net tension (0.6D >= 1.0L); compression covered by downward"
 
 
 # --- D1: second-order ratio and stop ------------------------------------------
@@ -241,6 +241,31 @@ def test_slenderness_over_200_is_flagged_and_the_calc_continues():
     down = next(c for c in chk.checked if c.direction == "Downward")
     flag = [ln for ln in down.lines if ln.kind == "decision" and ln.text.startswith("FLAG")]
     assert len(flag) == 1
+
+
+def test_flexure_and_compression_limits_print_under_distinct_symbols(check5):
+    # A moment case prints both blocks: lambda_r (Table B4.1b, flexure) and
+    # lambda_(r,c) (Table B4.1a, compression) must not share a symbol.
+    out = next(c for c in check5.checked if c.direction == "Outward")
+    vals = {ln.symbol: ln.value for ln in out.lines if ln.kind == "value"}
+    assert vals["lambda_r"] != vals["lambda_(r,c)"]
+    assert any(ln.symbol.startswith("lambda = ") and "lambda_(r,c)" in ln.symbol
+               for ln in out.lines if ln.kind == "decision")
+
+
+@pytest.mark.parametrize("direction", ["Downward", "Outward"])
+def test_lambda_prints_before_every_decision_that_uses_it(check5, direction):
+    c = next(c for c in check5.checked if c.direction == direction)
+    first_use = next(i for i, ln in enumerate(c.lines) if ln.kind == "decision" and ln.symbol.startswith("lambda "))
+    assert any(ln.symbol == "lambda" and ln.kind == "value" for ln in c.lines[:first_use])
+
+
+def test_effective_length_cites_the_unbraced_length_judgement(check5):
+    reg = Registry()
+    down = next(c for c in check5.checked if c.direction == "Downward")
+    Lc = next(ln for ln in down.lines if ln.symbol == "L_c")
+    assert Lc.symbolic == "K h"
+    assert reg.get("ej.post.unbraced_length").cite in Lc.cite
 
 
 def test_slenderness_within_200_raises_no_flag(check5):

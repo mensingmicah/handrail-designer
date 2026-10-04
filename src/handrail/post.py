@@ -26,10 +26,10 @@ from typing import Callable
 from handrail.calc import PI, Const, Line, Sheet, Sym, fmt_sig, sqrt
 from handrail.checks import (
     COMBO, DB, DIRECTIONS, DISTRIBUTED, FY_ENTRY, LOAD_TYPES, CONCENTRATED,
-    Case, Check, Loading, SectionStop, combo_text, flexural_capacity,
+    Case, Check, Loading, SectionStop, combo_text, exempt_case, flexural_capacity,
 )
 from handrail.project import Project
-from handrail.registry import Registry
+from handrail.registry import Entry, Registry
 from handrail.shapes import PipeSection
 from handrail.units import Q_
 
@@ -56,11 +56,13 @@ class PostCase(Case):
 
 @dataclass
 class Compression:
-    head: list[Line]   # Fy and E; the flexure block prints these too, so moment cases skip them
+    head: list[Line]   # Fy, E and lambda; the flexure block prints these too, so moment cases skip them
     body: list[Line]
     E: Sym
     Lc: Sym
+    Lc_line: Line      # the printed L_c line, which the Dimensions page lists
     Pc: Sym
+    Pn_entry: Entry    # the equation Pn comes from, named in the envelope's Equation column
     flags: list[str]
     summary_flag: str
 
@@ -71,23 +73,28 @@ def compression_capacity(registry: Registry, project: Project, post: PipeSection
     head = Sheet(registry)
     Fy = head.code_value("F_y", FY_ENTRY[grade], f"Yield stress, {grade}")
     E = head.code_value("E", "material.steel.E", "Modulus of elasticity")
+    # The same D/t line the flexure block prints, so moment cases skip it here.
+    head.given("lambda", post.D_t, "lambda = D/t, tabulated (design wall)", DB)
 
     sh = Sheet(registry)
     lr_e = registry.get("aisc360.B4.1a.round_hss.lambda_r")
-    lr = sh.line("lambda_r", sh.coeff(lr_e.id) * E / Fy, "Slender limit, round HSS in compression")
+    # lambda_(r,c): a moment case also prints the flexure block's lambda_r (Table B4.1b).
+    lr = sh.line("lambda_(r,c)", sh.coeff(lr_e.id) * E / Fy, "Slender limit, round HSS in compression")
     D_t = post.D_t
     if D_t > lr.value:
         raise SectionStop(
             f"{post.label}: wall is slender in compression, D/t = {D_t:g} > lambda_r = {lr_e.value}E/Fy = "
             f"{fmt_sig(lr.value)} ({lr_e.cite}). The tool does not check slender sections."
         )
-    sh.decision(f"lambda = {D_t:g} <= lambda_r = {fmt_sig(lr.value)}", "Nonslender",
+    sh.decision(f"lambda = {D_t:g} <= lambda_(r,c) = {fmt_sig(lr.value)}", "Nonslender",
                 "Section classification, compression: no noncompact category",
                 cite_ids=("aisc360.B4.1a.classification",))
 
     K = sh.code_value("K", "aisc360.CA7.K_fixed_free", "Effective length factor, fixed-free (recommended design value)")
-    h = sh.given("h", project.post_height.value, "Post height: L = h for the effective length (plan D3)", "Input")
-    Lc = sh.line("L_c", K * h, "Effective length", cite_ids=("aisc360.E2.effective_length",), unit="inch")
+    h = sh.given("h", project.post_height.value, "Post height, top of concrete to top rail centerline", "Input")
+    Lc = sh.line("L_c", K * h, "Effective length, with the unbraced length taken as the post height h",
+                 cite_ids=("aisc360.E2.effective_length", "ej.post.unbraced_length"), unit="inch")
+    Lc_line = sh.lines[-1]
     r = sh.given("r", post.r, "Radius of gyration", DB)
     slenderness = sh.line("frac(L_c, r)", Lc / r, "Effective slenderness ratio", cite_ids=("aisc360.eq.E3-4",))
 
@@ -96,7 +103,8 @@ def compression_capacity(registry: Registry, project: Project, post: PipeSection
     flags, summary_flag = [], ""
     if slenderness.value > limit:
         sh.decision(f"frac(L_c, r) = {fmt_sig(slenderness.value)} > {limit}", "FLAG: exceeds the recommended limit",
-                    f"{note_e.value} Flagged; the calc continues (plan D6).", cite_ids=(note_e.id,))
+                    f"{note_e.value} A recommendation, not a requirement: flagged, and the calc continues.",
+                    cite_ids=(note_e.id,))
         flags.append(f"SLENDERNESS: {post.label} Lc/r = {fmt_sig(slenderness.value)} exceeds {limit}, "
                      f"the limit recommended by the {note_e.cite}. Flagged; the calc continues.")
         summary_flag = f"Lc/r = {fmt_sig(slenderness.value)} > {limit}, flagged"
@@ -108,29 +116,35 @@ def compression_capacity(registry: Registry, project: Project, post: PipeSection
     lim = sh.line(branch.symbolic(), branch, "Limit between inelastic and elastic buckling")
     Fe = sh.line("F_e", PI**2 * E / slenderness**2, "Elastic buckling stress",
                  cite_ids=("aisc360.eq.E3-4",), unit="ksi")
+    # Each branch's equation entry is fetched only on its own branch, so the
+    # DRAFT list names only the equation the calc used.
     if slenderness.value <= lim.value:
+        e32 = registry.get("aisc360.eq.E3-2")
         sh.decision(f"frac(L_c, r) = {fmt_sig(slenderness.value)} <= {fmt_sig(lim.value)}",
-                    "Inelastic buckling: Eq. E3-2", "", cite_ids=("aisc360.E3.branch_limit",))
-        FyFe = sh.line("frac(F_y, F_e)", Fy / Fe, "Exponent in Eq. E3-2", cite_ids=("aisc360.eq.E3-2",))
+                    f"Inelastic buckling: {e32.equation_number}", "", cite_ids=("aisc360.E3.branch_limit",))
+        FyFe = sh.line("frac(F_y, F_e)", Fy / Fe, f"Exponent in {e32.equation_number}", cite_ids=(e32.id,))
         Fcr = sh.line('F_"cr"', sh.coeff("aisc360.eq.E3-2.base") ** FyFe * Fy, "Critical stress",
-                      cite_ids=("aisc360.eq.E3-2",), unit="ksi")
+                      cite_ids=(e32.id,), unit="ksi")
     else:
+        e33 = registry.get("aisc360.eq.E3-3")
         sh.decision(f"frac(L_c, r) = {fmt_sig(slenderness.value)} > {fmt_sig(lim.value)}",
-                    "Elastic buckling: Eq. E3-3", "", cite_ids=("aisc360.E3.branch_limit",))
+                    f"Elastic buckling: {e33.equation_number}", "", cite_ids=("aisc360.E3.branch_limit",))
         Fcr = sh.line('F_"cr"', sh.coeff("aisc360.eq.E3-3.coeff") * Fe, "Critical stress",
-                      cite_ids=("aisc360.eq.E3-3",), unit="ksi")
+                      cite_ids=(e33.id,), unit="ksi")
     A = sh.given("A_g", post.A, "Gross area", DB)
-    Pn = sh.line("P_n", Fcr * A, "Nominal compressive strength", cite_ids=("aisc360.eq.E3-1",), unit="lbf")
+    e31 = registry.get("aisc360.eq.E3-1")
+    Pn = sh.line("P_n", Fcr * A, "Nominal compressive strength", cite_ids=(e31.id,), unit="lbf")
     Om = sh.code_value("Omega_c", "aisc360.E1.omega_c", "Safety factor for compression (ASD)")
     Pc = sh.line("P_c", Pn / Om, "Allowable compressive strength", cite_ids=("aisc360.eq.B3-2",), unit="lbf")
-    return Compression(head=head.lines, body=sh.lines, E=E, Lc=Lc, Pc=Pc, flags=flags,
-                       summary_flag=summary_flag)
+    return Compression(head=head.lines, body=sh.lines, E=E, Lc=Lc, Lc_line=Lc_line, Pc=Pc, Pn_entry=e31,
+                       flags=flags, summary_flag=summary_flag)
 
 
 @dataclass
 class Tension:
     lines: list[Line]
     Pt: Sym
+    Pn_entry: Entry    # the equation Pn comes from, named in the envelope's Equation column
 
 
 def tension_capacity(registry: Registry, project: Project, post: PipeSection) -> Tension:
@@ -139,11 +153,12 @@ def tension_capacity(registry: Registry, project: Project, post: PipeSection) ->
     grade = project.post.grade
     Fy = sh.code_value("F_y", FY_ENTRY[grade], f"Yield stress, {grade}")
     A = sh.given("A_g", post.A, "Gross area", DB)
+    d21 = registry.get("aisc360.eq.D2-1")
     Pn = sh.line("P_n", Fy * A, "Nominal tensile strength: yielding on the gross section",
-                 cite_ids=("aisc360.eq.D2-1",), unit="lbf")
+                 cite_ids=(d21.id,), unit="lbf")
     Om = sh.code_value("Omega_t", "aisc360.D2.omega_t", "Safety factor for tension (ASD)")
     Pt = sh.line("P_t", Pn / Om, "Allowable tensile strength", cite_ids=("aisc360.eq.B3-2",), unit="lbf")
-    return Tension(lines=sh.lines, Pt=Pt)
+    return Tension(lines=sh.lines, Pt=Pt, Pn_entry=d21)
 
 
 @dataclass
@@ -202,7 +217,8 @@ def _downward(registry, project, loading, cap: Capacity5, load_type) -> PostCase
                     ratio=True)
     return PostCase("Downward", load_type, "checked", f"{combo_text(combo)}, axial\n{combo.cite}",
                     demand=Pr.value, capacity=Pc.value, ratio=ratio.value, lines=sh.lines,
-                    Pr=Pr.value, sense="compression", P_allow=Pc.value, equation="Pr/Pc (Ch. E)")
+                    Pr=Pr.value, sense="compression", P_allow=Pc.value,
+                    equation=f"Pr/Pc ({cap.compression.Pn_entry.equation_number})")
 
 
 def _moment_case(registry, project, post, loading, cap: Capacity5, direction, load_type) -> PostCase:
@@ -224,7 +240,7 @@ def _moment_case(registry, project, post, loading, cap: Capacity5, direction, lo
 
     # Second-order effects: a ratio and a stop, not an amplifier (plan D1).
     I = sh.given("I", post.I, "Moment of inertia", DB)
-    Pe = sh.line("P_e", PI**2 * comp.E * I / comp.Lc**2, "Elastic critical buckling load, Lc = K h",
+    Pe = sh.line("P_e", PI**2 * comp.E * I / comp.Lc**2, "Elastic critical buckling load, at the compression Lc",
                  cite_ids=("aisc360.eq.A-8-5", "ej.second_order.pe_length"), unit="lbf")
     alpha = sh.coeff("aisc360.app8.alpha_asd")
     a_ratio = sh.line("frac(alpha P_r, P_e)", alpha * Pr / Pe, "Second-order ratio")
@@ -243,21 +259,24 @@ def _moment_case(registry, project, post, loading, cap: Capacity5, direction, lo
     Pc, Mc = comp.Pc, cap.Mc
     t = registry.get("aisc360.H1.1.threshold")
     PrPc = sh.line("frac(P_r, P_c)", Pr / Pc, "Axial ratio, selects the interaction equation", cite_ids=(t.id,))
+    # Each equation entry is fetched only on its own branch, as for Chapter E.
     if PrPc.value >= t.value:
-        sh.decision(f"frac(P_r, P_c) = {fmt_sig(PrPc.value)} >= {t.value}", "Eq. H1-1a", "", cite_ids=(t.id,))
+        eq = registry.get("aisc360.eq.H1-1a")
+        sh.decision(f"frac(P_r, P_c) = {fmt_sig(PrPc.value)} >= {t.value}", eq.equation_number, "",
+                    cite_ids=(t.id,))
         ratio = sh.line('"Ratio"', PrPc + sh.fraction("aisc360.eq.H1-1a.coeff") * (Mr / Mc),
-                        "Combined axial and flexure", cite_ids=("aisc360.eq.H1-1a",), ratio=True)
-        equation = "H1-1a"
+                        "Combined axial and flexure", cite_ids=(eq.id,), ratio=True)
     else:
-        sh.decision(f"frac(P_r, P_c) = {fmt_sig(PrPc.value)} < {t.value}", "Eq. H1-1b", "", cite_ids=(t.id,))
+        eq = registry.get("aisc360.eq.H1-1b")
+        sh.decision(f"frac(P_r, P_c) = {fmt_sig(PrPc.value)} < {t.value}", eq.equation_number, "",
+                    cite_ids=(t.id,))
         ratio = sh.line('"Ratio"', Pr / (sh.coeff("aisc360.eq.H1-1b.coeff") * Pc) + Mr / Mc,
-                        "Combined axial and flexure", cite_ids=("aisc360.eq.H1-1b",), ratio=True)
-        equation = "H1-1b"
+                        "Combined axial and flexure", cite_ids=(eq.id,), ratio=True)
     axes = {"D": "axial", "L": "horizontal"}
     return PostCase(direction, load_type, "checked", f"{combo_text(combo, axes, ', ')}\n{combo.cite}",
                     demand=Mr.value, capacity=Mc.value, ratio=ratio.value, lines=sh.lines,
                     Pr=Pr.value, sense="compression", Mr=Mr.value, P_allow=Pc.value, M_allow=Mc.value,
-                    equation=f"Eq. {equation}",
+                    equation=eq.equation_number,
                     second_order=a_ratio.value)
 
 
@@ -272,8 +291,9 @@ def _upward(registry, project, loading, cap: Capacity5, load_type) -> PostCase:
     # One expression gives both the printed value and the decision (ADR 0002).
     net = demand.factor(combo.id, "L") * PL - demand.factor(combo.id, "D") * PD
     if not net.eval() > Q_(0, "lbf"):
+        no_net = f"{float(combo.value['D'])!r}D >= {float(combo.value['L'])!r}L"  # the factors in net
         return PostCase("Upward", load_type, "not checked", label,
-                        remark="No net tension (0.6D >= L); compression covered by downward")
+                        remark=f"No net tension ({no_net}); compression covered by downward")
     tension = cap.tension()
     sh.heading("Capacity")
     sh.lines.extend(tension.lines)
@@ -283,19 +303,18 @@ def _upward(registry, project, loading, cap: Capacity5, load_type) -> PostCase:
                     cite_ids=("aisc360.eq.B3-2",), ratio=True)
     return PostCase("Upward", load_type, "checked", label,
                     demand=Pr.value, capacity=tension.Pt.value, ratio=ratio.value, lines=sh.lines,
-                    Pr=Pr.value, sense="tension", P_allow=tension.Pt.value, equation="Pr/Pt (Ch. D)")
+                    Pr=Pr.value, sense="tension", P_allow=tension.Pt.value,
+                    equation=f"Pr/Pt ({tension.Pn_entry.equation_number})")
 
 
 def check_5(registry: Registry, project: Project, post: PipeSection, loading: Loading) -> Check:
     cap = _capacity(registry, project, post)
     chk = Check(5, "Post combined axial and flexure", "P_r, M_r", "P_c, M_c", flags=cap.flags,
-                summary_flag=cap.compression.summary_flag)
+                summary_flag=cap.compression.summary_flag, derived_lengths=[cap.compression.Lc_line])
     for direction in DIRECTIONS:
         for lt in LOAD_TYPES:
             if lt == DISTRIBUTED and loading.exempt:
-                exemption = registry.get("asce7.guard.uniform.exemption.intro")
-                chk.cases.append(PostCase(direction, lt, "exempt",
-                                          remark=f"Uniform load not considered ({exemption.cite})"))
+                chk.cases.append(exempt_case(registry, direction, PostCase))
             elif direction == "Downward":
                 chk.cases.append(_downward(registry, project, loading, cap, lt))
             elif direction == "Upward":
@@ -341,9 +360,7 @@ def check_6(registry: Registry, project: Project, post: PipeSection, loading: Lo
             continue
         for lt in LOAD_TYPES:
             if lt == DISTRIBUTED and loading.exempt:
-                exemption = registry.get("asce7.guard.uniform.exemption.intro")
-                chk.cases.append(Case(direction, lt, "exempt",
-                                      remark=f"Uniform load not considered ({exemption.cite})"))
+                chk.cases.append(exempt_case(registry, direction))
                 continue
             chk.cases.append(_deflection_case(registry, project, post, loading, direction, lt))
     return chk

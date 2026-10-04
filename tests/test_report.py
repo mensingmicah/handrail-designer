@@ -185,8 +185,23 @@ def test_dimensions_page_echoes_h_and_tp_and_prints_the_derived_lengths():
     src = report.build_source(res, reg, CLEAN)
     assert '"Post height h, top of concrete to top rail centerline", "42", "3\'-6\\"", "42.00 in"' in src
     assert '"Baseplate thickness t_p", "1/2", "1/2\\"", "0.5000 in"' in src
-    assert '"Post cantilever length h - t_p", "41.50 in", "Loading"' in src
-    assert '"Effective length Lc = K h", "88.20 in", "Check 5"' in src
+    # Each derived length prints the formula of the line that computed it.
+    assert ('"Post cantilever length, top of baseplate to top rail centerline", [$L_"post" = h - t_p$], '
+            '"41.50 in", "Loading"') in src
+    assert ('"Effective length, with the unbraced length taken as the post height h", [$L_c = K h$], '
+            '"88.20 in", "Check 5"') in src
+
+
+def test_printed_calc_never_cites_the_development_plan():
+    # A sealed calc can't point a reviewer at an internal plan (PR #17 review, item 5).
+    # A Pipe1STD post at h = 42 in has Lc/r above 200, so the slenderness flag prints too.
+    base = run()[0].project
+    for post in ("Pipe2STD", "Pipe1STD"):
+        reg = Registry()
+        res = checks.run(dataclasses.replace(base, post=Member(post, "A53 Gr B")), reg)
+        src = report.build_source(res, reg, CLEAN)
+        assert "plan D" not in src, post
+    assert "A recommendation, not a requirement: flagged, and the calc continues." in src
 
 
 def test_section_properties_page_has_a_post_block_with_r():
@@ -204,9 +219,16 @@ def test_check_5_envelope_prints_alpha_ratio_only_for_moment_cases():
     for c in chk5.checked:
         if c is not chk5.controlling:  # the controlling row is bold, so its cells are wrapped
             assert f'"{c.direction}", "{c.load_type}"' in table
-    # downward and upward rows carry a dash in the Mr and alpha Pr/Pe columns
+    # downward and upward rows carry a dash in the moment and alpha Pr/Pe columns
     assert table.count('"—"') == 2 * 4
-    assert '"Eq. H1-1b"' in table and '"Pr/Pc (Ch. E)"' in table and '"Pr/Pt (Ch. D)"' in table
+    # A cell's second line is a "\n" escape inside its Typst string literal.
+    assert '"Eq. H1-1b"' in table and '"Pr/Pc\\n(Eq. E3-1)"' in table and '"Pr/Pt\\n(Eq. D2-1)"' in table
+    # every checked row prints each capacity under its demand (brief, output.md)
+    for c in chk5.checked:
+        P_cap = "Pt" if c.sense == "tension" else "Pc"
+        assert f'\\n{P_cap} = {report.fmt_quantity_plain(c.P_allow)}"' in table
+        if c.M_allow is not None:
+            assert f'{report.fmt_quantity_plain(c.Mr)}\\nMc = {report.fmt_quantity_plain(c.M_allow)}"' in table
 
 
 def test_summary_prints_the_check_5_axial_and_moment_terms():

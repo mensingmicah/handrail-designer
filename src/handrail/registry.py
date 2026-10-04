@@ -62,6 +62,15 @@ class Entry:
             return self.value  # int or float, kept as written so it prints as written
         return Q_(self.value, self.unit)
 
+    @property
+    def equation_number(self) -> str:
+        """The equation as printed text names it, read from the cite:
+        'AISC 360-22 Eq. H1-1b' gives 'Eq. H1-1b'."""
+        marker = "Eq. "
+        if marker not in self.cite:
+            raise RegistryError(f"{self.id}: cite {self.cite!r} names no equation")
+        return self.cite[self.cite.index(marker):]
+
 
 class Registry:
     def __init__(self, path: Path = REGISTRY_PATH):

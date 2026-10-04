@@ -75,6 +75,7 @@ class Check:
     flags: list[str] = field(default_factory=list)
     summary_flag: str = ""  # short flag text printed in the summary row (e.g. Lc/r above 200)
     bypassed: bool = False
+    derived_lengths: list[Line] = field(default_factory=list)  # listed on the Dimensions page
 
     @property
     def checked(self) -> list[Case]:
@@ -110,6 +111,7 @@ class Loading:
     exempt: bool
     exemption_statement: str
     lines: list[Line]
+    derived_lengths: list[Line]  # listed on the Dimensions page
 
 
 @dataclass
@@ -121,6 +123,14 @@ class Results:
     section_lines: list[Line]       # top rail
     post_section_lines: list[Line]
     checks: list[Check]
+
+    @property
+    def derived_lengths(self) -> list[tuple[Line, str]]:
+        """Each derived length with where it is computed: the line itself, so the
+        Dimensions page prints the formula that computed the value (ADR 0002)."""
+        out = [(ln, "Loading") for ln in self.loading.derived_lengths]
+        out += [(ln, f"Check {c.number}") for c in self.checks for ln in c.derived_lengths]
+        return out
 
 
 # ---------------------------------------------------------------------------
@@ -185,6 +195,7 @@ def build_loading(project: Project, registry: Registry, rail: PipeSection, post:
     tp = sh.given("t_p", project.baseplate_thickness.value, "Baseplate thickness", "Input")
     L_post = sh.line('L_"post"', h - tp, "Post cantilever length, top of baseplate to top rail centerline",
                      cite="Stated assumption: post fixed at the top of the baseplate", unit="inch")
+    L_post_line = sh.lines[-1]
     W_post = sh.given('W_"post"', post.W,
                       f"Post self-weight: {post.label}, tabulated W = {post.W.m_as('lbf/ft'):g} lb/ft", DB)
     D_post = sh.line('D_"post"', W_post * L_post, "Post dead load, full weight at the base",
@@ -194,7 +205,8 @@ def build_loading(project: Project, registry: Registry, rail: PipeSection, post:
     P_D = sh.line("P_D", D_rail + D_post, "D at the post: axial dead load at the top of the baseplate",
                   cite_ids=(dl,), unit="lbf")
     return Loading(P=P.value, w_L=w_L, w_D=w_D.value, L_post=L_post.value, P_D=P_D.value,
-                   exempt=ld.uniform_exempt, exemption_statement=ld.exemption_statement, lines=sh.lines)
+                   exempt=ld.uniform_exempt, exemption_statement=ld.exemption_statement, lines=sh.lines,
+                   derived_lengths=[L_post_line])
 
 
 def section_lines(registry: Registry, sec: PipeSection, with_r: bool = False) -> list[Line]:
@@ -417,6 +429,13 @@ def _deflection_case(registry, project, rail, loading, direction, load_type) -> 
 # ---------------------------------------------------------------------------
 
 
+def exempt_case(registry: Registry, direction: str, case_type: type[Case] = Case) -> Case:
+    """The distributed-load row when the engineer exempts the uniform load:
+    listed in the envelope, not checked. Every check builds it here."""
+    exemption = registry.get("asce7.guard.uniform.exemption.intro")
+    return case_type(direction, DISTRIBUTED, "exempt", remark=f"Uniform load not considered ({exemption.cite})")
+
+
 def _envelope(case_fn, registry, project, rail, loading) -> list[Case]:
     cases = []
     for direction in DIRECTIONS:
@@ -426,9 +445,7 @@ def _envelope(case_fn, registry, project, rail, loading) -> list[Case]:
             continue
         for lt in LOAD_TYPES:
             if lt == DISTRIBUTED and loading.exempt:
-                exemption = registry.get("asce7.guard.uniform.exemption.intro")
-                cases.append(Case(direction, lt, "exempt",
-                                  remark=f"Uniform load not considered ({exemption.cite})"))
+                cases.append(exempt_case(registry, direction))
                 continue
             cases.append(case_fn(registry, project, rail, loading, direction, lt))
     return cases

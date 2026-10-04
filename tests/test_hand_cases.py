@@ -79,7 +79,7 @@ def _case(chk, direction, load_type=CONCENTRATED):
 
 def _equation(text: str) -> str:
     """The equation a case used, as a hand calc names it: 'Eq. H1-1b' -> 'H1-1b',
-    'Pr/Pc (Ch. E)' -> 'Pr/Pc'."""
+    'Pr/Pc (Eq. E3-1)' -> 'Pr/Pc'."""
     return text.removeprefix("Eq. ").split(" (")[0]
 
 

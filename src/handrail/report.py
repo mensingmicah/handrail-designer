@@ -142,18 +142,20 @@ def _envelope(chk: Check) -> str:
 
 
 def _envelope_5(chk: Check) -> str:
-    """Check 5 envelope: axial and moment demands, the equation, and alpha Pr/Pe
-    for every case the second-order stop checks (plan D1)."""
+    """Check 5 envelope: axial and moment demands, each with its capacity on the
+    line below, the equation, and alpha Pr/Pe for every case the second-order
+    stop checks (plan D1)."""
     ctrl = chk.controlling
     rows, bold = [], []
     for i, c in enumerate(chk.cases):
         if c.status == "checked":
             sense = "tension" if c.sense == "tension" else "comp."
+            _, P_cap, _, M_cap = _post_terms(c)
             rows.append([
                 c.direction, c.load_type, c.combination,
-                f"{fmt_quantity_plain(c.Pr)} {sense}",
-                fmt_quantity_plain(c.Mr) if c.Mr is not None else "—",
-                c.equation,
+                f"{fmt_quantity_plain(c.Pr)} {sense}\n{P_cap}",
+                f"{fmt_quantity_plain(c.Mr)}\n{M_cap}" if c.Mr is not None else "—",
+                c.equation.replace(" (", "\n("),  # the source equation on its own line keeps the column narrow
                 fmt_sig(c.second_order) if c.second_order is not None else "—",
                 fmt_ratio(c.ratio),
                 "Controls" if c is ctrl else "",
@@ -163,11 +165,12 @@ def _envelope_5(chk: Check) -> str:
         else:
             rows.append([c.direction, c.load_type or "", c.remark, "", "", "", "", "", ""])
     table = _table(
-        ["[*Direction*]", "[*Load*]", "[*Combination*]", "[*Axial* $P_r$]", "[*Moment* $M_r$]",
+        ["[*Direction*]", "[*Load*]", "[*Combination*]",
+         "[*Axial* $P_r$ \\ capacity $P_c$ or $P_t$]", "[*Moment* $M_r$ \\ capacity $M_c$]",
          "[*Equation*]", "[$frac(alpha P_r, P_e)$]", "[*Ratio*]", "[]"],
         rows, "(auto, auto, 1fr, auto, auto, auto, auto, auto, auto)", bold, raw_header=True,
     )
-    return f"#text(size: 8pt)[{table}]"  # nine columns: set small so the rows stay one or two lines
+    return f"#text(size: 8pt)[{table}]"  # nine columns: set small so the rows stay a few lines
 
 
 def _check(chk: Check) -> str:
@@ -197,13 +200,21 @@ def _demand_capacity(c: Case) -> tuple[str, str]:
     Check 5 prints its axial and moment terms side by side."""
     if not isinstance(c, PostCase):
         return fmt_quantity_plain(c.demand), fmt_quantity_plain(c.capacity)
+    Pr, P_cap, Mr, M_cap = _post_terms(c)
+    if c.Mr is None:
+        return Pr, P_cap
+    return f"{Pr}; {Mr}", f"{P_cap}; {M_cap}"
+
+
+def _post_terms(c: PostCase) -> tuple[str, str, str, str]:
+    """'Pr = ...', 'Pc = ...' (or 'Pt = ...' in tension), 'Mr = ...', 'Mc = ...';
+    the moment terms are empty in the axial-only cases. The envelope and the
+    summary both print these."""
     P_cap = "Pt" if c.sense == "tension" else "Pc"
-    demand = f"Pr = {fmt_quantity_plain(c.Pr)}"
-    capacity = f"{P_cap} = {fmt_quantity_plain(c.P_allow)}"
+    terms = [f"Pr = {fmt_quantity_plain(c.Pr)}", f"{P_cap} = {fmt_quantity_plain(c.P_allow)}", "", ""]
     if c.Mr is not None:
-        demand += f"; Mr = {fmt_quantity_plain(c.Mr)}"
-        capacity += f"; Mc = {fmt_quantity_plain(c.M_allow)}"
-    return demand, capacity
+        terms[2:] = [f"Mr = {fmt_quantity_plain(c.Mr)}", f"Mc = {fmt_quantity_plain(c.M_allow)}"]
+    return tuple(terms)
 
 
 def _summary(checks: list[Check]) -> str:
@@ -220,10 +231,16 @@ def _summary(checks: list[Check]) -> str:
                   "(1fr, auto, auto, auto, auto, auto)")
 
 
-def _post_Lc(results: Results):
-    """Lc as Check 5 computed it: every moment case prints the compression block."""
-    chk5 = next(c for c in results.checks if c.number == 5)
-    return next(ln.value for c in chk5.checked for ln in c.lines if ln.symbol == "L_c")
+def _derived_lengths(results: Results) -> str:
+    """Each derived length printed from its own calc line: the note, the formula
+    and the value are the ones that computed it (ADR 0002). Symbols and
+    formulas are Typst math the calc writes, never user text."""
+    cells = ['table.header(strong("Derived length"), strong("Formula"), strong("Inches"), '
+             'strong("Computed in"))']
+    for ln, where in results.derived_lengths:
+        cells += [typst_str(ln.note), f"[${ln.symbol} = {ln.symbolic}$]",
+                  typst_str(fmt_quantity_plain(ln.value)), typst_str(where)]
+    return f"#table(columns: (1fr, auto, auto, auto), {', '.join(cells)})"
 
 
 def build_source(results: Results, registry: Registry, stamp: Stamp) -> str:
@@ -282,10 +299,7 @@ def build_source(results: Results, registry: Registry, stamp: Stamp) -> str:
     )]
     src.append(_table(["Dimension", "As entered", "Read as", "Inches"], rows, "(1fr, auto, auto, auto)"))
     src.append("Derived lengths, each computed in the calc where it is used:")
-    src.append(_table(["Derived length", "Inches", "Computed in"], [
-        ["Post cantilever length h - t_p", fmt_quantity_plain(results.loading.L_post), "Loading"],
-        ["Effective length Lc = K h", fmt_quantity_plain(_post_Lc(results)), "Check 5"],
-    ], "(1fr, auto, auto)"))
+    src.append(_derived_lengths(results))
 
     # Section properties
     src.append("= Section properties")

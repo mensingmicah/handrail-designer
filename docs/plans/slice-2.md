@@ -266,11 +266,14 @@ The existing layout, extended:
 
 - **Front matter assumptions:** the three locked assumptions added by
   D10, D11 and D12 (docs/brief/output.md) print with the others.
-- **Dimensions:** h, t_p, h − t_p, Lc.
+- **Dimensions:** h, t_p, h − t_p, Lc. Each derived length prints the
+  note, formula and value of the calc line that computed it (PR #17
+  review, item 6).
 - **Section properties:** a post block beside the rail block.
 - **Loading:** the post dead load line and D at the post.
 - **Checks 5 and 6:** they follow Checks 1 and 2, with the same structure:
-  an envelope table (Check 5 adds the αPr/Pe column), then the full calc
+  an envelope table (Check 5 adds the αPr/Pe column, and prints each
+  capacity, Pc or Pt and Mc, under its demand), then the full calc
   lines for the controlling case, ending with the ratio and OK or NG. The
   Check 5 lines name the interaction equation used. In the axial-only
   cases, they carry the D8 margin note instead.
@@ -350,6 +353,11 @@ That is about 20 entries, within the roadmap's estimate of 18–23.
   hand cases will use H1-1b. H1-1a gets a same-author arithmetic test, like
   F8-2 in slice 1. This gap has no realistic trigger in v1 and is recorded
   here rather than as an issue.
+- **Pre-push hook (kept, Micah 2026-10-04, PR #17 review item 13):**
+  .githooks/pre-push runs `uv run pytest -q` and blocks a push that fails.
+  It runs only in a clone where `git config core.hooksPath .githooks` is
+  set, and it tests the working tree, so it matches the pushed commits
+  only when nothing is uncommitted. It cannot change a calc.
 
 ## Build order
 

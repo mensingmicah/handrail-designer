@@ -68,6 +68,8 @@ review = [
   "aisc_manual.t3-23.case22.M",
   "aisc_manual.t3-23.case22.delta",
   "ej.deflection.limit.post",
+  # PR #17 review, drafted 2026-10-04
+  "ej.post.unbraced_length",
 ]
 
 # ---------------------------------------------------------------------------
@@ -803,8 +805,23 @@ verified_by = ""
 verified_date = ""
 note = """
 Not in the slice 2 plan's list; added so the Lc line cites the provision \
-that defines Lc (rule 1), not only the K entry. The tool uses L = h, not \
-h - t_p (plan D3, Micah's ruling)."""
+that defines Lc (rule 1), not only the K entry. The length the tool uses \
+for L is ej.post.unbraced_length."""
+
+[[entry]]
+id = "ej.post.unbraced_length"
+value = "The laterally unbraced length in the post's compression effective length (and so in Pe) is the post height h, top of concrete to top rail centerline, not the cantilever length h - t_p. Slightly conservative."
+unit = "equation"
+cite = "Engineering judgement (EOR): unbraced length is the post height"
+document = "Engineering decision of the engineer of record"
+edition = "docs/plans/slice-2.md D3"
+section = "D3, compression effective length: the length is h, not h - t_p"
+source = "engineer"
+status = "drafted"
+drafted_on = 2026-10-04
+verified_by = ""
+verified_date = ""
+note = "Micah's ruling in plan D3. Cited on the Lc line, where the printed calc used to say \"L = h (plan D3)\" (PR #17 review, item 5). The printed symbol is h, so the span keeps L."
 
 [[entry]]
 id = "aisc360.E2.user_note.slenderness"
