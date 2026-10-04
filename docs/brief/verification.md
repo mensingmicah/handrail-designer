@@ -134,8 +134,9 @@ independent calc plus my review, not by my own arithmetic. Two agents can
 share a misreading of a provision; my governing-case calc and checklist
 review are the defence against that. A non-governing branch can be wrong by
 a large factor without moving the governing ratio: in test case 2 the
-Chapter E term is about 0.3% of the controlling H1-1b ratio, so an Fcr
-error of 2× would not show in my governing value.
+H1-1b axial term Pr/(2Pc) is about 0.15% of the controlling H1-1b ratio
+(Pr/Pc itself is about 0.3%), so an Fcr error of 2× would move my
+governing value by only about 0.15%, well inside the 0.5% tolerance.
 
 ## Shapes database
 

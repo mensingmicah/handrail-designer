@@ -34,9 +34,12 @@ moment and axial load together (outward, inward, longitudinal), it computes
 
 If αPr/Pe exceeds 0.05 in any of those cases, the calc stops. The stop names
 the case, the ratio and the limit, the same way the slender-section stop
-does. The downward and upward cases are left out on purpose. They have no
-moment to amplify. Downward axial compression is covered by the Chapter E
-check at K = 2.1, and upward is tension. Without that exclusion, a
+does. The gate applies only to cases with lateral design loads (outward,
+inward, longitudinal). The downward and upward cases are left out on
+purpose: they have no lateral design load, so no moment to amplify.
+Notional loads are neglected (D10), so the gravity-only downward case
+carries no moment either. Downward axial compression is covered by the
+Chapter E check at K = 2.1, and upward is tension. Without that exclusion, a
 Pipe1-1/2STD post at h = 42 in with a 7'-0" span would stop on the downward
 distributed case (1.6 × 378 lb / 10.78 kip = 0.056), which is an ordinary
 guard.
@@ -51,6 +54,12 @@ guard.
   the ratio by that factor. Because the choice of length is Micah's, it is
   recorded in an engineering-judgement entry, and the printed line cites
   that entry as well as Appendix 8.
+- Pe stays at K·h (Micah, 2026-10-03, on the case 2 independent calc's
+  F-5). The independent calc confirmed it is the conservative choice. The
+  Appendix 8 story form, Pe,story = R_M·H·L/Δ_H with R_M = 0.85 and the
+  cantilever stiffness 3EI/(h − t_p)², gave 12.58 kip for case 2, against
+  10.78 kip at Lc = 2.1h, so the K·h value is about 17% lower and gives a
+  higher αPr/Pe.
 - The 0.05 limit is its own entry, source "engineer", together with the
   printed sentence. 1/(1 − 0.05) = 1.053, so the amplification neglected is
   at most about 5%.
@@ -120,6 +129,35 @@ checks one post. Test case 1 and `examples/slice-1.toml` gain post inputs.
 Case 1's recorded hand values are for Checks 1 and 2 only, and they must
 pass unchanged. A changed value is a rule 2 stop.
 
+**D10. Notional loads are neglected.** Ruled by Micah on 2026-10-03, on
+the case 2 independent calc's F-1. K = 2.1 is the effective length method
+(AISC 360-22 App. 7), which as written calls for notional loads in
+gravity-only combinations. The tool neglects them, and a new locked
+assumption says so (docs/brief/output.md):
+
+> Notional loads (AISC 360-22 App. 7) are neglected. In gravity-only
+> combinations they produce a negligible moment, and the reported
+> axial-only ratio bounds the H1-1b result.
+
+For case 2's downward distributed case the notional moment would be about
+0.002 × 1.6 × 378 lb × 41.5 in ≈ 50 lb-in, and H1-1b with it is below the
+reported Pr/Pc (D8). With notional loads neglected, the downward case has
+no lateral design load and stays outside the αPr/Pe gate (D1).
+
+**D11. Post loads use tributary length = span.** Ruled by Micah on
+2026-10-03, on the case 2 independent calc's F-2: this is his
+long-standing practice as engineer of record. The distributed guard load
+and the rail dead load reach the post as w·s and w_D,rail·s, with no
+increase for rail continuity (a two-span continuous rail would put
+1.25·w·s into the interior post). A new locked assumption says so
+(docs/brief/output.md):
+
+> Post loads use tributary length = span; rail continuity effects on post
+> reactions are neglected (engineering judgement).
+
+The existing assumption that the rail runs continuously over the post
+stays, because it describes the connection detail.
+
 ## What the slice does
 
 ### Input
@@ -155,7 +193,12 @@ slice 1.
 - Compression: Fe per Eq. E3-4, then Fcr per Eq. E3-2 or Eq. E3-3,
   whichever applies at 4.71√(E/Fy). Pn = Fcr·Ag (Eq. E3-1), and Pc = Pn/Ωc
   (§E1).
-- Tension: Pn = Fy·Ag (Eq. D2-1), and Pt = Pn/Ωt (§D2).
+- Tension: Pn = Fy·Ag (Eq. D2-1), and Pt = Pn/Ωt (§D2). Tensile rupture
+  (§D2(b)) is not a v1 check (Micah, 2026-10-03, on the case 2
+  independent calc's F-4). It does not govern for these sections: a pipe
+  welded all around to the baseplate has U = 1.0 (Table D3.1, Case 1), so
+  Ae = Ag, and for A53 Gr B Fu/Ωt = 60/2.00 = 30 ksi exceeds
+  Fy/Ωt = 35/1.67 = 21.0 ksi.
 - Flexure: Mn per §F8 through the existing flexural-capacity code, with
   Mc = Mn/Ωb.
 
@@ -183,6 +226,14 @@ and the exemption flag removes the distributed load, as in slice 1.
   equals transverse. All are listed so the envelope is explicit, and
   longitudinal is a real, checked case for the post. For the top rail it
   stays "rail carries axially; not checked".
+- For round sections the five direction cases cover the ASCE 7-22 "any
+  direction" (Micah, 2026-10-03, on the case 2 independent calc's F-3). An
+  inclined load trades moment for axial load. In H1-1b the worst
+  inclination above horizontal is θ = atan[Mc/(2Pc·(h − t_p))], and the
+  ratio rises by the factor √(1 + tan²θ). For case 2 that is θ = 1.07° and
+  a 0.018% increase, far inside the 0.5% test tolerance. The increase stays
+  that small whenever Mc is much smaller than 2Pc·(h − t_p), which holds for
+  guard posts, whose axial capacity far exceeds their lateral load.
 - In the moment cases, Pr/Pc selects Eq. H1-1a (Pr/Pc ≥ 0.2) or Eq. H1-1b.
 
 **Deflection (Check 6)**: Δ = V·(h − t_p)³/(3EI), live load only
@@ -197,6 +248,8 @@ so its verification is not reopened.
 
 The existing layout, extended:
 
+- **Front matter assumptions:** the two locked assumptions added by D10
+  and D11 (docs/brief/output.md) print with the others.
 - **Dimensions:** h, t_p, h − t_p, Lc.
 - **Section properties:** a post block beside the rail block.
 - **Loading:** the post dead load line and D at the post.
