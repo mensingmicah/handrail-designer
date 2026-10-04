@@ -1,4 +1,5 @@
-# Handrail Designer project file (slice 1: top rail bending and deflection).
+# Handrail Designer project file (slices 1 and 2: top rail bending and
+# deflection, post combined axial and flexure and post deflection).
 #
 # Loading is per ASCE 7-22.
 #
@@ -17,10 +18,16 @@ assumptions = []          # added to the tool's locked assumptions
 
 [geometry]
 span = "6'-0\""           # post to post, center to center
+post_height = "3'-6\""    # h: top of concrete to top rail centerline
+baseplate_thickness = "1/2"   # t_p
 
 [top_rail]
 section = "Pipe2STD"      # AISC designation (AISC Shapes Database v16.0)
-grade = "A53 Gr B"        # slice 1 supports A53 Gr B only
+grade = "A53 Gr B"        # A53 Gr B is the only grade supported so far
+
+[post]
+section = "Pipe2STD"      # AISC designation (AISC Shapes Database v16.0)
+grade = "A53 Gr B"
 
 [loads]
 # Leave these out to use the ASCE 7-22 values from the registry.
@@ -33,4 +40,8 @@ statement = ""            # required when applies = true: why §4.5.1.1 exempts 
 
 [deflection.rail]
 limit_L_over = 120        # limit = L / 120 (engineering judgement, not code)
+bypass = false
+
+[deflection.post]
+limit_L_over = 60         # limit = (h - t_p) / 60 (engineering judgement, not code)
 bypass = false

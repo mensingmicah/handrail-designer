@@ -7,7 +7,7 @@ lists them all); only the controlling case's calc lines are printed in full
 Load types: the concentrated load P at midspan and the distributed load w
 are separate and never concurrent (ASCE 7-22 §4.5.1.1).
 
-Direction cases (docs/BRIEF.md, decisions; slice 1 plan):
+Direction cases (docs/brief/loads-and-envelope.md; slice 1 plan):
 - Downward: D + L on the vertical axis.
 - Outward, inward: D on the vertical axis, L on the horizontal axis. Bending
   combines them by SRSS against one capacity, exact for a round section.
@@ -26,6 +26,7 @@ from handrail.calc import Const, Line, Sheet, Sym, absolute, fmt_quantity_plain,
 from handrail.project import Member, Project, ProjectError
 from handrail.registry import Entry, Registry
 from handrail.shapes import PipeSection
+from handrail.units import Q_
 
 DIRECTIONS = ("Downward", "Outward", "Inward", "Upward", "Longitudinal")
 CONCENTRATED, DISTRIBUTED = "Concentrated", "Distributed"
@@ -72,7 +73,9 @@ class Check:
     capacity_label: str  # Typst math
     cases: list[Case] = field(default_factory=list)
     flags: list[str] = field(default_factory=list)
+    summary_flag: str = ""  # short flag text printed in the summary row (e.g. Lc/r above 200)
     bypassed: bool = False
+    derived_lengths: list[Line] = field(default_factory=list)  # listed on the Dimensions page
 
     @property
     def checked(self) -> list[Case]:
@@ -103,18 +106,31 @@ class Loading:
     P: object          # concentrated guard load
     w_L: object        # uniform guard load, or None when exempt
     w_D: object        # top rail self-weight
+    L_post: object     # post cantilever length, h - t_p
+    P_D: object        # axial dead load at the top of the baseplate (D at the post)
     exempt: bool
     exemption_statement: str
     lines: list[Line]
+    derived_lengths: list[Line]  # listed on the Dimensions page
 
 
 @dataclass
 class Results:
     project: Project
     rail: PipeSection
+    post: PipeSection
     loading: Loading
-    section_lines: list[Line]
+    section_lines: list[Line]       # top rail
+    post_section_lines: list[Line]
     checks: list[Check]
+
+    @property
+    def derived_lengths(self) -> list[tuple[Line, str]]:
+        """Each derived length with where it is computed: the line itself, so the
+        Dimensions page prints the formula that computed the value (ADR 0002)."""
+        out = [(ln, "Loading") for ln in self.loading.derived_lengths]
+        out += [(ln, f"Check {c.number}") for c in self.checks for ln in c.derived_lengths]
+        return out
 
 
 # ---------------------------------------------------------------------------
@@ -122,7 +138,7 @@ class Results:
 # ---------------------------------------------------------------------------
 
 
-def require_supported_grade(member: Member) -> None:
+def require_supported_grade(member: Member, name: str) -> None:
     """Refuse a grade this slice has no Fy entry for.
 
     The brief's unusual-pairing warning (a grade outside the shape's standard
@@ -131,11 +147,11 @@ def require_supported_grade(member: Member) -> None:
     """
     if member.grade not in FY_ENTRY:
         raise ProjectError(
-            f"top rail grade {member.grade!r}: slice 1 supports {', '.join(FY_ENTRY)} only"
+            f"{name} grade {member.grade!r}: this version supports {', '.join(FY_ENTRY)} only"
         )
 
 
-def build_loading(project: Project, registry: Registry, rail: PipeSection) -> Loading:
+def build_loading(project: Project, registry: Registry, rail: PipeSection, post: PipeSection) -> Loading:
     sh = Sheet(registry)
     ld = project.loads
 
@@ -168,22 +184,46 @@ def build_loading(project: Project, registry: Registry, rail: PipeSection) -> Lo
             cite=f"Input; {code_w.cite}",
         ).value
 
-    w_D = sh.given("w_D", rail.W, f"Top rail self-weight: tabulated W = {rail.W.m_as('lbf/ft'):g} lb/ft", DB).value
-    return Loading(P=P.value, w_L=w_L, w_D=w_D, exempt=ld.uniform_exempt,
-                   exemption_statement=ld.exemption_statement, lines=sh.lines)
+    w_D = sh.given("w_D", rail.W, f"Top rail self-weight: tabulated W = {rail.W.m_as('lbf/ft'):g} lb/ft", DB)
+
+    # Dead load reaching the post (docs/plans/slice-2.md, D2). The critical
+    # section is the top of the baseplate (D4), so the post weight is taken
+    # over h - t_p, the same cantilever length Checks 5 and 6 use.
+    sh.heading("Dead load at the post")
+    dl = "ej.post.axial_dead_load"
+    h = sh.given("h", project.post_height.value, "Post height, top of concrete to top rail centerline", "Input")
+    tp = sh.given("t_p", project.baseplate_thickness.value, "Baseplate thickness", "Input")
+    L_post = sh.line('L_"post"', h - tp, "Post cantilever length, top of baseplate to top rail centerline",
+                     cite="Stated assumption: post fixed at the top of the baseplate", unit="inch")
+    L_post_line = sh.lines[-1]
+    W_post = sh.given('W_"post"', post.W,
+                      f"Post self-weight: {post.label}, tabulated W = {post.W.m_as('lbf/ft'):g} lb/ft", DB)
+    D_post = sh.line('D_"post"', W_post * L_post, "Post dead load, full weight at the base",
+                     cite_ids=(dl,), unit="lbf")
+    s = sh.given("L", project.span.value, "Span: the tributary length for the post (stated assumption)", "Input")
+    D_rail = sh.line('D_"rail"', w_D * s, "Top rail dead load delivered to the post", cite_ids=(dl,), unit="lbf")
+    P_D = sh.line("P_D", D_rail + D_post, "D at the post: axial dead load at the top of the baseplate",
+                  cite_ids=(dl,), unit="lbf")
+    return Loading(P=P.value, w_L=w_L, w_D=w_D.value, L_post=L_post.value, P_D=P_D.value,
+                   exempt=ld.uniform_exempt, exemption_statement=ld.exemption_statement, lines=sh.lines,
+                   derived_lengths=[L_post_line])
 
 
-def section_lines(registry: Registry, rail: PipeSection) -> list[Line]:
+def section_lines(registry: Registry, sec: PipeSection, with_r: bool = False) -> list[Line]:
+    """Section properties as published. The post block adds r, which only
+    the compression check uses; the rail block prints as it did in slice 1."""
     sh = Sheet(registry)
-    sh.given("D", rail.OD, f"{rail.label}: outside diameter", DB)
-    sh.given('t_"nom"', rail.tnom, "Nominal wall thickness", DB)
-    sh.given('t_"des"', rail.tdes, "Design wall thickness", DB)
-    sh.given("A", rail.A, "Area (design wall)", DB)
-    sh.given("W", rail.W, f"Nominal weight: tabulated {rail.W.m_as('lbf/ft'):g} lb/ft (nominal wall)", DB)
-    sh.given("I", rail.I, "Moment of inertia", DB)
-    sh.given("S", rail.S, "Elastic section modulus", DB)
-    sh.given("Z", rail.Z, "Plastic section modulus", DB)
-    sh.given("D slash t", rail.D_t, "Diameter-to-thickness ratio, tabulated", DB)
+    sh.given("D", sec.OD, f"{sec.label}: outside diameter", DB)
+    sh.given('t_"nom"', sec.tnom, "Nominal wall thickness", DB)
+    sh.given('t_"des"', sec.tdes, "Design wall thickness", DB)
+    sh.given("A", sec.A, "Area (design wall)", DB)
+    sh.given("W", sec.W, f"Nominal weight: tabulated {sec.W.m_as('lbf/ft'):g} lb/ft (nominal wall)", DB)
+    sh.given("I", sec.I, "Moment of inertia", DB)
+    sh.given("S", sec.S, "Elastic section modulus", DB)
+    sh.given("Z", sec.Z, "Plastic section modulus", DB)
+    if with_r:
+        sh.given("r", sec.r, "Radius of gyration", DB)
+    sh.given("D slash t", sec.D_t, "Diameter-to-thickness ratio, tabulated", DB)
     return sh.lines
 
 
@@ -332,7 +372,7 @@ def _bending_case(registry, project, rail, loading, cap: Capacity, direction, lo
         # One expression gives both the printed magnitude and the stated sense (ADR 0002).
         # Dead load acts down (+), the guard load up (-).
         net = sh.factor(combo.id, "D") * MD - sh.factor(combo.id, "L") * ML
-        sense = "net upward" if net.eval().magnitude < 0 else "net downward"
+        sense = "net upward" if net.eval() < Q_(0, "lbf*inch") else "net downward"
         M = sh.line("M_a", absolute(net),
                     f"Net vertical moment, guard load opposing dead load: {sense}", unit="lbf*inch")
         label = f"{combo_text(combo)}, net vertical\n{combo.cite}"
@@ -389,6 +429,13 @@ def _deflection_case(registry, project, rail, loading, direction, load_type) -> 
 # ---------------------------------------------------------------------------
 
 
+def exempt_case(registry: Registry, direction: str, case_type: type[Case] = Case) -> Case:
+    """The distributed-load row when the engineer exempts the uniform load:
+    listed in the envelope, not checked. Every check builds it here."""
+    exemption = registry.get("asce7.guard.uniform.exemption.intro")
+    return case_type(direction, DISTRIBUTED, "exempt", remark=f"Uniform load not considered ({exemption.cite})")
+
+
 def _envelope(case_fn, registry, project, rail, loading) -> list[Case]:
     cases = []
     for direction in DIRECTIONS:
@@ -398,9 +445,7 @@ def _envelope(case_fn, registry, project, rail, loading) -> list[Case]:
             continue
         for lt in LOAD_TYPES:
             if lt == DISTRIBUTED and loading.exempt:
-                exemption = registry.get("asce7.guard.uniform.exemption.intro")
-                cases.append(Case(direction, lt, "exempt",
-                                  remark=f"Uniform load not considered ({exemption.cite})"))
+                cases.append(exempt_case(registry, direction))
                 continue
             cases.append(case_fn(registry, project, rail, loading, direction, lt))
     return cases
@@ -427,11 +472,18 @@ def check_2(registry, project, rail, loading) -> Check:
 
 
 def run(project: Project, registry: Registry) -> Results:
+    # Imported here, not at the top: post.py builds on this module's Case,
+    # Check and Loading, so a top-level import would be circular.
     from handrail import shapes
+    from handrail.post import check_5, check_6
 
     rail = shapes.pipe(project.top_rail.section)
-    require_supported_grade(project.top_rail)
-    loading = build_loading(project, registry, rail)
+    post = shapes.pipe(project.post.section)
+    require_supported_grade(project.top_rail, "top rail")
+    require_supported_grade(project.post, "post")
+    loading = build_loading(project, registry, rail, post)
     props = section_lines(registry, rail)
-    checks = [check_1(registry, project, rail, loading), check_2(registry, project, rail, loading)]
-    return Results(project, rail, loading, props, checks)
+    post_props = section_lines(registry, post, with_r=True)
+    checks = [check_1(registry, project, rail, loading), check_2(registry, project, rail, loading),
+              check_5(registry, project, post, loading), check_6(registry, project, post, loading)]
+    return Results(project, rail, post, loading, props, post_props, checks)

@@ -4,7 +4,10 @@ Status: **in progress on the `slice-2` branch.** Every decision below was
 settled by Micah on 2026-09-30 (docs/ROADMAP.md, "Choosing slice 2"; slice
 2 planning). The verification steps were revised the same day for the new
 verification model (issue #13, ADR 0004): slice 2 is its first user, and
-its pull request waits for the harness change.
+its pull request waits for the harness change. Registry verification
+moved out of the slice on 2026-10-03: Micah verifies every drafted entry
+in one review in the v1 release slice (docs/ROADMAP.md, slice 9), so this
+slice's entries stay drafted and its PDFs print the DRAFT stamp.
 Where this plan differs from the brief (docs/BRIEF.md) or CLAUDE.md, those
 govern, and the difference is a defect in the plan.
 
@@ -31,9 +34,12 @@ moment and axial load together (outward, inward, longitudinal), it computes
 
 If αPr/Pe exceeds 0.05 in any of those cases, the calc stops. The stop names
 the case, the ratio and the limit, the same way the slender-section stop
-does. The downward and upward cases are left out on purpose. They have no
-moment to amplify. Downward axial compression is covered by the Chapter E
-check at K = 2.1, and upward is tension. Without that exclusion, a
+does. The gate applies only to cases with lateral design loads (outward,
+inward, longitudinal). The downward and upward cases are left out on
+purpose: they have no lateral design load, so no moment to amplify.
+Notional loads are neglected (D10), so the gravity-only downward case
+carries no moment either. Downward axial compression is covered by the
+Chapter E check at K = 2.1, and upward is tension. Without that exclusion, a
 Pipe1-1/2STD post at h = 42 in with a 7'-0" span would stop on the downward
 distributed case (1.6 × 378 lb / 10.78 kip = 0.056), which is an ordinary
 guard.
@@ -48,6 +54,12 @@ guard.
   the ratio by that factor. Because the choice of length is Micah's, it is
   recorded in an engineering-judgement entry, and the printed line cites
   that entry as well as Appendix 8.
+- Pe stays at K·h (Micah, 2026-10-03, on the case 2 independent calc's
+  F-5). The independent calc confirmed it is the conservative choice. The
+  Appendix 8 story form, Pe,story = R_M·H·L/Δ_H with R_M = 0.85 and the
+  cantilever stiffness 3EI/(h − t_p)², gave 12.58 kip for case 2, against
+  10.78 kip at Lc = 2.1h, so the K·h value is about 17% lower and gives a
+  higher αPr/Pe.
 - The 0.05 limit is its own entry, source "engineer", together with the
   printed sentence. 1/(1 − 0.05) = 1.053, so the amplification neglected is
   at most about 5%.
@@ -97,6 +109,12 @@ loads), with h = 42 in and t_p = 1/2 in. At h = 42 in, Lc = 88.2 in and
 - Test case 2, Pipe1-1/2STD post: Lc/r = 141, Eq. E3-3 (elastic buckling).
 - Test case 3, Pipe2STD post: Lc/r = 112, Eq. E3-2.
 
+Both cases use the default guard loads (P = 200 lb, w = 50 lb/ft) with no
+distributed-load exemption claimed. Their case files have no `[loads]`
+table, so the defaults apply. For case 3 this was confirmed by Micah on
+2026-10-04, answering Q1 of the case 3 independent calc, which had assumed
+the same.
+
 Both are common guard posts, so neither branch is left tested only against
 the machinery, as F8-2 was in slice 1. Case 2 is also the geometry in D1
 whose downward distributed case exceeds 0.05. So it checks, against the
@@ -116,6 +134,45 @@ post, post height and baseplate thickness. That matches v1, which always
 checks one post. Test case 1 and `examples/slice-1.toml` gain post inputs.
 Case 1's recorded hand values are for Checks 1 and 2 only, and they must
 pass unchanged. A changed value is a rule 2 stop.
+
+**D10. Notional loads are neglected.** Ruled by Micah on 2026-10-03, on
+the case 2 independent calc's F-1. K = 2.1 is the effective length method
+(AISC 360-22 App. 7), which as written calls for notional loads in
+gravity-only combinations. The tool neglects them, and a new locked
+assumption says so (docs/brief/output.md):
+
+> Notional loads (AISC 360-22 App. 7) are neglected. In gravity-only
+> combinations they produce a negligible moment, and the reported
+> axial-only ratio bounds the H1-1b result.
+
+For case 2's downward distributed case the notional moment would be about
+0.002 × 1.6 × 378 lb × 41.5 in ≈ 50 lb-in, and H1-1b with it is below the
+reported Pr/Pc (D8). With notional loads neglected, the downward case has
+no lateral design load and stays outside the αPr/Pe gate (D1).
+
+**D11. Post loads use tributary length = span.** Ruled by Micah on
+2026-10-03, on the case 2 independent calc's F-2: this is his
+long-standing practice as engineer of record. The distributed guard load
+and the rail dead load reach the post as w·s and w_D,rail·s, with no
+increase for rail continuity (a two-span continuous rail would put
+1.25·w·s into the interior post). A new locked assumption says so
+(docs/brief/output.md):
+
+> Post loads use tributary length = span; rail continuity effects on post
+> reactions are neglected (engineering judgement).
+
+The existing assumption that the rail runs continuously over the post
+stays, because it describes the connection detail.
+
+**D12. Baseplate thickness and bending are not checked.** Ruled by Micah
+on 2026-10-04, on the case 3 independent calc's F-2, which found baseplate
+flexure untested and unstated. The rigid-baseplate assumption covers the
+analysis, not the plate's strength. The tool stops at the baseplate
+(docs/brief/scope.md), and a new locked assumption says so
+(docs/brief/output.md):
+
+> Baseplate thickness and bending are not checked; baseplate and anchorage
+> design by others (e.g., PROFIS).
 
 ## What the slice does
 
@@ -152,7 +209,12 @@ slice 1.
 - Compression: Fe per Eq. E3-4, then Fcr per Eq. E3-2 or Eq. E3-3,
   whichever applies at 4.71√(E/Fy). Pn = Fcr·Ag (Eq. E3-1), and Pc = Pn/Ωc
   (§E1).
-- Tension: Pn = Fy·Ag (Eq. D2-1), and Pt = Pn/Ωt (§D2).
+- Tension: Pn = Fy·Ag (Eq. D2-1), and Pt = Pn/Ωt (§D2). Tensile rupture
+  (§D2(b)) is not a v1 check (Micah, 2026-10-03, on the case 2
+  independent calc's F-4). It does not govern for these sections: a pipe
+  welded all around to the baseplate has U = 1.0 (Table D3.1, Case 1), so
+  Ae = Ag, and for A53 Gr B Fu/Ωt = 60/2.00 = 30 ksi exceeds
+  Fy/Ωt = 35/1.67 = 21.0 ksi.
 - Flexure: Mn per §F8 through the existing flexural-capacity code, with
   Mc = Mn/Ωb.
 
@@ -180,6 +242,14 @@ and the exemption flag removes the distributed load, as in slice 1.
   equals transverse. All are listed so the envelope is explicit, and
   longitudinal is a real, checked case for the post. For the top rail it
   stays "rail carries axially; not checked".
+- For round sections the five direction cases cover the ASCE 7-22 "any
+  direction" (Micah, 2026-10-03, on the case 2 independent calc's F-3). An
+  inclined load trades moment for axial load. In H1-1b the worst
+  inclination above horizontal is θ = atan[Mc/(2Pc·(h − t_p))], and the
+  ratio rises by the factor √(1 + tan²θ). For case 2 that is θ = 1.07° and
+  a 0.018% increase, far inside the 0.5% test tolerance. The increase stays
+  that small whenever Mc is much smaller than 2Pc·(h − t_p), which holds for
+  guard posts, whose axial capacity far exceeds their lateral load.
 - In the moment cases, Pr/Pc selects Eq. H1-1a (Pr/Pc ≥ 0.2) or Eq. H1-1b.
 
 **Deflection (Check 6)**: Δ = V·(h − t_p)³/(3EI), live load only
@@ -194,11 +264,16 @@ so its verification is not reopened.
 
 The existing layout, extended:
 
-- **Dimensions:** h, t_p, h − t_p, Lc.
+- **Front matter assumptions:** the three locked assumptions added by
+  D10, D11 and D12 (docs/brief/output.md) print with the others.
+- **Dimensions:** h, t_p, h − t_p, Lc. Each derived length prints the
+  note, formula and value of the calc line that computed it (PR #17
+  review, item 6).
 - **Section properties:** a post block beside the rail block.
 - **Loading:** the post dead load line and D at the post.
 - **Checks 5 and 6:** they follow Checks 1 and 2, with the same structure:
-  an envelope table (Check 5 adds the αPr/Pe column), then the full calc
+  an envelope table (Check 5 adds the αPr/Pe column, and prints each
+  capacity, Pc or Pt and Mc, under its demand), then the full calc
   lines for the controlling case, ending with the ratio and OK or NG. The
   Check 5 lines name the interaction equation used. In the axial-only
   cases, they carry the D8 margin note instead.
@@ -238,17 +313,20 @@ That is about 20 entries, within the roadmap's estimate of 18–23.
   case 1's rail and span with h = 42 in and t_p = 1/2 in. Case 2 has a
   Pipe1-1/2STD post, and case 3 a Pipe2STD post (D7). For each case:
   - The independent calc (.claude/skills/independent-calc/SKILL.md) records
-    a value for every key, after Micah has verified this slice's registry
-    entries:
+    a value for every key. It reads verified entries only, so it works
+    every value this slice drafted from its own reading of the code:
     - post section properties used, including r; D_post and D at the post
     - Lc, Lc/r, Fe, Fcr (and which equation), Pn, Pc, Pt, Mn, Mc
     - for each envelope case: Pr, Mr, the equation used and the ratio
     - αPr/Pe for each moment case
     - for each horizontal case: Δ, plus Δ_allow and each ratio
     - the controlling direction for each check
-  - Micah works the governing case of Check 5 and of Check 6 on his own,
-    before opening the independent calc or any tool output, and records at
-    least each governing ratio and which case governs.
+  - Micah recomputes the printed controlling case of Check 5 and of Check 6
+    line by line, checking each provision against the code, and records his
+    own results in [hand]: at least each governing ratio and which case
+    governs (docs/brief/verification.md, changed 2026-10-04). Deferred to
+    the release review (ADR 0006, 2026-10-04): until then each [hand] value
+    is "deferred", which the test skips and which does not block merge.
   - Micah then reviews the independent calc and the slice PDF against the
     checklist in docs/brief/verification.md.
 
@@ -277,6 +355,11 @@ That is about 20 entries, within the roadmap's estimate of 18–23.
   hand cases will use H1-1b. H1-1a gets a same-author arithmetic test, like
   F8-2 in slice 1. This gap has no realistic trigger in v1 and is recorded
   here rather than as an issue.
+- **Pre-push hook (kept, Micah 2026-10-04, PR #17 review item 13):**
+  .githooks/pre-push runs `uv run pytest -q` and blocks a push that fails.
+  It runs only in a clone where `git config core.hooksPath .githooks` is
+  set, and it tests the working tree, so it matches the pushed commits
+  only when nothing is uncommitted. It cannot change a calc.
 
 ## Build order
 
@@ -300,20 +383,34 @@ pass.
    verification model changed.)
 9. **Verification harness:** independent-calc cases, with Micah's
    governing values as a subset; case 1 unchanged as a full-hand case
-   (issue #14).
-10. **Micah verifies this slice's registry entries.**
-11. **Independent calcs** for cases 2 and 3, each run in a fresh session
+   (issue #14). (Done; independent templates for cases 2 and 3 created
+   by tests/independent_template.py. "No pending at merge" is not a
+   test: the calc-code-review skill treats any remaining "pending" in
+   tests/cases/ as a must-fix.)
+10. **Independent calcs** for cases 2 and 3, each run in a fresh session
     by the independent-calc skill.
-12. **Micah's governing-case calcs and review** (What Micah does, below).
+11. **Front-matter assumptions:** print the two locked assumptions added
+    on 2026-10-03 from the case 2 independent calc's findings, notional
+    loads neglected (F-1, D10) and tributary length = span with rail
+    continuity neglected (F-2, D11), in the front matter with the others
+    (docs/brief/output.md). This changes printed calc text. Locked
+    assumptions stay out of the registry (issue #12, closed 2026-10-03).
+    (Done 2026-10-04, together with D12's baseplate assumption from the
+    case 3 independent calc. A test now holds the printed list to the
+    brief's, word for word and in order.)
+12. **Micah's review** (What Micah does, below). His governing-case
+    recompute of cases 2 and 3 is deferred to the release review (ADR
+    0006, 2026-10-04); their [hand] values are marked "deferred" and the
+    cases are on the release-review issue, #18.
 13. **Pull request** to main, with the calc-code-review skill run on the
     branch first.
 
 ## What Micah does
 
-- Verify the entries this slice drafts, before the independent calcs run.
-- For test cases 2 and 3 (inputs set in D7), work the governing case of
-  Checks 5 and 6 on his own, before opening the independent calc or any
-  tool output.
+- For test cases 2 and 3 (inputs set in D7), recompute the printed
+  controlling cases of Checks 5 and 6 line by line, and record the
+  recomputed values in [hand]. Deferred to the release review (ADR 0006;
+  issue #18), not done in this slice.
 - Review each independent calc and the slice PDF against the checklist in
   docs/brief/verification.md, and approve the pull request.
 
@@ -322,10 +419,14 @@ pass.
 - `uv run handrail calc examples/slice-1.toml` produces a PDF with Checks 1,
   2, 5 and 6 as described above.
 - All tests pass, including test cases 1, 2 and 3 at 0.5%, with no
-  pending value in cases 2 and 3.
+  pending value in cases 2 and 3. Their [hand] values are "deferred" to
+  the release review (ADR 0006), which does not block this slice.
 - Micah has reviewed the independent calcs and the PDF, and agrees with
   them.
-- Micah has verified this slice's registry entries.
+
+The slice's registry entries are not verified here; they wait for the
+release review (slice 9), and the slice 2 PDFs print the DRAFT stamp
+until then.
 
 ## Not in slice 2
 

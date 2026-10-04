@@ -1,4 +1,4 @@
-"""The project: every input a calc runs from (slice 1 fields only).
+"""The project: every input a calc runs from (slice 2 fields).
 
 A project file is plain TOML that the engineer edits by hand. Reopening the
 same file regenerates the same calc. Loading is per ASCE 7-22.
@@ -10,10 +10,13 @@ for inputs the engineer didn't intend:
   with its name (a misspelled override would otherwise fall back silently
   to the code value);
 - true/false fields must be real TOML booleans (the text "false" is not);
-- loads and the deflection limit must be positive numbers.
+- loads and the deflection limits must be positive numbers;
+- the post is required (every v1 calc checks one post), and the baseplate
+  thickness must be less than the post height.
 
-A top-level [hand] table is allowed and ignored: hand-calc test cases keep
-their hand values in the same file as their inputs.
+Top-level [hand] and [verification] tables are allowed and ignored: test
+cases keep their hand values and their kind in the same file as their
+inputs (docs/brief/verification.md).
 """
 
 from __future__ import annotations
@@ -54,9 +57,15 @@ class Loads:
     exemption_statement: str = ""
 
 
+# Input defaults for the deflection limit ratios (docs/brief/inputs.md):
+# engineering experience, not code values.
+RAIL_DEFLECTION_RATIO = 120
+POST_DEFLECTION_RATIO = 60
+
+
 @dataclass(frozen=True)
 class DeflectionLimit:
-    ratio: float = 120  # limit is L / ratio
+    ratio: float = RAIL_DEFLECTION_RATIO  # limit is L / ratio
     bypass: bool = False
 
 
@@ -65,19 +74,27 @@ class Project:
     info: ProjectInfo
     span: Dimension
     top_rail: Member
+    post: Member
+    post_height: Dimension          # h: top of concrete to top rail centerline
+    baseplate_thickness: Dimension  # t_p
     loads: Loads = field(default_factory=Loads)
     rail_deflection: DeflectionLimit = field(default_factory=DeflectionLimit)
+    post_deflection: DeflectionLimit = field(
+        default_factory=lambda: DeflectionLimit(ratio=POST_DEFLECTION_RATIO))
 
 
 # Allowed keys per table. A dict value is a sub-table.
 SCHEMA = {
     "project": {"name": None, "phase": None, "description": None, "references": None, "assumptions": None},
-    "geometry": {"span": None},
+    "geometry": {"span": None, "post_height": None, "baseplate_thickness": None},
     "top_rail": {"section": None, "grade": None},
+    "post": {"section": None, "grade": None},
     "loads": {"concentrated_lb": None, "uniform_plf": None,
               "uniform_exemption": {"applies": None, "statement": None}},
-    "deflection": {"rail": {"limit_L_over": None, "bypass": None}},
+    "deflection": {"rail": {"limit_L_over": None, "bypass": None},
+                   "post": {"limit_L_over": None, "bypass": None}},
     "hand": "ignored",
+    "verification": "ignored",
 }
 
 
@@ -134,6 +151,36 @@ def _positive(value, name: str) -> float:
     return value
 
 
+def _dimension(table: dict, key: str, where: str) -> Dimension:
+    """A required, positive dimension in the forms docs/brief/inputs.md accepts."""
+    raw = _need(table, key, where)
+    if isinstance(raw, bool) or not isinstance(raw, (str, int, float)):
+        raise ProjectError(f"project file: '{where}.{key}' must be a dimension, not {raw!r}")
+    try:
+        dim = dimensions.parse(str(raw))
+    except dimensions.DimensionError as e:
+        raise ProjectError(f"[{where}] {key}: {e}") from None
+    if dim.value.m_as("inch") <= 0:
+        raise ProjectError(f"[{where}] {key} must be greater than zero")
+    return dim
+
+
+def _member(raw: dict, where: str) -> Member:
+    t = _need(raw, where, "top level")
+    return Member(
+        section=_str(_need(t, "section", where), f"{where}.section"),
+        grade=_str(t.get("grade", "A53 Gr B"), f"{where}.grade"),  # brief: pipe defaults to A53 Gr B
+    )
+
+
+def _deflection_limit(raw: dict, member: str, default_ratio: float) -> DeflectionLimit:
+    d = raw.get("deflection", {}).get(member, {})
+    return DeflectionLimit(
+        ratio=_positive(d.get("limit_L_over", default_ratio), f"deflection.{member}.limit_L_over"),
+        bypass=_bool(d.get("bypass", False), f"deflection.{member}.bypass"),
+    )
+
+
 def load(path: str | Path) -> Project:
     path = Path(path)
     try:
@@ -159,21 +206,17 @@ def from_dict(raw: dict) -> Project:
     )
 
     g = _need(raw, "geometry", "top level")
-    span_raw = _need(g, "span", "geometry")
-    if isinstance(span_raw, bool) or not isinstance(span_raw, (str, int, float)):
-        raise ProjectError(f"project file: 'geometry.span' must be a dimension, not {span_raw!r}")
-    try:
-        span = dimensions.parse(str(span_raw))
-    except dimensions.DimensionError as e:
-        raise ProjectError(f"[geometry] span: {e}") from None
-    if span.value.m_as("inch") <= 0:
-        raise ProjectError("[geometry] span must be greater than zero")
+    span = _dimension(g, "span", "geometry")
+    h = _dimension(g, "post_height", "geometry")
+    tp = _dimension(g, "baseplate_thickness", "geometry")
+    if not tp.value < h.value:
+        raise ProjectError(
+            f"[geometry] baseplate_thickness ({tp.entered}) must be less than "
+            f"post_height ({h.entered})"
+        )
 
-    r = _need(raw, "top_rail", "top level")
-    top_rail = Member(
-        section=_str(_need(r, "section", "top_rail"), "top_rail.section"),
-        grade=_str(r.get("grade", "A53 Gr B"), "top_rail.grade"),  # brief: pipe defaults to A53 Gr B
-    )
+    top_rail = _member(raw, "top_rail")
+    post = _member(raw, "post")
 
     ld = raw.get("loads", {})
     ex = ld.get("uniform_exemption", {})
@@ -191,9 +234,9 @@ def from_dict(raw: dict) -> Project:
             "guard is exempt from the uniform load"
         )
 
-    d = raw.get("deflection", {}).get("rail", {})
-    defl = DeflectionLimit(
-        ratio=_positive(d.get("limit_L_over", 120), "deflection.rail.limit_L_over"),
-        bypass=_bool(d.get("bypass", False), "deflection.rail.bypass"),
+    return Project(
+        info=info, span=span, top_rail=top_rail, post=post,
+        post_height=h, baseplate_thickness=tp, loads=loads,
+        rail_deflection=_deflection_limit(raw, "rail", RAIL_DEFLECTION_RATIO),
+        post_deflection=_deflection_limit(raw, "post", POST_DEFLECTION_RATIO),
     )
-    return Project(info=info, span=span, top_rail=top_rail, loads=loads, rail_deflection=defl)

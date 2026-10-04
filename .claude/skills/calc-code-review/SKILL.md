@@ -51,6 +51,15 @@ problems before the engineer of record merges it, not to defend it or fix it.
   independent calc (docs/brief/verification.md), never from tool output.
 - Flag tests that can never fail, tests that only check "no exception raised"
   where a value should be checked, and skipped or pending tests that hide gaps.
+- Any "pending" value remaining in tests/cases/ is a must-fix before merge.
+  This includes the independent-calc files in tests/cases/independent/. No
+  test enforces it (issue #14, item 7), so grep for it.
+- A "deferred" value is not a must-fix and does not block merge: it is a
+  [hand] value whose recompute is deferred to the release review (ADR 0006).
+  Report the deferred count per case as information, and check that each
+  deferred case is on the release-review issue's checklist (label
+  `release-blocker`). "Deferred" is valid only in [hand]; one in an
+  independent-calc file is a must-fix (the harness fails it too).
 - Check that hard stops (slender section, missing registry entry, bad input) have
   tests that confirm they stop.
 - Check that tolerance comparisons are relative and not applied after rounding.

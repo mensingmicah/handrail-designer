@@ -21,3 +21,8 @@ source "engineer" stays "drafted" until I verify it, like any other. Every draft
 the registry. Any calc that uses a drafted entry prints "DRAFT: contains
 unverified code values" on every page and lists those entries. The tool
 stops with an error naming any entry it needs that does not exist.
+
+Editing a verified entry: a change to its note or edition field keeps it
+verified, since neither prints in the calc. A change to its value, unit,
+cite or section sends it back to drafted: set status "drafted", blank
+verified-by and date, and add its id to the review list.

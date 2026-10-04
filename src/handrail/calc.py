@@ -22,7 +22,7 @@ from handrail.registry import Entry, Registry
 from handrail.units import ureg
 
 # ---------------------------------------------------------------------------
-# Number and unit display (docs/BRIEF.md, Output: 4 significant figures,
+# Number and unit display (docs/brief/output.md: 4 significant figures,
 # ratios to 2 decimals or 3 when they would read 1.00, fixed units lb, lb-in,
 # ksi, in, in^3, in^4)
 # ---------------------------------------------------------------------------
@@ -79,7 +79,7 @@ def mtext(s: str) -> str:
 
 
 def fmt_ratio(x: float) -> str:
-    """Ratio display (docs/BRIEF.md, Output): two decimals; three when two
+    """Ratio display (docs/brief/output.md): two decimals; three when two
     would read 1.00; four when a failing ratio (over 1.0) would still read
     1.000 at three."""
     two = f"{x:.2f}"
@@ -202,6 +202,27 @@ class Const(Expr):
         return [self.entry] if self.entry else []
 
 
+@dataclass(eq=False)
+class MathConst(Expr):
+    """A mathematical constant, such as pi: printed by name in both the symbolic
+    and the substituted form, so it is never shown rounded. Not a code value."""
+
+    typst: str
+    value: float
+
+    def eval(self):
+        return self.value
+
+    def symbolic(self) -> str:
+        return self.typst
+
+    def substituted(self) -> str:
+        return self.typst
+
+
+PI = MathConst("pi", math.pi)
+
+
 def _plain_number(x: float) -> str:
     """Exact coefficient text as written: 0.07, 4, 384, 1.0 (never rounded)."""
     if isinstance(x, int):
@@ -241,7 +262,9 @@ class BinOp(Expr):
         if self.op == "/":
             return f"frac({a}, {b})"  # a fraction bar needs no parentheses
         if self.op == "^":
-            return f"{_paren(self.a, a, _ATOM)}^({b})"
+            # A fraction symbol, such as Lc/r, needs parentheses to take an exponent.
+            base = f"({a})" if a.startswith("frac(") else _paren(self.a, a, _ATOM)
+            return f"{base}^({b})"
         if self.op == "*":
             sep = " dot " if part == "substituted" and not _starts_paren(b) else " "
             return f"{_paren(self.a, a, _MUL)}{sep}{_paren(self.b, b, _MUL)}"
@@ -355,6 +378,11 @@ class Sheet:
         """A registry coefficient used inside a formula; cited on that line."""
         e = self.registry.get(entry_id)
         return Const(e.quantity, e)
+
+    def fraction(self, entry_id: str) -> Expr:
+        """A registry coefficient held as {numerator, denominator}; prints as a fraction."""
+        e = self.registry.get(entry_id)
+        return Const(e.value["numerator"], e) / Const(e.value["denominator"], e)
 
     def factor(self, entry_id: str, key: str) -> Const:
         """One load factor out of a registry 'factors' entry."""

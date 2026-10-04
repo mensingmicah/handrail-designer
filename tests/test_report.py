@@ -1,10 +1,12 @@
 """PDF rendering: stamps, footer, and a real compile (dev section, not test case 1)."""
 
 import dataclasses
+from pathlib import Path
 
 import pytest
 
 from handrail import checks, dimensions, report
+from handrail.calc import typst_str
 from handrail.project import DeflectionLimit, Member, Project, ProjectInfo
 from handrail.registry import Registry
 from handrail.version import Stamp
@@ -12,7 +14,9 @@ from handrail.version import Stamp
 
 def run(**kw):
     p = Project(info=ProjectInfo(name='Name with #hash, *stars*, "quotes" and $dollar'),
-                span=dimensions.parse("6'-0\""), top_rail=Member("Pipe2STD", "A53 Gr B"), **kw)
+                span=dimensions.parse("6'-0\""), top_rail=Member("Pipe2STD", "A53 Gr B"),
+                post=Member("Pipe2STD", "A53 Gr B"), post_height=dimensions.parse("42"),
+                baseplate_thickness=dimensions.parse("1/2"), **kw)
     reg = Registry()
     return checks.run(p, reg), reg
 
@@ -56,8 +60,18 @@ def test_bypassed_check_shows_no_calculation():
     res, reg = run(rail_deflection=DeflectionLimit(bypass=True))
     src = report.build_source(res, reg, CLEAN)
     assert "Bypassed by engineer" in src
-    assert "Check 2: Top rail deflection" in src
-    assert "Delta_L" not in src
+    check_2 = src.split("= Check 2: Top rail deflection")[1].split("\n= ")[0]
+    assert "Bypassed by engineer" in check_2
+    assert "Delta_L" not in check_2
+    assert "Delta_L" in src  # Check 6 still computes: the bypass is per check
+
+
+def test_bypassed_post_deflection_shows_no_calculation():
+    res, reg = run(post_deflection=DeflectionLimit(ratio=60, bypass=True))
+    src = report.build_source(res, reg, CLEAN)
+    check_6 = src.split("= Check 6: Post deflection")[1].split("\n= ")[0]
+    assert "Bypassed by engineer" in check_6
+    assert "Delta_L" not in check_6
 
 
 def test_pdf_compiles_with_hostile_project_text(tmp_path):
@@ -85,7 +99,7 @@ def test_closing_line_prints_the_checks_verdict_not_a_recomputed_one(monkeypatch
     res, reg = run()
     monkeypatch.setattr(Check, "verdict", property(lambda self: "SENTINEL"))
     src = report.build_source(res, reg, CLEAN)
-    assert src.count('#h(10pt) #"SENTINEL"') == 2  # Checks 1 and 2
+    assert src.count('#h(10pt) #"SENTINEL"') == len(res.checks)  # one closing line per check
 
 
 def _printed_equations(lines):
@@ -135,9 +149,114 @@ def test_front_matter_states_the_design_method_from_the_registry():
     assert f'"{e.id}"' in src
 
 
+def _brief_stated_assumptions():
+    """The bullets under "Stated assumptions" in docs/brief/output.md, each joined onto one line."""
+    text = (Path(__file__).parents[1] / "docs" / "brief" / "output.md").read_text(encoding="utf-8")
+    section = text.split("## Stated assumptions", 1)[1].split("\n## ", 1)[0]
+    return [" ".join(b.split()) for b in section.split("\n- ")[1:]]
+
+
+def test_locked_assumptions_are_the_briefs_stated_assumptions_in_order():
+    assert list(report.LOCKED_ASSUMPTIONS) == _brief_stated_assumptions()
+
+
+def test_front_matter_prints_every_locked_assumption():
+    res, reg = run()
+    src = report.build_source(res, reg, CLEAN)
+    for a in report.LOCKED_ASSUMPTIONS:
+        assert f"+ #{typst_str(a)}" in src
+
+
 def test_check_1_states_that_ltb_does_not_apply():
     res, reg = run()
     lines = res.checks[0].controlling.lines
     ltb = [ln for ln in lines if ln.kind == "decision" and "Lateral-torsional" in (ln.text or "")]
     assert len(ltb) == 1
     assert ltb[0].cite == reg.get("aisc360.F8.no_ltb").cite
+
+
+# ---------------------------------------------------------------------------
+# Slice 2: the post pages
+# ---------------------------------------------------------------------------
+
+
+def test_dimensions_page_echoes_h_and_tp_and_prints_the_derived_lengths():
+    res, reg = run()
+    src = report.build_source(res, reg, CLEAN)
+    assert '"Post height h, top of concrete to top rail centerline", "42", "3\'-6\\"", "42.00 in"' in src
+    assert '"Baseplate thickness t_p", "1/2", "1/2\\"", "0.5000 in"' in src
+    # Each derived length prints the formula of the line that computed it.
+    assert ('"Post cantilever length, top of baseplate to top rail centerline", [$L_"post" = h - t_p$], '
+            '"41.50 in", "Loading"') in src
+    assert ('"Effective length, with the unbraced length taken as the post height h", [$L_c = K h$], '
+            '"88.20 in", "Check 5"') in src
+
+
+def test_printed_calc_never_cites_the_development_plan():
+    # A sealed calc can't point a reviewer at an internal plan (PR #17 review, item 5).
+    # A Pipe1STD post at h = 42 in has Lc/r above 200, so the slenderness flag prints too.
+    base = run()[0].project
+    for post in ("Pipe2STD", "Pipe1STD"):
+        reg = Registry()
+        res = checks.run(dataclasses.replace(base, post=Member(post, "A53 Gr B")), reg)
+        src = report.build_source(res, reg, CLEAN)
+        assert "plan D" not in src, post
+    assert "A recommendation, not a requirement: flagged, and the calc continues." in src
+
+
+def test_section_properties_page_has_a_post_block_with_r():
+    res, reg = run()
+    src = report.build_source(res, reg, CLEAN)
+    props = src.split("= Section properties")[1].split("\n= ")[0]
+    assert '"Post: Pipe2STD, A53 Gr B."' in props
+    assert "Radius of gyration" in props
+
+
+def test_check_5_envelope_prints_alpha_ratio_only_for_moment_cases():
+    res, reg = run()
+    chk5 = res.checks[2]
+    table = report._envelope_5(chk5)
+    for c in chk5.checked:
+        if c is not chk5.controlling:  # the controlling row is bold, so its cells are wrapped
+            assert f'"{c.direction}", "{c.load_type}"' in table
+    # downward and upward rows carry a dash in the moment and alpha Pr/Pe columns
+    assert table.count('"—"') == 2 * 4
+    # A cell's second line is a "\n" escape inside its Typst string literal.
+    assert '"Eq. H1-1b"' in table and '"Pr/Pc\\n(Eq. E3-1)"' in table and '"Pr/Pt\\n(Eq. D2-1)"' in table
+    # every checked row prints each capacity under its demand (brief, output.md)
+    for c in chk5.checked:
+        P_cap = "Pt" if c.sense == "tension" else "Pc"
+        assert f'\\n{P_cap} = {report.fmt_quantity_plain(c.P_allow)}"' in table
+        if c.M_allow is not None:
+            assert f'{report.fmt_quantity_plain(c.Mr)}\\nMc = {report.fmt_quantity_plain(c.M_allow)}"' in table
+
+
+def test_summary_prints_the_check_5_axial_and_moment_terms():
+    res, reg = run()
+    src = report.build_source(res, reg, CLEAN)
+    summary = src.split("= Summary")[1]
+    c = res.checks[2].controlling
+    assert c.Mr is not None
+    assert f'"Pr = {report.fmt_quantity_plain(c.Pr)}; Mr = {report.fmt_quantity_plain(c.Mr)}"' in summary
+    assert f'"Pc = {report.fmt_quantity_plain(c.P_allow)}; Mc = {report.fmt_quantity_plain(c.M_allow)}"' in summary
+    for n in ("1. ", "2. ", "5. ", "6. "):
+        assert f'"{n}' in summary
+
+
+def test_slenderness_flag_prints_in_the_check_5_summary_row():
+    p = Project(info=ProjectInfo(name="t"), span=dimensions.parse("6'-0\""),
+                top_rail=Member("Pipe2STD", "A53 Gr B"), post=Member("Pipe1STD", "A53 Gr B"),
+                post_height=dimensions.parse("42"), baseplate_thickness=dimensions.parse("1/2"))
+    reg = Registry()
+    res = checks.run(p, reg)
+    src = report.build_source(res, reg, CLEAN)
+    summary = src.split("= Summary")[1]
+    assert "(Lc/r = 208.5 > 200, flagged)" in summary
+    assert "SLENDERNESS: Pipe1STD" in src  # the flag box on the Check 5 page
+
+
+def test_second_order_sentence_is_printed_in_the_controlling_moment_case():
+    res, reg = run()
+    src = report._lines(res.checks[2].controlling.lines)
+    assert "Second-order effects negligible: αPr/Pe = " in src
+    assert "amplification taken as 1.0." in src

@@ -7,7 +7,7 @@ Steel Construction (AISC). It tabulates dimensions and section properties for
 standard structural steel shapes.
 
 The file is the original as received from AISC: not modified, converted, or
-restructured. Version is taken from the filename and docs/BRIEF.md.
+restructured. Version is taken from the filename and docs/brief/scope.md.
 
 ## shapes-pipe.toml (derived)
 

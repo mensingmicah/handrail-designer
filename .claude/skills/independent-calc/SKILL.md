@@ -99,7 +99,8 @@ reading.
    ```
 
    Replace each "pending" with your value, in the unit its suffix names.
-   Done when every key has a value, and you have listed any key you could not fill
+   Forces are positive magnitudes; the case name gives the sense (an
+   upward P_r is tension, recorded as a positive number). Done when every key has a value, and you have listed any key you could not fill
    and any value you computed that has no key. Both are findings for
    Micah: a check one side has and the other doesn't.
 8. **Write, commit and report.** Write the two files below and commit them

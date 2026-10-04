@@ -21,11 +21,14 @@ E, FY, OMEGA = 29000.0, 35.0, 1.67  # ksi, ksi, - (registry values, restated for
 P, W_L = 200.0, 50.0 / 12  # lb, lb/in
 
 
-def project(section="Pipe2STD", span="6'-0\"", **kw):
+def project(section="Pipe2STD", span="6'-0\"", post="Pipe2STD", h="42", tp="1/2", **kw):
     return Project(
         info=ProjectInfo(name="Test"),
         span=dimensions.parse(span),
         top_rail=Member(section=section, grade="A53 Gr B"),
+        post=Member(section=post, grade="A53 Gr B"),
+        post_height=dimensions.parse(h),
+        baseplate_thickness=dimensions.parse(tp),
         **kw,
     )
 
@@ -63,14 +66,14 @@ def results():
 
 def test_every_case_matches_plain_calc(results):
     expected = plain()
-    for chk in results.checks:
+    for chk in results.checks[:2]:  # Checks 1 and 2 (the rail)
         for c in chk.checked:
             assert c.ratio == pytest.approx(expected[(chk.number, c.direction, c.load_type)], rel=1e-9), (
                 chk.number, c.label)
 
 
 def test_envelope_lists_every_direction_and_load_type(results):
-    for chk in results.checks:
+    for chk in results.checks[:2]:  # Checks 1 and 2 (the rail)
         labels = [(c.direction, c.load_type, c.status) for c in chk.cases]
         assert labels == [
             ("Downward", "Concentrated", "checked"), ("Downward", "Distributed", "checked"),
@@ -83,7 +86,7 @@ def test_envelope_lists_every_direction_and_load_type(results):
 
 def test_controlling_is_the_highest_ratio(results):
     expected = plain()
-    for chk in results.checks:
+    for chk in results.checks[:2]:  # Checks 1 and 2 (the rail)
         top = max(v for (n, *_), v in expected.items() if n == chk.number)
         assert chk.controlling.ratio == pytest.approx(top)
 
@@ -112,14 +115,15 @@ def test_tie_between_load_types_goes_to_first_in_envelope_order():
 
 def test_outward_and_inward_tie_exactly_for_a_round_section(results):
     # This is why the tie rule matters: the two cases produce identical ratios.
-    for chk in results.checks:
+    for chk in results.checks[:2]:  # Checks 1 and 2 (the rail)
         by = {(c.direction, c.load_type): c.ratio for c in chk.checked}
         for lt in ("Concentrated", "Distributed"):
             assert by[("Outward", lt)] == by[("Inward", lt)]
 
 
 def test_noncompact_section_uses_eq_F8_2_and_is_flagged():
-    res = checks.run(project(section="Pipe26STD", span="12'-0\""), Registry())
+    # A 103 lb/ft rail needs a post that keeps alpha Pr/Pe under the second-order limit.
+    res = checks.run(project(section="Pipe26STD", span="12'-0\"", post="Pipe12STD"), Registry())
     chk1 = res.checks[0]
     assert chk1.flags and "NONCOMPACT" in chk1.flags[0]
     expected = plain("Pipe26STD", L=144.0)
@@ -154,7 +158,7 @@ def test_beyond_F8_limit_is_a_hard_stop():
 
 def test_exemption_removes_distributed_cases():
     res = checks.run(project(loads=Loads(uniform_exempt=True, exemption_statement="Roof not occupied.")), Registry())
-    for chk in res.checks:
+    for chk in res.checks[:2]:  # Checks 1 and 2 (the rail)
         dist = [c for c in chk.cases if c.load_type == "Distributed"]
         assert dist and all(c.status == "exempt" for c in dist)
     assert res.loading.w_L is None
@@ -242,7 +246,7 @@ def test_every_formula_line_prints_a_citation(results):
 @pytest.mark.parametrize("section, span, listed", [("Pipe2STD", "6'-0\"", False), ("Pipe26STD", "12'-0\"", True)])
 def test_eq_F8_2_is_listed_as_used_only_for_a_noncompact_section(section, span, listed):
     reg = Registry()
-    res = checks.run(project(section=section, span=span), reg)
+    res = checks.run(project(section=section, span=span, post="Pipe12STD"), reg)  # compact post
     assert bool(res.checks[0].flags) is listed  # noncompact flag raised only for Pipe26STD
     used = {e.id for e in reg.used}
     assert ("aisc360.eq.F8-2" in used) is listed
@@ -260,3 +264,38 @@ def test_upward_margin_note_states_net_downward_when_dead_load_wins():
             ML = next(ln for ln in c.lines if ln.symbol == "M_L").value
             assert 0.6 * MD > ML  # the premise of the test
             assert "net downward" in Ma.note
+
+
+# ---------------------------------------------------------------------------
+# Slice 2: post section and dead load at the post (dev section, not a hand case)
+# ---------------------------------------------------------------------------
+
+
+def test_post_radius_of_gyration_is_the_database_rx():
+    assert shapes.pipe("Pipe2STD").r.m_as("inch") == 0.791
+    assert shapes.pipe("Pipe1-1/2STD").r.m_as("inch") == 0.626
+
+
+def test_dead_load_at_the_post_matches_plain_calc(results):
+    # Pipe2STD rail over 6'-0" on a Pipe2STD post, h = 42 in, t_p = 1/2 in:
+    # D_post = 3.66 lb/ft x 41.5 in / 12 = 12.6575 lb; D_rail = 3.66 lb/ft x 6 ft = 21.96 lb.
+    ld = results.loading
+    assert ld.L_post.m_as("inch") == pytest.approx(41.5, rel=1e-12)
+    assert ld.P_D.m_as("lbf") == pytest.approx(12.6575 + 21.96, rel=1e-12)
+    lines = {ln.symbol: ln for ln in ld.lines if ln.kind == "value"}
+    assert lines['D_"post"'].value.m_as("lbf") == pytest.approx(12.6575, rel=1e-12)
+    assert lines['D_"rail"'].value.m_as("lbf") == pytest.approx(21.96, rel=1e-12)
+
+
+def test_dead_load_lines_cite_the_post_dead_load_entry(results):
+    cite = Registry().get("ej.post.axial_dead_load").cite
+    for sym in ('D_"post"', 'D_"rail"', "P_D"):
+        ln = next(ln for ln in results.loading.lines if ln.symbol == sym)
+        assert cite in ln.cite
+
+
+def test_post_block_adds_r_and_rail_block_is_unchanged(results):
+    rail_syms = [ln.symbol for ln in results.section_lines]
+    post_syms = [ln.symbol for ln in results.post_section_lines]
+    assert "r" not in rail_syms
+    assert post_syms == rail_syms[:-1] + ["r", rail_syms[-1]]

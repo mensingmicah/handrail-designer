@@ -1,0 +1,105 @@
+# Test case 2 (docs/plans/slice-2.md, D7).
+#
+# Test case 1's rail and span (Pipe1-1/2STD top rail, A53 Gr B, 7'-0" span,
+# default ASCE 7-22 loads) on a Pipe1-1/2STD post, A53 Gr B, h = 42 in,
+# t_p = 1/2 in. Post deflection limit (h - t_p)/60.
+#
+# Chapter E branch: Lc = 2.1 x 42 = 88.2 in, Lc/r about 141, above
+# 4.71 sqrt(E/Fy) = 135.6 for A53 Gr B, so Eq. E3-3 (elastic buckling).
+# This is also the geometry in D1 whose downward distributed case would
+# exceed alpha Pr/Pe = 0.05; downward has no moment and is not checked
+# against that limit.
+#
+# Checks 1 and 2 are identical to test case 1 (same rail and span) and are
+# not recorded here; only the post groups are (plan, Tests).
+#
+# Values: an independent-calc case (docs/brief/verification.md). The
+# independent calc records every value the test compares in
+# tests/cases/independent/case-02.toml, written up beside it as case-02.md.
+# [hand] below holds Micah's governing-case values: he follows the tool's
+# printed controlling case and recomputes it line by line, checking each
+# provision against the code. This check is not blind (changed 2026-10-04,
+# docs/brief/verification.md); blind independence comes from the
+# independent calc. Each value is his own recomputed result, never copied
+# from the PDF (CLAUDE.md rule 5). Record at least each check's controlling
+# case and its governing ratio (or deflection), plus any intermediate value
+# recomputed along the way, under its key; the independent file names every
+# key the test compares.
+#
+# Each [hand] value is "deferred": the recompute is deferred to the
+# release review, alongside the registry review (ADR 0006; ROADMAP.md
+# slice 9). At that review, replace each "deferred" with the recomputed
+# value, in the unit named by the key's suffix (lb, lbin = lb-in, in, in2,
+# in3, in4, ksi, plf). Record every number, ratios included, to 4
+# significant figures: a ratio of 1.0549 is 1.055, not 1.05, so rounding
+# does not use up the tolerance. Every number must be within 0.5%
+# (relative) of the tool's value.
+#
+# Text values, in quotes:
+#   check5.Fcr_equation      "E3-2" or "E3-3"
+#   check5.equation.<case>   "Pr/Pc" (downward, Chapter E), "Pr/Pt" (upward,
+#                            Chapter D), "H1-1a" or "H1-1b" (moment cases)
+#   check5/6.controlling     e.g. "outward, concentrated"
+#
+# Sign convention: Pr is a magnitude. It is compression in every case but
+# upward, where it is the net tension 1.0L - 0.6D.
+#
+# A "deferred" [hand] value skips its test without showing the tool's
+# value and does not block merge; a "pending" value also skips, but blocks
+# merge (the calc-code-review skill). A mismatch fails and, per CLAUDE.md
+# rule 2, stops the work: neither side is changed until we know which one
+# is wrong.
+
+[project]
+name = "Test case 2"
+phase = "Verification"
+description = "Pipe1-1/2STD post, h = 42 in, t_p = 1/2 in, on case 1's rail and span"
+
+[geometry]
+span = "7'-0\""
+post_height = 42
+baseplate_thickness = "1/2"
+
+[top_rail]
+section = "Pipe1-1/2STD"
+grade = "A53 Gr B"
+
+[post]
+section = "Pipe1-1/2STD"
+grade = "A53 Gr B"
+
+[deflection.rail]
+limit_L_over = 120
+bypass = false
+
+[deflection.post]
+limit_L_over = 60
+bypass = false
+
+[verification]
+kind = "independent-calc"
+covers = ["post", "check5", "check6"]
+
+# ---------------------------------------------------------------------------
+# Hand values: Micah's governing case
+#
+# Outward, inward and longitudinal tie for a round post; any of them is
+# accepted as controlling. The ratio and deflection keys below name the
+# outward distributed case. If your calc finds another case governs,
+# rename them to that case (e.g. outward_concentrated).
+# ---------------------------------------------------------------------------
+
+[hand.check5]
+controlling = "deferred"      # e.g. "outward, concentrated"
+
+[hand.check5.ratio]
+outward_distributed = "deferred"
+
+[hand.check6]
+controlling = "deferred"      # e.g. "outward, concentrated"
+
+[hand.check6.deflection_in]   # horizontal cases, live load only
+outward_distributed = "deferred"
+
+[hand.check6.ratio]
+outward_distributed = "deferred"

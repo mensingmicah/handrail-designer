@@ -12,16 +12,19 @@ from pathlib import Path
 
 import typst
 
-from handrail.calc import Line, fmt_quantity_plain, fmt_ratio, typst_str
-from handrail.checks import Check, Results
+from handrail.calc import Line, fmt_quantity_plain, fmt_ratio, fmt_sig, typst_str
+from handrail.checks import Case, Check, Results
+from handrail.post import PostCase
 from handrail.registry import Registry
 from handrail.version import Stamp
 
-# The tool's own stated assumptions (docs/BRIEF.md). Locked: always printed;
+# The tool's own stated assumptions (docs/brief/output.md). Locked: always printed;
 # the engineer can add to them in the project file but not edit or remove them.
 LOCKED_ASSUMPTIONS = (
     "No shear checks in any member.",
     "Interior post; the tributary length is the span. End posts and rail overhangs are not checked.",
+    "Post loads use tributary length = span; rail continuity effects on post reactions are neglected "
+    "(engineering judgement).",
     "The top rail runs continuously over the post; the post is coped and welded to its underside. "
     "The rail is designed as a simple span.",
     "The intermediate rail's connection to the post, and the component load's effect on the post, "
@@ -29,6 +32,10 @@ LOCKED_ASSUMPTIONS = (
     "Guard loads are not combined with floor or roof live load; wind, snow and ice are not considered.",
     "Base reactions can reverse; direction is set in the anchor software.",
     "The baseplate is rigid; the post is fixed at the top of the baseplate.",
+    "Baseplate thickness and bending are not checked; baseplate and anchorage design by others "
+    "(e.g., PROFIS).",
+    "Notional loads (AISC 360-22 App. 7) are neglected. In gravity-only combinations they produce a "
+    "negligible moment, and the reported axial-only ratio bounds the H1-1b result.",
 )
 
 REFERENCES = (
@@ -134,6 +141,38 @@ def _envelope(chk: Check) -> str:
     )
 
 
+def _envelope_5(chk: Check) -> str:
+    """Check 5 envelope: axial and moment demands, each with its capacity on the
+    line below, the equation, and alpha Pr/Pe for every case the second-order
+    stop checks (plan D1)."""
+    ctrl = chk.controlling
+    rows, bold = [], []
+    for i, c in enumerate(chk.cases):
+        if c.status == "checked":
+            sense = "tension" if c.sense == "tension" else "comp."
+            _, P_cap, _, M_cap = _post_terms(c)
+            rows.append([
+                c.direction, c.load_type, c.combination,
+                f"{fmt_quantity_plain(c.Pr)} {sense}\n{P_cap}",
+                f"{fmt_quantity_plain(c.Mr)}\n{M_cap}" if c.Mr is not None else "—",
+                c.equation.replace(" (", "\n("),  # the source equation on its own line keeps the column narrow
+                fmt_sig(c.second_order) if c.second_order is not None else "—",
+                fmt_ratio(c.ratio),
+                "Controls" if c is ctrl else "",
+            ])
+            if c is ctrl:
+                bold.append(i)
+        else:
+            rows.append([c.direction, c.load_type or "", c.remark, "", "", "", "", "", ""])
+    table = _table(
+        ["[*Direction*]", "[*Load*]", "[*Combination*]",
+         "[*Axial* $P_r$ \\ capacity $P_c$ or $P_t$]", "[*Moment* $M_r$ \\ capacity $M_c$]",
+         "[*Equation*]", "[$frac(alpha P_r, P_e)$]", "[*Ratio*]", "[]"],
+        rows, "(auto, auto, 1fr, auto, auto, auto, auto, auto, auto)", bold, raw_header=True,
+    )
+    return f"#text(size: 8pt)[{table}]"  # nine columns: set small so the rows stay a few lines
+
+
 def _check(chk: Check) -> str:
     out = [f"= Check {chk.number}: {chk.title}"]
     if chk.bypassed:
@@ -144,7 +183,7 @@ def _check(chk: Check) -> str:
     out.append("== Envelope summary")
     out.append("Every direction case and load type is computed. The full calculation follows for the "
                "controlling case only.")
-    out.append(_envelope(chk))
+    out.append(_envelope_5(chk) if chk.number == 5 else _envelope(chk))
     ctrl = chk.controlling
     combination = ctrl.combination.replace("\n", "; ")  # table cells break the label; a heading doesn't
     out.append(f"#heading(level: 2, {typst_str(f'Controlling case: {ctrl.label} ({combination})')})")
@@ -156,6 +195,28 @@ def _check(chk: Check) -> str:
     return "\n\n".join(out)
 
 
+def _demand_capacity(c: Case) -> tuple[str, str]:
+    """Summary cells. An interaction check has no single demand and capacity, so
+    Check 5 prints its axial and moment terms side by side."""
+    if not isinstance(c, PostCase):
+        return fmt_quantity_plain(c.demand), fmt_quantity_plain(c.capacity)
+    Pr, P_cap, Mr, M_cap = _post_terms(c)
+    if c.Mr is None:
+        return Pr, P_cap
+    return f"{Pr}; {Mr}", f"{P_cap}; {M_cap}"
+
+
+def _post_terms(c: PostCase) -> tuple[str, str, str, str]:
+    """'Pr = ...', 'Pc = ...' (or 'Pt = ...' in tension), 'Mr = ...', 'Mc = ...';
+    the moment terms are empty in the axial-only cases. The envelope and the
+    summary both print these."""
+    P_cap = "Pt" if c.sense == "tension" else "Pc"
+    terms = [f"Pr = {fmt_quantity_plain(c.Pr)}", f"{P_cap} = {fmt_quantity_plain(c.P_allow)}", "", ""]
+    if c.Mr is not None:
+        terms[2:] = [f"Mr = {fmt_quantity_plain(c.Mr)}", f"Mc = {fmt_quantity_plain(c.M_allow)}"]
+    return tuple(terms)
+
+
 def _summary(checks: list[Check]) -> str:
     rows = []
     for chk in checks:
@@ -163,10 +224,23 @@ def _summary(checks: list[Check]) -> str:
             rows.append([f"{chk.number}. {chk.title}", "", "", "", "", "Bypassed by engineer"])
             continue
         c = chk.controlling
-        rows.append([f"{chk.number}. {chk.title}", fmt_quantity_plain(c.demand), fmt_quantity_plain(c.capacity),
-                     fmt_ratio(c.ratio), c.label, chk.verdict])
+        demand, capacity = _demand_capacity(c)
+        verdict = f"{chk.verdict} ({chk.summary_flag})" if chk.summary_flag else chk.verdict
+        rows.append([f"{chk.number}. {chk.title}", demand, capacity, fmt_ratio(c.ratio), c.label, verdict])
     return _table(["Check", "Demand", "Capacity", "Ratio", "Controlling direction", "Result"], rows,
                   "(1fr, auto, auto, auto, auto, auto)")
+
+
+def _derived_lengths(results: Results) -> str:
+    """Each derived length printed from its own calc line: the note, the formula
+    and the value are the ones that computed it (ADR 0002). Symbols and
+    formulas are Typst math the calc writes, never user text."""
+    cells = ['table.header(strong("Derived length"), strong("Formula"), strong("Inches"), '
+             'strong("Computed in"))']
+    for ln, where in results.derived_lengths:
+        cells += [typst_str(ln.note), f"[${ln.symbol} = {ln.symbolic}$]",
+                  typst_str(fmt_quantity_plain(ln.value)), typst_str(where)]
+    return f"#table(columns: (1fr, auto, auto, auto), {', '.join(cells)})"
 
 
 def build_source(results: Results, registry: Registry, stamp: Stamp) -> str:
@@ -192,7 +266,8 @@ def build_source(results: Results, registry: Registry, stamp: Stamp) -> str:
 
     # Front matter
     src.append("#align(center, text(size: 16pt, weight: \"bold\")[Guard Calculation])")
-    src.append("#align(center)[Top rail: bending and deflection]")
+    src.append("#align(center)[Top rail bending and deflection; post combined axial and flexure, "
+               "and deflection]")
     src.append("== Project")
     src.append(_table([], [["Project", info.name], ["Phase", info.phase], ["Description", info.description]],
                       "(auto, 1fr)").replace("columns: (auto, 1fr), ", "columns: (auto, 1fr), stroke: none, "))
@@ -217,16 +292,22 @@ def build_source(results: Results, registry: Registry, stamp: Stamp) -> str:
     # Dimensions
     src.append("= Dimensions")
     src.append("Every dimension as entered, and as the tool read it. A bare number is inches.")
-    d = proj.span
-    src.append(_table(["Dimension", "As entered", "Read as", "Inches"],
-                      [["Span, post to post (c/c)", d.entered, d.normalized, fmt_quantity_plain(d.value)]],
-                      "(1fr, auto, auto, auto)"))
+    rows = [[label, d.entered, d.normalized, fmt_quantity_plain(d.value)] for label, d in (
+        ("Span, post to post (c/c)", proj.span),
+        ("Post height h, top of concrete to top rail centerline", proj.post_height),
+        ("Baseplate thickness t_p", proj.baseplate_thickness),
+    )]
+    src.append(_table(["Dimension", "As entered", "Read as", "Inches"], rows, "(1fr, auto, auto, auto)"))
+    src.append("Derived lengths, each computed in the calc where it is used:")
+    src.append(_derived_lengths(results))
 
     # Section properties
     src.append("= Section properties")
     src.append(f"#text({typst_str(f'Top rail: {results.rail.label}, {proj.top_rail.grade}.')}) "
                "Properties are used exactly as published in the AISC Shapes Database v16.0.")
     src.append(_lines(results.section_lines))
+    src.append(f"#text({typst_str(f'Post: {results.post.label}, {proj.post.grade}.')})")
+    src.append(_lines(results.post_section_lines))
 
     # Loading
     src.append("= Loading")

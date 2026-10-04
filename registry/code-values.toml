@@ -19,7 +19,8 @@
 #          entry; section holds the full location.
 # unit:    a pint unit string (forces are "lbf", since pint's "lb" is mass),
 #          "" for a dimensionless number, or one of "text", "list",
-#          "equation", "provision", "factors".
+#          "equation", "provision", "factors", "fraction" (a coefficient
+#          written as {numerator, denominator}, printed as a fraction).
 # An "equation" or "provision" entry cites a formula or rule that is
 # implemented once in the code (ADR 0002); its value describes what is cited
 # and deliberately does not restate the formula, so the two cannot drift.
@@ -36,6 +37,39 @@ review = [
   "material.steel.density",
   "material.grades.hss_round",
   "material.grades.hss_rect",
+  # Slice 2 (the post), drafted 2026-09-30
+  "aisc360.B4.1a.round_hss.lambda_r",
+  "aisc360.B4.1a.classification",
+  "aisc360.E2.effective_length",
+  "aisc360.E2.user_note.slenderness",
+  "aisc360.E2.user_note.slenderness.limit",
+  "aisc360.CA7.K_fixed_free",
+  "aisc360.E1.omega_c",
+  "aisc360.eq.E3-1",
+  "aisc360.E3.branch_limit",
+  "aisc360.eq.E3-2",
+  "aisc360.eq.E3-2.base",
+  "aisc360.eq.E3-3",
+  "aisc360.eq.E3-3.coeff",
+  "aisc360.eq.E3-4",
+  "aisc360.eq.D2-1",
+  "aisc360.D2.omega_t",
+  "aisc360.H1.1.threshold",
+  "aisc360.eq.H1-1a",
+  "aisc360.eq.H1-1a.coeff",
+  "aisc360.eq.H1-1b",
+  "aisc360.eq.H1-1b.coeff",
+  "aisc360.app8.alpha_asd",
+  "aisc360.eq.A-8-5",
+  "ej.second_order.pe_length",
+  "ej.second_order.limit",
+  "ej.second_order.negligible",
+  "ej.post.axial_dead_load",
+  "aisc_manual.t3-23.case22.M",
+  "aisc_manual.t3-23.case22.delta",
+  "ej.deflection.limit.post",
+  # PR #17 review, drafted 2026-10-04
+  "ej.post.unbraced_length",
 ]
 
 # ---------------------------------------------------------------------------
@@ -310,7 +344,7 @@ From memory of the §2.4.1 list in ASCE 7-16; I believe 7-22 keeps D + L as \
 combination 2 of §2.4.1 but have not seen the 7-22 text. Used for the \
 downward case and, with dead and live on separate axes, the outward and \
 inward cases. The upward case's 0.6D + 1.0L is an engineering-judgement \
-combination (docs/BRIEF.md) and is not an entry."""
+combination, entry ej.combo.bending.upward (docs/brief/loads-and-envelope.md)."""
 
 # ---------------------------------------------------------------------------
 # Material strengths
@@ -590,7 +624,8 @@ note = "From memory of 360-16 §B3.2; equation number assumed unchanged in 360-2
 # ---------------------------------------------------------------------------
 # Engineering judgement of the engineer of record (source "engineer")
 #
-# Not code values: formulas and combinations Micah adopted in docs/BRIEF.md
+# Not code values: formulas and combinations Micah adopted in docs/brief/
+# (loads-and-envelope.md and checks.md)
 # and the slice 1 plan. They are entries so every formula the calc prints
 # has one citation source (CLAUDE.md rule 1), and so a combination's printed
 # label is generated from the same factors its expression uses.
@@ -602,7 +637,7 @@ value = "Biaxial bending of a round section: resultant of the vertical and horiz
 unit = "equation"
 cite = "Engineering judgement (EOR): SRSS, round section"
 document = "Engineering decision of the engineer of record"
-edition = "docs/BRIEF.md"
+edition = "docs/brief/checks.md"
 section = "Engineering decisions already made: biaxial bending (round HSS and pipe, and every round section)"
 source = "engineer"
 status = "verified"
@@ -617,7 +652,7 @@ value = { D = 0.6, L = 1.0 }
 unit = "factors"
 cite = "Engineering judgement (EOR): upward case, not an ASCE combination"
 document = "Engineering decision of the engineer of record"
-edition = "docs/BRIEF.md"
+edition = "docs/brief/loads-and-envelope.md"
 section = "Engineering decisions already made: upward case uses a minimum-dead-load ASD combination, net on the vertical axis"
 source = "engineer"
 status = "verified"
@@ -632,7 +667,7 @@ value = { D = 1.0, L = 1.0 }
 unit = "factors"
 cite = "Engineering judgement (EOR): serviceability"
 document = "Engineering decision of the engineer of record"
-edition = "docs/BRIEF.md"
+edition = "docs/brief/checks.md"
 section = "Checks, 2: top rail deflection, downward case D + L on the vertical axis"
 source = "engineer"
 status = "verified"
@@ -647,7 +682,7 @@ value = { L = 1.0 }
 unit = "factors"
 cite = "Engineering judgement (EOR): serviceability, live load only"
 document = "Engineering decision of the engineer of record"
-edition = "docs/BRIEF.md; docs/plans/slice-1.md D2"
+edition = "docs/brief/checks.md; docs/plans/slice-1.md D2"
 section = "Checks, 2: horizontal cases live load only; upward case live load only (plan D2)"
 source = "engineer"
 status = "verified"
@@ -662,7 +697,7 @@ value = "Allowable deflection: span divided by the limit ratio the engineer ente
 unit = "equation"
 cite = "Engineering judgement (EOR): deflection limit, not code"
 document = "Engineering decision of the engineer of record"
-edition = "docs/BRIEF.md"
+edition = "docs/brief/inputs.md"
 section = "Inputs: deflection limits (engineering experience, not code)"
 source = "engineer"
 status = "verified"
@@ -692,7 +727,7 @@ note = """
 The design method the member checks use, printed in the front matter as \
 "Design method: ASD per AISC 360-22 §B3.2". Section number from memory of \
 360-16 §B3.2 (360-16 §B3.1 is LRFD); assumed unchanged in 360-22. The \
-references list still names only the specification (docs/BRIEF.md). \
+references list still names only the specification (docs/brief/output.md). \
 Review 2026-09-30, Micah: Unsure. 'not really sure what this is. ASD is just a design procedute.'"""
 
 [[entry]]
@@ -712,3 +747,505 @@ note = """
 Paraphrase from memory of 360-16 §F8, which lists only yielding and local \
 buckling for round HSS. Stated as its own entry so Check 1 can print it \
 explicitly beside the classification."""
+
+# ---------------------------------------------------------------------------
+# Slice 2: the post (Checks 5 and 6). docs/plans/slice-2.md.
+# ---------------------------------------------------------------------------
+
+# --- Compression: classification, effective length, Chapter E -------------
+
+[[entry]]
+id = "aisc360.B4.1a.round_hss.lambda_r"
+value = 0.11
+unit = ""
+cite = "AISC 360-22 Table B4.1a, Case 9"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "Table B4.1a, Width-to-Thickness Ratios: Compression Elements, Members Subject to Axial Compression; round HSS, limiting ratio lambda_r = 0.11E/Fy"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-09-30
+verified_by = ""
+verified_date = ""
+note = """
+CHECK THIS ONE FIRST. Coefficient on E/Fy, from memory of 360-16 Table \
+B4.1a, where round HSS is Case 9. A web search summary (secondary, \
+https://civilstrcalc.com/pages/articles/us-standards/7-steel-design-aisc) \
+gave 0.15E/Fy instead; I could not open the table to settle it. Neither \
+value changes the D7 hand cases (D/t about 14 against 91 or 124). The ratio \
+is D/t with t the design wall. Case number also unconfirmed for 360-22."""
+
+[[entry]]
+id = "aisc360.B4.1a.classification"
+value = "For axial compression, a section is nonslender-element if no element's width-to-thickness ratio exceeds lambda_r, and slender-element if any element exceeds lambda_r. There is no noncompact category in compression."
+unit = "provision"
+cite = "AISC 360-22 §B4.1a"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§B4.1a, Classification of Sections for Local Buckling, Members Subject to Axial Compression"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-09-30
+verified_by = ""
+verified_date = ""
+note = "Paraphrase from memory of 360-16 §B4.1a."
+
+[[entry]]
+id = "aisc360.E2.effective_length"
+value = "Effective length Lc = KL, with K the effective length factor and L the laterally unbraced length"
+unit = "equation"
+cite = "AISC 360-22 §E2"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§E2, Effective Length"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-09-30
+verified_by = ""
+verified_date = ""
+note = """
+Not in the slice 2 plan's list; added so the Lc line cites the provision \
+that defines Lc (rule 1), not only the K entry. The length the tool uses \
+for L is ej.post.unbraced_length."""
+
+[[entry]]
+id = "ej.post.unbraced_length"
+value = "The laterally unbraced length in the post's compression effective length (and so in Pe) is the post height h, top of concrete to top rail centerline, not the cantilever length h - t_p. Slightly conservative."
+unit = "equation"
+cite = "Engineering judgement (EOR): unbraced length is the post height"
+document = "Engineering decision of the engineer of record"
+edition = "docs/plans/slice-2.md D3"
+section = "D3, compression effective length: the length is h, not h - t_p"
+source = "engineer"
+status = "drafted"
+drafted_on = 2026-10-04
+verified_by = ""
+verified_date = ""
+note = "Micah's ruling in plan D3. Cited on the Lc line, where the printed calc used to say \"L = h (plan D3)\" (PR #17 review, item 5). The printed symbol is h, so the span keeps L."
+
+[[entry]]
+id = "aisc360.E2.user_note.slenderness"
+value = "For members designed on the basis of compression, the effective slenderness ratio Lc/r preferably should not exceed 200."
+unit = "provision"
+cite = "AISC 360-22 §E2, User Note"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§E2, Effective Length, User Note"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-09-30
+verified_by = ""
+verified_date = ""
+note = "Paraphrase from memory of the 360-16 §E2 User Note. A recommendation, not a requirement: the tool flags Lc/r above the limit and continues (plan D6)."
+
+[[entry]]
+id = "aisc360.E2.user_note.slenderness.limit"
+value = 200
+unit = ""
+cite = "AISC 360-22 §E2, User Note"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§E2, Effective Length, User Note: Lc/r preferably not over 200"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-09-30
+verified_by = ""
+verified_date = ""
+note = "The number in aisc360.E2.user_note.slenderness, held separately so the flag compares against it."
+
+[[entry]]
+id = "aisc360.CA7.K_fixed_free"
+value = 2.1
+unit = ""
+cite = "AISC 360-22 Comm. Table C-A-7.1, case (e)"
+document = "AISC 360-22, Specification for Structural Steel Buildings (Commentary)"
+edition = "2022"
+section = "Commentary on Appendix 7, Table C-A-7.1, Approximate Values of Effective Length Factor K; case (e), fixed at one end, free at the other: theoretical 2.0, recommended design value 2.1"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-09-30
+verified_by = ""
+verified_date = ""
+note = """
+From memory of the 360-16 Commentary; the table and case letter are \
+assumed unchanged in 360-22. The recommended design value (2.1), not the \
+theoretical 2.0, per plan D3 and the brief (post compression uses the \
+recommended design K)."""
+
+[[entry]]
+id = "aisc360.E1.omega_c"
+value = 1.67
+unit = ""
+cite = "AISC 360-22 §E1"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§E1, General Provisions: safety factor for compression, Omega_c = 1.67 (ASD)"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-09-30
+verified_by = ""
+verified_date = ""
+note = "From memory; unchanged from 360-10 and 360-16 as far as I know. If 360-22 labels it §E1(b), as it does §F1(a) for flexure, correct the cite."
+
+[[entry]]
+id = "aisc360.eq.E3-1"
+value = "Flexural buckling of members without slender elements: nominal compressive strength from the critical stress and the gross area"
+unit = "equation"
+cite = "AISC 360-22 Eq. E3-1"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§E3, Flexural Buckling of Members without Slender Elements, Equation E3-1"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-09-30
+verified_by = ""
+verified_date = ""
+note = "From memory of 360-16; equation number assumed unchanged in 360-22."
+
+[[entry]]
+id = "aisc360.E3.branch_limit"
+value = 4.71
+unit = ""
+cite = "AISC 360-22 §E3(a), (b)"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§E3(a) and (b): Eq. E3-2 applies when Lc/r <= 4.71 sqrt(E/Fy) (or Fy/Fe <= 2.25); Eq. E3-3 when Lc/r > 4.71 sqrt(E/Fy) (or Fy/Fe > 2.25)"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-09-30
+verified_by = ""
+verified_date = ""
+note = "Coefficient on sqrt(E/Fy). The tool decides the branch on Lc/r, the first of the two equivalent forms."
+
+[[entry]]
+id = "aisc360.eq.E3-2"
+value = "Critical stress, inelastic buckling (Lc/r at or below the branch limit)"
+unit = "equation"
+cite = "AISC 360-22 Eq. E3-2"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§E3(a), Equation E3-2"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-09-30
+verified_by = ""
+verified_date = ""
+note = "From memory of 360-16; the base of the exponent is aisc360.eq.E3-2.base."
+
+[[entry]]
+id = "aisc360.eq.E3-2.base"
+value = 0.658
+unit = ""
+cite = "AISC 360-22 Eq. E3-2"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§E3(a), Equation E3-2: base raised to the power Fy/Fe"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-09-30
+verified_by = ""
+verified_date = ""
+note = "From memory of 360-16."
+
+[[entry]]
+id = "aisc360.eq.E3-3"
+value = "Critical stress, elastic buckling (Lc/r above the branch limit)"
+unit = "equation"
+cite = "AISC 360-22 Eq. E3-3"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§E3(b), Equation E3-3"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-09-30
+verified_by = ""
+verified_date = ""
+note = "From memory of 360-16; the coefficient is aisc360.eq.E3-3.coeff."
+
+[[entry]]
+id = "aisc360.eq.E3-3.coeff"
+value = 0.877
+unit = ""
+cite = "AISC 360-22 Eq. E3-3"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§E3(b), Equation E3-3: coefficient on Fe"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-09-30
+verified_by = ""
+verified_date = ""
+note = "From memory of 360-16."
+
+[[entry]]
+id = "aisc360.eq.E3-4"
+value = "Elastic buckling stress, from E and the effective slenderness Lc/r"
+unit = "equation"
+cite = "AISC 360-22 Eq. E3-4"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§E3, Equation E3-4"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-09-30
+verified_by = ""
+verified_date = ""
+note = "From memory of 360-16; pi is a mathematical constant, not an entry."
+
+# --- Tension, Chapter D ----------------------------------------------------
+
+[[entry]]
+id = "aisc360.eq.D2-1"
+value = "Tensile yielding in the gross section: nominal tensile strength from Fy and the gross area"
+unit = "equation"
+cite = "AISC 360-22 Eq. D2-1"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§D2(a), Tensile Yielding in the Gross Section, Equation D2-1"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-09-30
+verified_by = ""
+verified_date = ""
+note = "From memory of 360-16. Tensile rupture (§D2(b)) is not checked: the brief sets the upward case to yielding on the gross section."
+
+[[entry]]
+id = "aisc360.D2.omega_t"
+value = 1.67
+unit = ""
+cite = "AISC 360-22 §D2(a)"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§D2(a), Tensile Yielding in the Gross Section: Omega_t = 1.67 (ASD)"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-09-30
+verified_by = ""
+verified_date = ""
+note = "From memory of 360-16."
+
+# --- Combined forces, Chapter H --------------------------------------------
+
+[[entry]]
+id = "aisc360.H1.1.threshold"
+value = 0.2
+unit = ""
+cite = "AISC 360-22 §H1.1"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§H1.1(a) and (b): Eq. H1-1a when Pr/Pc >= 0.2, Eq. H1-1b when Pr/Pc < 0.2"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-09-30
+verified_by = ""
+verified_date = ""
+note = "From memory of 360-16 §H1.1."
+
+[[entry]]
+id = "aisc360.eq.H1-1a"
+value = "Doubly and singly symmetric members in flexure and compression, Pr/Pc >= 0.2"
+unit = "equation"
+cite = "AISC 360-22 Eq. H1-1a"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§H1.1(a), Equation H1-1a"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-09-30
+verified_by = ""
+verified_date = ""
+note = "From memory of 360-16; the coefficient is aisc360.eq.H1-1a.coeff. The post has one moment per case, so the tool prints a single Mr/Mc term."
+
+[[entry]]
+id = "aisc360.eq.H1-1a.coeff"
+value = { numerator = 8, denominator = 9 }
+unit = "fraction"
+cite = "AISC 360-22 Eq. H1-1a"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§H1.1(a), Equation H1-1a: coefficient 8/9 on the moment terms"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-09-30
+verified_by = ""
+verified_date = ""
+note = "From memory of 360-16. Held as a fraction so the calc prints 8/9, not a rounded decimal."
+
+[[entry]]
+id = "aisc360.eq.H1-1b"
+value = "Doubly and singly symmetric members in flexure and compression, Pr/Pc < 0.2"
+unit = "equation"
+cite = "AISC 360-22 Eq. H1-1b"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§H1.1(b), Equation H1-1b"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-09-30
+verified_by = ""
+verified_date = ""
+note = "From memory of 360-16; the coefficient is aisc360.eq.H1-1b.coeff."
+
+[[entry]]
+id = "aisc360.eq.H1-1b.coeff"
+value = 2
+unit = ""
+cite = "AISC 360-22 Eq. H1-1b"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§H1.1(b), Equation H1-1b: the axial term is Pr/(2Pc)"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-09-30
+verified_by = ""
+verified_date = ""
+note = "From memory of 360-16."
+
+# --- Second-order effects (plan D1) ----------------------------------------
+
+[[entry]]
+id = "aisc360.app8.alpha_asd"
+value = 1.6
+unit = ""
+cite = "AISC 360-22 App. 8"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "Appendix 8, amplifier B1 (360-16 §8.2.1): alpha = 1.6 for ASD (1.0 for LRFD)"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-09-30
+verified_by = ""
+verified_date = ""
+note = """
+CHECK THIS ONE EARLY. From memory of 360-16 Appendix 8, Approximate \
+Second-Order Analysis, §8.2.1. A web search summary of AISC's 360-22 to \
+360-16 comparison says the Appendix 8 title changed in 360-22 and the text \
+was expanded; I could not open the comparison (AISC blocks automated \
+download), so the subsection number in 360-22 is unconfirmed. The same \
+summary says ASD loads are amplified by alpha = 1.6."""
+
+[[entry]]
+id = "aisc360.eq.A-8-5"
+value = "Elastic critical buckling strength of the member in the plane of bending, Pe = pi^2 EI/Lc^2"
+unit = "equation"
+cite = "AISC 360-22 Eq. A-8-5"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "Appendix 8, Equation A-8-5 (Pe1)"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-09-30
+verified_by = ""
+verified_date = ""
+note = """
+From memory of 360-16, where Pe1 = pi^2 EI*/(Lc1)^2 with Lc1 = K1 L and \
+K1 = 1. The tool departs from it as written: EI, not EI*, and Lc = 2.1h \
+(ej.second_order.pe_length). Equation number unconfirmed for 360-22; see \
+the note on aisc360.app8.alpha_asd."""
+
+[[entry]]
+id = "ej.second_order.pe_length"
+value = "Pe for the cantilever post is computed with Lc = 2.1h, the compression effective length, and EI (not the reduced EI* of the direct analysis method), because the post's second-order effect is sway (P-Delta); Pe at K = 1 would understate alphaPr/Pe by about 4.4 times"
+unit = "equation"
+cite = "Engineering judgement (EOR): Pe at Lc = 2.1h"
+document = "Engineering decision of the engineer of record"
+edition = "docs/plans/slice-2.md D1; docs/ROADMAP.md, slice 2"
+section = "Decided: second-order effects, Pe length"
+source = "engineer"
+status = "drafted"
+drafted_on = 2026-09-30
+verified_by = ""
+verified_date = ""
+note = "Decision by Micah, 2026-09-30. 2.1^2 = 4.41."
+
+[[entry]]
+id = "ej.second_order.limit"
+value = 0.05
+unit = ""
+cite = "Engineering judgement (EOR): second-order limit"
+document = "Engineering decision of the engineer of record"
+edition = "docs/plans/slice-2.md D1; docs/ROADMAP.md, slice 2"
+section = "Decided: second-order effects; above this alphaPr/Pe in a moment case the calc stops"
+source = "engineer"
+status = "drafted"
+drafted_on = 2026-09-30
+verified_by = ""
+verified_date = ""
+note = "1/(1 - 0.05) = 1.053, so the amplification neglected is at most about 5%. Applies to the outward, inward and longitudinal cases only; downward and upward have no moment to amplify (D1)."
+
+[[entry]]
+id = "ej.second_order.negligible"
+value = "Second-order effects negligible: αPr/Pe = {ratio}; amplification taken as 1.0."
+unit = "text"
+cite = "Engineering judgement (EOR): second-order limit"
+document = "Engineering decision of the engineer of record"
+edition = "docs/plans/slice-2.md D1; docs/ROADMAP.md, slice 2"
+section = "Decided: second-order effects, the printed sentence"
+source = "engineer"
+status = "drafted"
+drafted_on = 2026-09-30
+verified_by = ""
+verified_date = ""
+note = "Printed in the controlling case's calc lines when it has moment; {ratio} is filled with the case's alphaPr/Pe. Goes with ej.second_order.limit."
+
+# --- Post loads, beam formulas and deflection limit -------------------------
+
+[[entry]]
+id = "ej.post.axial_dead_load"
+value = "Axial dead load at the top of the baseplate: the top rail self-weight over the span (the tributary length) plus the post's tabulated weight W over h - t_p, all acting at the critical section"
+unit = "equation"
+cite = "Engineering judgement (EOR): post dead load"
+document = "Engineering decision of the engineer of record"
+edition = "docs/plans/slice-2.md D2; docs/brief/output.md (tributary length assumption)"
+section = "D2, post self-weight: full weight at the base, over h - t_p"
+source = "engineer"
+status = "drafted"
+drafted_on = 2026-09-30
+verified_by = ""
+verified_date = ""
+note = "Not in the slice 2 plan's list; added so the D_post and D lines cite a source (rule 1), as slice 1 did for its other EOR formulas."
+
+[[entry]]
+id = "aisc_manual.t3-23.case22.M"
+value = "Cantilevered beam, concentrated load at free end: maximum moment, at fixed end"
+unit = "equation"
+cite = "AISC Manual Table 3-23, Case 22"
+document = "AISC Steel Construction Manual"
+edition = "16th Edition"
+section = "Part 3, Table 3-23, Case 22, Cantilevered Beam - Concentrated Load at Free End, M max (at fixed end)"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-09-30
+verified_by = ""
+verified_date = ""
+note = "Case number corroborated by a web search summary; not read from the Manual. The fixed end is the top of the baseplate (plan D4), so L = h - t_p."
+
+[[entry]]
+id = "aisc_manual.t3-23.case22.delta"
+value = "Cantilevered beam, concentrated load at free end: maximum deflection, at free end"
+unit = "equation"
+cite = "AISC Manual Table 3-23, Case 22"
+document = "AISC Steel Construction Manual"
+edition = "16th Edition"
+section = "Part 3, Table 3-23, Case 22, Cantilevered Beam - Concentrated Load at Free End, Delta max (at free end)"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-09-30
+verified_by = ""
+verified_date = ""
+note = "Same confidence as aisc_manual.t3-23.case22.M."
+
+[[entry]]
+id = "ej.deflection.limit.post"
+value = "Allowable post deflection: the cantilever length h - t_p divided by the limit ratio the engineer enters (default L/60, editable, bypassable)"
+unit = "equation"
+cite = "Engineering judgement (EOR): post deflection limit, not code"
+document = "Engineering decision of the engineer of record"
+edition = "docs/brief/inputs.md; docs/brief/checks.md (Check 6)"
+section = "Inputs: deflection limits; Check 6: the L/60 limit uses h - t_p"
+source = "engineer"
+status = "drafted"
+drafted_on = 2026-09-30
+verified_by = ""
+verified_date = ""
+note = "The default ratio (60) is an input default in the project reader, not a code value. ej.deflection.limit stays with the rail span (plan, Check 6)."

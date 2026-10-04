@@ -19,6 +19,8 @@ front matter, as a registry-cited line ("Design method: ASD per AISC 360-22
 - No shear checks in any member.
 - Interior post; the tributary length is the span. End posts and rail
   overhangs are not checked.
+- Post loads use tributary length = span; rail continuity effects on post
+  reactions are neglected (engineering judgement).
 - The top rail runs continuously over the post; the post is coped and
   welded to its underside. The rail is designed as a simple span.
 - The intermediate rail's connection to the post, and the component load's
@@ -27,6 +29,11 @@ front matter, as a registry-cited line ("Design method: ASD per AISC 360-22
   ice are not considered.
 - Base reactions can reverse; direction is set in the anchor software.
 - The baseplate is rigid; the post is fixed at the top of the baseplate.
+- Baseplate thickness and bending are not checked; baseplate and anchorage
+  design by others (e.g., PROFIS).
+- Notional loads (AISC 360-22 App. 7) are neglected. In gravity-only
+  combinations they produce a negligible moment, and the reported
+  axial-only ratio bounds the H1-1b result.
 
 ## Output
 
