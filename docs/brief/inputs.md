@@ -20,7 +20,8 @@ and how it is entered.
   to post, center to center); baseplate thickness t_p and plan dimensions
   B × N. B and N give the baseplate weight and print beside the anchor
   reaction sets.
-- For now the span is assumed to be the tributary length for the post
+- The span is the tributary length for the post, a stated assumption
+  (output.md)
 - Top rail and post sections: pick an AISC designation, or define a custom
   section by dimensions. For tubes, the engineer says whether the entered wall
   thickness is nominal or design. For rectangular sections, the engineer sets

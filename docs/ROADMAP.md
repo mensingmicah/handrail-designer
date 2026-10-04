@@ -1,7 +1,7 @@
 # Roadmap: slices from v0.1.0 to v1
 
 Status: **accepted by Micah, 2026-09-30.** Slice 2 is the post (option A
-below). What the tool must do is set by the brief
+below). Slices 1 and 2 are done (v0.1.0, v0.2.0); slice 3 is next. What the tool must do is set by the brief
 (docs/BRIEF.md); if this roadmap disagrees with the brief, the brief wins.
 Each slice gets its own plan in docs/plans/ before work starts. That plan
 settles the slice's open questions, and it can reorder or split the slice.
@@ -11,8 +11,8 @@ settles the slice's open questions, and it can reorder or split the slice.
 | Slice | Covers | Depends on | Size | New test cases | Issues |
 | --- | --- | --- | --- | --- | --- |
 | 1 (done, v0.1.0) | Checks 1–2, pipe top rail | — | L | 1 | — |
-| 2 | Checks 5–6: the post (pipe) | 1 | M | 2 | #4 |
-| 3 | Checks 3 and 7: both welds (pipe rail on pipe post) | 2 | M | 1 | — |
+| 2 (done, v0.2.0) | Checks 5–6: the post (pipe) | 1 | M | 2 | — |
+| 3 | Checks 3 and 7: both welds (pipe rail on pipe post) | 2 | M | 1 | #4 |
 | 4 | Check 4 (intermediate rail) and the anchor reaction sets | 2 (3 for a full package) | S–M | 1 | — |
 | 5 | Round section family: round HSS, custom round tube, solid round bar | 4 | M | 2 | #3 |
 | 6 | Rectangular tubes: rectangular HSS, custom rectangular tube | 5 | L | 2 | — |
@@ -25,17 +25,17 @@ Sizes are relative to slice 1, which also had to build every layer, so a
 later slice of the same size carries more engineering. A slice is marked by
 three things: how much check code it adds, how many registry entries it
 drafts (slice 1 drafted 35), and how many new test cases it needs.
-These are rough guesses. The first time a guess turns out wrong is slice 2,
-so revisit them once slice 2 is done.
+These are rough guesses. Slice 2, the first check against them, drafted 31
+registry entries against an estimate of 18–23 and needed the 2 test cases
+planned. The estimates for slices 3–9 have not been revised since.
 
 A test case costs Micah less than it did in slice 1. Case 1 was a full
 hand calc of every value. From slice 2 on, each test case is an
-independent-calc case (docs/brief/verification.md, ADR 0004): an agent
-writes the full calc, and Micah works only the governing case of each new
-check on his own, then reviews the independent calc and the PDF against
-the checklist. Registry verification is no longer per slice either: it is
-one review in slice 9 (below), so Micah's time per slice is the
-governing-case calc and the review.
+independent-calc case (docs/brief/verification.md): an agent writes the
+full calc, and Micah reviews it and the PDF against the checklist. His
+registry verification and his recompute of each new check's governing case
+both wait for one release review in slice 9 (below), so Micah's time per
+slice is the checklist review.
 
 After slice 4 the tool produces the full v1 package for one guard type:
 all seven checks, the summary table and the reaction sets, for an all-pipe
@@ -141,7 +141,7 @@ for the section abstraction up front than for a refactor in slices 5–7.
 
 ## Slices
 
-### Slice 2: the post (Checks 5 and 6), pipe
+### Slice 2: the post (Checks 5 and 6), pipe (done, v0.2.0)
 
 **Covers.** Inputs: post height h, baseplate thickness t_p, post section
 (AISC pipe, A53 Gr B), and the post deflection limit (L/60, editable,
@@ -370,7 +370,7 @@ unless a real problem forces a change (ADR 0006).
 
 | Issue | Placement | Note |
 | --- | --- | --- |
-| #4 Calc-code cleanup | Slice 2, the next calc branch | The label already says so. |
+| #4 Calc-code cleanup | Slice 3, the next calc branch | Items 1–3 were done on the slice 2 branch; the later items remain. |
 | #3 Noncompact hand case for Eq. F8-2 | Slice 5 | v1 scope (Micah, 2026-09-30). `future` label removed, because its trigger (thin-wall round HSS) is in v1 scope. |
 | #1 Display-unit settings | After v1 | Matches its `future` label and scope.md. |
 

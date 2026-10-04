@@ -93,9 +93,9 @@ A project's inputs plus the values the tool's results are compared against at 0.
 _Avoid_: Hand case (for an independent-calc case)
 
 **Independent calc**:
-A complete calc of a test case written by an agent in a fresh session from the code, the brief, the plan's decisions, the case inputs and verified entries only, never from the tool's code or output.
+A complete calc of a test case written by an agent in a fresh session from the code, the brief, the plan's decisions, the case inputs, verified entries and AISC's Shapes Database workbook only, never from the tool's code or output.
 _Avoid_: Agent calc, second opinion
 
 **Governing-case calc**:
-The engineer of record's line-by-line recomputation, by calculator, of the tool's printed controlling case for a new check, with each provision checked against the code. Not blind; his recorded values are his own results, never copied from the tool's output. Blind independence comes from the independent calc. From slice 2 on it is done in the v1 release review, and until then its [hand] values are marked "deferred" (ADR 0006).
+The engineer of record's line-by-line recomputation, by calculator, of the tool's printed controlling case of a new check in a test case, with each provision checked against the code. Not blind; his recorded values are his own results, never copied from the tool's output. Blind independence comes from the independent calc. From slice 2 on it is done in the v1 release review, and until then its [hand] values are marked "deferred" (ADR 0006).
 _Avoid_: Spot check (when meaning this)

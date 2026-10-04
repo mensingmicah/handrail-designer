@@ -1,15 +1,15 @@
 # Slice 2 plan: the post (Checks 5 and 6), AISC pipe
 
-Status: **in progress on the `slice-2` branch.** Every decision below was
-settled by Micah on 2026-09-30 (docs/ROADMAP.md, "Choosing slice 2"; slice
-2 planning). The verification steps were revised the same day for the new
-verification model (issue #13, ADR 0004): slice 2 is its first user, and
-its pull request waits for the harness change. Registry verification
-moved out of the slice on 2026-10-03: Micah verifies every drafted entry
-in one review in the v1 release slice (docs/ROADMAP.md, slice 9), so this
-slice's entries stay drafted and its PDFs print the DRAFT stamp.
-Where this plan differs from the brief (docs/BRIEF.md) or CLAUDE.md, those
-govern, and the difference is a defect in the plan.
+Status: **completed.** Merged to main in PR #17 on 2026-10-04 and released
+as v0.2.0 (see CHANGELOG.md). Its registry entries are still drafted, and
+the [hand] values of test cases 2 and 3 are deferred; both wait for the
+release review (issue #18).
+
+> This plan is a record of what slice 2 set out to build and why. The
+> decisions below (D1–D12) describe what the tool does for the post, but
+> where this plan differs from docs/BRIEF.md, CLAUDE.md or a later plan,
+> those govern. The verification steps below are as the slice ran them;
+> the current process is docs/brief/verification.md.
 
 ## Goal
 

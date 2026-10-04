@@ -59,7 +59,7 @@ on, or write, auto-memory for it.
 Calc code goes on a branch and reaches main only through a pull request I
 approve. Calc code means anything that can change a printed calc: src/,
 tests/, data/, and registry/ (a registry value feeds the calc). Docs-only
-changes (docs/, .claude/, CLAUDE.md, CONTEXT.md, CHANGELOG.md) can still be
+changes (docs/, .claude/, CLAUDE.md, CONTEXT.md, CHANGELOG.md) can be
 committed directly on main and pushed to origin/main without asking. Never
 force-push.
 
