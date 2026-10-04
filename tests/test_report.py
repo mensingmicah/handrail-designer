@@ -1,10 +1,12 @@
 """PDF rendering: stamps, footer, and a real compile (dev section, not test case 1)."""
 
 import dataclasses
+from pathlib import Path
 
 import pytest
 
 from handrail import checks, dimensions, report
+from handrail.calc import typst_str
 from handrail.project import DeflectionLimit, Member, Project, ProjectInfo
 from handrail.registry import Registry
 from handrail.version import Stamp
@@ -145,6 +147,24 @@ def test_front_matter_states_the_design_method_from_the_registry():
     assert f'"Design method: {e.value} per {e.cite}"' in src
     # Read before the DRAFT list is taken, so it is listed while it is drafted.
     assert f'"{e.id}"' in src
+
+
+def _brief_stated_assumptions():
+    """The bullets under "Stated assumptions" in docs/brief/output.md, each joined onto one line."""
+    text = (Path(__file__).parents[1] / "docs" / "brief" / "output.md").read_text(encoding="utf-8")
+    section = text.split("## Stated assumptions", 1)[1].split("\n## ", 1)[0]
+    return [" ".join(b.split()) for b in section.split("\n- ")[1:]]
+
+
+def test_locked_assumptions_are_the_briefs_stated_assumptions_in_order():
+    assert list(report.LOCKED_ASSUMPTIONS) == _brief_stated_assumptions()
+
+
+def test_front_matter_prints_every_locked_assumption():
+    res, reg = run()
+    src = report.build_source(res, reg, CLEAN)
+    for a in report.LOCKED_ASSUMPTIONS:
+        assert f"+ #{typst_str(a)}" in src
 
 
 def test_check_1_states_that_ltb_does_not_apply():

@@ -29,6 +29,8 @@ front matter, as a registry-cited line ("Design method: ASD per AISC 360-22
   ice are not considered.
 - Base reactions can reverse; direction is set in the anchor software.
 - The baseplate is rigid; the post is fixed at the top of the baseplate.
+- Baseplate thickness and bending are not checked; baseplate and anchorage
+  design by others (e.g., PROFIS).
 - Notional loads (AISC 360-22 App. 7) are neglected. In gravity-only
   combinations they produce a negligible moment, and the reported
   axial-only ratio bounds the H1-1b result.

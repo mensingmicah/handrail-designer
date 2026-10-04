@@ -109,6 +109,12 @@ loads), with h = 42 in and t_p = 1/2 in. At h = 42 in, Lc = 88.2 in and
 - Test case 2, Pipe1-1/2STD post: Lc/r = 141, Eq. E3-3 (elastic buckling).
 - Test case 3, Pipe2STD post: Lc/r = 112, Eq. E3-2.
 
+Both cases use the default guard loads (P = 200 lb, w = 50 lb/ft) with no
+distributed-load exemption claimed. Their case files have no `[loads]`
+table, so the defaults apply. For case 3 this was confirmed by Micah on
+2026-10-04, answering Q1 of the case 3 independent calc, which had assumed
+the same.
+
 Both are common guard posts, so neither branch is left tested only against
 the machinery, as F8-2 was in slice 1. Case 2 is also the geometry in D1
 whose downward distributed case exceeds 0.05. So it checks, against the
@@ -157,6 +163,16 @@ increase for rail continuity (a two-span continuous rail would put
 
 The existing assumption that the rail runs continuously over the post
 stays, because it describes the connection detail.
+
+**D12. Baseplate thickness and bending are not checked.** Ruled by Micah
+on 2026-10-04, on the case 3 independent calc's F-2, which found baseplate
+flexure untested and unstated. The rigid-baseplate assumption covers the
+analysis, not the plate's strength. The tool stops at the baseplate
+(docs/brief/scope.md), and a new locked assumption says so
+(docs/brief/output.md):
+
+> Baseplate thickness and bending are not checked; baseplate and anchorage
+> design by others (e.g., PROFIS).
 
 ## What the slice does
 
@@ -248,8 +264,8 @@ so its verification is not reopened.
 
 The existing layout, extended:
 
-- **Front matter assumptions:** the two locked assumptions added by D10
-  and D11 (docs/brief/output.md) print with the others.
+- **Front matter assumptions:** the three locked assumptions added by
+  D10, D11 and D12 (docs/brief/output.md) print with the others.
 - **Dimensions:** h, t_p, h − t_p, Lc.
 - **Section properties:** a post block beside the rail block.
 - **Loading:** the post dead load line and D at the post.
@@ -369,6 +385,9 @@ pass.
     continuity neglected (F-2, D11), in the front matter with the others
     (docs/brief/output.md). This changes printed calc text. Locked
     assumptions stay out of the registry (issue #12, closed 2026-10-03).
+    (Done 2026-10-04, together with D12's baseplate assumption from the
+    case 3 independent calc. A test now holds the printed list to the
+    brief's, word for word and in order.)
 12. **Micah's governing-case calcs and review** (What Micah does, below).
 13. **Pull request** to main, with the calc-code-review skill run on the
     branch first.
