@@ -21,9 +21,13 @@ the groups of tool values it covers ([hand.section], [hand.check1],
 
 Every hand and independent value must be within 0.5% (relative) of the
 tool's value. A "pending" value is skipped, and the skip message never
-shows the tool's value, so neither calc sees the tool. Text values (which
-equation governed, the controlling direction) are compared as text; every
-other value must be a number.
+shows the tool's value, so neither calc sees the tool. A [hand] value may
+instead be "deferred": Micah's recompute is deferred to the release review
+(ADR 0006), so it is skipped the same way. Only [hand] values can be
+deferred; the independent calc is not. "Pending" blocks merge and
+"deferred" does not, which the calc-code-review skill enforces, not this
+file. Text values (which equation governed, the controlling direction) are
+compared as text; every other value must be a number.
 
 A failure here is a CLAUDE.md rule 2 stop: do not change the tool, the hand
 value or the independent value until we know which one is wrong.
@@ -45,6 +49,7 @@ INDEPENDENT_DIR = CASES_DIR / "independent"
 CASES = sorted(CASES_DIR.glob("case-*.toml"))
 TOLERANCE = 0.005
 PENDING = "pending"
+DEFERRED = "deferred"  # a [hand] value deferred to the release review (ADR 0006)
 FULL_HAND, INDEPENDENT_CALC = "full-hand", "independent-calc"
 KINDS = (FULL_HAND, INDEPENDENT_CALC)
 PROVENANCE = ("calc", "written_on", "model", "commit")
@@ -220,9 +225,23 @@ def runs():
 def test_recorded_value(runs, path, source, key):
     _, res = runs(path)
     value = dict(_flatten(dict(_sources(path))[source]))[key]
-    if value == PENDING:
-        pytest.skip(f"{source} value pending")
+    reason = unrecorded(path, source, key, value)
+    if reason:
+        pytest.skip(reason)
     compare(path, key, value, res, source)
+
+
+def unrecorded(path, source, key, value) -> str:
+    """The skip reason for a value not yet recorded, or "" for a recorded one.
+    Never shows the tool's value."""
+    if value == PENDING:
+        return f"{source} value pending"
+    if value == DEFERRED:
+        if source != "hand":
+            pytest.fail(f"{path.name} {key}: only a [hand] value can be \"{DEFERRED}\" (ADR 0006); "
+                        f"the {SOURCE_NAMES[source]} is not deferred")
+        return "hand value deferred to the release review (ADR 0006)"
+    return ""
 
 
 def compare(path, key, value, res, source="hand"):
@@ -249,7 +268,7 @@ def compare(path, key, value, res, source="hand"):
 
     if not isinstance(value, (int, float)):
         pytest.fail(f"{path.name} {key} = {value!r}: a {source} value must be a bare number "
-                    f"(no quotes; quotes make it text), or \"{PENDING}\"")
+                    f"(no quotes; quotes make it text), \"{PENDING}\", or \"{DEFERRED}\" ([hand] only)")
     tool = tool_values(res)[key]
     rel = abs(tool - value) / abs(value)
     assert rel <= TOLERANCE, (
@@ -520,6 +539,17 @@ def test_provenance_is_required_once_a_value_is_recorded(runs):
     ind["provenance"]["calc"] = "tests/cases/independent/no-such-calc.md"
     with pytest.raises(AssertionError, match="is not a file"):
         check_case(case, raw, res, ind)
+
+
+def test_deferred_is_a_skip_for_hand_values_only():
+    """ADR 0006: Micah's recompute can be deferred; the independent calc can't."""
+    case = Path("self-test.toml")
+    assert unrecorded(case, "hand", "check5.controlling", DEFERRED) == (
+        "hand value deferred to the release review (ADR 0006)")
+    assert unrecorded(case, "hand", "check5.controlling", PENDING) == "hand value pending"
+    assert unrecorded(case, "hand", "check5.ratio.outward_distributed", 0.97) == ""
+    with pytest.raises(pytest.fail.Exception, match=r"only a \[hand\] value can be \"deferred\""):
+        unrecorded(case, "independent", "check5.ratio.outward_distributed", DEFERRED)
 
 
 def test_template_has_every_key_and_no_value(runs):

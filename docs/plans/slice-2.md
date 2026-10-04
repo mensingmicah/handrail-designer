@@ -324,7 +324,9 @@ That is about 20 entries, within the roadmap's estimate of 18–23.
   - Micah recomputes the printed controlling case of Check 5 and of Check 6
     line by line, checking each provision against the code, and records his
     own results in [hand]: at least each governing ratio and which case
-    governs (docs/brief/verification.md, changed 2026-10-04).
+    governs (docs/brief/verification.md, changed 2026-10-04). Deferred to
+    the release review (ADR 0006, 2026-10-04): until then each [hand] value
+    is "deferred", which the test skips and which does not block merge.
   - Micah then reviews the independent calc and the slice PDF against the
     checklist in docs/brief/verification.md.
 
@@ -396,7 +398,10 @@ pass.
     (Done 2026-10-04, together with D12's baseplate assumption from the
     case 3 independent calc. A test now holds the printed list to the
     brief's, word for word and in order.)
-12. **Micah's governing-case calcs and review** (What Micah does, below).
+12. **Micah's review** (What Micah does, below). His governing-case
+    recompute of cases 2 and 3 is deferred to the release review (ADR
+    0006, 2026-10-04); their [hand] values are marked "deferred" and the
+    cases are on the release-review issue, #18.
 13. **Pull request** to main, with the calc-code-review skill run on the
     branch first.
 
@@ -404,7 +409,8 @@ pass.
 
 - For test cases 2 and 3 (inputs set in D7), recompute the printed
   controlling cases of Checks 5 and 6 line by line, and record the
-  recomputed values in [hand].
+  recomputed values in [hand]. Deferred to the release review (ADR 0006;
+  issue #18), not done in this slice.
 - Review each independent calc and the slice PDF against the checklist in
   docs/brief/verification.md, and approve the pull request.
 
@@ -413,7 +419,8 @@ pass.
 - `uv run handrail calc examples/slice-1.toml` produces a PDF with Checks 1,
   2, 5 and 6 as described above.
 - All tests pass, including test cases 1, 2 and 3 at 0.5%, with no
-  pending value in cases 2 and 3.
+  pending value in cases 2 and 3. Their [hand] values are "deferred" to
+  the release review (ADR 0006), which does not block this slice.
 - Micah has reviewed the independent calcs and the PDF, and agrees with
   them.
 

@@ -314,13 +314,18 @@ must still pass from a project file that the form saved.
 
 ### Slice 9: v1 release
 
-**Covers.** The final registry review: Micah verifies every drafted
-entry in one review, so the DRAFT stamp disappears from a normal calc.
-Afterwards the full test suite reruns. Any test case value that depended
-on a corrected entry is redone from the corrected entry, independent-calc
-values by a fresh independent calc and Micah's values by Micah, never by
-editing them to the tool's new output (docs/brief/verification.md, "The
-release registry review"). Removing the "DEVELOPMENT —
+**Covers.** The release review, tracked as a checklist in issue #18
+(label `release-blocker`): the release can't ship while any box is open.
+First the final registry review: Micah verifies every drafted entry in
+one review, so the DRAFT stamp disappears from a normal calc (ADR 0005).
+Then Micah's governing-case recompute of every deferred test case
+(cases 2 and 3 so far, and each later slice's cases): he recomputes the
+printed controlling case line by line and replaces each "deferred" [hand]
+value with his own (ADR 0006). Afterwards the full test suite reruns. Any
+test case value that depended on a corrected entry is redone from the
+corrected entry, independent-calc values by a fresh independent calc and
+Micah's values by Micah, never by editing them to the tool's new output
+(docs/brief/verification.md, "The release review"). Removing the "DEVELOPMENT —
 NOT FOR CONSTRUCTION" watermark, which is Micah's call and his alone. A
 whole-tool calc-code review. Stated assumptions and the brief rechecked
 against what shipped. CHANGELOG v1.0.0.
@@ -328,9 +333,9 @@ against what shipped. CHANGELOG v1.0.0.
 **Depends on.** Everything above.
 
 **Size.** Little code, but most of the time is Micah's: by then the
-registry will hold roughly 110–130 entries, most of them drafted. Add
-the time for any independent calcs that must be redone after a
-correction.
+registry will hold roughly 110–130 entries, most of them drafted, and
+every test case from slice 2 on waits for his recompute. Add the time
+for any independent calcs that must be redone after a correction.
 
 ## Registry verification at release
 
@@ -353,6 +358,13 @@ Why: Micah will not use the tool on real work until v1 is complete, so
 verifying slice by slice protects no real calc before release. One
 review is also more efficient once the set of entries has stopped
 changing (ADR 0005).
+
+On 2026-10-04 Micah's governing-case recompute moved to the same review,
+for the same reason (ADR 0006): from slice 2 on, each test case's [hand]
+values are marked "deferred" until slice 9, and within a slice his
+checklist review is the only defence against a misreading the tool and
+the independent calc share. The verification process is frozen until v1
+unless a real problem forces a change (ADR 0006).
 
 ## Where the open issues go
 

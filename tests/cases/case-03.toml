@@ -23,11 +23,14 @@
 # recomputed along the way, under its key; the independent file names every
 # key the test compares.
 #
-# Replace each "pending" with the recomputed value, in the unit named by
-# the key's suffix (lb, lbin = lb-in, in, in2, in3, in4, ksi, plf). Record
-# every number, ratios included, to 4 significant figures: a ratio of
-# 1.0549 is 1.055, not 1.05, so rounding does not use up the tolerance.
-# Every number must be within 0.5% (relative) of the tool's value.
+# Each [hand] value is "deferred": the recompute is deferred to the
+# release review, alongside the registry review (ADR 0006; ROADMAP.md
+# slice 9). At that review, replace each "deferred" with the recomputed
+# value, in the unit named by the key's suffix (lb, lbin = lb-in, in, in2,
+# in3, in4, ksi, plf). Record every number, ratios included, to 4
+# significant figures: a ratio of 1.0549 is 1.055, not 1.05, so rounding
+# does not use up the tolerance. Every number must be within 0.5%
+# (relative) of the tool's value.
 #
 # Text values, in quotes:
 #   check5.Fcr_equation      "E3-2" or "E3-3"
@@ -38,9 +41,11 @@
 # Sign convention: Pr is a magnitude. It is compression in every case but
 # upward, where it is the net tension 1.0L - 0.6D.
 #
-# A pending value skips its test without showing the tool's value. A
-# mismatch fails and, per CLAUDE.md rule 2, stops the work: neither side is
-# changed until we know which one is wrong.
+# A "deferred" [hand] value skips its test without showing the tool's
+# value and does not block merge; a "pending" value also skips, but blocks
+# merge (the calc-code-review skill). A mismatch fails and, per CLAUDE.md
+# rule 2, stops the work: neither side is changed until we know which one
+# is wrong.
 
 [project]
 name = "Test case 3"
@@ -82,16 +87,16 @@ covers = ["post", "check5", "check6"]
 # ---------------------------------------------------------------------------
 
 [hand.check5]
-controlling = "pending"       # e.g. "outward, concentrated"
+controlling = "deferred"      # e.g. "outward, concentrated"
 
 [hand.check5.ratio]
-outward_distributed = "pending"
+outward_distributed = "deferred"
 
 [hand.check6]
-controlling = "pending"       # e.g. "outward, concentrated"
+controlling = "deferred"      # e.g. "outward, concentrated"
 
 [hand.check6.deflection_in]   # horizontal cases, live load only
-outward_distributed = "pending"
+outward_distributed = "deferred"
 
 [hand.check6.ratio]
-outward_distributed = "pending"
+outward_distributed = "deferred"

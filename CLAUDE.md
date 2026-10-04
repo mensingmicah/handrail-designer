@@ -23,7 +23,9 @@ changed, what happens next, and what you need from me (or 'nothing'). Define
 any software term the first time you use it in a report.
 
 When you finish a task, update the pinned 'Slice status' GitHub issue: done,
-now, next, waiting on Micah.
+now, next, waiting on Micah. When a slice closes, add its new deferred test
+cases and its batch of drafted registry entries to the checklist of the
+release-review issue (#18, label `release-blocker`; ADR 0006).
 
 The repo documents are the only source of truth for this project. Don't rely
 on, or write, auto-memory for it.
