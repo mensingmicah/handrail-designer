@@ -36,7 +36,7 @@ Pc_lb = 5671
 Pt_lb = 15698
 Mn_lbin = 14735
 Mc_lbin = 8823
-controlling = "outward_distributed"  # text, in quotes; ties exactly with inward and longitudinal distributed
+controlling = "outward, distributed"  # text, in quotes; ties exactly with inward and longitudinal distributed. Note: label reworded to the harness vocabulary after comparison with the tool; approved by Micah (EOR); no numeric value changed.
 
 [independent.check5.Pr_lb]
 downward_concentrated = 228.4
@@ -51,14 +51,14 @@ longitudinal_concentrated = 28.45
 longitudinal_distributed = 28.45
 
 [independent.check5.equation]
-downward_concentrated = "Chapter E"  # text, in quotes; Pr/Pc, axial only (plan D8)
-downward_distributed = "Chapter E"  # text, in quotes
+downward_concentrated = "Pr/Pc"  # text, in quotes; axial only, Chapter E (plan D8). Note: label reworded to the harness vocabulary after comparison with the tool; approved by Micah (EOR); no numeric value changed.
+downward_distributed = "Pr/Pc"  # text, in quotes. Note: label reworded to the harness vocabulary after comparison with the tool; approved by Micah (EOR); no numeric value changed.
 outward_concentrated = "H1-1b"  # text, in quotes
 outward_distributed = "H1-1b"  # text, in quotes
 inward_concentrated = "H1-1b"  # text, in quotes
 inward_distributed = "H1-1b"  # text, in quotes
-upward_concentrated = "Chapter D"  # text, in quotes; Pr/Pt, axial only (plan D8)
-upward_distributed = "Chapter D"  # text, in quotes
+upward_concentrated = "Pr/Pt"  # text, in quotes; axial only, Chapter D (plan D8). Note: label reworded to the harness vocabulary after comparison with the tool; approved by Micah (EOR); no numeric value changed.
+upward_distributed = "Pr/Pt"  # text, in quotes. Note: label reworded to the harness vocabulary after comparison with the tool; approved by Micah (EOR); no numeric value changed.
 longitudinal_concentrated = "H1-1b"  # text, in quotes
 longitudinal_distributed = "H1-1b"  # text, in quotes
 
@@ -92,7 +92,7 @@ longitudinal_distributed = 0.004222
 
 [independent.check6]
 Delta_allow_in = 0.6917
-controlling = "outward_distributed"  # text, in quotes; ties exactly with inward and longitudinal distributed
+controlling = "outward, distributed"  # text, in quotes; ties exactly with inward and longitudinal distributed. Note: label reworded to the harness vocabulary after comparison with the tool; approved by Micah (EOR); no numeric value changed.
 
 [independent.check6.deflection_in]
 outward_concentrated = 0.5608
