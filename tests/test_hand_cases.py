@@ -61,9 +61,18 @@ def _load(path):
         return tomllib.load(f)
 
 
+def stops_at_validation(raw) -> str:
+    """The stop message a case declares validation gives it, or "". Such a
+    case's values are tested through the compute step (slice 3 plan, T1)."""
+    return raw.get("verification", {}).get("stops_at_validation", "")
+
+
 def run_case(path):
     raw = _load(path)
-    return raw, checks.run(project.from_dict(raw), Registry())
+    proj = project.from_dict(raw)
+    if stops_at_validation(raw):
+        return raw, checks.compute(proj, Registry())
+    return raw, checks.run(proj, Registry())
 
 
 def _case_key(c) -> str:
@@ -113,10 +122,13 @@ def _post_values(res):
         "check5.Fcr_equation": branch.split("Eq. ")[1],
         "check5.Pn_lb": _line_value(down, "P_n").m_as("lbf"),
         "check5.Pc_lb": _line_value(down, "P_c").m_as("lbf"),
-        "check5.Pt_lb": _case(c5, "Upward").P_allow.m_as("lbf"),
         "check5.Mn_lbin": _line_value(out, "M_n").m_as("lbf*inch"),
         "check5.Mc_lbin": _line_value(out, "M_c").m_as("lbf*inch"),
     }
+    # Pt is computed only when an upward case has net tension (0.6D < L).
+    upward = [c for c in c5.checked if c.direction == "Upward"]
+    if upward:
+        v["check5.Pt_lb"] = upward[0].P_allow.m_as("lbf")
     for c in c5.checked:
         k = _case_key(c)
         v[f"check5.Pr_lb.{k}"] = c.Pr.m_as("lbf")
@@ -158,12 +170,57 @@ def tool_values(res):
             v[f"check2.deflection_in.{_case_key(c)}"] = c.demand.m_as("inch")
             v[f"check2.ratio.{_case_key(c)}"] = c.ratio
     v.update(_post_values(res))
+    v.update(_weld_values(res, 3))
+    v.update(_weld_values(res, 7))
     return v
 
 
-CONTROLLING = {f"check{n}.controlling": n for n in (1, 2, 5, 6)}
+def _weld_values(res, number):
+    """Check 3 or 7: the ring, the size line, the capacities, and each case's
+    forces per inch and ratios, read from the printed lines and the cases."""
+    chk = _check(res, number)
+    g = f"check{number}"
+    head = chk.checked[0].lines  # every case prints the same head: ring, size limits, capacities
+    min_size = next(ln for ln in head if ln.kind == "decision" and ln.symbol.startswith("w ="))
+    v = {
+        f"{g}.L_w_in": _line_value(head, "L_w").m_as("inch"),
+        f"{g}.S_w_in2": _line_value(head, "S_w").m_as("in^2"),
+        f"{g}.throat_in": _line_value(head, "t_e").m_as("inch"),
+        f"{g}.t_min_in": _line_value(head, 't_"min"').m_as("inch"),
+        f"{g}.w_min_in": _line_value(head, 'w_"min"').m_as("inch"),
+        f"{g}.min_size": "NG" if min_size.text.startswith("NG") else "OK",
+        f"{g}.Fnw_ksi": _line_value(head, 'F_"nw"').m_as("ksi"),
+        f"{g}.base_allow_lbpin": chk.checked[0].base_allow.m_as("lbf/inch"),
+    }
+    if number == 3:
+        v[f"{g}.e_in"] = _line_value(head, "e").m_as("inch")
+        v[f"{g}.weld_allow_lbpin"] = chk.checked[0].weld_allow.m_as("lbf/inch")
+    else:
+        v[f"{g}.arm_in"] = _line_value(head, 'L_"post"').m_as("inch")
+    for c in chk.checked:
+        k = _case_key(c)
+        v[f"{g}.f_a_lbpin.{k}"] = c.f_a.m_as("lbf/inch")
+        if c.f_b is not None:
+            v[f"{g}.f_b_lbpin.{k}"] = c.f_b.m_as("lbf/inch")
+        if c.f_v is not None:
+            v[f"{g}.f_v_lbpin.{k}"] = c.f_v.m_as("lbf/inch")
+        v[f"{g}.f_n_lbpin.{k}"] = c.f_n.m_as("lbf/inch")
+        v[f"{g}.f_r_lbpin.{k}"] = c.f_r.m_as("lbf/inch")
+        v[f"{g}.fiber.{k}"] = c.fiber
+        if c.theta is not None:
+            v[f"{g}.theta_deg.{k}"] = c.theta.m_as("degree")
+            v[f"{g}.k_ds.{k}"] = c.k_ds
+            v[f"{g}.weld_allow_lbpin.{k}"] = c.weld_allow.m_as("lbf/inch")
+        v[f"{g}.ratio_weld.{k}"] = c.weld_ratio
+        if c.base_ratio is not None:
+            v[f"{g}.ratio_base.{k}"] = c.base_ratio
+        v[f"{g}.ratio.{k}"] = c.ratio
+    return v
+
+
+CONTROLLING = {f"check{n}.controlling": n for n in (1, 2, 3, 5, 6, 7)}
 CHECK_GROUPS = {key.split(".")[0] for key in CONTROLLING}
-TEXT_KEYS = ("controlling", "equation", "Fcr_equation")
+TEXT_KEYS = ("controlling", "equation", "Fcr_equation", "fiber", "min_size")
 
 
 def _is_text(key: str) -> bool:
@@ -371,12 +428,17 @@ def render_template(case: Path, keys) -> str:
         "# its own value, in the unit the key's suffix names, and fills",
         "# [provenance]. Tool output never fills a value here (CLAUDE.md rule 5).",
         "# Forces are positive magnitudes; the case name gives the sense (an",
-        "# upward P_r is tension, recorded as a positive number).",
+        "# upward P_r is tension, recorded as a positive number). Weld forces",
+        "# per inch are positive magnitudes too (lbpin = lb per inch of weld;",
+        "# deg = degrees).",
         "# Text keys use these exact words (case does not matter):",
         "#   Fcr_equation: \"E3-2\" or \"E3-3\".",
         "#   check5.equation.*: \"H1-1a\" or \"H1-1b\" in the moment cases; \"Pr/Pc\"",
         "#     for downward (axial only, Chapter E); \"Pr/Pt\" for upward (axial",
         "#     only, Chapter D).",
+        "#   fiber (Checks 3 and 7): \"compression side\" or \"tension side\" of",
+        "#     bending, whichever governs; \"uniform\" where the case has no moment.",
+        "#   min_size: \"OK\" or \"NG\" (Table J2.4 minimum fillet size).",
         "#   controlling: direction, comma, load type, e.g. \"outward, distributed\".",
         "#     When cases tie exactly, name the first tied case in this file's key",
         "#     order; the test accepts any of the tied cases.",
@@ -403,7 +465,8 @@ def _dev_run():
     """The dev section (Pipe2STD rail and post, 6'-0"), not a test case."""
     raw = {"project": {"name": "self-test"},
            "geometry": {"span": "6'-0\"", "post_height": 42, "baseplate_thickness": "1/2"},
-           "top_rail": {"section": "Pipe2STD"}, "post": {"section": "Pipe2STD"}}
+           "top_rail": {"section": "Pipe2STD"}, "post": {"section": "Pipe2STD"},
+           "welds": {"rail_to_post": "1/8", "post_to_baseplate": "1/4"}}
     return checks.run(project.from_dict(raw), Registry())
 
 
@@ -560,3 +623,36 @@ def test_template_has_every_key_and_no_value(runs):
     assert {k for k, _ in _flatten(parsed["independent"])} == set(keys)
     assert {v for _, v in _flatten(parsed)} == {PENDING}
     assert set(parsed["provenance"]) == set(PROVENANCE)
+
+
+def test_tool_values_without_net_upward_tension_have_no_pt():
+    """PR #17 review, item 9: with 0.6D >= L both upward cases are not checked,
+    so there is no Pt to report, and the harness must not error."""
+    raw = {"project": {"name": "self-test"},
+           "geometry": {"span": "6'-0\"", "post_height": 42, "baseplate_thickness": "1/2"},
+           "top_rail": {"section": "Pipe12STD"}, "post": {"section": "Pipe12STD"},
+           "welds": {"rail_to_post": "1/8", "post_to_baseplate": "1/4"},
+           "loads": {"concentrated_lb": 10, "uniform_plf": 1}}
+    res = checks.run(project.from_dict(raw), Registry())
+    assert not [c for c in _check(res, 5).checked if c.direction == "Upward"]  # the premise
+    assert "check5.Pt_lb" not in tool_values(res)
+    assert "check5.Pt_lb" in tool_values(_dev_run())
+
+
+@pytest.mark.parametrize("path", [p for p in CASES if stops_at_validation(_load(p))],
+                         ids=lambda p: p.stem)
+def test_a_case_validation_refuses_stops_with_its_message(path, capsys, tmp_path):
+    """The full case file, through the CLI, stops with the message it declares
+    (slice 3 plan, T1: case 3, a post wider than its rail, W8)."""
+    from handrail import cli
+
+    message = stops_at_validation(_load(path))
+    assert cli.main(["calc", str(path), "-o", str(tmp_path / "unused.pdf")]) == 1
+    err = capsys.readouterr().err
+    assert err.startswith("error:") and message in err, err
+
+
+def test_case_3_is_the_validation_stop_case():
+    # T1: case 3 must keep reaching the compute-step path; if it ever stopped
+    # declaring the stop, its values would silently go back through run().
+    assert "is wider than the top rail" in stops_at_validation(_load(_case_file("case-03.toml")))

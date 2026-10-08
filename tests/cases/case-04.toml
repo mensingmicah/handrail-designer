@@ -1,0 +1,98 @@
+# Test case 4 (docs/plans/slice-3.md, T2): the welds, Checks 3 and 7.
+#
+# Test case 2's inputs (Pipe1-1/2STD top rail on a Pipe1-1/2STD post, both
+# A53 Gr B, 7'-0" span, h = 42 in, t_p = 1/2 in, default ASCE 7-22 loads,
+# no exemption) plus fillet welds all around: rail to post 1/8 in, post to
+# baseplate 1/4 in, E70XX, A36 baseplate.
+#
+# Branches reached: k_ds = 1.0 at the rail to post weld (Check 3) and k_ds
+# from theta at the post to baseplate weld (Check 7); the rail to post weld
+# sits exactly at the Table J2.4 minimum size for the thinner part joined.
+#
+# Checks 1, 2, 5 and 6 are not recorded here: they are case 1's and case
+# 2's. Case 2's post fails Check 5, so this case's PDF prints NG for Check
+# 5; that does not matter to the weld values.
+#
+# Values: an independent-calc case (docs/brief/verification.md). The
+# independent calc records every value the test compares in
+# tests/cases/independent/case-04.toml, written up beside it as case-04.md,
+# in a fresh session by the independent-calc skill (CLAUDE.md rule 6).
+# [hand] below holds Micah's governing-case values: he follows the tool's
+# printed controlling case and recomputes it line by line, checking each
+# provision against the code. Each value is his own recomputed result,
+# never copied from the PDF (CLAUDE.md rule 5).
+#
+# Each [hand] value is "deferred": the recompute is deferred to the
+# release review, alongside the registry review (ADR 0006; ROADMAP.md
+# slice 9). At that review, replace each "deferred" with the recomputed
+# value, in the unit named by the key's suffix (lbpin = lb per inch of
+# weld). Record every number, ratios included, to 4 significant figures.
+# Every number must be within 0.5% (relative) of the tool's value.
+#
+# Text values, in quotes:
+#   check3/7.controlling     e.g. "outward, concentrated"
+#
+# A "deferred" [hand] value skips its test without showing the tool's
+# value and does not block merge; a "pending" value also skips, but blocks
+# merge (the calc-code-review skill). A mismatch fails and, per CLAUDE.md
+# rule 2, stops the work: neither side is changed until we know which one
+# is wrong.
+
+[project]
+name = "Test case 4"
+phase = "Verification"
+description = "Welds: case 2 with a 1/8 in rail to post fillet and a 1/4 in post to baseplate fillet"
+
+[geometry]
+span = "7'-0\""
+post_height = 42
+baseplate_thickness = "1/2"
+
+[top_rail]
+section = "Pipe1-1/2STD"
+grade = "A53 Gr B"
+
+[post]
+section = "Pipe1-1/2STD"
+grade = "A53 Gr B"
+
+[baseplate]
+grade = "A36"
+
+[welds]
+rail_to_post = "1/8"
+post_to_baseplate = "1/4"
+electrode = "E70XX"
+
+[deflection.rail]
+limit_L_over = 120
+bypass = false
+
+[deflection.post]
+limit_L_over = 60
+bypass = false
+
+[verification]
+kind = "independent-calc"
+covers = ["check3", "check7"]
+
+# ---------------------------------------------------------------------------
+# Hand values: Micah's governing case
+#
+# Outward, inward and longitudinal tie for a round post; any of them is
+# accepted as controlling. The ratio keys below name the outward
+# distributed case. If your calc finds another case governs, rename them to
+# that case (e.g. outward_concentrated).
+# ---------------------------------------------------------------------------
+
+[hand.check3]
+controlling = "deferred"      # e.g. "outward, concentrated"
+
+[hand.check3.ratio]
+outward_distributed = "deferred"
+
+[hand.check7]
+controlling = "deferred"      # e.g. "outward, concentrated"
+
+[hand.check7.ratio]
+outward_distributed = "deferred"

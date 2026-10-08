@@ -27,6 +27,10 @@ from handrail.units import ureg
 # ksi, in, in^3, in^4)
 # ---------------------------------------------------------------------------
 
+# Angles print in degrees, written straight after the number (90°). pint
+# treats an angle as dimensionless, so display() checks for it first.
+DEGREE = "°"
+
 # (pint unit to display in, Typst unit text, exponent printed on the unit)
 _DISPLAY = [
     (ureg.inch, "in", None),
@@ -95,6 +99,8 @@ def display(q) -> tuple[float, str, int | None]:
     """Return (magnitude, unit text, unit exponent) in the fixed display units."""
     if not hasattr(q, "units"):
         return float(q), "", None
+    if q.units == ureg.degree:
+        return q.magnitude, DEGREE, None
     if q.dimensionless:
         return float(q.to("dimensionless").magnitude), "", None
     for unit, text, exp in _DISPLAY:
@@ -107,8 +113,12 @@ def fmt_quantity(q, ratio: bool = False) -> str:
     """Typst math for a quantity: a text block like "4,200 lb-in", or "0.293 in"^4."""
     mag, unit, exp = display(q)
     num = fmt_ratio(mag) if ratio else fmt_sig(mag)
-    text = f'"{num} {unit}"' if unit else f'"{num}"'
+    text = f'"{num}{_unit_gap(unit)}{unit}"'
     return f"{text}^{exp}" if exp else text
+
+
+def _unit_gap(unit: str) -> str:
+    return "" if unit in ("", DEGREE) else " "
 
 
 def fmt_quantity_plain(q, ratio: bool = False) -> str:
@@ -116,7 +126,7 @@ def fmt_quantity_plain(q, ratio: bool = False) -> str:
     mag, unit, exp = display(q)
     num = fmt_ratio(mag) if ratio else fmt_sig(mag)
     sup = {2: "²", 3: "³", 4: "⁴"}.get(exp, "")
-    return f"{num} {unit}{sup}".strip()
+    return f"{num}{_unit_gap(unit)}{unit}{sup}"
 
 
 # ---------------------------------------------------------------------------
@@ -230,10 +240,23 @@ def _plain_number(x: float) -> str:
     return repr(float(x))
 
 
+def _sin(angle) -> float:
+    return math.sin(angle.to("radian").magnitude)
+
+
+def _arccos(x):
+    # x is a ratio: a plain float, or a dimensionless pint quantity.
+    ratio = x.to("dimensionless").magnitude if hasattr(x, "units") else x
+    return ureg.Quantity(math.degrees(math.acos(ratio)), "degree")
+
+
 _FUNC_EVAL: dict[str, Callable] = {
     "sqrt": lambda a: a**0.5,
     "min": min,
+    "max": max,
     "abs": abs,
+    "sin": _sin,
+    "arccos": _arccos,
 }
 
 
@@ -298,6 +321,8 @@ class Func(Expr):
             return f"sqrt({parts[0]})"
         if self.name == "abs":
             return f"abs({parts[0]})"
+        if self.name in ("sin", "arccos"):  # Typst math operators
+            return f"{self.name}({parts[0]})"
         return f'"{self.name}"({", ".join(parts)})'
 
     def symbolic(self):
@@ -320,6 +345,20 @@ def absolute(x: Expr) -> Expr:
 
 def minimum(*xs: Expr) -> Expr:
     return Func("min", tuple(_wrap(x) for x in xs))
+
+
+def maximum(*xs: Expr) -> Expr:
+    return Func("max", tuple(_wrap(x) for x in xs))
+
+
+def sin(angle: Expr) -> Expr:
+    """Sine of an angle quantity (degrees or radians)."""
+    return Func("sin", (_wrap(angle),))
+
+
+def arccos(x: Expr) -> Expr:
+    """Inverse cosine of a ratio, as an angle in degrees."""
+    return Func("arccos", (_wrap(x),))
 
 
 # ---------------------------------------------------------------------------

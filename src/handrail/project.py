@@ -12,7 +12,8 @@ for inputs the engineer didn't intend:
 - true/false fields must be real TOML booleans (the text "false" is not);
 - loads and the deflection limits must be positive numbers;
 - the post is required (every v1 calc checks one post), and the baseplate
-  thickness must be less than the post height.
+  thickness must be less than the post height;
+- both weld sizes are required, with no default (docs/brief/inputs.md).
 
 Top-level [hand] and [verification] tables are allowed and ignored: test
 cases keep their hand values and their kind in the same file as their
@@ -21,16 +22,18 @@ inputs (docs/brief/verification.md).
 
 from __future__ import annotations
 
+import dataclasses
 import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
 
 from handrail import dimensions
 from handrail.dimensions import Dimension
+from handrail.errors import InputError
 from handrail.units import Q_
 
 
-class ProjectError(ValueError):
+class ProjectError(InputError):
     """The project file is missing a field or has a value the tool can't use."""
 
 
@@ -57,16 +60,37 @@ class Loads:
     exemption_statement: str = ""
 
 
-# Input defaults for the deflection limit ratios (docs/brief/inputs.md):
-# engineering experience, not code values.
-RAIL_DEFLECTION_RATIO = 120
-POST_DEFLECTION_RATIO = 60
+@dataclass(frozen=True)
+class Welds:
+    """Fillet welds, all around (docs/brief/inputs.md, W12). The sizes are
+    required; the electrode defaults to E70XX, the only one v1 accepts
+    (checked in checks.validate)."""
+
+    rail_to_post: Dimension       # fillet leg size, top rail to post
+    post_to_baseplate: Dimension  # fillet leg size, post to baseplate
+    electrode: str = "E70XX"
+
+
+@dataclass(frozen=True)
+class Baseplate:
+    """The baseplate's grade. Its thickness t_p is in [geometry]. A36 is the
+    default and, for all of v1, the only grade accepted (W12)."""
+
+    grade: str = "A36"
 
 
 @dataclass(frozen=True)
 class DeflectionLimit:
-    ratio: float = RAIL_DEFLECTION_RATIO  # limit is L / ratio
+    ratio: float = 120  # limit is L / ratio
     bypass: bool = False
+
+
+# Input defaults for the deflection limits (docs/brief/inputs.md): L/120 for
+# the rail span, L/60 for the post cantilever. Engineering experience, not
+# code values. The project reader starts from these, so each default is
+# stated once.
+RAIL_DEFLECTION = DeflectionLimit()
+POST_DEFLECTION = DeflectionLimit(ratio=60)
 
 
 @dataclass(frozen=True)
@@ -77,10 +101,11 @@ class Project:
     post: Member
     post_height: Dimension          # h: top of concrete to top rail centerline
     baseplate_thickness: Dimension  # t_p
+    welds: Welds
+    baseplate: Baseplate = field(default_factory=Baseplate)
     loads: Loads = field(default_factory=Loads)
-    rail_deflection: DeflectionLimit = field(default_factory=DeflectionLimit)
-    post_deflection: DeflectionLimit = field(
-        default_factory=lambda: DeflectionLimit(ratio=POST_DEFLECTION_RATIO))
+    rail_deflection: DeflectionLimit = RAIL_DEFLECTION
+    post_deflection: DeflectionLimit = POST_DEFLECTION
 
 
 # Allowed keys per table. A dict value is a sub-table.
@@ -89,6 +114,8 @@ SCHEMA = {
     "geometry": {"span": None, "post_height": None, "baseplate_thickness": None},
     "top_rail": {"section": None, "grade": None},
     "post": {"section": None, "grade": None},
+    "baseplate": {"grade": None},
+    "welds": {"rail_to_post": None, "post_to_baseplate": None, "electrode": None},
     "loads": {"concentrated_lb": None, "uniform_plf": None,
               "uniform_exemption": {"applies": None, "statement": None}},
     "deflection": {"rail": {"limit_L_over": None, "bypass": None},
@@ -173,12 +200,30 @@ def _member(raw: dict, where: str) -> Member:
     )
 
 
-def _deflection_limit(raw: dict, member: str, default_ratio: float) -> DeflectionLimit:
+def _given(table: dict, where: str, fields: dict) -> dict:
+    """Keyword arguments for the optional keys the file gives.
+
+    ``fields`` maps each file key to (dataclass field, reader). A key the file
+    leaves out is left out here too, so the dataclass default applies: each
+    default is stated once, on its dataclass (or its default instance).
+    """
+    return {name: read(table[key], f"{where}.{key}")
+            for key, (name, read) in fields.items() if key in table}
+
+
+def _lbf(value, name: str) -> Q_:
+    return Q_(_positive(value, name), "lbf")
+
+
+def _lbf_per_ft(value, name: str) -> Q_:
+    return Q_(_positive(value, name), "lbf/ft")
+
+
+def _deflection_limit(raw: dict, member: str, default: DeflectionLimit) -> DeflectionLimit:
     d = raw.get("deflection", {}).get(member, {})
-    return DeflectionLimit(
-        ratio=_positive(d.get("limit_L_over", default_ratio), f"deflection.{member}.limit_L_over"),
-        bypass=_bool(d.get("bypass", False), f"deflection.{member}.bypass"),
-    )
+    given = _given(d, f"deflection.{member}",
+                   {"limit_L_over": ("ratio", _positive), "bypass": ("bypass", _bool)})
+    return dataclasses.replace(default, **given)
 
 
 def load(path: str | Path) -> Project:
@@ -199,10 +244,9 @@ def from_dict(raw: dict) -> Project:
     p = _need(raw, "project", "top level")
     info = ProjectInfo(
         name=_str(_need(p, "name", "project"), "project.name"),
-        phase=_str(p.get("phase", ""), "project.phase"),
-        description=_str(p.get("description", ""), "project.description"),
-        references=_str_list(p.get("references", []), "project.references"),
-        assumptions=_str_list(p.get("assumptions", []), "project.assumptions"),
+        **_given(p, "project", {"phase": ("phase", _str), "description": ("description", _str),
+                                "references": ("references", _str_list),
+                                "assumptions": ("assumptions", _str_list)}),
     )
 
     g = _need(raw, "geometry", "top level")
@@ -218,15 +262,21 @@ def from_dict(raw: dict) -> Project:
     top_rail = _member(raw, "top_rail")
     post = _member(raw, "post")
 
+    wt = _need(raw, "welds", "top level")
+    welds = Welds(
+        rail_to_post=_dimension(wt, "rail_to_post", "welds"),
+        post_to_baseplate=_dimension(wt, "post_to_baseplate", "welds"),
+        **_given(wt, "welds", {"electrode": ("electrode", _str)}),
+    )
+    baseplate = Baseplate(**_given(raw.get("baseplate", {}), "baseplate", {"grade": ("grade", _str)}))
+
     ld = raw.get("loads", {})
     ex = ld.get("uniform_exemption", {})
-    P = ld.get("concentrated_lb")
-    w = ld.get("uniform_plf")
     loads = Loads(
-        concentrated=None if P is None else Q_(_positive(P, "loads.concentrated_lb"), "lbf"),
-        uniform=None if w is None else Q_(_positive(w, "loads.uniform_plf"), "lbf/ft"),
-        uniform_exempt=_bool(ex.get("applies", False), "loads.uniform_exemption.applies"),
-        exemption_statement=_str(ex.get("statement", ""), "loads.uniform_exemption.statement"),
+        **_given(ld, "loads", {"concentrated_lb": ("concentrated", _lbf),
+                               "uniform_plf": ("uniform", _lbf_per_ft)}),
+        **_given(ex, "loads.uniform_exemption", {"applies": ("uniform_exempt", _bool),
+                                                 "statement": ("exemption_statement", _str)}),
     )
     if loads.uniform_exempt and not loads.exemption_statement.strip():
         raise ProjectError(
@@ -236,7 +286,7 @@ def from_dict(raw: dict) -> Project:
 
     return Project(
         info=info, span=span, top_rail=top_rail, post=post,
-        post_height=h, baseplate_thickness=tp, loads=loads,
-        rail_deflection=_deflection_limit(raw, "rail", RAIL_DEFLECTION_RATIO),
-        post_deflection=_deflection_limit(raw, "post", POST_DEFLECTION_RATIO),
+        post_height=h, baseplate_thickness=tp, welds=welds, baseplate=baseplate, loads=loads,
+        rail_deflection=_deflection_limit(raw, "rail", RAIL_DEFLECTION),
+        post_deflection=_deflection_limit(raw, "post", POST_DEFLECTION),
     )

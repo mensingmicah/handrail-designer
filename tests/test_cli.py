@@ -154,3 +154,216 @@ def test_overrides_reach_the_calc_with_units(tmp_path):
 def test_hand_and_verification_tables_are_allowed_in_a_case_file(name):
     case = Path(__file__).resolve().parent / "cases" / name
     assert project.load(case).top_rail.section == "Pipe1-1/2STD"
+
+
+# ---------------------------------------------------------------------------
+# One input-error class, and SCHEMA against the parser (issue #4, items 4 and 6)
+# ---------------------------------------------------------------------------
+
+
+def test_every_input_error_derives_from_the_one_class_the_cli_catches():
+    from handrail.checks import SectionStop
+    from handrail.dimensions import DimensionError
+    from handrail.errors import InputError
+    from handrail.registry import MissingEntry, RegistryError
+    from handrail.shapes import ShapeNotFound
+
+    for cls in (project.ProjectError, RegistryError, MissingEntry, SectionStop, DimensionError, ShapeNotFound):
+        assert issubclass(cls, InputError), cls.__name__
+
+
+def test_unknown_shape_message_prints_without_quotes(tmp_path, capsys):
+    # ShapeNotFound used to be a KeyError, whose message printed inside quotes.
+    code, err = _run_with(tmp_path, capsys, 'section = "Pipe2STD"', 'section = "Pipe99STD"')
+    assert code == 1
+    assert err.startswith("error: 'Pipe99STD' is not an AISC pipe"), err
+
+
+class _Tracking(dict):
+    """A dict that records every key read from it, nested tables included."""
+
+    def __init__(self, raw, where, log):
+        super().__init__({k: _Tracking(v, f"{where}{k}.", log) if isinstance(v, dict) else v
+                          for k, v in raw.items()})
+        self._where, self._log = where, log
+
+    def __getitem__(self, key):
+        self._log.add(self._where + key)
+        return super().__getitem__(key)
+
+    def get(self, key, default=None):
+        self._log.add(self._where + key)
+        return super().get(key, default)
+
+
+def _schema_keys(schema, where=""):
+    for key, sub in schema.items():
+        if sub == "ignored":
+            continue
+        if isinstance(sub, dict):
+            yield f"{where}{key}"
+            yield from _schema_keys(sub, f"{where}{key}.")
+        else:
+            yield f"{where}{key}"
+
+
+def _full_project_file():
+    """A project file that gives every key SCHEMA allows."""
+    import tomllib
+
+    raw = tomllib.loads(EXAMPLE.read_text(encoding="utf-8"))
+    raw["loads"].update(concentrated_lb=250, uniform_plf=60)
+    raw["project"].update(references=["Sheet A-501"], assumptions=["Extra."])
+    return raw
+
+
+def test_the_parser_reads_every_key_schema_allows_and_no_other():
+    """SCHEMA and from_dict list the same keys separately (issue #4, item 6). A key
+    in SCHEMA but never read would be accepted and silently ignored; a key read
+    but not in SCHEMA would be refused before it could be read."""
+    raw = _full_project_file()
+    schema = set(_schema_keys(project.SCHEMA))
+    given = set(_schema_keys(raw))
+    assert given == schema, f"the test's project file must give every SCHEMA key: {sorted(schema ^ given)}"
+    log: set[str] = set()
+    project.from_dict(_Tracking(raw, "", log))
+    assert not schema - log, f"in SCHEMA, never read: {sorted(schema - log)}"
+    assert not log - schema, f"read, not in SCHEMA: {sorted(log - schema)}"
+
+
+def test_left_out_optional_keys_take_the_dataclass_defaults():
+    """Issue #4, item 5: each default is stated once, on its dataclass."""
+    import tomllib
+
+    raw = tomllib.loads(EXAMPLE.read_text(encoding="utf-8"))
+    for table in ("loads", "deflection"):
+        del raw[table]
+    for key in ("phase", "description", "references", "assumptions"):
+        del raw["project"][key]
+    proj = project.from_dict(raw)
+    assert proj.loads == project.Loads()
+    assert proj.rail_deflection == project.RAIL_DEFLECTION
+    assert proj.post_deflection == project.POST_DEFLECTION
+    assert proj.info == project.ProjectInfo(name=raw["project"]["name"])
+
+
+def test_a_partial_deflection_table_keeps_the_members_own_default_ratio():
+    import tomllib
+
+    raw = tomllib.loads(EXAMPLE.read_text(encoding="utf-8"))
+    raw["deflection"] = {"rail": {"bypass": True}, "post": {"bypass": True}}
+    proj = project.from_dict(raw)
+    assert proj.rail_deflection == project.DeflectionLimit(ratio=120, bypass=True)
+    assert proj.post_deflection == project.DeflectionLimit(ratio=60, bypass=True)
+
+
+# ---------------------------------------------------------------------------
+# Slice 3: weld and baseplate inputs, and validation (W5, W7, W8, W12)
+# ---------------------------------------------------------------------------
+
+
+def test_weld_sizes_and_defaults_are_read():
+    proj = project.load(EXAMPLE)
+    assert proj.welds.rail_to_post.value.m_as("inch") == 0.125
+    assert proj.welds.post_to_baseplate.value.m_as("inch") == 0.25
+    assert proj.welds.post_to_baseplate.normalized == '1/4"'
+    assert proj.welds.electrode == "E70XX" and proj.baseplate.grade == "A36"
+
+
+def test_electrode_and_baseplate_grade_default_when_left_out(tmp_path):
+    text = EXAMPLE.read_text(encoding="utf-8")
+    for line in ('electrode = "E70XX"', 'grade = "A36"'):
+        assert line in text
+        text = text.replace(line, "")
+    p = tmp_path / "defaults.toml"
+    p.write_text(text, encoding="utf-8")
+    proj = project.load(p)
+    assert proj.welds.electrode == "E70XX" and proj.baseplate.grade == "A36"
+
+
+WELD = 'post_to_baseplate = "1/4"'
+
+
+@pytest.mark.parametrize(
+    "old, new, message",
+    [
+        # Sizes are required, with no default (W12).
+        (WELD, "", "[welds] is missing 'post_to_baseplate'"),
+        ('rail_to_post = "1/8"', "", "[welds] is missing 'rail_to_post'"),
+        ("[welds]", "[weld]", "unknown table 'weld'"),
+        (WELD, 'post_to_baseplate = "1/4 in fillet"', "post_to_baseplate: '1/4 in fillet' is not a dimension"),
+        (WELD, "post_to_baseplate = 0", "post_to_baseplate must be greater than zero"),
+        # E70XX and A36 only (W12).
+        ('electrode = "E70XX"', 'electrode = "E60XX"', "[welds] electrode 'E60XX': this version supports E70XX only"),
+        ('grade = "A36"', 'grade = "A572 Gr 50"', "[baseplate] grade 'A572 Gr 50': this version supports A36 only"),
+        ('grade = "A36"', 'thickness = "1/2"', "unknown key 'baseplate.thickness'"),
+    ],
+)
+def test_weld_and_baseplate_input_errors(tmp_path, capsys, old, new, message):
+    code, err = _run_with(tmp_path, capsys, old, new)
+    assert code == 1
+    assert err.startswith("error:") and message in err, err
+
+
+def test_missing_welds_table_is_refused(tmp_path, capsys):
+    text = EXAMPLE.read_text(encoding="utf-8")
+    start, end = text.index("[welds]"), text.index("[loads]")
+    p = tmp_path / "no-welds.toml"
+    p.write_text(text[:start] + text[end:], encoding="utf-8")
+    assert cli.main(["calc", str(p)]) == 1
+    assert "project file: [top level] is missing 'welds'" in capsys.readouterr().err
+
+
+def test_post_wider_than_rail_stops_naming_both_ods(tmp_path, capsys):
+    # W8: Pipe2STD post (OD 2.375 in) under a Pipe1-1/2STD rail (OD 1.900 in).
+    text = EXAMPLE.read_text(encoding="utf-8")
+    old = '[top_rail]\nsection = "Pipe2STD"'
+    assert old in text
+    p = tmp_path / "wide-post.toml"
+    p.write_text(text.replace(old, '[top_rail]\nsection = "Pipe1-1/2STD"'), encoding="utf-8")
+    assert cli.main(["calc", str(p)]) == 1
+    err = capsys.readouterr().err
+    assert ("The post (Pipe2STD, OD 2.375 in) is wider than the top rail (Pipe1-1/2STD, OD 1.900 in). "
+            "The coped post to rail underside detail requires post OD <= rail OD. Check the inputs.") in err, err
+
+
+def test_equal_ods_are_allowed():
+    from handrail import checks
+    from handrail.registry import Registry
+
+    proj = project.load(EXAMPLE)  # Pipe2STD rail and post
+    checks.validate(proj, Registry())
+
+
+def _validate_with(monkeypatch, *, family=None, fu=None):
+    """validate() on the example with a stand-in: a section of another family,
+    or a post grade with a lower Fu. Stand-ins for machinery tests only."""
+    import dataclasses
+
+    from handrail import checks, shapes
+    from handrail.registry import Registry
+
+    real = shapes.pipe
+    if family:
+        monkeypatch.setattr(shapes, "pipe", lambda d: dataclasses.replace(real(d), family=family))
+    reg = Registry()
+    if fu:
+        e = reg.entries["material.A53_GrB.Fu"]
+        reg.entries[e.id] = dataclasses.replace(e, value=fu)
+    checks.validate(project.load(EXAMPLE), reg)
+
+
+def test_a_section_that_is_not_round_hollow_stops(monkeypatch):
+    # W7, with a stand-in family: only pipe can be entered today.
+    with pytest.raises(project.ProjectError,
+                       match=r"top rail Pipe2STD \(rectangular HSS\) is not a round hollow section.*"
+                             r"rail wall's local strength at the post is not checked"):
+        _validate_with(monkeypatch, family="rectangular HSS")
+
+
+def test_a_post_grade_below_the_fu_fy_limit_stops(monkeypatch):
+    # W5, with a stand-in Fu: 40/35 = 1.143 < 1.20.
+    with pytest.raises(project.ProjectError,
+                       match=r"post grade A53 Gr B: Fu/Fy = 1\.143 is below 1\.2 .*covered by Check 5 only"):
+        _validate_with(monkeypatch, fu=40)
+    _validate_with(monkeypatch, fu=42)  # 1.20 exactly passes

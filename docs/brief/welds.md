@@ -51,6 +51,13 @@ plan's decision numbers, kept for the record.
   shear only, and Check 3 runs far below 1.0, so this cannot flip a
   result. Not chosen: a flare-bevel effective throat (Table J2.2), or
   requiring rail OD > post OD, which would refuse the most common detail.
+
+  Guard loads act through the rail centerline, as in every check. Two
+  effects of a load applied at the rail's surface are neglected: torsion
+  on the Check 3 ring, and the larger eccentricity to the weld plane.
+  Engineering judgement: Check 3 ratios are far below 1.0 for pipe on
+  pipe. (Micah, 2026-10-08, ruling on the case 4 independent calc.) To
+  revisit for rectangular rails (docs/ROADMAP.md, slices 5 and 6).
 - **Directional strength increase.** (W2, Micah 2026-10-04.)
   - The AISC 360-22 §J2.4 increase, k_ds = 1.0 + 0.50 sin^1.5 θ, applies
     to fillet welds on round HSS (pipe included), including the post to
@@ -112,6 +119,12 @@ plan's decision numbers, kept for the record.
   - Baseplate side: shear rupture over t_p, 0.6·Fu·t_p/2.00, against the
     resultant weld force per inch. Accepted by Micah as checked and
     correct.
+  - No separate fusion-face (leg area) check on the baseplate. Base metal
+    is checked per §J4 on the connected part, and the shear rupture
+    through t_p above is that check. (Micah, 2026-10-08, ruling on the case
+    4 independent calc.) To confirm at the release review (#18), against
+    AISC 360-22 Table J2.5 and its footnotes: under a leg-area check, case
+    4's Check 7 would be 1.18, NG.
 - **Rail wall chord limit states are not checked.** The force normal to
   the rail wall at the post (the vertical and upward loads and the V·e
   moment) is a chord-wall limit state of a round T-connection (AISC
@@ -125,10 +138,13 @@ plan's decision numbers, kept for the record.
 
   The assumption is written for a round hollow rail on a round hollow
   post. Today only AISC pipe can be entered, but that limit lives in the
-  shapes lookup and widens in slice 5. So Check 3 carries its own guard:
+  shapes lookup and widens in slice 5. So the tool carries its own
+  guard, in input validation (`validate()`, which runs before any check):
   if the rail or the post is not a round hollow section, the calc stops
   with an error naming the section and saying the rail-wall assumption
-  has not been decided for it. Slices 5 and 6 decide (docs/ROADMAP.md):
+  has not been decided for it. `compute()` skips validation, and exists
+  only as the entry point tests use to reach the checks past it (slice
+  3 plan, T1). Slices 5 and 6 decide (docs/ROADMAP.md):
   thin-wall custom round rails, and rectangular rails at β = 1, where
   the sidewall limit states can govern. (W7, Micah 2026-10-04.)
 - **The post may not be wider than the rail.** The coped detail (the post
@@ -159,6 +175,14 @@ plan's decision numbers, kept for the record.
   (engineering judgement). Longitudinal equals transverse for the ring
   but is listed, as in Check 5. Upward shows "no net tension;
   compression covered by downward" when 0.6D ≥ L.
+
+  The five orthogonal direction cases stand for both welds; no inclined
+  guard load is added. In Check 3 an inclined load raises the ratio by
+  under 10%, on a ratio that stays far below 1.0 for pipe on pipe, because
+  the demand is V·e with e = D_rail/2. In Check 7 its effect is
+  negligible. Engineering judgement (Micah, 2026-10-08, ruling on the case
+  4 independent calc). To revisit for rectangular rails (docs/ROADMAP.md,
+  slices 5 and 6).
 - **Fillet size limits.** (W11, Micah 2026-10-08.) The minimum size is a
   pass/fail line: AISC 360-22 Table J2.4, on the thinner part joined (1/8
   in for every v1 pipe wall, all ≤ 1/4 in). There is no maximum size
@@ -170,6 +194,14 @@ plan's decision numbers, kept for the record.
   under the distributed load, w·s = 350 lb). Strength stays capped by the weld metal
   line at the size entered, the rail and baseplate base metal lines, and
   Check 5 for the post wall (W5).
+  - The Table J2.4 lookup uses the nominal wall thickness t_nom for pipe
+    and HSS walls; the baseplate uses t_p as entered. The minimum size is
+    a heat-input and cooling-rate rule tied to the physical thickness, not
+    a strength provision, so the design wall t_des (W4) stays with the
+    fusion-face strength lines only. It is also the stricter choice: a
+    wall that straddles a row limit gets the larger minimum (Pipe5STD:
+    t_nom = 0.258 in gives 3/16 in, where t_des = 0.241 in would give
+    1/8 in). (Micah, 2026-10-08.)
 - **Material values used by the welds.** FEXX = 70 ksi (E70XX); Fu for
   A53 Gr B (AISC Manual Table 2-4) for the rail fusion face; Fu for A36
   (Table 2-5) for the baseplate fusion face. The baseplate's Fy is not

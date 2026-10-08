@@ -35,6 +35,10 @@ grade = "A53 Gr B"
 section = "Pipe1-1/2STD"
 grade = "A53 Gr B"
 
+[welds]                # slice 3 (plan T2): input only; no weld values recorded
+rail_to_post = "1/8"
+post_to_baseplate = "1/4"
+
 [deflection.rail]
 limit_L_over = 120
 bypass = false

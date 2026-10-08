@@ -8,12 +8,19 @@ import tomllib
 from dataclasses import dataclass
 from functools import cache
 
+from handrail.errors import InputError
 from handrail.shapes_extract import PIPE_TOML
 from handrail.units import Q_
 
 
-class ShapeNotFound(KeyError):
-    pass
+class ShapeNotFound(InputError):
+    """The designation is not in the shapes database."""
+
+
+# Section families. Round hollow families are those the weld checks' round
+# decisions cover (docs/brief/welds.md, W2 and W7); round HSS joins in slice 5.
+PIPE = "AISC pipe"
+ROUND_HOLLOW = (PIPE,)
 
 
 @dataclass(frozen=True)
@@ -29,6 +36,7 @@ class PipeSection:
     S: Q_
     Z: Q_
     r: Q_        # radius of gyration (rx; equal to ry for a pipe)
+    family: str = PIPE
 
 
 @cache

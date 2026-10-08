@@ -14,10 +14,11 @@ import re
 from dataclasses import dataclass
 from fractions import Fraction
 
+from handrail.errors import InputError
 from handrail.units import Q_
 
 
-class DimensionError(ValueError):
+class DimensionError(InputError):
     """Raised when a dimension string cannot be read unambiguously."""
 
 

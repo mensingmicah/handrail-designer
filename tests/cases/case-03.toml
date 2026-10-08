@@ -65,6 +65,10 @@ grade = "A53 Gr B"
 section = "Pipe2STD"
 grade = "A53 Gr B"
 
+[welds]                # slice 3 (plan T2): input only; no weld values recorded
+rail_to_post = "1/8"
+post_to_baseplate = "1/4"
+
 [deflection.rail]
 limit_L_over = 120
 bypass = false
@@ -76,6 +80,11 @@ bypass = false
 [verification]
 kind = "independent-calc"
 covers = ["post", "check5", "check6"]
+# Slice 3 (plan T1): the Pipe2STD post (OD 2.375 in) is wider than the
+# Pipe1-1/2STD rail (OD 1.900 in), so validation stops this file (W8). Its
+# values above are tested through the compute step, and a test asserts the
+# full file stops with this message. Inputs and recorded values unchanged.
+stops_at_validation = "is wider than the top rail"
 
 # ---------------------------------------------------------------------------
 # Hand values: Micah's governing case

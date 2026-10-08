@@ -26,6 +26,14 @@ Manual, 16th Edition, and the AISC Shapes Database v16.0. (Slice 1.)
   reactions are neglected (engineering judgement).
 - The top rail runs continuously over the post; the post is coped and
   welded to its underside. The rail is designed as a simple span.
+- The rail to post weld is modeled as a flat ring of the post's perimeter
+  at the underside of the rail, with eccentricity e = half the rail depth
+  from the rail centerline; this is conservative against the saddle
+  centroid (2R/π for equal round diameters). It is modeled as a fillet of
+  the entered size all around, although at equal diameters the sides of
+  the saddle form a flare-bevel joint.
+- Local strength of the rail wall at the post (AISC 360-22 Chapter K chord
+  limit states) is not checked.
 - The intermediate rail's connection to the post, and the component load's
   effect on the post, are not checked.
 - Guard loads are not combined with floor or roof live load; wind, snow and

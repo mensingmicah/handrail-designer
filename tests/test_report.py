@@ -7,12 +7,13 @@ import pytest
 
 from handrail import checks, dimensions, report
 from handrail.calc import typst_str
-from handrail.project import DeflectionLimit, Member, Project, ProjectInfo
+from handrail.project import DeflectionLimit, Member, Project, ProjectInfo, Welds
 from handrail.registry import Registry
 from handrail.version import Stamp
 
 
 def run(**kw):
+    kw.setdefault("welds", Welds(dimensions.parse("1/8"), dimensions.parse("1/4")))
     p = Project(info=ProjectInfo(name='Name with #hash, *stars*, "quotes" and $dollar'),
                 span=dimensions.parse("6'-0\""), top_rail=Member("Pipe2STD", "A53 Gr B"),
                 post=Member("Pipe2STD", "A53 Gr B"), post_height=dimensions.parse("42"),
@@ -214,7 +215,7 @@ def test_section_properties_page_has_a_post_block_with_r():
 
 def test_check_5_envelope_prints_alpha_ratio_only_for_moment_cases():
     res, reg = run()
-    chk5 = res.checks[2]
+    chk5 = res.check(5)
     table = report._envelope_5(chk5)
     for c in chk5.checked:
         if c is not chk5.controlling:  # the controlling row is bold, so its cells are wrapped
@@ -235,18 +236,19 @@ def test_summary_prints_the_check_5_axial_and_moment_terms():
     res, reg = run()
     src = report.build_source(res, reg, CLEAN)
     summary = src.split("= Summary")[1]
-    c = res.checks[2].controlling
+    c = res.check(5).controlling
     assert c.Mr is not None
     assert f'"Pr = {report.fmt_quantity_plain(c.Pr)}; Mr = {report.fmt_quantity_plain(c.Mr)}"' in summary
     assert f'"Pc = {report.fmt_quantity_plain(c.P_allow)}; Mc = {report.fmt_quantity_plain(c.M_allow)}"' in summary
-    for n in ("1. ", "2. ", "5. ", "6. "):
+    for n in ("1. ", "2. ", "3. ", "5. ", "6. ", "7. "):
         assert f'"{n}' in summary
 
 
 def test_slenderness_flag_prints_in_the_check_5_summary_row():
     p = Project(info=ProjectInfo(name="t"), span=dimensions.parse("6'-0\""),
                 top_rail=Member("Pipe2STD", "A53 Gr B"), post=Member("Pipe1STD", "A53 Gr B"),
-                post_height=dimensions.parse("42"), baseplate_thickness=dimensions.parse("1/2"))
+                post_height=dimensions.parse("42"), baseplate_thickness=dimensions.parse("1/2"),
+                welds=Welds(dimensions.parse("1/8"), dimensions.parse("1/4")),)
     reg = Registry()
     res = checks.run(p, reg)
     src = report.build_source(res, reg, CLEAN)
@@ -257,6 +259,64 @@ def test_slenderness_flag_prints_in_the_check_5_summary_row():
 
 def test_second_order_sentence_is_printed_in_the_controlling_moment_case():
     res, reg = run()
-    src = report._lines(res.checks[2].controlling.lines)
+    src = report._lines(res.check(5).controlling.lines)
     assert "Second-order effects negligible: αPr/Pe = " in src
     assert "amplification taken as 1.0." in src
+
+
+def test_table_stroke_is_a_parameter_not_a_string_patch():
+    # Issue #4, item 7.
+    assert report._table([], [["a", "b"]], "(auto, 1fr)", stroke="none") == (
+        '#table(columns: (auto, 1fr), stroke: none, "a", "b")')
+    assert "stroke" not in report._table([], [["a", "b"]], "(auto, 1fr)")
+    res, reg = run()
+    assert 'stroke: none, "Project"' in report.build_source(res, reg, CLEAN)
+
+
+# ---------------------------------------------------------------------------
+# Slice 3: the weld pages
+# ---------------------------------------------------------------------------
+
+
+def test_dimensions_page_echoes_both_weld_sizes_and_lists_e():
+    res, reg = run()
+    src = report.build_source(res, reg, CLEAN)
+    dims = src.split("= Dimensions")[1].split("\n= ")[0]
+    assert '"Fillet weld, top rail to post", "1/8", "1/8\\"", "0.1250 in"' in dims
+    assert '"Fillet weld, post to baseplate", "1/4", "1/4\\"", "0.2500 in"' in dims
+    assert ('"Eccentricity: rail centerline to the weld plane at the rail underside", '
+            '[$e = frac(d_"rail", "2")$], "1.188 in", "Check 3"') in dims
+
+
+def test_weld_checks_print_in_check_number_order_with_their_envelopes():
+    res, reg = run()
+    src = report.build_source(res, reg, CLEAN)
+    heads = [ln for ln in src.splitlines() if ln.startswith("= Check ")]
+    assert [h.split(":")[0] for h in heads] == ["= Check 1", "= Check 2", "= Check 3", "= Check 5",
+                                                "= Check 6", "= Check 7"]
+    check_3 = src.split("= Check 3: Top rail weld to post")[1].split("\n= ")[0]
+    check_7 = src.split("= Check 7: Post weld to baseplate")[1].split("\n= ")[0]
+    # theta and k_ds are an envelope column only where k_ds comes from theta (Check 7).
+    assert "[$theta$ \\ $k_\"ds\"$]" in check_7 and "[$theta$" not in check_3
+    assert '"90.00°\\n1.500"' in check_7
+    assert '"Weld 1,856 lb/in\\nBase —"' in check_3  # no in-plane force on the rail face, downward
+    assert "Covered by Check 5" in check_3 and "Covered by Check 5" in check_7
+
+
+def test_summary_rows_for_the_welds_name_the_governing_line():
+    res, reg = run()
+    summary = report.build_source(res, reg, CLEAN).split("= Summary")[1]
+    assert '"3. Top rail weld to post"' in summary and '"7. Post weld to baseplate"' in summary
+    c7 = res.check(7).controlling
+    assert f'"{report.fmt_quantity_plain(c7.weld_allow)} (weld metal)"' in summary
+
+
+def test_a_weld_below_minimum_size_closes_ng_with_the_reason_and_its_true_sign():
+    res, reg = run(welds=Welds(dimensions.parse("1/16"), dimensions.parse("1/4")))
+    src = report.build_source(res, reg, CLEAN)
+    check_3 = src.split("= Check 3: Top rail weld to post")[1].split("\n= ")[0]
+    ratio = report.fmt_ratio(res.check(3).controlling.ratio)
+    assert f'"Ratio" = {ratio} <= 1.00$ #h(6pt) #"; below minimum size"#h(10pt) #"NG"' in check_3
+    assert "BELOW MINIMUM SIZE: Fillet weld w = 0.06250 in is below the minimum size 0.1250 in" in check_3
+    summary = src.split("= Summary")[1]
+    assert '"NG (below minimum size)"' in summary
