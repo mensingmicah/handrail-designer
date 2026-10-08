@@ -45,7 +45,8 @@ fillet welded all around.
 
 - Test case 4 (case 2's inputs with a 1/8" rail weld and a 1/4" post
   weld) is an independent-calc case for Checks 3 and 7; every value
-  agrees within 0.5%. Micah reviewed the independent calc and the PDF.
+  agrees within 0.5%. Micah reviewed the case 4 PDF against the review
+  checklist and ruled on the independent calc's open questions (Q1–Q5).
 - Test cases 1–3 gained the weld inputs only; every recorded value is
   unchanged. Case 3 (Pipe2STD post under a Pipe1-1/2STD rail) now stops
   at W8; its values are tested through the compute step.
