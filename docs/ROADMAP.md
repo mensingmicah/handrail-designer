@@ -1,7 +1,7 @@
 # Roadmap: slices from v0.1.0 to v1
 
 Status: **accepted by Micah, 2026-09-30.** Slice 2 is the post (option A
-below). Slices 1 and 2 are done (v0.1.0, v0.2.0); slice 3 is next. What the tool must do is set by the brief
+below). Slices 1 and 2 are done (v0.1.0, v0.2.0); slice 3 is planned (docs/plans/slice-3.md). What the tool must do is set by the brief
 (docs/BRIEF.md); if this roadmap disagrees with the brief, the brief wins.
 Each slice gets its own plan in docs/plans/ before work starts. That plan
 settles the slice's open questions, and it can reorder or split the slice.
@@ -209,14 +209,10 @@ directional-increase equation and its limits, the Chapter K restriction,
 J2.2b and Table J2.4 size limits, §J4.2 rupture, Ω for each, FEXX, Fu for
 two grades). One test case.
 
-**To settle in the slice plan.**
-- The eccentricity e for Check 3 with a coped post: which dimension "rail
-  centerline to weld plane" is, for a pipe rail seated in a coped pipe
-  post.
-- The Chapter K text on the directional increase for welds to HSS. This
-  is the slice's main code risk. Pipe is designed as round HSS, so the
-  restriction likely applies here.
-- Which thickness is the fusion face for the rail side of Check 3.
+**Settled** (Micah, 2026-10-04 and 2026-10-08): the eccentricity, the
+directional increase and the fusion face thickness, with nine further
+decisions, W1–W12 in docs/brief/welds.md. **Plan:** docs/plans/slice-3.md,
+with test case 4 (case 2's geometry plus welds).
 
 ### Slice 4: intermediate rail (Check 4) and anchor reaction sets
 
@@ -261,6 +257,15 @@ noncompact rail (#3) and a solid round bar or custom tube post.
 **To settle in the slice plan.** The base metal check for a weld to a
 solid bar post: welds.md specifies it over "the thickness on the fusion
 face", and a solid bar has no wall.
+Also whether the stated assumption that the rail wall's Chapter K chord
+limit states are not checked (welds.md, W7) still holds for a thin-wall
+custom round rail, or whether Check 3 needs that limit state. Check 3
+stops on any rail or post that is not round hollow until this is
+decided. A rail welded to the side of a post wider than it, or a
+cap-plate detail, is a different connection and is out of v1; the tool
+stops when the post is wider than the rail (welds.md, W8). Slices 5 and
+6 keep that stop as section families widen, and slice 6 decides which
+dimensions it compares for rectangular sections.
 
 ### Slice 6: rectangular tubes
 
@@ -278,6 +283,10 @@ each pattern.
 **Size.** L, the largest after slice 1. About 20 new registry entries.
 Two test cases: a rectangular HSS post where longitudinal governs on the
 weak axis, and a rectangular rail.
+
+**To settle in the slice plan.** The rail wall's Chapter K limit states
+for a rectangular rail at β = 1, where the sidewall limit states can
+govern (welds.md, W7): checked, or a stated assumption with its reason.
 
 ### Slice 7: solid rectangular bar
 
@@ -385,5 +394,10 @@ These come from scope.md's future versions, not from any slice above:
 display units (#1), LRFD member checks, slender-section checks, and mounts
 the tool checks itself (steel baseplate and anchor to steel, wood,
 cold-formed steel), with ACI 318-19, AISI S100 and NDS added as they come.
+Baseplate thickness and bending checks are also after v1: in v1 they are
+not checked, a stated assumption (slice 2, D12), and the baseplate is
+designed by others. Baseplate grades beyond A36 come with those checks;
+until then the baseplate grade input accepts A36 only (inputs.md,
+slice 3).
 End posts, overhangs, sloped runs and infill stay out until the brief says
 otherwise.

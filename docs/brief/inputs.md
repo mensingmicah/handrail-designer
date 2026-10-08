@@ -46,6 +46,14 @@ and how it is entered.
   around. Rectangular posts (HSS or bar) are welded all around or on one
   pair of faces, which the engineer picks by the section's width or depth
   faces.
+  The two weld sizes (rail to post, post to baseplate) are required
+  inputs with no default, entered like any dimension ("3/16"). The
+  electrode is an input defaulting to E70XX, and E70XX is the only one
+  accepted; any other stops with a message. The baseplate grade is an
+  input defaulting to A36, and A36 is the only one accepted; any other
+  stops with a message. More baseplate grades come with baseplate checks
+  (after v1, docs/ROADMAP.md); more rail and post grades come with the
+  section families. (Slice 3, W12.)
 - Guard loads (concentrated, distributed, component), defaulting to code
   values, editable
 - Deflection limits: L/120 for the rail span and L/60 for the post
