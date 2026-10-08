@@ -113,10 +113,13 @@ def _post_values(res):
         "check5.Fcr_equation": branch.split("Eq. ")[1],
         "check5.Pn_lb": _line_value(down, "P_n").m_as("lbf"),
         "check5.Pc_lb": _line_value(down, "P_c").m_as("lbf"),
-        "check5.Pt_lb": _case(c5, "Upward").P_allow.m_as("lbf"),
         "check5.Mn_lbin": _line_value(out, "M_n").m_as("lbf*inch"),
         "check5.Mc_lbin": _line_value(out, "M_c").m_as("lbf*inch"),
     }
+    # Pt is computed only when an upward case has net tension (0.6D < L).
+    upward = [c for c in c5.checked if c.direction == "Upward"]
+    if upward:
+        v["check5.Pt_lb"] = upward[0].P_allow.m_as("lbf")
     for c in c5.checked:
         k = _case_key(c)
         v[f"check5.Pr_lb.{k}"] = c.Pr.m_as("lbf")
@@ -560,3 +563,16 @@ def test_template_has_every_key_and_no_value(runs):
     assert {k for k, _ in _flatten(parsed["independent"])} == set(keys)
     assert {v for _, v in _flatten(parsed)} == {PENDING}
     assert set(parsed["provenance"]) == set(PROVENANCE)
+
+
+def test_tool_values_without_net_upward_tension_have_no_pt():
+    """PR #17 review, item 9: with 0.6D >= L both upward cases are not checked,
+    so there is no Pt to report, and the harness must not error."""
+    raw = {"project": {"name": "self-test"},
+           "geometry": {"span": "6'-0\"", "post_height": 42, "baseplate_thickness": "1/2"},
+           "top_rail": {"section": "Pipe12STD"}, "post": {"section": "Pipe12STD"},
+           "loads": {"concentrated_lb": 10, "uniform_plf": 1}}
+    res = checks.run(project.from_dict(raw), Registry())
+    assert not [c for c in _check(res, 5).checked if c.direction == "Upward"]  # the premise
+    assert "check5.Pt_lb" not in tool_values(res)
+    assert "check5.Pt_lb" in tool_values(_dev_run())

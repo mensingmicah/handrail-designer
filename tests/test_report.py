@@ -260,3 +260,12 @@ def test_second_order_sentence_is_printed_in_the_controlling_moment_case():
     src = report._lines(res.checks[2].controlling.lines)
     assert "Second-order effects negligible: αPr/Pe = " in src
     assert "amplification taken as 1.0." in src
+
+
+def test_table_stroke_is_a_parameter_not_a_string_patch():
+    # Issue #4, item 7.
+    assert report._table([], [["a", "b"]], "(auto, 1fr)", stroke="none") == (
+        '#table(columns: (auto, 1fr), stroke: none, "a", "b")')
+    assert "stroke" not in report._table([], [["a", "b"]], "(auto, 1fr)")
+    res, reg = run()
+    assert 'stroke: none, "Project"' in report.build_source(res, reg, CLEAN)

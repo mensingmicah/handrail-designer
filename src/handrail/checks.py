@@ -23,6 +23,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from handrail.calc import Const, Line, Sheet, Sym, absolute, fmt_quantity_plain, fmt_sig, minimum, mtext, sqrt
+from handrail.errors import InputError
 from handrail.project import Member, Project, ProjectError
 from handrail.registry import Entry, Registry
 from handrail.shapes import PipeSection
@@ -39,7 +40,7 @@ COMBO = "asce7.combo.asd.D_plus_L"
 FY_ENTRY = {"A53 Gr B": "material.A53_GrB.Fy"}
 
 
-class SectionStop(Exception):
+class SectionStop(InputError):
     """A hard stop: the tool will not check this section (slender, or out of range)."""
 
 

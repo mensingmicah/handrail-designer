@@ -154,3 +154,104 @@ def test_overrides_reach_the_calc_with_units(tmp_path):
 def test_hand_and_verification_tables_are_allowed_in_a_case_file(name):
     case = Path(__file__).resolve().parent / "cases" / name
     assert project.load(case).top_rail.section == "Pipe1-1/2STD"
+
+
+# ---------------------------------------------------------------------------
+# One input-error class, and SCHEMA against the parser (issue #4, items 4 and 6)
+# ---------------------------------------------------------------------------
+
+
+def test_every_input_error_derives_from_the_one_class_the_cli_catches():
+    from handrail.checks import SectionStop
+    from handrail.dimensions import DimensionError
+    from handrail.errors import InputError
+    from handrail.registry import MissingEntry, RegistryError
+    from handrail.shapes import ShapeNotFound
+
+    for cls in (project.ProjectError, RegistryError, MissingEntry, SectionStop, DimensionError, ShapeNotFound):
+        assert issubclass(cls, InputError), cls.__name__
+
+
+def test_unknown_shape_message_prints_without_quotes(tmp_path, capsys):
+    # ShapeNotFound used to be a KeyError, whose message printed inside quotes.
+    code, err = _run_with(tmp_path, capsys, 'section = "Pipe2STD"', 'section = "Pipe99STD"')
+    assert code == 1
+    assert err.startswith("error: 'Pipe99STD' is not an AISC pipe"), err
+
+
+class _Tracking(dict):
+    """A dict that records every key read from it, nested tables included."""
+
+    def __init__(self, raw, where, log):
+        super().__init__({k: _Tracking(v, f"{where}{k}.", log) if isinstance(v, dict) else v
+                          for k, v in raw.items()})
+        self._where, self._log = where, log
+
+    def __getitem__(self, key):
+        self._log.add(self._where + key)
+        return super().__getitem__(key)
+
+    def get(self, key, default=None):
+        self._log.add(self._where + key)
+        return super().get(key, default)
+
+
+def _schema_keys(schema, where=""):
+    for key, sub in schema.items():
+        if sub == "ignored":
+            continue
+        if isinstance(sub, dict):
+            yield f"{where}{key}"
+            yield from _schema_keys(sub, f"{where}{key}.")
+        else:
+            yield f"{where}{key}"
+
+
+def _full_project_file():
+    """A project file that gives every key SCHEMA allows."""
+    import tomllib
+
+    raw = tomllib.loads(EXAMPLE.read_text(encoding="utf-8"))
+    raw["loads"].update(concentrated_lb=250, uniform_plf=60)
+    raw["project"].update(references=["Sheet A-501"], assumptions=["Extra."])
+    return raw
+
+
+def test_the_parser_reads_every_key_schema_allows_and_no_other():
+    """SCHEMA and from_dict list the same keys separately (issue #4, item 6). A key
+    in SCHEMA but never read would be accepted and silently ignored; a key read
+    but not in SCHEMA would be refused before it could be read."""
+    raw = _full_project_file()
+    schema = set(_schema_keys(project.SCHEMA))
+    given = set(_schema_keys(raw))
+    assert given == schema, f"the test's project file must give every SCHEMA key: {sorted(schema ^ given)}"
+    log: set[str] = set()
+    project.from_dict(_Tracking(raw, "", log))
+    assert not schema - log, f"in SCHEMA, never read: {sorted(schema - log)}"
+    assert not log - schema, f"read, not in SCHEMA: {sorted(log - schema)}"
+
+
+def test_left_out_optional_keys_take_the_dataclass_defaults():
+    """Issue #4, item 5: each default is stated once, on its dataclass."""
+    import tomllib
+
+    raw = tomllib.loads(EXAMPLE.read_text(encoding="utf-8"))
+    for table in ("loads", "deflection"):
+        del raw[table]
+    for key in ("phase", "description", "references", "assumptions"):
+        del raw["project"][key]
+    proj = project.from_dict(raw)
+    assert proj.loads == project.Loads()
+    assert proj.rail_deflection == project.RAIL_DEFLECTION
+    assert proj.post_deflection == project.POST_DEFLECTION
+    assert proj.info == project.ProjectInfo(name=raw["project"]["name"])
+
+
+def test_a_partial_deflection_table_keeps_the_members_own_default_ratio():
+    import tomllib
+
+    raw = tomllib.loads(EXAMPLE.read_text(encoding="utf-8"))
+    raw["deflection"] = {"rail": {"bypass": True}, "post": {"bypass": True}}
+    proj = project.from_dict(raw)
+    assert proj.rail_deflection == project.DeflectionLimit(ratio=120, bypass=True)
+    assert proj.post_deflection == project.DeflectionLimit(ratio=60, bypass=True)

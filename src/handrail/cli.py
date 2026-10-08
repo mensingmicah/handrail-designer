@@ -9,14 +9,8 @@ import sys
 from pathlib import Path
 
 from handrail import checks, project, report, version
-from handrail.checks import SectionStop
-from handrail.dimensions import DimensionError
-from handrail.registry import Registry, RegistryError
-from handrail.shapes import ShapeNotFound
-
-# Errors that mean "the inputs or registry need attention", reported as one
-# line. Anything else is a bug and keeps its full traceback.
-EXPECTED = (project.ProjectError, RegistryError, SectionStop, DimensionError, ShapeNotFound)
+from handrail.errors import InputError
+from handrail.registry import Registry
 
 
 def calc(project_file: Path, out: Path | None) -> Path:
@@ -38,9 +32,9 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         out = calc(args.project_file, args.output)
-    except EXPECTED as e:
-        msg = e.args[0] if isinstance(e, KeyError) and e.args else e
-        print(f"error: {msg}", file=sys.stderr)
+    except InputError as e:
+        # One line; anything else is a bug and keeps its full traceback.
+        print(f"error: {e}", file=sys.stderr)
         return 1
     print(f"wrote {out}")
     return 0

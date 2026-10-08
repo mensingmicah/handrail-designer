@@ -109,15 +109,19 @@ def _lines(lines: list[Line]) -> str:
     return "\n".join(out)
 
 
-def _table(header: list[str], rows: list[list[str]], columns: str, bold_rows=(), raw_header=False) -> str:
+def _table(header: list[str], rows: list[list[str]], columns: str, bold_rows=(), raw_header=False,
+           stroke: str | None = None) -> str:
     """A table. Cells are user-safe string literals; with raw_header, header
-    cells are Typst content written by this module (for math symbols)."""
+    cells are Typst content written by this module (for math symbols).
+    ``stroke`` is a Typst stroke value ("none" for a borderless table); left
+    out, the document's table stroke applies."""
     head = [h if raw_header else f"strong({typst_str(h)})" for h in header]
     cells = [f"table.header({', '.join(head)})"] if head else []
     for i, row in enumerate(rows):
         for c in row:
             cells.append(f"strong({typst_str(c)})" if i in bold_rows else typst_str(c))
-    return f"#table(columns: {columns}, {', '.join(cells)})"
+    stroke_arg = f"stroke: {stroke}, " if stroke is not None else ""
+    return f"#table(columns: {columns}, {stroke_arg}{', '.join(cells)})"
 
 
 def _envelope(chk: Check) -> str:
@@ -270,7 +274,7 @@ def build_source(results: Results, registry: Registry, stamp: Stamp) -> str:
                "and deflection]")
     src.append("== Project")
     src.append(_table([], [["Project", info.name], ["Phase", info.phase], ["Description", info.description]],
-                      "(auto, 1fr)").replace("columns: (auto, 1fr), ", "columns: (auto, 1fr), stroke: none, "))
+                      "(auto, 1fr)", stroke="none"))
     src.append("Loading is per ASCE 7-22.")
     src.append(f"#text(weight: \"bold\", {typst_str(f'Design method: {asd.value} per {asd.cite}')})")
     src.append("== Assumptions")

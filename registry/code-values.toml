@@ -659,7 +659,8 @@ status = "verified"
 drafted_on = 2026-09-30
 verified_by = "Micah Mensing"
 verified_date = 2026-09-30
-note = "ASCE 7-22 has no combination for this case; crediting reduced dead load is deliberate (brief)."
+note = """
+ASCE 7-22 has no combination for this case; crediting reduced dead load is deliberate (brief). The same 0.6D + 1.0L combination applies wherever the upward guard load opposes dead load: the top rail's net vertical moment (Check 1), the post's net axial load in the upward case (Check 5, net tension 1.0L - 0.6D), and the upward case of both welds (Checks 3 and 7). Note broadened 2026-10-08 (PR #17 review); value unchanged."""
 
 [[entry]]
 id = "ej.combo.deflection.D_plus_L"
@@ -792,7 +793,7 @@ note = "Paraphrase from memory of 360-16 §B4.1a."
 
 [[entry]]
 id = "aisc360.E2.effective_length"
-value = "Effective length Lc = KL, with K the effective length factor and L the laterally unbraced length"
+value = "Effective length of a member for flexural buckling: the definition of Lc in terms of the effective length factor K and the laterally unbraced length L"
 unit = "equation"
 cite = "AISC 360-22 §E2"
 document = "AISC 360-22, Specification for Structural Steel Buildings"
@@ -1126,7 +1127,7 @@ summary says ASD loads are amplified by alpha = 1.6."""
 
 [[entry]]
 id = "aisc360.eq.A-8-5"
-value = "Elastic critical buckling strength of the member in the plane of bending, Pe = pi^2 EI/Lc^2"
+value = "Elastic critical buckling strength of the member in the plane of bending (Pe1)"
 unit = "equation"
 cite = "AISC 360-22 Eq. A-8-5"
 document = "AISC 360-22, Specification for Structural Steel Buildings"
@@ -1145,7 +1146,7 @@ the note on aisc360.app8.alpha_asd."""
 
 [[entry]]
 id = "ej.second_order.pe_length"
-value = "Pe for the cantilever post is computed with Lc = 2.1h, the compression effective length, and EI (not the reduced EI* of the direct analysis method), because the post's second-order effect is sway (P-Delta); Pe at K = 1 would understate alphaPr/Pe by about 4.4 times"
+value = "Length and stiffness used in Pe for the cantilever post's second-order ratio: the compression effective length and the unreduced EI, not the K = 1 length or the reduced EI* of the direct analysis method, because the post's second-order effect is sway (P-Delta)"
 unit = "equation"
 cite = "Engineering judgement (EOR): Pe at Lc = 2.1h"
 document = "Engineering decision of the engineer of record"
@@ -1156,7 +1157,7 @@ status = "drafted"
 drafted_on = 2026-09-30
 verified_by = ""
 verified_date = ""
-note = "Decision by Micah, 2026-09-30. 2.1^2 = 4.41."
+note = "Decision by Micah, 2026-09-30. Pe at K = 1 would understate alphaPr/Pe by 2.1^2 = 4.41 times. Value reworded 2026-10-08 so it describes what is cited without restating the formula (PR #17 review)."
 
 [[entry]]
 id = "ej.second_order.limit"

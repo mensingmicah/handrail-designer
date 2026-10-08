@@ -15,6 +15,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from handrail.errors import InputError
 from handrail.units import Q_
 
 REGISTRY_PATH = Path(__file__).resolve().parents[2] / "registry" / "code-values.toml"
@@ -28,7 +29,7 @@ STATUSES = ("drafted", "verified")
 NON_QUANTITY_UNITS = ("text", "list", "equation", "provision", "factors", "fraction")
 
 
-class RegistryError(Exception):
+class RegistryError(InputError):
     """The registry file is malformed or inconsistent with rule 1."""
 
 

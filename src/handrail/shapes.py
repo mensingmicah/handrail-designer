@@ -8,12 +8,13 @@ import tomllib
 from dataclasses import dataclass
 from functools import cache
 
+from handrail.errors import InputError
 from handrail.shapes_extract import PIPE_TOML
 from handrail.units import Q_
 
 
-class ShapeNotFound(KeyError):
-    pass
+class ShapeNotFound(InputError):
+    """The designation is not in the shapes database."""
 
 
 @dataclass(frozen=True)
