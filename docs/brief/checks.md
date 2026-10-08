@@ -21,7 +21,9 @@ properties. Weld method is in welds.md.
    is the same as the top rail, Check 4 is controlled by Checks 1 and 2 by
    observation and not computed, unless the component load exceeds the
    concentrated guard load (S4-1 and S4-2, below). If there is no
-   intermediate rail, the check shows "none".
+   intermediate rail, the check shows "none". Check 4 has two parts: 4a,
+   the member (above), and 4b, the intermediate rail weld to the post,
+   treated like Check 3 (S4-8, welds.md).
 5. Post combined axial and flexure (cantilever)
 6. Post deflection (cantilever), horizontal live load only, over the
    cantilever length h − t_p; the L/60 limit uses the same length

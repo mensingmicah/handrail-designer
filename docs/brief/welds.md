@@ -208,3 +208,39 @@ plan's decision numbers, kept for the record.
   used in v1. D12 excludes baseplate thickness and bending, a different
   limit state from the base metal line at the weld's fusion face, which
   is checked. (W12, Micah 2026-10-08; inputs in inputs.md.)
+
+## Intermediate rail weld to post (Check 4b)
+
+Decided in planning slice 4 (docs/plans/slice-4.md); S4 numbers are that
+plan's decision numbers.
+
+- **A weld check for the intermediate rail, treated like Check 3.**
+  (S4-8, Micah 2026-10-08.) A scope addition Micah made deliberately:
+  until now the intermediate rail's connection to the post was a stated
+  assumption, not checked. It prints inside Check 4: Check 4a is the
+  member (component-load bending and deflection) and Check 4b is the
+  weld, each with its own summary row, so the seven checks and their
+  order stay as they are.
+  - **Same as the top rail** (S4-1): the intermediate rail uses the top
+    rail's section and the top rail's rail to post weld size. Check 4b
+    prints "Intermediate rail weld: controlled by Check 3 by observation:
+    same section (ring ≥ Check 3's, since post OD ≤ rail OD per W8), same
+    weld size, component load P_c ≤ P." Guard: if P_c > P, the full
+    check runs instead.
+  - **Own section:** a required weld size input for the intermediate rail
+    to post weld. The Check 3 method runs on the intermediate rail's ring
+    (its perimeter, coped to the side of the post): weld metal with
+    k_ds = 1.0 (branch-to-chord, as W2), base metal, the Table J2.4
+    minimum size (W11), and the same stated assumptions (the W1/W9 ring
+    model and the W7 chord wall).
+  - **None:** Check 4b prints "none" with Check 4a.
+  - Still to settle in the slice 4 interview: the eccentricity and the
+    load; which wall is the chord (the post, here) for the base metal and
+    W7 lines; and a cope limit, intermediate rail OD ≤ post OD (the
+    mirror of W8).
+  - The stated assumption "The intermediate rail's connection to the
+    post, and the component load's effect on the post, are not checked."
+    (output.md) loses its first half. Proposed text: "The component
+    load's effect on the post is not checked." output.md changes on the
+    slice 4 branch in the same commit that prints it, because a test
+    holds the printed list to output.md word for word.
