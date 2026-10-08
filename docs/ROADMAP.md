@@ -266,9 +266,9 @@ cap-plate detail, is a different connection and is out of v1; the tool
 stops when the post is wider than the rail (welds.md, W8). Slices 5 and
 6 keep that stop as section families widen, and slice 6 decides which
 dimensions it compares for rectangular sections. The weld envelope's
-orthogonal-cases ruling (welds.md) is revisited for rectangular rails in
-slice 6; confirm here that it still holds for every round rail this slice
-adds.
+orthogonal-cases ruling and the load-at-the-rail-centerline ruling
+(welds.md) are revisited for rectangular rails in slice 6; confirm here
+that both still hold for every round rail this slice adds.
 
 ### Slice 6: rectangular tubes
 
@@ -295,7 +295,12 @@ for a rectangular rail. For pipe on pipe an inclined guard load raises
 Check 3 by under 10% on a ratio far below 1.0 (demand V·e, e = D_rail/2),
 and Check 7 negligibly, so no inclined case is checked (welds.md, the
 weld envelope; Micah 2026-10-08). A rectangular rail changes e and the
-ring's line properties, so that argument has to be redone.
+ring's line properties, so that argument has to be redone. The same goes
+for the ruling that guard loads act through the rail centerline: torsion
+on the Check 3 weld and the larger eccentricity from a load at the rail's
+surface are neglected because Check 3 ratios are far below 1.0 for pipe
+on pipe (welds.md, Check 3 weld model; Micah 2026-10-08). Redo that for a
+rectangular rail, whose depth and weld pattern differ.
 
 ### Slice 7: solid rectangular bar
 

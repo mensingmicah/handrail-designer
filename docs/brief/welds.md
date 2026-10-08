@@ -51,6 +51,13 @@ plan's decision numbers, kept for the record.
   shear only, and Check 3 runs far below 1.0, so this cannot flip a
   result. Not chosen: a flare-bevel effective throat (Table J2.2), or
   requiring rail OD > post OD, which would refuse the most common detail.
+
+  Guard loads act through the rail centerline, as in every check. Two
+  effects of a load applied at the rail's surface are neglected: torsion
+  on the Check 3 ring, and the larger eccentricity to the weld plane.
+  Engineering judgement: Check 3 ratios are far below 1.0 for pipe on
+  pipe. (Micah, 2026-10-08, ruling on the case 4 independent calc.) To
+  revisit for rectangular rails (docs/ROADMAP.md, slices 5 and 6).
 - **Directional strength increase.** (W2, Micah 2026-10-04.)
   - The AISC 360-22 §J2.4 increase, k_ds = 1.0 + 0.50 sin^1.5 θ, applies
     to fillet welds on round HSS (pipe included), including the post to
@@ -131,10 +138,13 @@ plan's decision numbers, kept for the record.
 
   The assumption is written for a round hollow rail on a round hollow
   post. Today only AISC pipe can be entered, but that limit lives in the
-  shapes lookup and widens in slice 5. So Check 3 carries its own guard:
+  shapes lookup and widens in slice 5. So the tool carries its own
+  guard, in input validation (`validate()`, which runs before any check):
   if the rail or the post is not a round hollow section, the calc stops
   with an error naming the section and saying the rail-wall assumption
-  has not been decided for it. Slices 5 and 6 decide (docs/ROADMAP.md):
+  has not been decided for it. `compute()` skips validation, and exists
+  only as the entry point tests use to reach the checks past it (slice
+  3 plan, T1). Slices 5 and 6 decide (docs/ROADMAP.md):
   thin-wall custom round rails, and rectangular rails at β = 1, where
   the sidewall limit states can govern. (W7, Micah 2026-10-04.)
 - **The post may not be wider than the rail.** The coped detail (the post
