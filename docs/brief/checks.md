@@ -186,3 +186,11 @@ plan's decision numbers, kept for the record.
     bypassable. It cites the existing verified entry `ej.deflection.limit`,
     whose note is broadened to name the intermediate rail (a note edit,
     so the entry stays verified).
+- **Component load model.** (S4-3, Micah 2026-10-08.) A point load P_c at
+  midspan of the intermediate rail's simple span s: M = P_c·s/4 and
+  Δ = P_c·s³/(48EI), the same model as Check 1's concentrated case. The
+  1 ft² area of ASCE 7-22 §4.5.1.2 is not modeled; the point load is
+  conservative (for a 7'-0" span, spreading 50 lb over a 12 in patch would
+  lower M by P_c·b/8 = 75 lb-in, about 7%). P_c is an input,
+  `[loads] component_lb`, defaulting to the registry value; the
+  §4.5.1.1 exemption does not affect it.
