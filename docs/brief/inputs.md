@@ -29,7 +29,12 @@ and how it is entered.
   section by dimensions. For tubes, the engineer says whether the entered wall
   thickness is nominal or design. For rectangular sections, the engineer sets
   which axis resists the horizontal guard load.
-- Intermediate rail section (optional). Defaults to the top rail section.
+- Intermediate rail: one of three states (S4-1, checks.md). Same as the
+  top rail (a checkbox, `same_as_top_rail`, default checked): section and
+  grade are the top rail's. Unchecked: the engineer enters the section,
+  and the grade defaults to the top rail's. Or none (`none = true`): no
+  intermediate rail. There is no intermediate rail height input; nothing
+  in v1 uses it. (Micah, 2026-10-08.)
 - Material grade for rail, post and baseplate. The standard grade lists for
   pipe, round HSS and rectangular HSS are registry entries
   (material.grades.pipe, material.grades.hss_round, material.grades.hss_rect;
