@@ -255,3 +255,115 @@ def test_a_partial_deflection_table_keeps_the_members_own_default_ratio():
     proj = project.from_dict(raw)
     assert proj.rail_deflection == project.DeflectionLimit(ratio=120, bypass=True)
     assert proj.post_deflection == project.DeflectionLimit(ratio=60, bypass=True)
+
+
+# ---------------------------------------------------------------------------
+# Slice 3: weld and baseplate inputs, and validation (W5, W7, W8, W12)
+# ---------------------------------------------------------------------------
+
+
+def test_weld_sizes_and_defaults_are_read():
+    proj = project.load(EXAMPLE)
+    assert proj.welds.rail_to_post.value.m_as("inch") == 0.125
+    assert proj.welds.post_to_baseplate.value.m_as("inch") == 0.25
+    assert proj.welds.post_to_baseplate.normalized == '1/4"'
+    assert proj.welds.electrode == "E70XX" and proj.baseplate.grade == "A36"
+
+
+def test_electrode_and_baseplate_grade_default_when_left_out(tmp_path):
+    text = EXAMPLE.read_text(encoding="utf-8")
+    for line in ('electrode = "E70XX"', 'grade = "A36"'):
+        assert line in text
+        text = text.replace(line, "")
+    p = tmp_path / "defaults.toml"
+    p.write_text(text, encoding="utf-8")
+    proj = project.load(p)
+    assert proj.welds.electrode == "E70XX" and proj.baseplate.grade == "A36"
+
+
+WELD = 'post_to_baseplate = "1/4"'
+
+
+@pytest.mark.parametrize(
+    "old, new, message",
+    [
+        # Sizes are required, with no default (W12).
+        (WELD, "", "[welds] is missing 'post_to_baseplate'"),
+        ('rail_to_post = "1/8"', "", "[welds] is missing 'rail_to_post'"),
+        ("[welds]", "[weld]", "unknown table 'weld'"),
+        (WELD, 'post_to_baseplate = "1/4 in fillet"', "post_to_baseplate: '1/4 in fillet' is not a dimension"),
+        (WELD, "post_to_baseplate = 0", "post_to_baseplate must be greater than zero"),
+        # E70XX and A36 only (W12).
+        ('electrode = "E70XX"', 'electrode = "E60XX"', "[welds] electrode 'E60XX': this version supports E70XX only"),
+        ('grade = "A36"', 'grade = "A572 Gr 50"', "[baseplate] grade 'A572 Gr 50': this version supports A36 only"),
+        ('grade = "A36"', 'thickness = "1/2"', "unknown key 'baseplate.thickness'"),
+    ],
+)
+def test_weld_and_baseplate_input_errors(tmp_path, capsys, old, new, message):
+    code, err = _run_with(tmp_path, capsys, old, new)
+    assert code == 1
+    assert err.startswith("error:") and message in err, err
+
+
+def test_missing_welds_table_is_refused(tmp_path, capsys):
+    text = EXAMPLE.read_text(encoding="utf-8")
+    start, end = text.index("[welds]"), text.index("[loads]")
+    p = tmp_path / "no-welds.toml"
+    p.write_text(text[:start] + text[end:], encoding="utf-8")
+    assert cli.main(["calc", str(p)]) == 1
+    assert "project file: [top level] is missing 'welds'" in capsys.readouterr().err
+
+
+def test_post_wider_than_rail_stops_naming_both_ods(tmp_path, capsys):
+    # W8: Pipe2STD post (OD 2.375 in) under a Pipe1-1/2STD rail (OD 1.900 in).
+    text = EXAMPLE.read_text(encoding="utf-8")
+    old = '[top_rail]\nsection = "Pipe2STD"'
+    assert old in text
+    p = tmp_path / "wide-post.toml"
+    p.write_text(text.replace(old, '[top_rail]\nsection = "Pipe1-1/2STD"'), encoding="utf-8")
+    assert cli.main(["calc", str(p)]) == 1
+    err = capsys.readouterr().err
+    assert ("The post (Pipe2STD, OD 2.375 in) is wider than the top rail (Pipe1-1/2STD, OD 1.900 in). "
+            "The coped post to rail underside detail requires post OD <= rail OD. Check the inputs.") in err, err
+
+
+def test_equal_ods_are_allowed():
+    from handrail import checks
+    from handrail.registry import Registry
+
+    proj = project.load(EXAMPLE)  # Pipe2STD rail and post
+    checks.validate(proj, Registry())
+
+
+def _validate_with(monkeypatch, *, family=None, fu=None):
+    """validate() on the example with a stand-in: a section of another family,
+    or a post grade with a lower Fu. Stand-ins for machinery tests only."""
+    import dataclasses
+
+    from handrail import checks, shapes
+    from handrail.registry import Registry
+
+    real = shapes.pipe
+    if family:
+        monkeypatch.setattr(shapes, "pipe", lambda d: dataclasses.replace(real(d), family=family))
+    reg = Registry()
+    if fu:
+        e = reg.entries["material.A53_GrB.Fu"]
+        reg.entries[e.id] = dataclasses.replace(e, value=fu)
+    checks.validate(project.load(EXAMPLE), reg)
+
+
+def test_a_section_that_is_not_round_hollow_stops(monkeypatch):
+    # W7, with a stand-in family: only pipe can be entered today.
+    with pytest.raises(project.ProjectError,
+                       match=r"top rail Pipe2STD \(rectangular HSS\) is not a round hollow section.*"
+                             r"rail wall's local strength at the post is not checked"):
+        _validate_with(monkeypatch, family="rectangular HSS")
+
+
+def test_a_post_grade_below_the_fu_fy_limit_stops(monkeypatch):
+    # W5, with a stand-in Fu: 40/35 = 1.143 < 1.20.
+    with pytest.raises(project.ProjectError,
+                       match=r"post grade A53 Gr B: Fu/Fy = 1\.143 is below 1\.2 .*covered by Check 5 only"):
+        _validate_with(monkeypatch, fu=40)
+    _validate_with(monkeypatch, fu=42)  # 1.20 exactly passes

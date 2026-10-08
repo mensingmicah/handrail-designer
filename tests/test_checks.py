@@ -13,7 +13,7 @@ import pytest
 from handrail import checks, dimensions, shapes
 from handrail.calc import fmt_sig
 from handrail.checks import SectionStop
-from handrail.project import DeflectionLimit, Loads, Member, Project, ProjectInfo
+from handrail.project import DeflectionLimit, Loads, Member, Project, ProjectInfo, Welds
 from handrail.registry import Registry
 from handrail.units import Q_
 
@@ -29,6 +29,7 @@ def project(section="Pipe2STD", span="6'-0\"", post="Pipe2STD", h="42", tp="1/2"
         post=Member(section=post, grade="A53 Gr B"),
         post_height=dimensions.parse(h),
         baseplate_thickness=dimensions.parse(tp),
+        welds=Welds(dimensions.parse("1/8"), dimensions.parse("1/4")),
         **kw,
     )
 
@@ -246,7 +247,9 @@ def test_every_formula_line_prints_a_citation(results):
 @pytest.mark.parametrize("section, span, listed", [("Pipe2STD", "6'-0\"", False), ("Pipe26STD", "12'-0\"", True)])
 def test_eq_F8_2_is_listed_as_used_only_for_a_noncompact_section(section, span, listed):
     reg = Registry()
-    res = checks.run(project(section=section, span=span, post="Pipe12STD"), reg)  # compact post
+    # A compact post; under the Pipe2STD rail it fails W8 at validation, which
+    # is not under test here, so compute past it.
+    res = checks.compute(project(section=section, span=span, post="Pipe12STD"), reg)
     assert bool(res.checks[0].flags) is listed  # noncompact flag raised only for Pipe26STD
     used = {e.id for e in reg.used}
     assert ("aisc360.eq.F8-2" in used) is listed

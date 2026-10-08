@@ -1,5 +1,6 @@
-# Handrail Designer project file (slices 1 and 2: top rail bending and
-# deflection, post combined axial and flexure and post deflection).
+# Handrail Designer project file (slices 1 to 3: top rail bending and
+# deflection, the rail to post weld, post combined axial and flexure, post
+# deflection, and the post to baseplate weld).
 #
 # Loading is per ASCE 7-22.
 #
@@ -28,6 +29,15 @@ grade = "A53 Gr B"        # A53 Gr B is the only grade supported so far
 [post]
 section = "Pipe2STD"      # AISC designation (AISC Shapes Database v16.0)
 grade = "A53 Gr B"
+
+[baseplate]
+grade = "A36"             # A36 is the only baseplate grade supported (all of v1)
+
+[welds]
+# Fillet welds all around, leg size. Required: there is no default size.
+rail_to_post = "1/8"
+post_to_baseplate = "1/4"
+electrode = "E70XX"       # E70XX is the only electrode supported
 
 [loads]
 # Leave these out to use the ASCE 7-22 values from the registry.

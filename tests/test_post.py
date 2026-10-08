@@ -16,7 +16,7 @@ import pytest
 from handrail import checks, dimensions, post, shapes
 from handrail.calc import fmt_sig
 from handrail.checks import SectionStop
-from handrail.project import DeflectionLimit, Loads, Member, Project, ProjectInfo
+from handrail.project import DeflectionLimit, Loads, Member, Project, ProjectInfo, Welds
 from handrail.registry import Registry
 from handrail.units import Q_
 
@@ -30,7 +30,8 @@ def project(rail="Pipe2STD", span="6'-0\"", post_section="Pipe2STD", h="42", tp=
     return Project(
         info=ProjectInfo(name="Test"), span=dimensions.parse(span),
         top_rail=Member(rail, "A53 Gr B"), post=Member(post_section, "A53 Gr B"),
-        post_height=dimensions.parse(h), baseplate_thickness=dimensions.parse(tp), **kw,
+        post_height=dimensions.parse(h), baseplate_thickness=dimensions.parse(tp),
+        welds=Welds(dimensions.parse("1/8"), dimensions.parse("1/4")), **kw,
     )
 
 
@@ -201,7 +202,9 @@ def test_eq_H1_1a_arithmetic_with_an_artificial_dead_load():
     reg = Registry()
     proj = project(post_section="Pipe8STD")
     p8 = shapes.pipe("Pipe8STD")
-    base = checks.run(proj, reg)
+    # A Pipe8STD post under a Pipe2STD rail fails W8 at validation; only the
+    # loading is wanted here, so compute past it.
+    base = checks.compute(proj, reg)
     loading = dataclasses.replace(base.loading, P_D=Q_(40000, "lbf"))
     cap = post._capacity(reg, proj, p8)
     c = post._moment_case(reg, proj, p8, loading, cap, "Outward", "Concentrated")

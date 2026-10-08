@@ -70,6 +70,11 @@ review = [
   "ej.deflection.limit.post",
   # PR #17 review, drafted 2026-10-04
   "ej.post.unbraced_length",
+  # Slice 3 (the welds), drafted 2026-10-08
+  "material.A53_GrB.Fu",
+  "material.A36.Fu",
+  "material.E70XX.FEXX",
+  "ej.weld.post_wall.fu_fy_min",
 ]
 
 # ---------------------------------------------------------------------------
@@ -1250,3 +1255,74 @@ drafted_on = 2026-09-30
 verified_by = ""
 verified_date = ""
 note = "The default ratio (60) is an input default in the project reader, not a code value. ej.deflection.limit stays with the rail span (plan, Check 6)."
+
+# ---------------------------------------------------------------------------
+# Slice 3: the welds (Checks 3 and 7). docs/plans/slice-3.md; decisions
+# W1-W12 in docs/brief/welds.md.
+# ---------------------------------------------------------------------------
+
+# --- Material strengths used by the welds (W12) -----------------------------
+
+[[entry]]
+id = "material.A53_GrB.Fu"
+value = 60
+unit = "ksi"
+cite = "AISC Manual Table 2-4"
+document = "AISC Steel Construction Manual"
+edition = "16th Edition"
+section = "Part 2, Table 2-4, Applicable ASTM Specifications for Various Structural Shapes, Pipe, ASTM A53 Gr B, minimum tensile stress Fu"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-10-08
+verified_by = ""
+verified_date = ""
+note = """
+From memory; the secondary web summaries noted under material.grades.pipe give Fu = 60 ksi for A53 Gr B. Used for the rail fusion face of the rail to post weld (Check 3, W6) and for the post grade's Fu/Fy guard (W5)."""
+
+[[entry]]
+id = "material.A36.Fu"
+value = 58
+unit = "ksi"
+cite = "AISC Manual Table 2-5"
+document = "AISC Steel Construction Manual"
+edition = "16th Edition"
+section = "Part 2, Table 2-5, Applicable ASTM Specifications for Plates and Bars, ASTM A36, minimum tensile stress Fu (the low end of the 58-80 ksi range)"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-10-08
+verified_by = ""
+verified_date = ""
+note = """
+From memory: A36 plate Fu = 58 to 80 ksi, design value the minimum, 58 ksi. Used for the baseplate fusion face of the post to baseplate weld (Check 7, W5). A36 is the only baseplate grade in v1 (W12); its Fy is not used."""
+
+[[entry]]
+id = "material.E70XX.FEXX"
+value = 70
+unit = "ksi"
+cite = "AISC 360-22 §J2.6; AWS A5.1"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§J2.6, Filler Metal Requirements (matching filler metal), with F_EXX the filler metal classification strength defined in the Symbols; E70XX classification per AWS A5.1/A5.1M"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-10-08
+verified_by = ""
+verified_date = ""
+note = """
+From memory. F_EXX is the electrode's classification strength: the "70" in E70XX is 70 ksi minimum tensile strength of the weld metal (AWS A5.1). I am not sure which AISC 360-22 location best defines it: the Symbols list, §J2.6, or Table J2.5's notes. Confirm the cite. E70XX is the only electrode v1 accepts (W12)."""
+
+[[entry]]
+id = "ej.weld.post_wall.fu_fy_min"
+value = 1.20
+unit = ""
+cite = "Engineering judgement (EOR): post wall at the weld covered by Check 5 while Fu/Fy >= 1.20"
+document = "Engineering decision of the engineer of record"
+edition = "docs/brief/welds.md, W5"
+section = "Base metal follows the direction of the force: the post wall at the weld is covered by Check 5 only while yielding governs over rupture, Fu/2.00 >= Fy/1.67, that is Fu/Fy >= 1.20"
+source = "engineer"
+status = "drafted"
+drafted_on = 2026-10-08
+verified_by = ""
+verified_date = ""
+note = """
+2.00/1.67 = 1.198, rounded to 1.20 in the brief. Below this ratio the calc stops, naming the post grade and its Fu/Fy, so the printed "covered by Check 5" line cannot become false (W5). A53 Gr B: 60/35 = 1.71."""

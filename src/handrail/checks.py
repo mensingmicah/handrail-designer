@@ -36,8 +36,15 @@ LOAD_TYPES = (CONCENTRATED, DISTRIBUTED)
 DB = "AISC Shapes Database v16.0"
 COMBO = "asce7.combo.asd.D_plus_L"
 
-# Fy entry for each grade this slice supports.
+# Fy entry for each rail and post grade this slice supports.
 FY_ENTRY = {"A53 Gr B": "material.A53_GrB.Fy"}
+# Fu entry for each grade a weld's fusion face can be (W12): the rail and
+# post grades, and the baseplate.
+FU_ENTRY = {"A53 Gr B": "material.A53_GrB.Fu", "A36": "material.A36.Fu"}
+# Baseplate grades accepted: A36 only, for all of v1 (W12).
+BASEPLATE_GRADES = ("A36",)
+# F_EXX entry for each electrode accepted: E70XX only (W12).
+FEXX_ENTRY = {"E70XX": "material.E70XX.FEXX"}
 
 
 class SectionStop(InputError):
@@ -473,15 +480,55 @@ def check_2(registry, project, rail, loading) -> Check:
 
 
 def validate(project: Project, registry: Registry) -> None:
-    """The input checks that need more than one field: the sections exist, and
-    each grade is one this version supports. Raises an InputError naming what
-    it checked. Runs before compute, so no check runs on inputs that fail."""
+    """The input checks that need more than one field, or a lookup. Raises an
+    InputError naming what it checked and why. Runs before compute, so no
+    check runs on inputs that fail.
+
+    - the sections exist, and each grade and the electrode is one this
+      version supports (W12);
+    - the rail and the post are round hollow sections (W7);
+    - the post is no wider than the rail (W8);
+    - the post grade's Fu/Fy keeps its wall at the weld covered by Check 5 (W5).
+    """
     from handrail import shapes
 
-    shapes.pipe(project.top_rail.section)
-    shapes.pipe(project.post.section)
+    rail = shapes.pipe(project.top_rail.section)
+    post = shapes.pipe(project.post.section)
     require_supported_grade(project.top_rail, "top rail")
     require_supported_grade(project.post, "post")
+    electrode = project.welds.electrode
+    if electrode not in FEXX_ENTRY:
+        raise ProjectError(f"[welds] electrode {electrode!r}: this version supports {', '.join(FEXX_ENTRY)} only")
+    if project.baseplate.grade not in BASEPLATE_GRADES:
+        raise ProjectError(f"[baseplate] grade {project.baseplate.grade!r}: this version supports "
+                           f"{', '.join(BASEPLATE_GRADES)} only")
+
+    for member, sec in (("top rail", rail), ("post", post)):
+        if sec.family not in shapes.ROUND_HOLLOW:
+            raise ProjectError(
+                f"{member} {sec.label} ({sec.family}) is not a round hollow section. The stated assumption "
+                f"that the rail wall's local strength at the post is not checked has been decided only for "
+                f"a round hollow rail on a round hollow post, not for this section."
+            )
+
+    D_rail, D_post = rail.OD, post.OD
+    if D_post > D_rail:
+        raise ProjectError(
+            f"The post ({post.label}, OD {fmt_quantity_plain(D_post)}) is wider than the top rail "
+            f"({rail.label}, OD {fmt_quantity_plain(D_rail)}). The coped post to rail underside detail "
+            f"requires post OD <= rail OD. Check the inputs."
+        )
+
+    grade = project.post.grade
+    Fy, Fu = registry.get(FY_ENTRY[grade]).quantity, registry.get(FU_ENTRY[grade]).quantity
+    limit = registry.get("ej.weld.post_wall.fu_fy_min")
+    ratio = Fu / Fy
+    if ratio < limit.value:
+        raise ProjectError(
+            f"post grade {grade}: Fu/Fy = {fmt_sig(ratio.m_as('dimensionless'))} is below {limit.value} ({limit.cite}). "
+            f"The post wall at the weld is covered by Check 5 only while yielding governs over rupture; "
+            f"the tool does not check this grade's post wall at the weld."
+        )
 
 
 def compute(project: Project, registry: Registry) -> Results:

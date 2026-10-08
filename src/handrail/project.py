@@ -12,7 +12,8 @@ for inputs the engineer didn't intend:
 - true/false fields must be real TOML booleans (the text "false" is not);
 - loads and the deflection limits must be positive numbers;
 - the post is required (every v1 calc checks one post), and the baseplate
-  thickness must be less than the post height.
+  thickness must be less than the post height;
+- both weld sizes are required, with no default (docs/brief/inputs.md).
 
 Top-level [hand] and [verification] tables are allowed and ignored: test
 cases keep their hand values and their kind in the same file as their
@@ -60,6 +61,25 @@ class Loads:
 
 
 @dataclass(frozen=True)
+class Welds:
+    """Fillet welds, all around (docs/brief/inputs.md, W12). The sizes are
+    required; the electrode defaults to E70XX, the only one v1 accepts
+    (checked in checks.validate)."""
+
+    rail_to_post: Dimension       # fillet leg size, top rail to post
+    post_to_baseplate: Dimension  # fillet leg size, post to baseplate
+    electrode: str = "E70XX"
+
+
+@dataclass(frozen=True)
+class Baseplate:
+    """The baseplate's grade. Its thickness t_p is in [geometry]. A36 is the
+    default and, for all of v1, the only grade accepted (W12)."""
+
+    grade: str = "A36"
+
+
+@dataclass(frozen=True)
 class DeflectionLimit:
     ratio: float = 120  # limit is L / ratio
     bypass: bool = False
@@ -81,6 +101,8 @@ class Project:
     post: Member
     post_height: Dimension          # h: top of concrete to top rail centerline
     baseplate_thickness: Dimension  # t_p
+    welds: Welds
+    baseplate: Baseplate = field(default_factory=Baseplate)
     loads: Loads = field(default_factory=Loads)
     rail_deflection: DeflectionLimit = RAIL_DEFLECTION
     post_deflection: DeflectionLimit = POST_DEFLECTION
@@ -92,6 +114,8 @@ SCHEMA = {
     "geometry": {"span": None, "post_height": None, "baseplate_thickness": None},
     "top_rail": {"section": None, "grade": None},
     "post": {"section": None, "grade": None},
+    "baseplate": {"grade": None},
+    "welds": {"rail_to_post": None, "post_to_baseplate": None, "electrode": None},
     "loads": {"concentrated_lb": None, "uniform_plf": None,
               "uniform_exemption": {"applies": None, "statement": None}},
     "deflection": {"rail": {"limit_L_over": None, "bypass": None},
@@ -238,6 +262,14 @@ def from_dict(raw: dict) -> Project:
     top_rail = _member(raw, "top_rail")
     post = _member(raw, "post")
 
+    wt = _need(raw, "welds", "top level")
+    welds = Welds(
+        rail_to_post=_dimension(wt, "rail_to_post", "welds"),
+        post_to_baseplate=_dimension(wt, "post_to_baseplate", "welds"),
+        **_given(wt, "welds", {"electrode": ("electrode", _str)}),
+    )
+    baseplate = Baseplate(**_given(raw.get("baseplate", {}), "baseplate", {"grade": ("grade", _str)}))
+
     ld = raw.get("loads", {})
     ex = ld.get("uniform_exemption", {})
     loads = Loads(
@@ -254,7 +286,7 @@ def from_dict(raw: dict) -> Project:
 
     return Project(
         info=info, span=span, top_rail=top_rail, post=post,
-        post_height=h, baseplate_thickness=tp, loads=loads,
+        post_height=h, baseplate_thickness=tp, welds=welds, baseplate=baseplate, loads=loads,
         rail_deflection=_deflection_limit(raw, "rail", RAIL_DEFLECTION),
         post_deflection=_deflection_limit(raw, "post", POST_DEFLECTION),
     )

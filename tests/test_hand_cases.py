@@ -61,9 +61,18 @@ def _load(path):
         return tomllib.load(f)
 
 
+def stops_at_validation(raw) -> str:
+    """The stop message a case declares validation gives it, or "". Such a
+    case's values are tested through the compute step (slice 3 plan, T1)."""
+    return raw.get("verification", {}).get("stops_at_validation", "")
+
+
 def run_case(path):
     raw = _load(path)
-    return raw, checks.run(project.from_dict(raw), Registry())
+    proj = project.from_dict(raw)
+    if stops_at_validation(raw):
+        return raw, checks.compute(proj, Registry())
+    return raw, checks.run(proj, Registry())
 
 
 def _case_key(c) -> str:
@@ -406,7 +415,8 @@ def _dev_run():
     """The dev section (Pipe2STD rail and post, 6'-0"), not a test case."""
     raw = {"project": {"name": "self-test"},
            "geometry": {"span": "6'-0\"", "post_height": 42, "baseplate_thickness": "1/2"},
-           "top_rail": {"section": "Pipe2STD"}, "post": {"section": "Pipe2STD"}}
+           "top_rail": {"section": "Pipe2STD"}, "post": {"section": "Pipe2STD"},
+           "welds": {"rail_to_post": "1/8", "post_to_baseplate": "1/4"}}
     return checks.run(project.from_dict(raw), Registry())
 
 
@@ -571,8 +581,28 @@ def test_tool_values_without_net_upward_tension_have_no_pt():
     raw = {"project": {"name": "self-test"},
            "geometry": {"span": "6'-0\"", "post_height": 42, "baseplate_thickness": "1/2"},
            "top_rail": {"section": "Pipe12STD"}, "post": {"section": "Pipe12STD"},
+           "welds": {"rail_to_post": "1/8", "post_to_baseplate": "1/4"},
            "loads": {"concentrated_lb": 10, "uniform_plf": 1}}
     res = checks.run(project.from_dict(raw), Registry())
     assert not [c for c in _check(res, 5).checked if c.direction == "Upward"]  # the premise
     assert "check5.Pt_lb" not in tool_values(res)
     assert "check5.Pt_lb" in tool_values(_dev_run())
+
+
+@pytest.mark.parametrize("path", [p for p in CASES if stops_at_validation(_load(p))],
+                         ids=lambda p: p.stem)
+def test_a_case_validation_refuses_stops_with_its_message(path, capsys, tmp_path):
+    """The full case file, through the CLI, stops with the message it declares
+    (slice 3 plan, T1: case 3, a post wider than its rail, W8)."""
+    from handrail import cli
+
+    message = stops_at_validation(_load(path))
+    assert cli.main(["calc", str(path), "-o", str(tmp_path / "unused.pdf")]) == 1
+    err = capsys.readouterr().err
+    assert err.startswith("error:") and message in err, err
+
+
+def test_case_3_is_the_validation_stop_case():
+    # T1: case 3 must keep reaching the compute-step path; if it ever stopped
+    # declaring the stop, its values would silently go back through run().
+    assert "is wider than the top rail" in stops_at_validation(_load(_case_file("case-03.toml")))
