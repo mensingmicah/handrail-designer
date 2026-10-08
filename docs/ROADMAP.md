@@ -330,13 +330,13 @@ registry text. Grade warnings. The form writes and reopens the TOML project
 file, and reopening regenerates the calc exactly. Image upload for the
 front-matter image area.
 
-Also a dimensioned sketch, on the input page and in the PDF front
-matter, that labels each member (top rail, intermediate rail, post,
-baseplate), h, t_p, the span, the weld locations, and B and N with their
-orientation to the rail (B parallel, N perpendicular; S4-6). (Micah,
-2026-10-08.) Its relation to the image upload area, and how it draws the
-none and same-as-top intermediate rail states and each section family,
-are for the slice 8 plan; output.md takes the binding text then.
+Also a key sketch, on the input page and in the PDF front matter: a
+static PNG that Micah draws, labeled with symbols only (L, h, t_p, B, N,
+the member names: top rail, intermediate rail, post, baseplate; and the
+weld locations), not to scale and not generated from the inputs. It
+shows B parallel and N perpendicular to the rail (S4-6). Placing it is
+the whole feature and does not change this slice's size. (Micah,
+2026-10-08.) output.md takes the binding text in the slice 8 plan.
 
 **Depends on.** Slice 7, since the input set is only stable once every
 section family is in.
@@ -430,3 +430,7 @@ The single lateral reaction set (S4-4, loads-and-envelope.md) rests on
 transverse and longitudinal giving identical reactions in v1. Revisit it
 if the longitudinal load is ever modeled differently, for example a
 multi-span frame with moment-connected posts. (Micah, 2026-10-08.)
+
+A sketch drawn from the inputs (to the project's dimensions and
+sections) is an after-v1 idea; v1 has the static key sketch (slice 8).
+(Micah, 2026-10-08.)

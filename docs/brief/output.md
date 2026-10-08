@@ -93,5 +93,16 @@ Manual, 16th Edition, and the AISC Shapes Database v16.0. (Slice 1.)
   second-order stop checks; the printed sentence goes in the calc lines.
   Each capacity (Pc or Pt, and Mc) prints under its demand. The Check 5
   calc lines name the interaction equation used. (Slice 2, D1.)
+- Reaction tables (S4-7, Micah 2026-10-08). Each set prints V, N and M
+  at 4 significant figures in lb and lb-in. N is signed in the
+  anchor-software convention, with its sense in words: "N = +268 lb
+  (tension)", "N = −52.1 lb (compression)". The lateral set prints "V and
+  M act in the same vertical plane; M = V·h." Each set shows its
+  combination label (0.9D + 1.6L, engineering judgement), the governing
+  load type (S4-5), and the D breakdown (top rail, intermediate rail,
+  post, baseplate) with its total. Under each table: "N positive =
+  tension (uplift), matching common anchor-software convention. V and M
+  are reversible; apply them in the governing direction." B × N prints
+  beside the tables with its orientation (S4-6).
 - The inputs are saved as a plain-text project file alongside the PDF;
   reopening it regenerates the calc exactly

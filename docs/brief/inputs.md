@@ -24,7 +24,8 @@ and how it is entered.
   labeled that way ("B = 6 in (parallel to rail) × N = 8 in
   (perpendicular to rail)"). Both are required under `[baseplate]`, with
   no default, entered like any dimension. Input validation stops the calc
-  if B or N is ≤ 0 or smaller than the post OD.
+  if B or N is ≤ 0 or smaller than the post OD. The front-matter key
+  sketch (a static PNG, slice 8) shows the same orientation.
 - The span is the tributary length for the post, a stated assumption
   (output.md)
 - Every project has a post, post height and baseplate thickness: v1 always
