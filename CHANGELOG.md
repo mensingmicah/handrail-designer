@@ -1,5 +1,75 @@
 # Changelog
 
+## v0.3.0 (2026-10-08)
+
+Slice 3: the welds. Merged in PR #19; plan in docs/plans/slice-3.md.
+
+`uv run handrail calc examples/slice-1.toml` now prints Checks 1, 2, 3, 5,
+6 and 7 for an AISC pipe top rail on a pipe post in A53 Gr B, both joints
+fillet welded all around.
+
+### Checks covered
+
+- **Check 3, top rail weld to post**: a flat ring of the post perimeter
+  at the rail's underside, eccentricity e = D_rail/2 (W1, W9). Elastic
+  weld-as-a-line, S_w = πD²/4, uniform shear, vector sum at the governing
+  extreme fiber with θ printed (W3, W10). Weld metal per AISC 360-22 §J2.4
+  with k_ds = 1.0 (W2); rail fusion face in shear rupture per §J4.2(b)
+  (W6). Demand and capacity come from the governing line.
+- **Check 7, post weld to baseplate**: the same ring at the post OD with
+  the arm h − t_p; §J2.4 directional increase for round HSS (W2);
+  baseplate base metal through t_p (W5). No separate fusion-face leg
+  check on the baseplate (Micah's ruling on the case 4 independent calc).
+- Both checks: Table J2.4 minimum size on the thinner part joined, read
+  at the nominal wall, pass/fail; a printed line that §J2.2b(b) does not
+  apply (W11). The post wall is covered by Check 5 (W5). Every direction
+  case for both guard load types, with an envelope table; upward shows
+  "no net tension" when 0.6D ≥ L.
+
+### What it delivers
+
+- Project file: `[welds]` (`rail_to_post`, `post_to_baseplate`, required;
+  `electrode`, E70XX only) and `[baseplate]` (`grade`, A36 only).
+- Validation runs before the calc, as its own step: post OD ≤ rail OD
+  (W8), round hollow rail and post (W7), post grade Fu/Fy ≥ 1.20 (W5),
+  electrode and baseplate grade (W12). Each stop names what it checked.
+- Two new stated assumptions in the front matter: the Check 3 ring model
+  with the flare-bevel sentence (W1, W9), and rail wall Chapter K chord
+  limit states not checked (W7).
+- Dimensions page echoes both weld sizes; Checks 3 and 7 pages; summary
+  rows for both.
+- 28 new drafted registry entries (62 drafted, 32 verified in all). Every
+  calc still prints the DRAFT stamp.
+
+### Verification
+
+- Test case 4 (case 2's inputs with a 1/8" rail weld and a 1/4" post
+  weld) is an independent-calc case for Checks 3 and 7; every value
+  agrees within 0.5%. Micah reviewed the independent calc and the PDF.
+- Test cases 1–3 gained the weld inputs only; every recorded value is
+  unchanged. Case 3 (Pipe2STD post under a Pipe1-1/2STD rail) now stops
+  at W8; its values are tested through the compute step.
+- At release: 683 tests passed, 14 skipped (the deferred values below).
+
+### Deferred to the release review (issue #18)
+
+- Verification of the 28 slice 3 entries, with the round-HSS directional
+  increase (`ej.weld.directional_round_hss`) checked closely: case 4's
+  Check 7 passes only with k_ds = 1.5.
+- Confirmation against Table J2.5 that no fillet fusion-face check is
+  required on the baseplate.
+- Micah's recompute of case 4's printed controlling cases of Checks 3
+  and 7; those [hand] values read "deferred".
+
+### Known gaps
+
+- Check 4, the intermediate rail, the anchor reaction sets and baseplate
+  B × N are not in this release (slice 4).
+- Not checked: rail wall chord limit states (W7), baseplate bending,
+  maximum fillet size, flare-bevel throats.
+- Electrodes other than E70XX, baseplate grades other than A36,
+  non-round sections and posts wider than the rail stop the calc.
+
 ## v0.2.0 (2026-10-04)
 
 Slice 2: the post. Merged in PR #17; plan in docs/plans/slice-2.md.

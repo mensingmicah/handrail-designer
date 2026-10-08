@@ -1,14 +1,19 @@
 # Slice 3 plan: the welds (Checks 3 and 7), pipe rail on pipe post
 
-Status: **planned, not started.** Decisions settled with Micah on
-2026-10-04 and 2026-10-08. Branch `slice-3`.
+Status: **completed.** Merged to main in PR #19 on 2026-10-08 and released
+as v0.3.0 (see CHANGELOG.md). Its 28 registry entries are still drafted,
+and case 4's [hand] values are deferred; both wait for the release review
+(issue #18).
 
-> The binding engineering decisions (W1–W12) are already in the brief:
+> This plan is a record of what slice 3 set out to build and why. The
+> binding engineering decisions (W1–W12) are in the brief:
 > docs/brief/welds.md ("Engineering decisions already made") and the weld,
-> electrode and baseplate grade inputs in docs/brief/inputs.md. Where this
-> plan and the brief differ, the brief governs. This plan holds the build
-> order, the tests, and the case-specific numbers each decision was worked
-> from.
+> electrode and baseplate grade inputs in docs/brief/inputs.md. The rulings
+> made during the slice (Table J2.4 on the nominal wall; Q1, Q2 and Q3 on
+> the case 4 independent calc; Q4 and Q5 needed no action) are in welds.md
+> too. Where this plan differs from docs/BRIEF.md, CLAUDE.md or a
+> later plan, those govern. T1 and T2 below are test decisions, not tool
+> behavior, and stay here.
 
 ## Goal
 
