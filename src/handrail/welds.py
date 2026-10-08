@@ -14,8 +14,8 @@ diameter D. Checks 3 (rail to post) and 7 (post to baseplate) both use it.
 - Weld metal: F_nw t_e k_ds / Omega per inch. Base metal at a fusion face:
   shear rupture, 0.60 Fu t / Omega per inch (W5, W6). The post wall is
   covered by Check 5 (W5; the Fu/Fy guard is in checks.validate).
-- Minimum size per Table J2.4 on the thinner part joined is pass/fail; no
-  maximum size is checked (W11).
+- Minimum size per Table J2.4 on the thinner part joined, walls at their
+  nominal thickness, is pass/fail; no maximum size is checked (W11).
 """
 
 from __future__ import annotations
@@ -98,6 +98,13 @@ class Part:
     t: object
     note: str
     source: str
+
+
+def nominal_wall(key: str, member: str, sec: PipeSection) -> Part:
+    """A wall as a part joined for the minimum size: nominal thickness, the
+    physical wall, because Table J2.4 is a heat-input rule, not a strength
+    provision (welds.md, fillet size limits). Strength lines use t_des (W4)."""
+    return Part(f't_"{key},nom"', sec.tnom, f"{member} nominal wall thickness, {sec.label}", DB)
 
 
 @dataclass
@@ -397,14 +404,13 @@ def check_3(registry: Registry, project: Project, rail: PipeSection, post: PipeS
     e = ecc.line("e", d / 2, "Eccentricity: rail centerline to the weld plane at the rail underside",
                  cite_ids=("ej.weld.ring_model",), unit="inch")
     e_line = ecc.lines[-1]
-    t_rail = Part('t_"rail"', rail.tdes, f"Top rail design wall thickness, {rail.label}", DB)
-    t_post = Part('t_"post"', post.tdes, f"Post design wall thickness, {post.label}", DB)
-    limits = size_limits(registry, rg.w, (t_rail, t_post))
+    limits = size_limits(registry, rg.w, (nominal_wall("rail", "Top rail", rail), nominal_wall("post", "Post", post)))
     wm = weld_metal(registry, project.welds.electrode)
     kd = Sheet(registry)
     k_ds = kd.code_value('k_"ds"', "ej.weld.branch_kds",
                          "No directional increase at the rail to post weld (a branch-to-chord joint)")
     grade = project.top_rail.grade
+    t_rail = Part('t_"rail"', rail.tdes, f"Top rail design wall thickness, {rail.label}", DB)  # W4
     base = base_metal(registry, "Base metal: rail fusion face", FU_ENTRY[grade], f"Tensile strength, {grade}",
                       t_rail)
     normal = registry.get("ej.weld.rail_wall_normal")
@@ -442,8 +448,7 @@ def check_7(registry: Registry, project: Project, post: PipeSection, loading: Lo
                        "Moment arm, h - t_p: guard load at the top rail centerline, weld at the top of the baseplate",
                        "Loading")
     t_p = Part("t_p", project.baseplate_thickness.value, "Baseplate thickness", "Input")
-    limits = size_limits(registry, rg.w, (Part('t_"post"', post.tdes, f"Post design wall thickness, {post.label}",
-                                               DB), t_p))
+    limits = size_limits(registry, rg.w, (nominal_wall("post", "Post", post), t_p))
     wm = weld_metal(registry, project.welds.electrode)
     grade = project.baseplate.grade
     base = base_metal(registry, "Base metal: baseplate fusion face", FU_ENTRY[grade],

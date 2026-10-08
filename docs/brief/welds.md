@@ -170,6 +170,14 @@ plan's decision numbers, kept for the record.
   under the distributed load, w·s = 350 lb). Strength stays capped by the weld metal
   line at the size entered, the rail and baseplate base metal lines, and
   Check 5 for the post wall (W5).
+  - The Table J2.4 lookup uses the nominal wall thickness t_nom for pipe
+    and HSS walls; the baseplate uses t_p as entered. The minimum size is
+    a heat-input and cooling-rate rule tied to the physical thickness, not
+    a strength provision, so the design wall t_des (W4) stays with the
+    fusion-face strength lines only. It is also the stricter choice: a
+    wall that straddles a row limit gets the larger minimum (Pipe5STD:
+    t_nom = 0.258 in gives 3/16 in, where t_des = 0.241 in would give
+    1/8 in). (Micah, 2026-10-08.)
 - **Material values used by the welds.** FEXX = 70 ksi (E70XX); Fu for
   A53 Gr B (AISC Manual Table 2-4) for the rail fusion face; Fu for A36
   (Table 2-5) for the baseplate fusion face. The baseplate's Fy is not

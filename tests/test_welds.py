@@ -191,7 +191,7 @@ def test_check_3_fibers_and_base_metal_line_by_case():
 
 
 def test_a_weld_below_minimum_size_is_ng_whatever_its_ratio():
-    # 1/16 in against the 1/8 in minimum for a 0.143 in pipe wall; the ratio itself is under 1.0.
+    # 1/16 in against the 1/8 in minimum for a 0.154 in nominal pipe wall; the ratio itself is under 1.0.
     chk = checks.run(project(r2p="1/16"), Registry()).check(3)
     assert chk.controlling.ratio < 1.0
     assert chk.failures and "below the minimum size" in chk.failures[0]
@@ -269,3 +269,20 @@ def test_check_7_stops_on_a_post_that_is_not_round(monkeypatch):
 def test_both_weld_checks_run_in_check_number_order():
     res = checks.run(project(), Registry())
     assert [c.number for c in res.checks] == [1, 2, 3, 5, 6, 7]
+
+
+def test_minimum_size_reads_the_nominal_wall_and_strength_the_design_wall():
+    """Table J2.4 takes the physical wall, t_nom; the fusion-face strength line
+    keeps t_des (W4). Pipe5STD straddles the 1/4 in row limit: t_nom = 0.258
+    gives a 3/16 in minimum, where t_des = 0.241 would give 1/8 in."""
+    p5 = shapes.pipe("Pipe5STD")
+    assert p5.tnom.m_as("inch") > 0.25 >= p5.tdes.m_as("inch")  # the premise
+    res = checks.run(project(rail="Pipe5STD", post="Pipe5STD", r2p="1/8", p2b="1/8"), Registry())
+    for n in (3, 7):
+        chk = res.check(n)
+        head = {ln.symbol: ln for ln in chk.checked[0].lines if ln.kind == "value"}
+        assert head['t_"min"'].value == p5.tnom, n
+        assert head['w_"min"'].value.m_as("inch") == 0.1875, n
+        assert chk.failures and chk.verdict == "NG", n
+    rail_face = {ln.symbol: ln for ln in res.check(3).checked[0].lines if ln.kind == "value"}
+    assert rail_face['t_"rail"'].value == p5.tdes

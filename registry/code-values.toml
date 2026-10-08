@@ -1554,11 +1554,13 @@ verified_date = ""
 note = """
 From memory: to 1/4 in, 1/8; over 1/4 to 1/2, 3/16; over 1/2 to 3/4, 1/4; \
 over 3/4, 5/16. Thinner part joined, per 360-16 and later (W11). The \
-single-pass footnote is not recorded. Thickness used for a pipe wall: \
-t_des, consistent with W4 and §B4.2 (design wall). The brief does not say \
-nominal or design for this table; raised with Micah on the slice 3 pull \
-request. It changes the minimum only for a wall that straddles a row \
-limit, for example Pipe5STD (t_nom 0.258, t_des 0.241)."""
+single-pass footnote is not recorded. Thickness used for a pipe or HSS \
+wall: t_nom, the physical wall (Micah, 2026-10-08; docs/brief/welds.md, \
+fillet size limits). The minimum size is a heat-input and cooling-rate \
+rule, not a strength provision, so t_des (W4) stays with the fusion-face \
+strength lines. It is also the stricter choice where a wall straddles a \
+row limit, for example Pipe5STD (t_nom 0.258 gives 3/16; t_des 0.241 \
+would give 1/8)."""
 
 [[entry]]
 id = "aisc360.J2.2b.max_size_edges"
