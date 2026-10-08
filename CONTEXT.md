@@ -73,7 +73,7 @@ _Avoid_: ASCE combination (for these)
 ### Output
 
 **Anchor reaction set**:
-One simultaneous set of factored base shear, axial and moment from a single case, for input into anchor software; named by load direction (transverse, longitudinal, upward).
+One simultaneous set of factored base shear, axial and moment from a single case, for input into anchor software; named by load direction (lateral, in any horizontal direction; upward).
 _Avoid_: Max reactions, reaction envelope
 
 **Code value**:

@@ -222,11 +222,13 @@ acting alone, with no dead load and nothing concurrent. It includes the
 component-load deflection check (L/120 default, editable, bypassable) and
 shows "none" when there is no intermediate rail. Most of it reuses the
 Check 1 and 2 code. The intermediate rail's dead load is added to the post.
-Baseplate plan dimensions B × N and the baseplate weight. The three
-LRFD reaction sets (transverse, longitudinal, upward only when there is
-net tension), each simultaneous, at the top of concrete, labeled as
-engineering-judgement combinations, with the reversal note and B × N
-printed beside them. The reaction tables go at the end of the PDF.
+Baseplate plan dimensions B × N and the baseplate weight. The two
+LRFD reaction sets (lateral, in any horizontal direction, and upward only
+when there is net tension; S4-4 in loads-and-envelope.md), each
+simultaneous, at the top of concrete, labeled as engineering-judgement
+combinations, with the reversal note and B × N printed beside them. The
+reaction tables go at the end of the PDF. Decisions are being settled in
+docs/plans/slice-4.md (S4 numbers, recorded in the brief as made).
 
 **Depends on.** Slice 2 (base forces). Slice 3 is needed for a complete
 package, but not for this slice's code.
@@ -415,3 +417,8 @@ until then the baseplate grade input accepts A36 only (inputs.md,
 slice 3).
 End posts, overhangs, sloped runs and infill stay out until the brief says
 otherwise.
+
+The single lateral reaction set (S4-4, loads-and-envelope.md) rests on
+transverse and longitudinal giving identical reactions in v1. Revisit it
+if the longitudinal load is ever modeled differently, for example a
+multi-span frame with moment-connected posts. (Micah, 2026-10-08.)

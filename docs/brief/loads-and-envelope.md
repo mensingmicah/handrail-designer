@@ -62,14 +62,29 @@ combinations, dead/live separation, and the anchor reaction sets.
 - Dead and live effects stay separate until each check combines them, so one
   analysis produces both the ASD member checks and the factored reactions.
 - Base reactions (v1, concrete substrate only): LRFD, for direct input into
-  anchor software; no service reactions in v1. Three sets are reported, as
-  separate, non-interacting load cases: (1) transverse load, 0.9D + 1.6L;
-  (2) longitudinal load, 0.9D + 1.6L; (3) upward load, 0.9D + 1.6L, only if
-  there is net tension. Both combinations are engineering judgement, not
-  ASCE combinations, and are labeled that way. Reactions are reported on
-  their own axes at the top of concrete (moment arm h), with a note that
-  loads can reverse; the engineer sets direction in the anchor software.
-  Dead load includes the top rail, the post and the intermediate rail. Each
-  set is simultaneous: the shear, axial and moment that occur together in that
-  case, never a max of each component. A max-of-everything row is a load
-  case that never happens and misleads the anchor software.
+  anchor software; no service reactions in v1. Two sets are reported, as
+  separate, non-interacting load cases (S4-4, Micah 2026-10-08, replacing
+  the earlier three sets, transverse, longitudinal and upward):
+  (1) lateral: the horizontal guard load at the top of the post, in any
+  horizontal direction, 0.9D + 1.6L; (2) upward, 0.9D + 1.6L, only when
+  there is net tension (1.6L > 0.9D). Both combinations are engineering
+  judgement, not ASCE combinations, and are labeled that way.
+  - One lateral set covers transverse and longitudinal because in v1 they
+    give identical reactions: both guard loads act at the top of the post
+    with the span as the tributary length, so V, M and D are the same.
+    The set prints the note: "Lateral set applies in any horizontal
+    direction; enter it in the anchor software in the orientation that
+    governs the anchor pattern. Loads can reverse." To revisit if the
+    longitudinal load is ever modeled differently, for example a
+    multi-span frame with moment-connected posts (docs/ROADMAP.md, after
+    v1).
+  - Each set uses the larger of the two guard load types, P or w·s, at
+    the top of the post, and names the type. The smaller is enveloped
+    in every component with the same D, so the set stays simultaneous.
+    With the exemption on, P is the only type. If P = w·s, one set is
+    reported naming both. (S4-5, Micah 2026-10-08.)
+  - Reactions are reported at the top of concrete (moment arm h). Dead
+    load includes the top rail, the post and the intermediate rail. Each
+    set is simultaneous: the shear, axial and moment that occur together
+    in that case, never a max of each component. A max-of-everything row
+    is a load case that never happens and misleads the anchor software.
