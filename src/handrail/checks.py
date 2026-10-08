@@ -134,6 +134,9 @@ class Results:
     post_section_lines: list[Line]
     checks: list[Check]
 
+    def check(self, number: int) -> Check:
+        return next(c for c in self.checks if c.number == number)
+
     @property
     def derived_lengths(self) -> list[tuple[Line, str]]:
         """Each derived length with where it is computed: the line itself, so the
@@ -539,10 +542,11 @@ def compute(project: Project, registry: Registry) -> Results:
     A separate entry point so a test can compute a case that validation
     refuses (docs/plans/slice-3.md, T1); the CLI always validates first.
     """
-    # Imported here, not at the top: post.py builds on this module's Case,
-    # Check and Loading, so a top-level import would be circular.
+    # Imported here, not at the top: post.py and welds.py build on this
+    # module's Case, Check and Loading, so a top-level import would be circular.
     from handrail import shapes
     from handrail.post import check_5, check_6
+    from handrail.welds import check_3
 
     rail = shapes.pipe(project.top_rail.section)
     post = shapes.pipe(project.post.section)
@@ -550,6 +554,7 @@ def compute(project: Project, registry: Registry) -> Results:
     props = section_lines(registry, rail)
     post_props = section_lines(registry, post, with_r=True)
     checks = [check_1(registry, project, rail, loading), check_2(registry, project, rail, loading),
+              check_3(registry, project, rail, post, loading),
               check_5(registry, project, post, loading), check_6(registry, project, post, loading)]
     return Results(project, rail, post, loading, props, post_props, checks)
 

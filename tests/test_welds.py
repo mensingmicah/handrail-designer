@@ -127,3 +127,87 @@ def test_strength_without_base_metal_demand_is_the_weld_metal_ratio():
                           welds.Part('t_"des"', Q_(0.135, "inch"), "Rail wall", "DB"))
     s = welds.strength(Sheet(reg), rg, wm, Sym("k_ds", 1.0), Sym("f_r", Q_(100, "lbf/inch")), bm, None, "")
     assert s.base_ratio is None and s.ratio.value == s.weld_ratio.value
+
+
+# ---------------------------------------------------------------------------
+# Check 3: top rail weld to post (dev section, not a test case)
+# ---------------------------------------------------------------------------
+
+from handrail import checks  # noqa: E402
+from handrail.project import Loads, Member, Project, ProjectInfo, Welds  # noqa: E402
+
+P_CONC, W_PLF = 200.0, 50.0  # lb, lb/ft (registry code values, restated for the plain calc)
+
+
+def project(rail="Pipe2STD", post="Pipe2STD", span="6'-0\"", r2p="1/8", p2b="1/4", **kw):
+    return Project(info=ProjectInfo(name="Test"), span=dimensions.parse(span),
+                   top_rail=Member(rail, "A53 Gr B"), post=Member(post, "A53 Gr B"),
+                   post_height=dimensions.parse("42"), baseplate_thickness=dimensions.parse("1/2"),
+                   welds=Welds(dimensions.parse(r2p), dimensions.parse(p2b)), **kw)
+
+
+def plain_check_3(rail="Pipe2STD", post="Pipe2STD", L_ft=6.0, w=0.125, P=P_CONC, w_plf=W_PLF):
+    """Check 3 by hand in plain floats: {(direction, load type): (f_r, ratio) or None}."""
+    r, p = shapes.pipe(rail), shapes.pipe(post)
+    D, e = p.OD.m_as("inch"), r.OD.m_as("inch") / 2
+    Lw, Sw = math.pi * D, math.pi * D**2 / 4
+    weld = 0.60 * 70e3 * 0.707 * w * 1.0 / 2.00
+    base = 0.60 * 60e3 * r.tdes.m_as("inch") / 2.00
+    Dl = r.W.m_as("lbf/ft") * L_ft
+    out = {}
+    for lt, Lv in (("Concentrated", P), ("Distributed", w_plf * L_ft)):
+        f = (Dl + Lv) / Lw
+        out[("Downward", lt)] = (f, f / weld)
+        fa, fb, fv = Dl / Lw, Lv * e / Sw, Lv / Lw
+        fr = math.hypot(fa + fb, fv)
+        for d in ("Outward", "Inward", "Longitudinal"):
+            out[(d, lt)] = (fr, max(fr / weld, fv / base))
+        net = Lv - 0.6 * Dl
+        out[("Upward", lt)] = (net / Lw, net / Lw / weld) if net > 0 else None
+    return out
+
+
+def test_check_3_matches_plain_calc():
+    chk = checks.run(project(), Registry()).check(3)
+    expected = plain_check_3()
+    assert len(chk.cases) == 10
+    for c in chk.cases:
+        exp = expected[(c.direction, c.load_type)]
+        assert c.status == "checked", c.label
+        assert c.f_r.m_as("lbf/inch") == pytest.approx(exp[0], rel=1e-9), c.label
+        assert c.ratio == pytest.approx(exp[1], rel=1e-9), c.label
+        assert c.k_ds == 1.0 and c.theta is None
+    assert chk.controlling.direction == "Outward" and chk.verdict == "OK"
+
+
+def test_check_3_fibers_and_base_metal_line_by_case():
+    chk = checks.run(project(), Registry()).check(3)
+    by = {(c.direction, c.load_type): c for c in chk.checked}
+    assert by[("Downward", "Concentrated")].fiber == "uniform"
+    assert by[("Downward", "Concentrated")].base_ratio is None  # no in-plane force on the rail face
+    out = by[("Outward", "Distributed")]
+    assert out.fiber == "compression side" and out.base_ratio is not None
+    assert by[("Upward", "Concentrated")].sense == "tension"
+
+
+def test_a_weld_below_minimum_size_is_ng_whatever_its_ratio():
+    # 1/16 in against the 1/8 in minimum for a 0.143 in pipe wall; the ratio itself is under 1.0.
+    chk = checks.run(project(r2p="1/16"), Registry()).check(3)
+    assert chk.controlling.ratio < 1.0
+    assert chk.failures and "below the minimum size" in chk.failures[0]
+    assert not chk.ok and chk.verdict == "NG" and chk.summary_flag == "below minimum size"
+
+
+def test_upward_with_no_net_tension_is_listed_not_checked():
+    loads = Loads(concentrated=Q_(10, "lbf"), uniform=Q_(1, "lbf/ft"))
+    chk = checks.run(project(rail="Pipe12STD", post="Pipe12STD", loads=loads), Registry()).check(3)
+    up = [c for c in chk.cases if c.direction == "Upward"]
+    assert [c.status for c in up] == ["not checked", "not checked"]
+    assert all(c.remark == "No net tension (0.6D >= 1.0L); compression covered by downward" for c in up)
+    assert plain_check_3("Pipe12STD", "Pipe12STD", P=10, w_plf=1)[("Upward", "Concentrated")] is None
+
+
+def test_check_3_exempt_distributed_cases():
+    loads = Loads(uniform_exempt=True, exemption_statement="Not occupied.")
+    chk = checks.run(project(loads=loads), Registry()).check(3)
+    assert all(c.status == "exempt" for c in chk.cases if c.load_type == "Distributed")

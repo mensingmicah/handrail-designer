@@ -214,7 +214,7 @@ def test_section_properties_page_has_a_post_block_with_r():
 
 def test_check_5_envelope_prints_alpha_ratio_only_for_moment_cases():
     res, reg = run()
-    chk5 = res.checks[2]
+    chk5 = res.check(5)
     table = report._envelope_5(chk5)
     for c in chk5.checked:
         if c is not chk5.controlling:  # the controlling row is bold, so its cells are wrapped
@@ -235,7 +235,7 @@ def test_summary_prints_the_check_5_axial_and_moment_terms():
     res, reg = run()
     src = report.build_source(res, reg, CLEAN)
     summary = src.split("= Summary")[1]
-    c = res.checks[2].controlling
+    c = res.check(5).controlling
     assert c.Mr is not None
     assert f'"Pr = {report.fmt_quantity_plain(c.Pr)}; Mr = {report.fmt_quantity_plain(c.Mr)}"' in summary
     assert f'"Pc = {report.fmt_quantity_plain(c.P_allow)}; Mc = {report.fmt_quantity_plain(c.M_allow)}"' in summary
@@ -258,7 +258,7 @@ def test_slenderness_flag_prints_in_the_check_5_summary_row():
 
 def test_second_order_sentence_is_printed_in_the_controlling_moment_case():
     res, reg = run()
-    src = report._lines(res.checks[2].controlling.lines)
+    src = report._lines(res.check(5).controlling.lines)
     assert "Second-order effects negligible: αPr/Pe = " in src
     assert "amplification taken as 1.0." in src
 

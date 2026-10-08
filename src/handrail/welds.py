@@ -21,11 +21,17 @@ diameter D. Checks 3 (rail to post) and 7 (post to baseplate) both use it.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Callable
 
 from handrail.calc import (PI, Line, Sheet, Sym, absolute, arccos, fmt_quantity, fmt_quantity_plain, maximum,
                            minimum, mtext, sin, sqrt)
-from handrail.checks import DB, FEXX_ENTRY, SectionStop, Case
+from handrail.checks import (
+    COMBO, DB, DIRECTIONS, DISTRIBUTED, FEXX_ENTRY, FU_ENTRY, LOAD_TYPES,
+    Case, Check, Loading, SectionStop, combo_text, exempt_case,
+)
 from handrail.dimensions import Dimension
+from handrail.post import _live_at_post
+from handrail.project import Project
 from handrail.registry import Registry
 from handrail.shapes import ROUND_HOLLOW, PipeSection
 from handrail.units import Q_
@@ -219,7 +225,8 @@ def ring_forces(sh: Sheet, rg: Ring, P: Sym, sense: str, V: Sym | None = None, M
         sh.decision(f"{gov.typst} = {fmt_quantity(gov.value)} >= {low.typst} = {fmt_quantity(low.value)}",
                     f"{side.capitalize()} side governs", "No bearing credit: both extreme fibers checked",
                     cite_ids=(NO_BEARING,))
-        f_n = sh.line("f_n", gov, f"Normal force per inch at the governing fiber, {side} side", unit=PER_INCH)
+        f_n = sh.line("f_n", gov, f"Normal force per inch at the governing fiber, {side} side",
+                      cite_ids=(NO_BEARING,), unit=PER_INCH)
     if V is None:
         f_v = None
         f_r = sh.line("f_r", f_n, "Resultant per inch: normal force only", cite_ids=(LINE_METHOD,), unit=PER_INCH)
@@ -245,7 +252,7 @@ def directional_increase(sh: Sheet, registry: Registry, f_r: Sym, section: PipeS
                      line_method.cite)
     theta = sh.line("theta", arccos(f_par / f_r), "Angle between the resultant and the weld axis",
                     cite_ids=("aisc360.eq.J2-5", LINE_METHOD), unit="degree")
-    k_ds = sh.line("k_ds", sh.coeff("aisc360.eq.J2-5.base")
+    k_ds = sh.line('k_"ds"', sh.coeff("aisc360.eq.J2-5.base")
                    + sh.coeff("aisc360.eq.J2-5.coeff") * sin(theta) ** sh.coeff("aisc360.eq.J2-5.exponent"),
                    "Directional strength increase", cite_ids=("aisc360.eq.J2-5", "ej.weld.directional_round_hss"))
     return theta, k_ds
@@ -277,3 +284,139 @@ def strength(sh: Sheet, rg: Ring, wm: WeldMetal, k_ds: Sym, f_r: Sym, base: Base
     ratio = sh.line('"Ratio"', maximum(r_w, r_bm), "The larger of weld metal and base metal",
                     cite_ids=("aisc360.eq.B3-2",), ratio=True)
     return Strength(weld_allow=allow, weld_ratio=r_w, base_ratio=r_bm, ratio=ratio)
+
+
+# ---------------------------------------------------------------------------
+# The envelope, shared by Checks 3 and 7 (W10)
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class WeldSetup:
+    """What differs between Checks 3 and 7; everything else is shared."""
+
+    rg: Ring
+    wm: WeldMetal
+    base: BaseMetal
+    head: list[Line]              # printed at the top of every case
+    dead_note: str                # the axial dead load on the ring, as printed
+    dead_value: object
+    where: str                    # where the guard load acts, as printed
+    arm: Sym                      # moment arm of V to the weld
+    moment_note: str
+    moment_cite: str              # registry entry for M = V times the arm
+    k_ds: Callable[[Sheet, Sym], tuple[Sym | None, Sym]]  # (theta or None, k_ds) at the governing point
+    base_demand: Callable[[RingForces], Sym | None]       # the force on the base metal line, or None
+    base_note: str
+
+
+def _weld_case(registry: Registry, project: Project, loading: Loading, ws: WeldSetup,
+               direction: str, load_type: str) -> WeldCase:
+    demand = Sheet(registry)
+    demand.heading(f"Demand: {direction.lower()}, {load_type.lower()} load")
+    PD = demand.given("P_D", ws.dead_value, ws.dead_note, "Loading")
+    V = M = None
+    if direction == "Downward":
+        combo = registry.get(COMBO)
+        label = f"{combo_text(combo)}, axial\n{combo.cite}"
+        PL = _live_at_post(demand, "P_L", load_type, loading, project, f"vertical, {ws.where}")
+        P = demand.line("P", demand.factor(combo.id, "D") * PD + demand.factor(combo.id, "L") * PL,
+                        "Axial force on the weld, compression; no moment", unit="lbf")
+        sense = "compression"
+    elif direction == "Upward":
+        combo = registry.get("ej.combo.bending.upward")
+        label = f"{combo_text(combo)}, net axial\n{combo.cite}"
+        PL = _live_at_post(demand, "P_L", load_type, loading, project, f"upward, {ws.where}")
+        # One expression gives both the printed value and the decision (ADR 0002).
+        net = demand.factor(combo.id, "L") * PL - demand.factor(combo.id, "D") * PD
+        if not net.eval() > Q_(0, "lbf"):
+            no_net = f"{float(combo.value['D'])!r}D >= {float(combo.value['L'])!r}L"  # the factors in net
+            return WeldCase("Upward", load_type, "not checked", label,
+                            remark=f"No net tension ({no_net}); compression covered by downward")
+        P = demand.line("P", net, "Axial force on the weld: net tension, guard load opposing dead load",
+                        unit="lbf")
+        sense = "tension"
+    else:
+        combo = registry.get(COMBO)
+        label = f"{combo_text(combo, {'D': 'axial', 'L': 'horizontal'}, ', ')}\n{combo.cite}"
+        P = demand.line("P", demand.factor(combo.id, "D") * PD, "Axial force on the weld: dead load, compression",
+                        unit="lbf")
+        VL = _live_at_post(demand, "V_L", load_type, loading, project,
+                           f"horizontal ({direction.lower()}), {ws.where}")
+        V = demand.line("V", demand.factor(combo.id, "L") * VL, "Horizontal force on the weld", unit="lbf")
+        M = demand.line("M", V * ws.arm, ws.moment_note, cite_ids=(ws.moment_cite,), unit="lbf*inch")
+        sense = "compression"
+
+    sh = Sheet(registry)
+    sh.lines.extend(ws.head)
+    sh.lines.extend(demand.lines)
+    f = ring_forces(sh, ws.rg, P, sense, V, M)
+    theta, k_ds = ws.k_ds(sh, f.f_r)
+    s = strength(sh, ws.rg, ws.wm, k_ds, f.f_r, ws.base, ws.base_demand(f), ws.base_note)
+    return WeldCase(direction, load_type, "checked", label,
+                    demand=f.f_r.value, capacity=s.weld_allow.value, ratio=s.ratio.value, lines=sh.lines,
+                    sense=sense, f_a=f.f_a.value, f_b=f.f_b.value if f.f_b else None,
+                    f_v=f.f_v.value if f.f_v else None, f_n=f.f_n.value, f_r=f.f_r.value, fiber=f.fiber,
+                    theta=theta.value if theta else None, k_ds=k_ds.value, weld_allow=s.weld_allow.value,
+                    base_allow=ws.base.allow.value, weld_ratio=s.weld_ratio.value,
+                    base_ratio=s.base_ratio.value if s.base_ratio else None)
+
+
+def _weld_check(chk: Check, registry: Registry, project: Project, loading: Loading, ws: WeldSetup,
+                limits: SizeLimits) -> Check:
+    if limits.failure:
+        chk.failures.append(limits.failure)
+        chk.flags.append(f"BELOW MINIMUM SIZE: {limits.failure}")
+        chk.summary_flag = "below minimum size"
+    for direction in DIRECTIONS:
+        for lt in LOAD_TYPES:
+            if lt == DISTRIBUTED and loading.exempt:
+                chk.cases.append(exempt_case(registry, direction, WeldCase))
+            else:
+                chk.cases.append(_weld_case(registry, project, loading, ws, direction, lt))
+    return chk
+
+
+# ---------------------------------------------------------------------------
+# Check 3: top rail weld to post
+# ---------------------------------------------------------------------------
+
+
+def check_3(registry: Registry, project: Project, rail: PipeSection, post: PipeSection, loading: Loading) -> Check:
+    """The rail to post weld: a flat ring of the post perimeter at the rail's
+    underside, loaded at e = d_rail/2 (W1); k_ds = 1.0 (W2); base metal on
+    the rail side, in-plane force only (W6); the rail wall's normal force is
+    not checked (W7)."""
+    rg = ring(registry, post, project.welds.rail_to_post)
+    ecc = Sheet(registry)
+    ecc.heading("Eccentricity")
+    d = ecc.given('d_"rail"', rail.OD, f"{rail.label}: outside diameter, the rail depth", DB)
+    e = ecc.line("e", d / 2, "Eccentricity: rail centerline to the weld plane at the rail underside",
+                 cite_ids=("ej.weld.ring_model",), unit="inch")
+    t_rail = Part('t_"rail"', rail.tdes, f"Top rail design wall thickness, {rail.label}", DB)
+    t_post = Part('t_"post"', post.tdes, f"Post design wall thickness, {post.label}", DB)
+    limits = size_limits(registry, rg.w, (t_rail, t_post))
+    wm = weld_metal(registry, project.welds.electrode)
+    kd = Sheet(registry)
+    k_ds = kd.code_value('k_"ds"', "ej.weld.branch_kds",
+                         "No directional increase at the rail to post weld (a branch-to-chord joint)")
+    grade = project.top_rail.grade
+    base = base_metal(registry, "Base metal: rail fusion face", FU_ENTRY[grade], f"Tensile strength, {grade}",
+                      t_rail)
+    normal = registry.get("ej.weld.rail_wall_normal")
+    walls = Sheet(registry)
+    walls.decision(mtext("Rail wall, normal force"), "Not checked", normal.value, cite_ids=(normal.id,))
+    head = (rg.lines + ecc.lines + limits.lines + wm.lines + kd.lines + base.lines + walls.lines
+            + post_wall_covered(registry))
+    ws = WeldSetup(
+        rg=rg, wm=wm, base=base, head=head,
+        dead_note="Top rail dead load at the weld: w_D over the span (the tributary length)",
+        dead_value=loading.D_rail, where="on the rail at the post",
+        arm=e, moment_note="Moment at the weld plane: V at the rail centerline, arm e",
+        moment_cite="ej.weld.ring_model",
+        k_ds=lambda _sh, _f_r: (None, k_ds),
+        base_demand=lambda f: f.f_v,
+        base_note="Rail fusion face: in-plane shear only",
+    )
+    chk = Check(3, "Top rail weld to post", "f_r", "frac(R_n, Omega_w)")
+    return _weld_check(chk, registry, project, loading, ws, limits)
