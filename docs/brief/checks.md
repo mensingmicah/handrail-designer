@@ -26,7 +26,10 @@ properties. Weld method is in welds.md.
 7. Post weld to baseplate
 
 Flexural capacity: top rail Lb = span, with Cb from the §F1 moment diagram
-for each load case. Post Lb = h using the §F1 cantilever provision. Post
+for each load case. Post Lb = h using the §F1 cantilever provision. These
+Lb and Cb apply only to sections with a lateral-torsional buckling limit
+state. Round sections (pipe, round HSS, solid round bar) have none, so Lb
+and Cb do not enter their flexural capacity (Slice 2, D5, below). Post
 compression uses the recommended design K. In the upward case the post is
 checked for axial tension (yielding on the gross section); it is computed
 and shown in the envelope summary even though it will not control.
