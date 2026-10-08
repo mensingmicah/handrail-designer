@@ -112,6 +112,12 @@ plan's decision numbers, kept for the record.
   - Baseplate side: shear rupture over t_p, 0.6·Fu·t_p/2.00, against the
     resultant weld force per inch. Accepted by Micah as checked and
     correct.
+  - No separate fusion-face (leg area) check on the baseplate. Base metal
+    is checked per §J4 on the connected part, and the shear rupture
+    through t_p above is that check. (Micah, 2026-10-08, ruling on the case
+    4 independent calc.) To confirm at the release review (#18), against
+    AISC 360-22 Table J2.5 and its footnotes: under a leg-area check, case
+    4's Check 7 would be 1.18, NG.
 - **Rail wall chord limit states are not checked.** The force normal to
   the rail wall at the post (the vertical and upward loads and the V·e
   moment) is a chord-wall limit state of a round T-connection (AISC
@@ -159,6 +165,14 @@ plan's decision numbers, kept for the record.
   (engineering judgement). Longitudinal equals transverse for the ring
   but is listed, as in Check 5. Upward shows "no net tension;
   compression covered by downward" when 0.6D ≥ L.
+
+  The five orthogonal direction cases stand for both welds; no inclined
+  guard load is added. In Check 3 an inclined load raises the ratio by
+  under 10%, on a ratio that stays far below 1.0 for pipe on pipe, because
+  the demand is V·e with e = D_rail/2. In Check 7 its effect is
+  negligible. Engineering judgement (Micah, 2026-10-08, ruling on the case
+  4 independent calc). To revisit for rectangular rails (docs/ROADMAP.md,
+  slices 5 and 6).
 - **Fillet size limits.** (W11, Micah 2026-10-08.) The minimum size is a
   pass/fail line: AISC 360-22 Table J2.4, on the thinner part joined (1/8
   in for every v1 pipe wall, all ≤ 1/4 in). There is no maximum size

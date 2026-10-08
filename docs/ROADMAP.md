@@ -265,7 +265,10 @@ decided. A rail welded to the side of a post wider than it, or a
 cap-plate detail, is a different connection and is out of v1; the tool
 stops when the post is wider than the rail (welds.md, W8). Slices 5 and
 6 keep that stop as section families widen, and slice 6 decides which
-dimensions it compares for rectangular sections.
+dimensions it compares for rectangular sections. The weld envelope's
+orthogonal-cases ruling (welds.md) is revisited for rectangular rails in
+slice 6; confirm here that it still holds for every round rail this slice
+adds.
 
 ### Slice 6: rectangular tubes
 
@@ -287,6 +290,12 @@ weak axis, and a rectangular rail.
 **To settle in the slice plan.** The rail wall's Chapter K limit states
 for a rectangular rail at β = 1, where the sidewall limit states can
 govern (welds.md, W7): checked, or a stated assumption with its reason.
+Also whether the five orthogonal direction cases still cover the welds
+for a rectangular rail. For pipe on pipe an inclined guard load raises
+Check 3 by under 10% on a ratio far below 1.0 (demand V·e, e = D_rail/2),
+and Check 7 negligibly, so no inclined case is checked (welds.md, the
+weld envelope; Micah 2026-10-08). A rectangular rail changes e and the
+ring's line properties, so that argument has to be redone.
 
 ### Slice 7: solid rectangular bar
 
