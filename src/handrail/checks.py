@@ -546,7 +546,7 @@ def compute(project: Project, registry: Registry) -> Results:
     # module's Case, Check and Loading, so a top-level import would be circular.
     from handrail import shapes
     from handrail.post import check_5, check_6
-    from handrail.welds import check_3
+    from handrail.welds import check_3, check_7
 
     rail = shapes.pipe(project.top_rail.section)
     post = shapes.pipe(project.post.section)
@@ -555,7 +555,8 @@ def compute(project: Project, registry: Registry) -> Results:
     post_props = section_lines(registry, post, with_r=True)
     checks = [check_1(registry, project, rail, loading), check_2(registry, project, rail, loading),
               check_3(registry, project, rail, post, loading),
-              check_5(registry, project, post, loading), check_6(registry, project, post, loading)]
+              check_5(registry, project, post, loading), check_6(registry, project, post, loading),
+              check_7(registry, project, post, loading)]
     return Results(project, rail, post, loading, props, post_props, checks)
 
 

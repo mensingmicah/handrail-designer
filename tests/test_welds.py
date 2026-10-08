@@ -211,3 +211,61 @@ def test_check_3_exempt_distributed_cases():
     loads = Loads(uniform_exempt=True, exemption_statement="Not occupied.")
     chk = checks.run(project(loads=loads), Registry()).check(3)
     assert all(c.status == "exempt" for c in chk.cases if c.load_type == "Distributed")
+
+
+# ---------------------------------------------------------------------------
+# Check 7: post weld to baseplate (dev section, not a test case)
+# ---------------------------------------------------------------------------
+
+
+def plain_check_7(rail="Pipe2STD", post="Pipe2STD", L_ft=6.0, h=42.0, tp=0.5, w=0.25, P=P_CONC, w_plf=W_PLF):
+    """Check 7 by hand in plain floats: {(direction, load type): (f_r, ratio)}."""
+    r, p = shapes.pipe(rail), shapes.pipe(post)
+    D, arm = p.OD.m_as("inch"), h - tp
+    Lw, Sw = math.pi * D, math.pi * D**2 / 4
+    weld = 0.60 * 70e3 * 0.707 * w * 1.5 / 2.00   # theta = 90 deg at the governing fiber: k_ds = 1.5
+    base = 0.60 * 58e3 * tp / 2.00
+    PD = r.W.m_as("lbf/ft") * L_ft + p.W.m_as("lbf/inch") * arm
+    out = {}
+    for lt, Lv in (("Concentrated", P), ("Distributed", w_plf * L_ft)):
+        f = (PD + Lv) / Lw
+        out[("Downward", lt)] = (f, max(f / weld, f / base))
+        fa, fb, fv = PD / Lw, Lv * arm / Sw, Lv / Lw
+        fr = math.hypot(fa + fb, fv)
+        for d in ("Outward", "Inward", "Longitudinal"):
+            out[(d, lt)] = (fr, max(fr / weld, fr / base))
+        net = (Lv - 0.6 * PD) / Lw
+        out[("Upward", lt)] = (net, max(net / weld, net / base))
+    return out
+
+
+def test_check_7_matches_plain_calc():
+    chk = checks.run(project(), Registry()).check(7)
+    expected = plain_check_7()
+    assert len(chk.checked) == 10
+    for c in chk.checked:
+        f_r, ratio = expected[(c.direction, c.load_type)]
+        assert c.f_r.m_as("lbf/inch") == pytest.approx(f_r, rel=1e-9), c.label
+        assert c.ratio == pytest.approx(ratio, rel=1e-9), c.label
+        assert c.theta.m_as("degree") == 90 and c.k_ds == 1.5, c.label
+    assert chk.controlling.label == "Outward, distributed"
+
+
+def test_check_7_theta_is_computed_at_the_governing_point():
+    c = checks.run(project(), Registry()).check(7).controlling
+    printed = {ln.symbol: ln for ln in c.lines if ln.kind == "value"}
+    assert printed["theta"].symbolic == "arccos(frac(f_parallel, f_r))"
+    assert 'sin(theta)^("1.5")' in printed['k_"ds"'].symbolic
+
+
+def test_check_7_stops_on_a_post_that_is_not_round(monkeypatch):
+    # W2 inside the weld code, past validation: compute() with a stand-in family.
+    real = shapes.pipe
+    monkeypatch.setattr(shapes, "pipe", lambda d: dataclasses.replace(real(d), family="rectangular HSS"))
+    with pytest.raises(SectionStop, match=r"directional strength increase rule for this section family"):
+        checks.compute(project(), Registry())
+
+
+def test_both_weld_checks_run_in_check_number_order():
+    res = checks.run(project(), Registry())
+    assert [c.number for c in res.checks] == [1, 2, 3, 5, 6, 7]

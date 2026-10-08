@@ -420,3 +420,40 @@ def check_3(registry: Registry, project: Project, rail: PipeSection, post: PipeS
     )
     chk = Check(3, "Top rail weld to post", "f_r", "frac(R_n, Omega_w)")
     return _weld_check(chk, registry, project, loading, ws, limits)
+
+
+# ---------------------------------------------------------------------------
+# Check 7: post weld to baseplate
+# ---------------------------------------------------------------------------
+
+
+def check_7(registry: Registry, project: Project, post: PipeSection, loading: Loading) -> Check:
+    """The post to baseplate weld: a ring of the post perimeter at the top of
+    the baseplate, moment arm h - t_p; k_ds from theta at the governing point
+    (W2); base metal on the baseplate side against the resultant (W5)."""
+    rg = ring(registry, post, project.welds.post_to_baseplate)
+    arm = Sheet(registry)
+    arm.heading("Moment arm")
+    L_post = arm.given('L_"post"', loading.L_post,
+                       "Moment arm, h - t_p: guard load at the top rail centerline, weld at the top of the baseplate",
+                       "Loading")
+    t_p = Part("t_p", project.baseplate_thickness.value, "Baseplate thickness", "Input")
+    limits = size_limits(registry, rg.w, (Part('t_"post"', post.tdes, f"Post design wall thickness, {post.label}",
+                                               DB), t_p))
+    wm = weld_metal(registry, project.welds.electrode)
+    grade = project.baseplate.grade
+    base = base_metal(registry, "Base metal: baseplate fusion face", FU_ENTRY[grade],
+                      f"Tensile strength, baseplate {grade}", t_p)
+    head = rg.lines + arm.lines + limits.lines + wm.lines + base.lines + post_wall_covered(registry)
+    ws = WeldSetup(
+        rg=rg, wm=wm, base=base, head=head,
+        dead_note="D at the post: axial dead load at the top of the baseplate",
+        dead_value=loading.P_D, where="at the top of the post",
+        arm=L_post, moment_note="Moment at the top of the baseplate",
+        moment_cite="aisc_manual.t3-23.case22.M",
+        k_ds=lambda sh, f_r: directional_increase(sh, registry, f_r, post),
+        base_demand=lambda f: f.f_r,
+        base_note="Baseplate fusion face: the resultant per inch",
+    )
+    chk = Check(7, "Post weld to baseplate", "f_r", "frac(R_n, Omega_w)")
+    return _weld_check(chk, registry, project, loading, ws, limits)
