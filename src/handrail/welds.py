@@ -59,6 +59,7 @@ class WeldCase(Case):
     base_demand: object = None # force per inch on the base metal line; None when the face sees none
     weld_ratio: float | None = None
     base_ratio: float | None = None  # None when the fusion face sees no force in this case
+    governs: str = ""          # the line demand, capacity and ratio come from: "weld metal" or "base metal"
 
 
 # ---------------------------------------------------------------------------
@@ -307,7 +308,8 @@ class WeldSetup:
     wm: WeldMetal
     base: BaseMetal
     head: list[Line]              # printed at the top of every case
-    dead_note: str                # the axial dead load on the ring, as printed
+    dead_symbol: str              # the axial dead load on the ring: its loading-page symbol
+    dead_note: str                # ...and its note, as printed
     dead_value: object
     where: str                    # where the guard load acts, as printed
     arm: Sym                      # moment arm of V to the weld
@@ -322,7 +324,7 @@ def _weld_case(registry: Registry, project: Project, loading: Loading, ws: WeldS
                direction: str, load_type: str) -> WeldCase:
     demand = Sheet(registry)
     demand.heading(f"Demand: {direction.lower()}, {load_type.lower()} load")
-    PD = demand.given("P_D", ws.dead_value, ws.dead_note, "Loading")
+    PD = demand.given(ws.dead_symbol, ws.dead_value, ws.dead_note, "Loading")
     V = M = None
     if direction == "Downward":
         combo = registry.get(COMBO)
@@ -362,14 +364,20 @@ def _weld_case(registry: Registry, project: Project, loading: Loading, ws: WeldS
     theta, k_ds = ws.k_ds(sh, f.f_r)
     bd = ws.base_demand(f)
     s = strength(sh, ws.rg, ws.wm, k_ds, f.f_r, ws.base, bd, ws.base_note)
+    # Demand and capacity come from the line the ratio comes from; a tie goes
+    # to the weld metal, as the printed max() does.
+    if s.base_ratio is not None and s.base_ratio.value > s.weld_ratio.value:
+        governs, demand_value, capacity_value = "base metal", bd.value, ws.base.allow.value
+    else:
+        governs, demand_value, capacity_value = "weld metal", f.f_r.value, s.weld_allow.value
     return WeldCase(direction, load_type, "checked", label,
-                    demand=f.f_r.value, capacity=s.weld_allow.value, ratio=s.ratio.value, lines=sh.lines,
+                    demand=demand_value, capacity=capacity_value, ratio=s.ratio.value, lines=sh.lines,
                     sense=sense, f_a=f.f_a.value, f_b=f.f_b.value if f.f_b else None,
                     f_v=f.f_v.value if f.f_v else None, f_n=f.f_n.value, f_r=f.f_r.value, fiber=f.fiber,
                     theta=theta.value if theta else None, k_ds=k_ds.value, weld_allow=s.weld_allow.value,
                     base_allow=ws.base.allow.value, base_demand=bd.value if bd else None,
                     weld_ratio=s.weld_ratio.value,
-                    base_ratio=s.base_ratio.value if s.base_ratio else None)
+                    base_ratio=s.base_ratio.value if s.base_ratio else None, governs=governs)
 
 
 def _weld_check(chk: Check, registry: Registry, project: Project, loading: Loading, ws: WeldSetup,
@@ -420,6 +428,7 @@ def check_3(registry: Registry, project: Project, rail: PipeSection, post: PipeS
             + post_wall_covered(registry))
     ws = WeldSetup(
         rg=rg, wm=wm, base=base, head=head,
+        dead_symbol='D_"rail"',
         dead_note="Top rail dead load at the weld: w_D over the span (the tributary length)",
         dead_value=loading.D_rail, where="on the rail at the post",
         arm=e, moment_note="Moment at the weld plane: V at the rail centerline, arm e",
@@ -456,6 +465,7 @@ def check_7(registry: Registry, project: Project, post: PipeSection, loading: Lo
     head = rg.lines + arm.lines + limits.lines + wm.lines + base.lines + post_wall_covered(registry)
     ws = WeldSetup(
         rg=rg, wm=wm, base=base, head=head,
+        dead_symbol="P_D",
         dead_note="D at the post: axial dead load at the top of the baseplate",
         dead_value=loading.P_D, where="at the top of the post",
         arm=L_post, moment_note="Moment at the top of the baseplate",

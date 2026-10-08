@@ -139,10 +139,10 @@ from handrail.project import Loads, Member, Project, ProjectInfo, Welds  # noqa:
 P_CONC, W_PLF = 200.0, 50.0  # lb, lb/ft (registry code values, restated for the plain calc)
 
 
-def project(rail="Pipe2STD", post="Pipe2STD", span="6'-0\"", r2p="1/8", p2b="1/4", **kw):
+def project(rail="Pipe2STD", post="Pipe2STD", span="6'-0\"", r2p="1/8", p2b="1/4", tp="1/2", **kw):
     return Project(info=ProjectInfo(name="Test"), span=dimensions.parse(span),
                    top_rail=Member(rail, "A53 Gr B"), post=Member(post, "A53 Gr B"),
-                   post_height=dimensions.parse("42"), baseplate_thickness=dimensions.parse("1/2"),
+                   post_height=dimensions.parse("42"), baseplate_thickness=dimensions.parse(tp),
                    welds=Welds(dimensions.parse(r2p), dimensions.parse(p2b)), **kw)
 
 
@@ -286,3 +286,57 @@ def test_minimum_size_reads_the_nominal_wall_and_strength_the_design_wall():
         assert chk.failures and chk.verdict == "NG", n
     rail_face = {ln.symbol: ln for ln in res.check(3).checked[0].lines if ln.kind == "value"}
     assert rail_face['t_"rail"'].value == p5.tdes
+
+
+def test_thin_baseplate_base_metal_governs_and_sets_demand_and_capacity():
+    """t_p = 1/4 in: base metal 0.60(58 ksi)(0.25 in)/2.00 = 4,350 lb/in is below
+    the 1/4 in weld's 0.60(70)(0.707)(0.25)(1.5)/2.00 = 5,568 lb/in, so base
+    metal governs Check 7. Demand and capacity come from that line, as the
+    summary prints them."""
+    from handrail import report
+
+    res = checks.run(project(tp="1/4"), Registry())
+    c = res.check(7).controlling
+    assert c.governs == "base metal"
+    assert c.base_ratio > c.weld_ratio and c.ratio == c.base_ratio
+    assert c.demand == c.base_demand == c.f_r
+    assert c.capacity == c.base_allow
+    assert c.capacity.m_as("lbf/inch") == pytest.approx(0.60 * 58e3 * 0.25 / 2.00, rel=1e-12)
+    assert c.ratio == pytest.approx((c.demand / c.capacity).m_as(""), rel=1e-12)
+    assert report._demand_capacity(c)[1].endswith("(base metal)")
+    # Check 3 in the same run: weld metal governs, demand f_r over the weld capacity.
+    c3 = res.check(3).controlling
+    assert c3.governs == "weld metal" and c3.demand == c3.f_r and c3.capacity == c3.weld_allow
+
+
+def test_every_weld_case_ratio_is_its_demand_over_its_capacity():
+    for tp in ("1/2", "1/4"):
+        res = checks.run(project(tp=tp), Registry())
+        for n in (3, 7):
+            for c in res.check(n).checked:
+                assert c.ratio == pytest.approx((c.demand / c.capacity).m_as(""), rel=1e-12), (tp, n, c.label)
+
+
+def test_check_3_prints_the_rail_dead_load_with_the_loading_page_symbol():
+    res = checks.run(project(), Registry())
+    c3 = res.check(3).checked[0]
+    symbols = [ln.symbol for ln in c3.lines if ln.kind == "value"]
+    assert 'D_"rail"' in symbols and "P_D" not in symbols
+    assert any(ln.symbol == 'D_"rail"' for ln in res.loading.lines)  # the same symbol on the loading page
+    c7 = res.check(7).checked[0]
+    assert "P_D" in [ln.symbol for ln in c7.lines if ln.kind == "value"]
+
+
+@pytest.mark.parametrize("t, w_min", [
+    (0.25, 0.125),      # exactly at the 1/4 in limit: the "to 1/4 in" row
+    (0.2501, 0.1875),
+    (0.5, 0.1875),      # exactly at 1/2 in
+    (0.5001, 0.25),
+    (0.75, 0.25),       # exactly at 3/4 in
+    (0.7501, 0.3125),
+])
+def test_table_j2_4_rows_include_their_upper_limit(t, w_min):
+    reg, rg = _ring("1/8")
+    limits = welds.size_limits(reg, rg.w, _parts(t, 1.0))
+    printed = next(ln for ln in limits.lines if ln.symbol == 'w_"min"')
+    assert printed.value.m_as("inch") == w_min

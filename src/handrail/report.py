@@ -254,12 +254,9 @@ def _check(chk: Check) -> str:
 def _demand_capacity(c: Case) -> tuple[str, str]:
     """Summary cells. An interaction check has no single demand and capacity, so
     Check 5 prints its axial and moment terms side by side. A weld check prints
-    the line that governs its ratio: weld metal or base metal."""
+    the line that governs its ratio, weld metal or base metal, as the case set it."""
     if isinstance(c, WeldCase):
-        if c.base_ratio is not None and c.base_ratio > c.weld_ratio:
-            return (fmt_quantity_plain(c.base_demand),
-                    f"{fmt_quantity_plain(c.base_allow)} (base metal)")
-        return fmt_quantity_plain(c.f_r), f"{fmt_quantity_plain(c.weld_allow)} (weld metal)"
+        return fmt_quantity_plain(c.demand), f"{fmt_quantity_plain(c.capacity)} ({c.governs})"
     if not isinstance(c, PostCase):
         return fmt_quantity_plain(c.demand), fmt_quantity_plain(c.capacity)
     Pr, P_cap, Mr, M_cap = _post_terms(c)
