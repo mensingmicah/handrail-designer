@@ -330,6 +330,14 @@ registry text. Grade warnings. The form writes and reopens the TOML project
 file, and reopening regenerates the calc exactly. Image upload for the
 front-matter image area.
 
+Also a dimensioned sketch, on the input page and in the PDF front
+matter, that labels each member (top rail, intermediate rail, post,
+baseplate), h, t_p, the span, the weld locations, and B and N with their
+orientation to the rail (B parallel, N perpendicular; S4-6). (Micah,
+2026-10-08.) Its relation to the image upload area, and how it draws the
+none and same-as-top intermediate rail states and each section family,
+are for the slice 8 plan; output.md takes the binding text then.
+
 **Depends on.** Slice 7, since the input set is only stable once every
 section family is in.
 

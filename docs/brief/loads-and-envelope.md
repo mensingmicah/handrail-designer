@@ -84,7 +84,14 @@ combinations, dead/live separation, and the anchor reaction sets.
     With the exemption on, P is the only type. If P = w·s, one set is
     reported naming both. (S4-5, Micah 2026-10-08.)
   - Reactions are reported at the top of concrete (moment arm h). Dead
-    load includes the top rail, the post and the intermediate rail. Each
+    load includes the top rail, the post, the intermediate rail and the
+    baseplate. The baseplate weight is W_bp = ρ·B·N·t_p (steel density, a
+    registry entry). It enters the reaction sets' D only, not Checks 5
+    and 7, because the plate is below their critical section at the top
+    of the baseplate. Its 0.9·W_bp slightly reduces net uplift in the
+    upward set; that is accepted as engineering judgement, and the
+    engineer chooses in the anchor software whether to enter the
+    compression. (S4-6, Micah 2026-10-08.) Each
     set is simultaneous: the shear, axial and moment that occur together
     in that case, never a max of each component. A max-of-everything row
     is a load case that never happens and misleads the anchor software.

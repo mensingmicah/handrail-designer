@@ -19,7 +19,12 @@ and how it is entered.
 - Post height h, from top of concrete to the top rail centerline; span (post
   to post, center to center); baseplate thickness t_p and plan dimensions
   B × N. B and N give the baseplate weight and print beside the anchor
-  reaction sets.
+  reaction sets. (S4-6, Micah 2026-10-08.) B is the plate dimension
+  parallel to the rail and N the one perpendicular to it, and they print
+  labeled that way ("B = 6 in (parallel to rail) × N = 8 in
+  (perpendicular to rail)"). Both are required under `[baseplate]`, with
+  no default, entered like any dimension. Input validation stops the calc
+  if B or N is ≤ 0 or smaller than the post OD.
 - The span is the tributary length for the post, a stated assumption
   (output.md)
 - Every project has a post, post height and baseplate thickness: v1 always
