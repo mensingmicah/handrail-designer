@@ -18,10 +18,10 @@ properties. Weld method is in welds.md.
    posts. It acts alone: not combined with dead load and not concurrent with
    the top-rail loads. Includes a deflection check under the component
    load, default L/120, editable and bypassable. When the intermediate rail
-   is the same as the top rail, Check 4 is covered by Checks 1 and 2 by
+   is the same as the top rail, Check 4 is controlled by Checks 1 and 2 by
    observation and not computed, unless the component load exceeds the
-   concentrated guard load (S4-1, below). If there is no intermediate
-   rail, the check shows "none".
+   concentrated guard load (S4-1 and S4-2, below). If there is no
+   intermediate rail, the check shows "none".
 5. Post combined axial and flexure (cantilever)
 6. Post deflection (cantilever), horizontal live load only, over the
    cantilever length h − t_p; the L/60 limit uses the same length
@@ -155,15 +155,12 @@ plan's decision numbers, kept for the record.
   intermediate rail matches the top rail.
   - **Same as the top rail** (`same_as_top_rail`, a checkbox, default
     checked): section and grade are the top rail's. Check 4 is not
-    computed. It prints "Covered by Checks 1 and 2 by observation: same
-    section, grade and span; component load [P_c] ≤ concentrated guard
-    load [P]", with both values printed. The intermediate rail's dead
-    load is still added to the post. Guard: loads are editable, so if the
-    component load exceeds the concentrated guard load the full Check 4
-    runs instead of the observation line.
+    computed; it is controlled by Checks 1 and 2 (S4-2, below). The
+    intermediate rail's dead load is still added to the post.
   - **Its own section** (checkbox unchecked): the engineer enters the
     section; the grade defaults to the top rail's. The full Check 4 runs:
-    component-load bending and deflection.
+    component-load bending and deflection, with its own deflection limit
+    (S4-2).
   - **None** (`none = true`): no intermediate rail. Check 4 prints "none"
     and no intermediate rail dead load is added.
   - No height input: the Check 4 moment does not depend on it, and the
@@ -172,3 +169,20 @@ plan's decision numbers, kept for the record.
   - Because the default state adds dead load to the post, test cases 1–4
     gain `none = true` as an input-only addition, so none of their
     recorded values changes.
+- **Check 4 when the intermediate rail is the same as the top rail.**
+  (S4-2, Micah 2026-10-08.)
+  - Check 4 prints: "Controlled by Checks 1 and 2 by observation: same
+    section, grade and span as the top rail; component load P_c = [value]
+    ≤ concentrated guard load P = [value]. See Checks 1 and 2 for the
+    result." The summary row shows "Controlled by Checks 1 and 2", with
+    no ratio and no OK or NG of its own. The wording defers to the top
+    rail's result, so a failing Check 1 or 2 needs no separate guard.
+  - There is no separate deflection input in this state. The
+    intermediate rail follows Check 2, including a bypass.
+  - One guard: loads are editable, so if P_c > P the full Check 4 runs
+    instead of the observation line.
+  - Own-section state: the full Check 4, with its own deflection limit,
+    `[deflection.intermediate_rail]`, default L/120, editable and
+    bypassable. It cites the existing verified entry `ej.deflection.limit`,
+    whose note is broadened to name the intermediate rail (a note edit,
+    so the entry stays verified).
