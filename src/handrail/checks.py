@@ -82,6 +82,7 @@ class Check:
     cases: list[Case] = field(default_factory=list)
     flags: list[str] = field(default_factory=list)
     summary_flag: str = ""  # short flag text printed in the summary row (e.g. Lc/r above 200)
+    failures: list[str] = field(default_factory=list)  # NG whatever the ratio (a weld below minimum size)
     bypassed: bool = False
     derived_lengths: list[Line] = field(default_factory=list)  # listed on the Dimensions page
 
@@ -100,7 +101,7 @@ class Check:
 
     @property
     def ok(self) -> bool:
-        return self.bypassed or self.controlling.ratio <= 1.0
+        return self.bypassed or (not self.failures and self.controlling.ratio <= 1.0)
 
     @property
     def verdict(self) -> str:
@@ -115,6 +116,7 @@ class Loading:
     w_L: object        # uniform guard load, or None when exempt
     w_D: object        # top rail self-weight
     L_post: object     # post cantilever length, h - t_p
+    D_rail: object     # top rail dead load delivered to the post, w_D times the span
     P_D: object        # axial dead load at the top of the baseplate (D at the post)
     exempt: bool
     exemption_statement: str
@@ -212,7 +214,7 @@ def build_loading(project: Project, registry: Registry, rail: PipeSection, post:
     D_rail = sh.line('D_"rail"', w_D * s, "Top rail dead load delivered to the post", cite_ids=(dl,), unit="lbf")
     P_D = sh.line("P_D", D_rail + D_post, "D at the post: axial dead load at the top of the baseplate",
                   cite_ids=(dl,), unit="lbf")
-    return Loading(P=P.value, w_L=w_L, w_D=w_D.value, L_post=L_post.value, P_D=P_D.value,
+    return Loading(P=P.value, w_L=w_L, w_D=w_D.value, L_post=L_post.value, D_rail=D_rail.value, P_D=P_D.value,
                    exempt=ld.uniform_exempt, exemption_statement=ld.exemption_statement, lines=sh.lines,
                    derived_lengths=[L_post_line])
 
