@@ -170,12 +170,57 @@ def tool_values(res):
             v[f"check2.deflection_in.{_case_key(c)}"] = c.demand.m_as("inch")
             v[f"check2.ratio.{_case_key(c)}"] = c.ratio
     v.update(_post_values(res))
+    v.update(_weld_values(res, 3))
+    v.update(_weld_values(res, 7))
     return v
 
 
-CONTROLLING = {f"check{n}.controlling": n for n in (1, 2, 5, 6)}
+def _weld_values(res, number):
+    """Check 3 or 7: the ring, the size line, the capacities, and each case's
+    forces per inch and ratios, read from the printed lines and the cases."""
+    chk = _check(res, number)
+    g = f"check{number}"
+    head = chk.checked[0].lines  # every case prints the same head: ring, size limits, capacities
+    min_size = next(ln for ln in head if ln.kind == "decision" and ln.symbol.startswith("w ="))
+    v = {
+        f"{g}.L_w_in": _line_value(head, "L_w").m_as("inch"),
+        f"{g}.S_w_in2": _line_value(head, "S_w").m_as("in^2"),
+        f"{g}.throat_in": _line_value(head, "t_e").m_as("inch"),
+        f"{g}.t_min_in": _line_value(head, 't_"min"').m_as("inch"),
+        f"{g}.w_min_in": _line_value(head, 'w_"min"').m_as("inch"),
+        f"{g}.min_size": "NG" if min_size.text.startswith("NG") else "OK",
+        f"{g}.Fnw_ksi": _line_value(head, 'F_"nw"').m_as("ksi"),
+        f"{g}.base_allow_lbpin": chk.checked[0].base_allow.m_as("lbf/inch"),
+    }
+    if number == 3:
+        v[f"{g}.e_in"] = _line_value(head, "e").m_as("inch")
+        v[f"{g}.weld_allow_lbpin"] = chk.checked[0].weld_allow.m_as("lbf/inch")
+    else:
+        v[f"{g}.arm_in"] = _line_value(head, 'L_"post"').m_as("inch")
+    for c in chk.checked:
+        k = _case_key(c)
+        v[f"{g}.f_a_lbpin.{k}"] = c.f_a.m_as("lbf/inch")
+        if c.f_b is not None:
+            v[f"{g}.f_b_lbpin.{k}"] = c.f_b.m_as("lbf/inch")
+        if c.f_v is not None:
+            v[f"{g}.f_v_lbpin.{k}"] = c.f_v.m_as("lbf/inch")
+        v[f"{g}.f_n_lbpin.{k}"] = c.f_n.m_as("lbf/inch")
+        v[f"{g}.f_r_lbpin.{k}"] = c.f_r.m_as("lbf/inch")
+        v[f"{g}.fiber.{k}"] = c.fiber
+        if c.theta is not None:
+            v[f"{g}.theta_deg.{k}"] = c.theta.m_as("degree")
+            v[f"{g}.k_ds.{k}"] = c.k_ds
+            v[f"{g}.weld_allow_lbpin.{k}"] = c.weld_allow.m_as("lbf/inch")
+        v[f"{g}.ratio_weld.{k}"] = c.weld_ratio
+        if c.base_ratio is not None:
+            v[f"{g}.ratio_base.{k}"] = c.base_ratio
+        v[f"{g}.ratio.{k}"] = c.ratio
+    return v
+
+
+CONTROLLING = {f"check{n}.controlling": n for n in (1, 2, 3, 5, 6, 7)}
 CHECK_GROUPS = {key.split(".")[0] for key in CONTROLLING}
-TEXT_KEYS = ("controlling", "equation", "Fcr_equation")
+TEXT_KEYS = ("controlling", "equation", "Fcr_equation", "fiber", "min_size")
 
 
 def _is_text(key: str) -> bool:
@@ -383,12 +428,17 @@ def render_template(case: Path, keys) -> str:
         "# its own value, in the unit the key's suffix names, and fills",
         "# [provenance]. Tool output never fills a value here (CLAUDE.md rule 5).",
         "# Forces are positive magnitudes; the case name gives the sense (an",
-        "# upward P_r is tension, recorded as a positive number).",
+        "# upward P_r is tension, recorded as a positive number). Weld forces",
+        "# per inch are positive magnitudes too (lbpin = lb per inch of weld;",
+        "# deg = degrees).",
         "# Text keys use these exact words (case does not matter):",
         "#   Fcr_equation: \"E3-2\" or \"E3-3\".",
         "#   check5.equation.*: \"H1-1a\" or \"H1-1b\" in the moment cases; \"Pr/Pc\"",
         "#     for downward (axial only, Chapter E); \"Pr/Pt\" for upward (axial",
         "#     only, Chapter D).",
+        "#   fiber (Checks 3 and 7): \"compression side\" or \"tension side\" of",
+        "#     bending, whichever governs; \"uniform\" where the case has no moment.",
+        "#   min_size: \"OK\" or \"NG\" (Table J2.4 minimum fillet size).",
         "#   controlling: direction, comma, load type, e.g. \"outward, distributed\".",
         "#     When cases tie exactly, name the first tied case in this file's key",
         "#     order; the test accepts any of the tied cases.",
