@@ -472,7 +472,24 @@ def check_2(registry, project, rail, loading) -> Check:
     return chk
 
 
-def run(project: Project, registry: Registry) -> Results:
+def validate(project: Project, registry: Registry) -> None:
+    """The input checks that need more than one field: the sections exist, and
+    each grade is one this version supports. Raises an InputError naming what
+    it checked. Runs before compute, so no check runs on inputs that fail."""
+    from handrail import shapes
+
+    shapes.pipe(project.top_rail.section)
+    shapes.pipe(project.post.section)
+    require_supported_grade(project.top_rail, "top rail")
+    require_supported_grade(project.post, "post")
+
+
+def compute(project: Project, registry: Registry) -> Results:
+    """Every check, on inputs validate() has accepted.
+
+    A separate entry point so a test can compute a case that validation
+    refuses (docs/plans/slice-3.md, T1); the CLI always validates first.
+    """
     # Imported here, not at the top: post.py builds on this module's Case,
     # Check and Loading, so a top-level import would be circular.
     from handrail import shapes
@@ -480,11 +497,15 @@ def run(project: Project, registry: Registry) -> Results:
 
     rail = shapes.pipe(project.top_rail.section)
     post = shapes.pipe(project.post.section)
-    require_supported_grade(project.top_rail, "top rail")
-    require_supported_grade(project.post, "post")
     loading = build_loading(project, registry, rail, post)
     props = section_lines(registry, rail)
     post_props = section_lines(registry, post, with_r=True)
     checks = [check_1(registry, project, rail, loading), check_2(registry, project, rail, loading),
               check_5(registry, project, post, loading), check_6(registry, project, post, loading)]
     return Results(project, rail, post, loading, props, post_props, checks)
+
+
+def run(project: Project, registry: Registry) -> Results:
+    """Validate, then compute: the order the CLI uses."""
+    validate(project, registry)
+    return compute(project, registry)

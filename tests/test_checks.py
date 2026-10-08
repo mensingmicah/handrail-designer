@@ -299,3 +299,22 @@ def test_post_block_adds_r_and_rail_block_is_unchanged(results):
     post_syms = [ln.symbol for ln in results.post_section_lines]
     assert "r" not in rail_syms
     assert post_syms == rail_syms[:-1] + ["r", rail_syms[-1]]
+
+
+# ---------------------------------------------------------------------------
+# Slice 3, T1: run() is validate() then compute()
+# ---------------------------------------------------------------------------
+
+
+def test_run_validates_before_computing(monkeypatch):
+    calls = []
+    monkeypatch.setattr(checks, "validate", lambda p, r: calls.append("validate"))
+    monkeypatch.setattr(checks, "compute", lambda p, r: calls.append("compute"))
+    checks.run(project(), Registry())
+    assert calls == ["validate", "compute"]
+
+
+def test_compute_alone_skips_only_the_validation():
+    a, b = checks.run(project(), Registry()), checks.compute(project(), Registry())
+    for x, y in zip(a.checks, b.checks):
+        assert [c.ratio for c in x.checked] == [c.ratio for c in y.checked]
