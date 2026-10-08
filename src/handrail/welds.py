@@ -56,6 +56,7 @@ class WeldCase(Case):
     k_ds: float | None = None
     weld_allow: object = None  # weld metal R_n/Omega per inch
     base_allow: object = None  # base metal R_n/Omega per inch at the checked fusion face
+    base_demand: object = None # force per inch on the base metal line; None when the face sees none
     weld_ratio: float | None = None
     base_ratio: float | None = None  # None when the fusion face sees no force in this case
 
@@ -352,13 +353,15 @@ def _weld_case(registry: Registry, project: Project, loading: Loading, ws: WeldS
     sh.lines.extend(demand.lines)
     f = ring_forces(sh, ws.rg, P, sense, V, M)
     theta, k_ds = ws.k_ds(sh, f.f_r)
-    s = strength(sh, ws.rg, ws.wm, k_ds, f.f_r, ws.base, ws.base_demand(f), ws.base_note)
+    bd = ws.base_demand(f)
+    s = strength(sh, ws.rg, ws.wm, k_ds, f.f_r, ws.base, bd, ws.base_note)
     return WeldCase(direction, load_type, "checked", label,
                     demand=f.f_r.value, capacity=s.weld_allow.value, ratio=s.ratio.value, lines=sh.lines,
                     sense=sense, f_a=f.f_a.value, f_b=f.f_b.value if f.f_b else None,
                     f_v=f.f_v.value if f.f_v else None, f_n=f.f_n.value, f_r=f.f_r.value, fiber=f.fiber,
                     theta=theta.value if theta else None, k_ds=k_ds.value, weld_allow=s.weld_allow.value,
-                    base_allow=ws.base.allow.value, weld_ratio=s.weld_ratio.value,
+                    base_allow=ws.base.allow.value, base_demand=bd.value if bd else None,
+                    weld_ratio=s.weld_ratio.value,
                     base_ratio=s.base_ratio.value if s.base_ratio else None)
 
 
@@ -393,6 +396,7 @@ def check_3(registry: Registry, project: Project, rail: PipeSection, post: PipeS
     d = ecc.given('d_"rail"', rail.OD, f"{rail.label}: outside diameter, the rail depth", DB)
     e = ecc.line("e", d / 2, "Eccentricity: rail centerline to the weld plane at the rail underside",
                  cite_ids=("ej.weld.ring_model",), unit="inch")
+    e_line = ecc.lines[-1]
     t_rail = Part('t_"rail"', rail.tdes, f"Top rail design wall thickness, {rail.label}", DB)
     t_post = Part('t_"post"', post.tdes, f"Post design wall thickness, {post.label}", DB)
     limits = size_limits(registry, rg.w, (t_rail, t_post))
@@ -418,7 +422,7 @@ def check_3(registry: Registry, project: Project, rail: PipeSection, post: PipeS
         base_demand=lambda f: f.f_v,
         base_note="Rail fusion face: in-plane shear only",
     )
-    chk = Check(3, "Top rail weld to post", "f_r", "frac(R_n, Omega_w)")
+    chk = Check(3, "Top rail weld to post", "f_r", "frac(R_n, Omega_w)", derived_lengths=[e_line])
     return _weld_check(chk, registry, project, loading, ws, limits)
 
 

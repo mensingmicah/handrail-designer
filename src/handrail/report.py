@@ -16,6 +16,7 @@ from handrail.calc import Line, fmt_quantity_plain, fmt_ratio, fmt_sig, typst_st
 from handrail.checks import Case, Check, Results
 from handrail.post import PostCase
 from handrail.registry import Registry
+from handrail.welds import WeldCase
 from handrail.version import Stamp
 
 # The tool's own stated assumptions (docs/brief/output.md). Locked: always printed;
@@ -27,6 +28,11 @@ LOCKED_ASSUMPTIONS = (
     "(engineering judgement).",
     "The top rail runs continuously over the post; the post is coped and welded to its underside. "
     "The rail is designed as a simple span.",
+    "The rail to post weld is modeled as a flat ring of the post's perimeter at the underside of the rail, "
+    "with eccentricity e = half the rail depth from the rail centerline; this is conservative against the "
+    "saddle centroid (2R/π for equal round diameters). It is modeled as a fillet of the entered size all "
+    "around, although at equal diameters the sides of the saddle form a flare-bevel joint.",
+    "Local strength of the rail wall at the post (AISC 360-22 Chapter K chord limit states) is not checked.",
     "The intermediate rail's connection to the post, and the component load's effect on the post, "
     "are not checked.",
     "Guard loads are not combined with floor or roof live load; wind, snow and ice are not considered.",
@@ -177,6 +183,44 @@ def _envelope_5(chk: Check) -> str:
     return f"#text(size: 8pt)[{table}]"  # nine columns: set small so the rows stay a few lines
 
 
+def _envelope_weld(chk: Check) -> str:
+    """Weld envelope (Checks 3 and 7): the forces per inch at the governing
+    fiber, theta and k_ds where k_ds comes from theta (Check 7), and the weld
+    metal and base metal capacities per inch."""
+    with_theta = any(c.theta is not None for c in chk.checked)
+    ctrl = chk.controlling
+    rows, bold = [], []
+    for i, c in enumerate(chk.cases):
+        if c.status == "checked":
+            row = [c.direction, c.load_type, c.combination,
+                   f"{fmt_quantity_plain(c.f_n)}\n{c.fiber}",
+                   fmt_quantity_plain(c.f_v) if c.f_v is not None else "—",
+                   fmt_quantity_plain(c.f_r)]
+            if with_theta:
+                row.append(f"{fmt_quantity_plain(c.theta)}\n{fmt_sig(c.k_ds)}")
+            row += [_weld_capacities(c), fmt_ratio(c.ratio), "Controls" if c is ctrl else ""]
+            rows.append(row)
+            if c is ctrl:
+                bold.append(i)
+        else:
+            rows.append([c.direction, c.load_type or "", c.remark] + [""] * (7 if with_theta else 6))
+    header = ["[*Direction*]", "[*Load*]", "[*Combination*]", "[$f_n$ \\ fiber]", "[$f_v$]", "[$f_r$]"]
+    columns = "(auto, auto, 1fr, auto, auto, auto, "
+    if with_theta:
+        header.append('[$theta$ \\ $k_"ds"$]')
+        columns += "auto, "
+    header += ["[*Capacity* per inch]", "[*Ratio*]", "[]"]
+    columns += "auto, auto, auto)"
+    table = _table(header, rows, columns, bold, raw_header=True)
+    return f"#text(size: 8pt)[{table}]"
+
+
+def _weld_capacities(c: WeldCase) -> str:
+    """Weld metal, and base metal where the fusion face carries force in the case."""
+    base = f"Base {fmt_quantity_plain(c.base_allow)}" if c.base_demand is not None else "Base —"
+    return f"Weld {fmt_quantity_plain(c.weld_allow)}\n{base}"
+
+
 def _check(chk: Check) -> str:
     out = [f"= Check {chk.number}: {chk.title}"]
     if chk.bypassed:
@@ -187,21 +231,35 @@ def _check(chk: Check) -> str:
     out.append("== Envelope summary")
     out.append("Every direction case and load type is computed. The full calculation follows for the "
                "controlling case only.")
-    out.append(_envelope_5(chk) if chk.number == 5 else _envelope(chk))
+    if chk.number == 5:
+        out.append(_envelope_5(chk))
+    elif isinstance(chk.controlling, WeldCase):
+        out.append(_envelope_weld(chk))
+    else:
+        out.append(_envelope(chk))
     ctrl = chk.controlling
     combination = ctrl.combination.replace("\n", "; ")  # table cells break the label; a heading doesn't
     out.append(f"#heading(level: 2, {typst_str(f'Controlling case: {ctrl.label} ({combination})')})")
     out.append(_lines(ctrl.lines))
-    # The verdict is decided once, by the Check; the page only prints it.
-    cmp = "<=" if chk.ok else ">"
+    # The verdict is decided once, by the Check; the page only prints it. The
+    # sign compares the ratio alone: a check can be NG with its ratio under
+    # 1.00 (a weld below the minimum size), and then says why.
+    cmp = "<=" if ctrl.ratio <= 1.0 else ">"
+    why = f"#h(6pt) #{typst_str('; ' + chk.summary_flag)}" if chk.failures else ""
     out.append(f"#align(right, text(size: 12pt, weight: \"bold\")[$\"Ratio\" = {fmt_ratio(ctrl.ratio)} {cmp} 1.00$ "
-               f"#h(10pt) #{typst_str(chk.verdict)}])")
+               f"{why}#h(10pt) #{typst_str(chk.verdict)}])")
     return "\n\n".join(out)
 
 
 def _demand_capacity(c: Case) -> tuple[str, str]:
     """Summary cells. An interaction check has no single demand and capacity, so
-    Check 5 prints its axial and moment terms side by side."""
+    Check 5 prints its axial and moment terms side by side. A weld check prints
+    the line that governs its ratio: weld metal or base metal."""
+    if isinstance(c, WeldCase):
+        if c.base_ratio is not None and c.base_ratio > c.weld_ratio:
+            return (fmt_quantity_plain(c.base_demand),
+                    f"{fmt_quantity_plain(c.base_allow)} (base metal)")
+        return fmt_quantity_plain(c.f_r), f"{fmt_quantity_plain(c.weld_allow)} (weld metal)"
     if not isinstance(c, PostCase):
         return fmt_quantity_plain(c.demand), fmt_quantity_plain(c.capacity)
     Pr, P_cap, Mr, M_cap = _post_terms(c)
@@ -270,8 +328,8 @@ def build_source(results: Results, registry: Registry, stamp: Stamp) -> str:
 
     # Front matter
     src.append("#align(center, text(size: 16pt, weight: \"bold\")[Guard Calculation])")
-    src.append("#align(center)[Top rail bending and deflection; post combined axial and flexure, "
-               "and deflection]")
+    src.append("#align(center)[Top rail bending and deflection; top rail weld to post; post combined axial "
+               "and flexure, and deflection; post weld to baseplate]")
     src.append("== Project")
     src.append(_table([], [["Project", info.name], ["Phase", info.phase], ["Description", info.description]],
                       "(auto, 1fr)", stroke="none"))
@@ -300,6 +358,8 @@ def build_source(results: Results, registry: Registry, stamp: Stamp) -> str:
         ("Span, post to post (c/c)", proj.span),
         ("Post height h, top of concrete to top rail centerline", proj.post_height),
         ("Baseplate thickness t_p", proj.baseplate_thickness),
+        ("Fillet weld, top rail to post", proj.welds.rail_to_post),
+        ("Fillet weld, post to baseplate", proj.welds.post_to_baseplate),
     )]
     src.append(_table(["Dimension", "As entered", "Read as", "Inches"], rows, "(1fr, auto, auto, auto)"))
     src.append("Derived lengths, each computed in the calc where it is used:")
@@ -312,6 +372,8 @@ def build_source(results: Results, registry: Registry, stamp: Stamp) -> str:
     src.append(_lines(results.section_lines))
     src.append(f"#text({typst_str(f'Post: {results.post.label}, {proj.post.grade}.')})")
     src.append(_lines(results.post_section_lines))
+    materials = f"Baseplate: {proj.baseplate.grade}. Welds: fillet, all around, electrode {proj.welds.electrode}."
+    src.append(f"#text({typst_str(materials)})")
 
     # Loading
     src.append("= Loading")
