@@ -75,6 +75,30 @@ review = [
   "material.A36.Fu",
   "material.E70XX.FEXX",
   "ej.weld.post_wall.fu_fy_min",
+  "aisc360.J2.2a.throat",
+  "aisc360.J2.2a.throat.coeff",
+  "aisc360.J2.5.fnw",
+  "aisc360.J2.5.fnw.coeff",
+  "aisc360.J2.4.fillet_strength",
+  "aisc360.J2.5.omega_w",
+  "aisc360.eq.J2-5",
+  "aisc360.eq.J2-5.base",
+  "aisc360.eq.J2-5.coeff",
+  "aisc360.eq.J2-5.exponent",
+  "aisc360.J2.4.min_size",
+  "aisc360.J2.2b.max_size_edges",
+  "aisc360.eq.J4-4",
+  "aisc360.eq.J4-4.coeff",
+  "aisc360.J4.2.omega_rupture",
+  "aisc_manual.part9.base_metal",
+  "ej.weld.ring_model",
+  "ej.weld.directional_round_hss",
+  "ej.weld.branch_kds",
+  "ej.weld.line_method",
+  "ej.weld.no_bearing",
+  "ej.weld.post_wall_covered",
+  "ej.weld.rail_wall_normal",
+  "ej.weld.max_size_not_applicable",
 ]
 
 # ---------------------------------------------------------------------------
@@ -1277,7 +1301,10 @@ drafted_on = 2026-10-08
 verified_by = ""
 verified_date = ""
 note = """
-From memory; the secondary web summaries noted under material.grades.pipe give Fu = 60 ksi for A53 Gr B. Used for the rail fusion face of the rail to post weld (Check 3, W6) and for the post grade's Fu/Fy guard (W5)."""
+From memory; the secondary web summaries noted under \
+material.grades.pipe give Fu = 60 ksi for A53 Gr B. Used for the rail \
+fusion face of the rail to post weld (Check 3, W6) and for the post \
+grade's Fu/Fy guard (W5)."""
 
 [[entry]]
 id = "material.A36.Fu"
@@ -1293,7 +1320,10 @@ drafted_on = 2026-10-08
 verified_by = ""
 verified_date = ""
 note = """
-From memory: A36 plate Fu = 58 to 80 ksi, design value the minimum, 58 ksi. Used for the baseplate fusion face of the post to baseplate weld (Check 7, W5). A36 is the only baseplate grade in v1 (W12); its Fy is not used."""
+From memory: A36 plate Fu = 58 to 80 ksi, design value the minimum, 58 \
+ksi. Used for the baseplate fusion face of the post to baseplate weld \
+(Check 7, W5). A36 is the only baseplate grade in v1 (W12); its Fy is \
+not used."""
 
 [[entry]]
 id = "material.E70XX.FEXX"
@@ -1309,7 +1339,11 @@ drafted_on = 2026-10-08
 verified_by = ""
 verified_date = ""
 note = """
-From memory. F_EXX is the electrode's classification strength: the "70" in E70XX is 70 ksi minimum tensile strength of the weld metal (AWS A5.1). I am not sure which AISC 360-22 location best defines it: the Symbols list, §J2.6, or Table J2.5's notes. Confirm the cite. E70XX is the only electrode v1 accepts (W12)."""
+From memory. F_EXX is the electrode's classification strength: the "70" \
+in E70XX is 70 ksi minimum tensile strength of the weld metal (AWS \
+A5.1). I am not sure which AISC 360-22 location best defines it: the \
+Symbols list, §J2.6, or Table J2.5's notes. Confirm the cite. E70XX is \
+the only electrode v1 accepts (W12)."""
 
 [[entry]]
 id = "ej.weld.post_wall.fu_fy_min"
@@ -1325,4 +1359,434 @@ drafted_on = 2026-10-08
 verified_by = ""
 verified_date = ""
 note = """
-2.00/1.67 = 1.198, rounded to 1.20 in the brief. Below this ratio the calc stops, naming the post grade and its Fu/Fy, so the printed "covered by Check 5" line cannot become false (W5). A53 Gr B: 60/35 = 1.71."""
+2.00/1.67 = 1.198, rounded to 1.20 in the brief. Below this ratio the \
+calc stops, naming the post grade and its Fu/Fy, so the printed "covered \
+by Check 5" line cannot become false (W5). A53 Gr B: 60/35 = 1.71."""
+
+# --- Fillet weld strength, AISC 360-22 §J2 ---------------------------------
+
+[[entry]]
+id = "aisc360.J2.2a.throat"
+value = "Effective throat of an equal-leg fillet weld"
+unit = "equation"
+cite = "AISC 360-22 §J2.2a"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§J2.2a, Fillet Welds, Effective Area: the effective throat is the shortest distance from the root of the joint to the face of the diagrammatic weld"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-10-08
+verified_by = ""
+verified_date = ""
+note = """
+From memory of 360-16 §J2.2a. For an equal-leg fillet of leg w the throat \
+is w cos 45; the coefficient is aisc360.J2.2a.throat.coeff. No \
+penetration credit is taken."""
+
+[[entry]]
+id = "aisc360.J2.2a.throat.coeff"
+value = 0.707
+unit = ""
+cite = "AISC 360-22 §J2.2a"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§J2.2a, effective throat of an equal-leg fillet weld, as a fraction of the leg size"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-10-08
+verified_by = ""
+verified_date = ""
+note = """
+cos 45 = 0.7071, used as 0.707 by convention (AISC Manual Part 8). Applied \
+all around at equal diameters too, where the sides of the saddle form a \
+flare-bevel joint (W9; part of the W1 stated assumption)."""
+
+[[entry]]
+id = "aisc360.J2.5.fnw"
+value = "Nominal stress of fillet weld metal, shear on the effective area"
+unit = "equation"
+cite = "AISC 360-22 Table J2.5"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "Table J2.5, Available Strength of Welded Joints, fillet welds, shear on the effective area: F_nw"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-10-08
+verified_by = ""
+verified_date = ""
+note = """
+From memory of 360-16 Table J2.5 (F_nw = 0.60 F_EXX, Omega = 2.00). In \
+360-16 the directional increase sat inside Eq. J2-5 for F_nw; I believe \
+360-22 moved it into a separate factor k_ds. Confirm both."""
+
+[[entry]]
+id = "aisc360.J2.5.fnw.coeff"
+value = 0.60
+unit = ""
+cite = "AISC 360-22 Table J2.5"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "Table J2.5, fillet welds, shear: nominal stress of the weld metal as a fraction of F_EXX"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-10-08
+verified_by = ""
+verified_date = ""
+note = "Same confidence as aisc360.J2.5.fnw."
+
+[[entry]]
+id = "aisc360.J2.4.fillet_strength"
+value = "Nominal strength of a fillet weld: nominal weld metal stress on the effective area, times the directional strength increase where it applies"
+unit = "equation"
+cite = "AISC 360-22 §J2.4"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§J2.4, Strength, fillet welds (R_n = F_nw A_we k_ds)"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-10-08
+verified_by = ""
+verified_date = ""
+note = """
+From memory. The tool works per inch of weld, so A_we is the effective \
+throat times 1 in and R_n prints in lb/in. I am not sure of the 360-22 \
+equation number in §J2.4 for this one, so the cite names the section; \
+confirm and add the equation number."""
+
+[[entry]]
+id = "aisc360.J2.5.omega_w"
+value = 2.00
+unit = ""
+cite = "AISC 360-22 Table J2.5"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "Table J2.5, fillet welds, shear on the effective area: Omega (ASD)"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-10-08
+verified_by = ""
+verified_date = ""
+note = "From memory of 360-16 Table J2.5."
+
+[[entry]]
+id = "aisc360.eq.J2-5"
+value = "Directional strength increase factor k_ds for a fillet weld, from the angle theta between the line of action of the force and the weld longitudinal axis"
+unit = "equation"
+cite = "AISC 360-22 Eq. J2-5"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§J2.4, Equation J2-5 (k_ds), with its exclusions (end-loaded welds; fillet welds at the ends of rectangular HSS loaded in tension take k_ds = 1.0)"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-10-08
+verified_by = ""
+verified_date = ""
+note = """
+From memory; equation number unconfirmed for 360-22 (Eq. J2-5 held the \
+increase in 360-16). Its round-HSS applicability is \
+ej.weld.directional_round_hss, and the rail to post weld uses \
+ej.weld.branch_kds instead (W2). Confirm the rectangular HSS wording when \
+the rectangular rule is drafted (W2)."""
+
+[[entry]]
+id = "aisc360.eq.J2-5.base"
+value = 1.0
+unit = ""
+cite = "AISC 360-22 Eq. J2-5"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "Equation J2-5, the constant term"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-10-08
+verified_by = ""
+verified_date = ""
+note = "Same confidence as aisc360.eq.J2-5."
+
+[[entry]]
+id = "aisc360.eq.J2-5.coeff"
+value = 0.50
+unit = ""
+cite = "AISC 360-22 Eq. J2-5"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "Equation J2-5, the coefficient on sin^1.5 theta"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-10-08
+verified_by = ""
+verified_date = ""
+note = "Same confidence as aisc360.eq.J2-5."
+
+[[entry]]
+id = "aisc360.eq.J2-5.exponent"
+value = 1.5
+unit = ""
+cite = "AISC 360-22 Eq. J2-5"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "Equation J2-5, the exponent on sin theta"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-10-08
+verified_by = ""
+verified_date = ""
+note = "Same confidence as aisc360.eq.J2-5."
+
+[[entry]]
+id = "aisc360.J2.4.min_size"
+value = [
+  { t_max_in = 0.25, w_min_in = 0.125 },
+  { t_max_in = 0.5, w_min_in = 0.1875 },
+  { t_max_in = 0.75, w_min_in = 0.25 },
+  { t_max_in = inf, w_min_in = 0.3125 },
+]
+unit = "list"
+cite = "AISC 360-22 Table J2.4"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§J2.2b, Table J2.4, Minimum Size of Fillet Welds, by the material thickness of the thinner part joined. Each row: thickness up to and including t_max_in, minimum leg size w_min_in, both in inches"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-10-08
+verified_by = ""
+verified_date = ""
+note = """
+From memory: to 1/4 in, 1/8; over 1/4 to 1/2, 3/16; over 1/2 to 3/4, 1/4; \
+over 3/4, 5/16. Thinner part joined, per 360-16 and later (W11). The \
+single-pass footnote is not recorded. Thickness used for a pipe wall: \
+t_des, consistent with W4 and §B4.2 (design wall). The brief does not say \
+nominal or design for this table; raised with Micah on the slice 3 pull \
+request. It changes the minimum only for a wall that straddles a row \
+limit, for example Pipe5STD (t_nom 0.258, t_des 0.241)."""
+
+[[entry]]
+id = "aisc360.J2.2b.max_size_edges"
+value = "The maximum size of fillet welds along edges of material is the thickness of the material for material less than 1/4 in thick, and the thickness minus 1/16 in for material 1/4 in or more thick, unless the weld is designated to obtain full throat thickness."
+unit = "provision"
+cite = "AISC 360-22 §J2.2b(b)"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§J2.2b(b), maximum size of fillet welds of connected parts, along edges"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-10-08
+verified_by = ""
+verified_date = ""
+note = """
+Paraphrase from memory of 360-16 §J2.2b(b). Cited only on the printed \
+line saying it does not apply: these welds are T-joints, not welds along \
+an edge of material (W11; ej.weld.max_size_not_applicable)."""
+
+# --- Base metal at the fusion face: shear rupture, §J4.2(b) (W5, W6) --------
+
+[[entry]]
+id = "aisc360.eq.J4-4"
+value = "Shear rupture strength of a connecting element on the net area subject to shear"
+unit = "equation"
+cite = "AISC 360-22 Eq. J4-4"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§J4.2(b), Shear rupture, Equation J4-4 (R_n = 0.60 F_u A_nv)"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-10-08
+verified_by = ""
+verified_date = ""
+note = """
+From memory of 360-16 §J4.2(b). Per inch of weld at a fusion face, A_nv \
+is the face thickness times 1 in (aisc_manual.part9.base_metal)."""
+
+[[entry]]
+id = "aisc360.eq.J4-4.coeff"
+value = 0.60
+unit = ""
+cite = "AISC 360-22 Eq. J4-4"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "Equation J4-4, the coefficient on F_u A_nv"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-10-08
+verified_by = ""
+verified_date = ""
+note = "Same confidence as aisc360.eq.J4-4."
+
+[[entry]]
+id = "aisc360.J4.2.omega_rupture"
+value = 2.00
+unit = ""
+cite = "AISC 360-22 §J4.2(b)"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§J4.2(b), shear rupture: Omega (ASD)"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-10-08
+verified_by = ""
+verified_date = ""
+note = "From memory of 360-16 §J4.2(b)."
+
+[[entry]]
+id = "aisc_manual.part9.base_metal"
+value = "Base metal at a fillet weld is checked by shear rupture of the base metal along the fusion face, per inch of weld; shear yielding is a limit state of an element's gross shear area, not of a fusion face."
+unit = "provision"
+cite = "AISC Manual Part 9, base metal at welds"
+document = "AISC Steel Construction Manual"
+edition = "16th Edition"
+section = "Part 9, Design of Connecting Elements: strength of base metal at welds (the one-sided minimum thickness t_min = 3.09D/Fu comes from shear rupture)"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-10-08
+verified_by = ""
+verified_date = ""
+note = """
+Paraphrase from memory of the Manual Part 9 convention (W6, Micah \
+2026-10-04). I do not recall the page or equation number for t_min; \
+confirm the location. Applied at the rail fusion face (Check 3, in-plane \
+force only) and the baseplate fusion face (Check 7, the resultant weld \
+force) (W5)."""
+
+# --- Engineering judgement for the weld model (W1-W11) ---------------------
+
+[[entry]]
+id = "ej.weld.ring_model"
+value = "The rail to post weld is a flat ring of the post perimeter in the plane of the rail underside; the horizontal load at the rail centerline acts on it at an eccentricity of half the rail depth"
+unit = "equation"
+cite = "Engineering judgement (EOR): weld ring at the rail underside, e = D_rail/2"
+document = "Engineering decision of the engineer of record"
+edition = "docs/brief/welds.md, W1 and W9"
+section = "Check 3 weld model and eccentricity"
+source = "engineer"
+status = "drafted"
+drafted_on = 2026-10-08
+verified_by = ""
+verified_date = ""
+note = """
+Micah, 2026-10-04 (W1) and 2026-10-08 (W9). Conservative: the saddle \
+centroid for equal diameters is 2R/pi below the rail centerline (0.637R, \
+against R here). A stated assumption, printed in the front matter."""
+
+[[entry]]
+id = "ej.weld.directional_round_hss"
+value = "The directional strength increase applies to fillet welds on round HSS, pipe included, including the post to baseplate weld under base moment."
+unit = "provision"
+cite = "Engineering judgement (EOR), after STI: directional increase on round HSS"
+document = "Steel Tube Institute, Directionality Increase for Fillet Welds to HSS (after Packer et al. testing)"
+edition = "docs/brief/welds.md, W2"
+section = "Directional strength increase: round HSS applicability"
+source = "engineer"
+status = "drafted"
+drafted_on = 2026-10-08
+verified_by = ""
+verified_date = ""
+note = """
+Micah, 2026-10-04 (W2). A non-primary source; I did not open the STI \
+piece and have no URL for it. Applying the increase under base moment \
+extends that test basis, which was axial tension: engineering judgement. \
+The weld code applies the increase only to round hollow sections and \
+stops for any other (W2)."""
+
+[[entry]]
+id = "ej.weld.branch_kds"
+value = 1.0
+unit = ""
+cite = "Engineering judgement (EOR): k_ds = 1.0 at the rail to post weld"
+document = "Engineering decision of the engineer of record"
+edition = "docs/brief/welds.md, W2"
+section = "Directional strength increase: exception for the rail to post weld (a branch-to-chord joint)"
+source = "engineer"
+status = "drafted"
+drafted_on = 2026-10-08
+verified_by = ""
+verified_date = ""
+note = """
+Micah, 2026-10-04 (W2): per the AISC 360-22 Chapter K commentary on \
+branch-to-chord connections, and because W1 already simplifies the saddle \
+to a flat ring. The commentary location is not recorded."""
+
+[[entry]]
+id = "ej.weld.line_method"
+value = "Elastic weld-as-a-line method for a ring weld: line properties of a circle of the post diameter, shear taken as uniform around the ring, and the force components combined by vector sum at the governing point; no plastic distribution."
+unit = "equation"
+cite = "Engineering judgement (EOR): elastic weld as a line"
+document = "Engineering decision of the engineer of record"
+edition = "docs/brief/welds.md, W3"
+section = "Weld force method"
+source = "engineer"
+status = "drafted"
+drafted_on = 2026-10-08
+verified_by = ""
+verified_date = ""
+note = """
+Micah, 2026-10-04 (W3). The ring's line properties are L_w = pi D and \
+S_w = pi D^2/4, so forces come out per inch of weld. At an extreme fiber \
+the weld axis is perpendicular to the plane of bending, so the uniform \
+shear and the normal force both act across the weld: theta = 90 deg."""
+
+[[entry]]
+id = "ej.weld.no_bearing"
+value = "No bearing credit: the weld carries all of the force, in compression as in tension, and both extreme fibers of the ring are evaluated; the larger governs."
+unit = "provision"
+cite = "Engineering judgement (EOR): no bearing credit at the weld"
+document = "Engineering decision of the engineer of record"
+edition = "docs/brief/welds.md, W10"
+section = "No bearing credit; the weld carries everything"
+source = "engineer"
+status = "drafted"
+drafted_on = 2026-10-08
+verified_by = ""
+verified_date = ""
+note = "Micah, 2026-10-08 (W10). Holds at the cope (Check 3) and at the baseplate (Check 7)."
+
+[[entry]]
+id = "ej.weld.post_wall_covered"
+value = "Post wall at the weld: covered by Check 5. The wall carries the weld force as stress along the post axis, the same demand as Check 5 at its critical section; member shear is not checked (stated assumption)."
+unit = "text"
+cite = "Engineering judgement (EOR): post wall at the weld covered by Check 5"
+document = "Engineering decision of the engineer of record"
+edition = "docs/brief/welds.md, W5"
+section = "Base metal follows the direction of the force: the post side of both welds"
+source = "engineer"
+status = "drafted"
+drafted_on = 2026-10-08
+verified_by = ""
+verified_date = ""
+note = """
+Micah, 2026-10-04 (W5). Printed in Checks 3 and 7. The top of the post \
+sees the same V and less moment than the base, so Check 5 at the base \
+covers the post side of Check 3 too. Holds only while Fu/Fy >= 1.20 for \
+the post grade (ej.weld.post_wall.fu_fy_min, checked at validation)."""
+
+[[entry]]
+id = "ej.weld.rail_wall_normal"
+value = "Rail wall, force normal to the wall: a chord-wall limit state of the round T-connection (AISC 360-22 Chapter K), not weld base metal; not checked (stated assumption)."
+unit = "text"
+cite = "Engineering judgement (EOR): rail wall chord limit states not checked"
+document = "Engineering decision of the engineer of record"
+edition = "docs/brief/welds.md, W5 and W7"
+section = "Rail side: force normal to the rail wall"
+source = "engineer"
+status = "drafted"
+drafted_on = 2026-10-08
+verified_by = ""
+verified_date = ""
+note = """
+Micah, 2026-10-04 (W7). Printed in Check 3 beside the rail fusion face \
+line, which takes the in-plane force only (W6). From memory, unverified: \
+the margin for pipe on pipe is about 20 times."""
+
+[[entry]]
+id = "ej.weld.max_size_not_applicable"
+value = "Maximum fillet size along edges of material does not apply: this weld is a T-joint, not a weld along an edge. No maximum size is checked."
+unit = "text"
+cite = "Engineering judgement (EOR): no maximum fillet size at a T-joint"
+document = "Engineering decision of the engineer of record"
+edition = "docs/brief/welds.md, W11"
+section = "Fillet size limits: no maximum size check"
+source = "engineer"
+status = "drafted"
+drafted_on = 2026-10-08
+verified_by = ""
+verified_date = ""
+note = "Micah, 2026-10-08 (W11). Printed with aisc360.J2.2b.max_size_edges."
