@@ -1382,12 +1382,12 @@ note = """
 2.00/1.67 = 1.198, rounded to 1.20 in the brief. Below this ratio the \
 calc stops, naming the post grade and its Fu/Fy, so the printed "covered \
 by Check 5" line cannot become false (W5). A53 Gr B: 60/35 = 1.71. \
-Slice 4 (S4-12): the same guard applies to the intermediate rail's grade, \
-whose wall at Check 4b was covered by the member check. Since Check 4b \
-became a simple shear connection (Micah, 2026-10-09) that wall is \
-"shear only, member shear not checked" (ej.weld.intermediate_wall_shear), \
-so the guard's basis is gone; it stays in validation until Micah rules \
-whether to keep it."""
+Slice 4 (S4-12) applied the same guard to the intermediate rail's grade, \
+whose wall at Check 4b the member check then covered. Check 4b became a \
+simple shear connection, that wall "shear only, member shear not \
+checked" (ej.weld.intermediate_wall_shear), and Micah dropped the \
+intermediate grade's guard (2026-10-09); the guard is on the post grade \
+only."""
 
 # --- Fillet weld strength, AISC 360-22 §J2 ---------------------------------
 

@@ -311,10 +311,9 @@ plan's decision numbers.
     check's midspan moment whenever L ≥ 2·D_post; with no end moment it
     is moot, and the `validate()` stop for L < 2·D_post is removed with
     it, since nothing else needed it.
-  - Open (for Micah): W5's Fu/Fy ≥ 1.20 guard on the intermediate rail's
-    grade was there because the member check covered the wall at the
-    weld. That argument is gone; the guard stays in `validate()` until
-    Micah rules whether to keep it. A53 Gr B passes it (1.71).
+  - W5's Fu/Fy ≥ 1.20 guard on the intermediate rail's grade is dropped
+    (Micah, 2026-10-09): it protected only the removed branch-wall
+    argument. The guard on the post grade stays (W5).
 - **Check 4b is a simple shear connection.** (Micah, 2026-10-09,
   revising S4-9 and S4-12.) Consistent with Check 4a's simple-span
   member model, the reaction R acts at the weld: e = 0, no end moment.

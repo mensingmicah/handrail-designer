@@ -520,19 +520,6 @@ def test_a_baseplate_smaller_than_the_post_od_stops(name, other):
     _validate(_example_raw(baseplate={name: 2.375, other: 8}))  # equal to the OD passes
 
 
-def test_an_intermediate_grade_below_the_fu_fy_limit_stops(monkeypatch):
-    # S4-12, with a stand-in grade: Fy 35 ksi from A53 Gr B, Fu 40 ksi.
-    reg = Registry()
-    fu = reg.entries["material.A53_GrB.Fu"]
-    reg.entries["stand-in.Fu"] = dataclasses.replace(fu, id="stand-in.Fu", value=40)
-    monkeypatch.setitem(checks.FY_ENTRY, "Stand-in", "material.A53_GrB.Fy")
-    monkeypatch.setitem(checks.FU_ENTRY, "Stand-in", "stand-in.Fu")
-    with pytest.raises(project.ProjectError,
-                       match=r"intermediate rail grade Stand-in: Fu/Fy = 1\.143 is below 1\.2 .*"
-                             r"covered by Check 4a only while yielding governs"):
-        checks.validate(project.from_dict(_own(grade="Stand-in")), reg)
-
-
 def test_a_non_round_intermediate_rail_stops(monkeypatch):
     # W7 extended (S4-12), with a stand-in family on the intermediate section only.
     real = shapes.pipe

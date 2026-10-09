@@ -32,8 +32,10 @@ cases 1–4 must pass exactly as they do today.
 > reaction R acts at the weld, e = 0, no end moment. This supersedes the
 > e = D_post/2 and M = R·e of S4-9, the branch-wall argument and the
 > L ≥ 2·D_post stop of S4-12, and every later mention of them in this plan
-> (the Engineering, Input, T3 and figures sections). docs/brief/welds.md
-> holds the decision.
+> (the Engineering, Input, T3 and figures sections). The Fu/Fy ≥ 1.20
+> guard on the intermediate rail's grade (S4-12) is dropped too; the post
+> grade keeps it (Micah, 2026-10-09). docs/brief/welds.md holds the
+> decisions.
 
 S4-1 to S4-12 are in the brief, with Micah's name and date on each. In
 short:
