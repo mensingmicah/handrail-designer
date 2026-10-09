@@ -304,13 +304,28 @@ plan's decision numbers.
     360-22 Chapter K chord limit states), is not checked." The W7
     non-round stop covers the intermediate rail. (The printed line no
     longer names a normal force from R·e: there is no end moment.)
-  - Branch side (intermediate rail wall): the printed line is
-    "Intermediate rail wall at the weld: shear only, member shear not
-    checked (stated assumption)." (Micah, 2026-10-09.) This replaces the
-    earlier argument that the end moment R·e is no more than the member
-    check's midspan moment whenever L ≥ 2·D_post; with no end moment it
-    is moot, and the `validate()` stop for L < 2·D_post is removed with
-    it, since nothing else needed it.
+  - Branch side (intermediate rail wall), in-plane force: shear rupture,
+    0.6·Fu·t_des,int/2.00 against the same f_v, Fu of the intermediate
+    rail's grade. Check 4b prints both base metal lines, post wall and
+    intermediate rail wall, and which governs: the lower allowable, a tie
+    going to the post wall. The check's base metal ratio is the governing
+    wall's. This is the general rule above (the fusion face of each
+    connected part, the lower governs) applied to Check 4b. (Micah,
+    2026-10-09, ruling on open question 9a of the case 5 independent
+    calc: the intermediate rail wall can be the thinner part, as in case
+    5, Pipe1-1/4STD t_des = 0.130 in against the Pipe2STD post's 0.143
+    in.) It replaces the line "Intermediate rail wall at the weld: shear
+    only, member shear not checked (stated assumption).", which had
+    itself replaced the argument that the end moment R·e is no more than
+    the member check's midspan moment whenever L ≥ 2·D_post; with no end
+    moment that argument is moot, and the `validate()` stop for
+    L < 2·D_post was removed with it.
+  - The same-as-top observation still holds with the branch line added:
+    the intermediate rail is then the top rail's section and grade, with
+    D_int = D_rail ≥ D_post (W8), so its f_v = R/(πD_rail) ≤ P/(πD_post),
+    Check 3's in-plane shear, on the same wall Check 3 checks as its chord.
+    The post wall line is the one the t_des,post ≥ t_des,rail guard
+    protects.
   - W5's Fu/Fy ≥ 1.20 guard on the intermediate rail's grade is dropped
     (Micah, 2026-10-09): it protected only the removed branch-wall
     argument. The guard on the post grade stays (W5).
@@ -320,8 +335,11 @@ plan's decision numbers.
   Check 4b prints "Simple shear connection consistent with the
   simple-span member assumption; no end moment at the weld." It keeps the
   weld metal line with f_v = R/(πD_int) (the resultant per inch is f_v),
-  the post wall base metal line, the Table J2.4 minimum size and the
-  chord-wall stated assumption. R is unchanged (S4-9): the component load
+  the base metal lines (post wall and, by the ruling above, intermediate
+  rail wall), the Table J2.4 minimum size and the chord-wall stated
+  assumption. Rotational restraint of the welded joint is not modeled
+  (Micah, 2026-10-09, ruling on open question 9b of the case 5
+  independent calc: keep the simple shear connection, no change). R is unchanged (S4-9): the component load
   adjacent to the post with the dead-load end reaction, horizontal by
   vector sum and downward by sum. The same-as-top observation and its
   two guards (R ≤ P; t_des,post ≥ t_des,rail) are unchanged.

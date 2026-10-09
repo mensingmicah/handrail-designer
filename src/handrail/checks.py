@@ -185,7 +185,8 @@ class Results:
 def require_supported_grade(member: Member, name: str) -> None:
     """Refuse a grade this slice has no Fy or no Fu entry for. Both are
     needed: Fy for the member checks, Fu for the fusion face of a weld
-    (Check 3's rail side) and the post wall's Fu/Fy guard.
+    (Check 3's rail side, Check 4b's post and intermediate rail walls) and
+    the post wall's Fu/Fy guard.
 
     The brief's unusual-pairing warning (a grade outside the shape's standard
     list) returns when a slice accepts more than one grade; with A53 Gr B the

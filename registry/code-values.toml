@@ -110,7 +110,7 @@ review = [
   "aisc_manual.t3-23.case1.R",
   "ej.weld.intermediate_simple_shear",
   "ej.weld.post_wall_chord_intermediate",
-  "ej.weld.intermediate_wall_shear",
+  "ej.weld.intermediate_base_metal",
   "ej.weld.intermediate.same_as_top",
   "ej.combo.reaction",
   "ej.reaction.location",
@@ -1384,8 +1384,8 @@ calc stops, naming the post grade and its Fu/Fy, so the printed "covered \
 by Check 5" line cannot become false (W5). A53 Gr B: 60/35 = 1.71. \
 Slice 4 (S4-12) applied the same guard to the intermediate rail's grade, \
 whose wall at Check 4b the member check then covered. Check 4b became a \
-simple shear connection, that wall "shear only, member shear not \
-checked" (ej.weld.intermediate_wall_shear), and Micah dropped the \
+simple shear connection (its wall later given its own base metal \
+line, ej.weld.intermediate_base_metal), and Micah dropped the \
 intermediate grade's guard (2026-10-09); the guard is on the post grade \
 only."""
 
@@ -2045,24 +2045,26 @@ whose text named the R e moment's normal force: with the simple shear \
 connection (Micah, 2026-10-09) there is no end moment."""
 
 [[entry]]
-id = "ej.weld.intermediate_wall_shear"
-value = "Intermediate rail wall at the weld: shear only, member shear not checked (stated assumption)."
+id = "ej.weld.intermediate_base_metal"
+value = "Base metal is checked at the fusion face of both connected parts, the post wall (the chord) and the intermediate rail wall (the branch), each in shear rupture against the in-plane shear per inch; the lower allowable governs."
 unit = "text"
-cite = "Engineering judgement (EOR): intermediate rail wall at the weld, shear only"
+cite = "Engineering judgement (EOR): Check 4b base metal on both walls, lower governs"
 document = "Engineering decision of the engineer of record"
-edition = "docs/brief/welds.md, Check 4b simple shear connection (revises S4-12)"
-section = "Base metal at Check 4b: branch side (intermediate rail wall)"
+edition = "docs/brief/welds.md, Check 4b base metal on both walls (revises S4-12)"
+section = "Base metal at Check 4b: post wall and intermediate rail wall, each shear rupture per AISC 360-22 §J4.2(b), the lower governing (the W5 rule)"
 source = "engineer"
 status = "drafted"
 drafted_on = 2026-10-09
 verified_by = ""
 verified_date = ""
 note = """
-Micah, 2026-10-09, wording his. Replaces ej.weld.branch_wall_covered \
-(the end moment no more than the member check's midspan moment while \
-L >= 2 D_post), which the simple shear connection made moot; the \
-L >= 2 D_post validation stop is removed with it. "Member shear not \
-checked" is the stated assumption "No shear checks in any member.""""
+Micah, 2026-10-09, ruling on open question 9a of the case 5 independent \
+calc: the brief's general rule (base metal at the fusion face of each \
+connected part, the lower governs) applies to Check 4b. Replaces \
+ej.weld.intermediate_wall_shear ("Intermediate rail wall at the weld: \
+shear only, member shear not checked"). For case 5 the intermediate rail \
+wall is the thinner, Pipe1-1/4STD t_des = 0.130 in against the Pipe2STD \
+post's 0.143 in, same grade."""
 
 [[entry]]
 id = "ej.weld.intermediate.same_as_top"

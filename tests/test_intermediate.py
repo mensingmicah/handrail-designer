@@ -200,15 +200,21 @@ def test_check_4a_cites_the_component_load_model_and_its_direction():
 FEXX, FU, OM_W, OM_BM = 70.0, 60.0, 2.00, 2.00  # ksi, ksi, -, - (registry values, restated)
 
 
+def base_allows(inter=P125, post=P2):
+    """Base metal shear rupture per inch, lb/in: (post wall, intermediate rail wall)."""
+    return tuple(0.6 * FU * 1000 * s.tdes.m_as("inch") / OM_BM for s in (post, inter))
+
+
 def plain_4b(inter=P125, post=P2, L=72.0, Pc=50.0, w=0.125):
     """Check 4b by hand in plain floats: {direction: (R, f_v, ratio)}. A
     simple shear connection (Micah, 2026-10-09): R at the weld, no moment,
-    so the resultant per inch is the shear f_v = R/(pi D_int)."""
+    so the resultant per inch is the shear f_v = R/(pi D_int). Base metal on
+    both walls, the lower allowable governing (Micah, 2026-10-09)."""
     D = inter.OD.m_as("inch")
     RD = inter.W.m_as("lbf/inch") * L / 2
     Lw = 3.141592653589793 * D
     weld = 0.6 * FEXX * 1000 * 0.707 * w / OM_W               # k_ds = 1.0
-    base = 0.6 * FU * 1000 * post.tdes.m_as("inch") / OM_BM   # post wall, in-plane shear
+    base = min(base_allows(inter, post))                       # in-plane shear, the weaker wall
     out = {}
     for direction, R in (("Downward", RD + Pc), ("Horizontal", (Pc**2 + RD**2) ** 0.5)):
         f_v = R / Lw
@@ -241,8 +247,13 @@ def test_check_4b_matches_plain_calc_and_downward_governs():
     assert any(ln.symbol == 'D_"int"' for ln in head)
 
 
-def test_check_4b_prints_the_reversed_base_metal_lines():
-    c = run().check("4b").controlling
+def test_check_4b_prints_base_metal_on_both_walls_and_which_governs():
+    """Micah, 2026-10-09 (open question 9a of the case 5 independent calc):
+    base metal on the post wall and the intermediate rail wall, each shear
+    rupture; the lower allowable governs. Case 5's intermediate rail wall is
+    the thinner (0.130 in against 0.143 in), so it governs."""
+    chk = run().check("4b")
+    c = chk.controlling
     decisions = {ln.symbol: ln for ln in c.lines if ln.kind == "decision"}
     simple = decisions['"Intermediate rail to post weld"']
     assert simple.text == "Simple shear connection"
@@ -250,11 +261,21 @@ def test_check_4b_prints_the_reversed_base_metal_lines():
                            "no end moment at the weld.")
     chord = decisions['"Post wall, chord limit states"']
     assert chord.text == "Not checked" and "R·e" not in chord.note
-    branch = decisions['"Intermediate rail wall at the weld"']
-    assert branch.text == "Shear only"
-    assert branch.note == "Intermediate rail wall at the weld: shear only, member shear not checked (stated assumption)."
-    assert any(ln.kind == "heading" and ln.symbol == "Base metal: post wall fusion face" for ln in c.lines)
-    assert _line(c, 't_"post"') == P2.tdes
+    assert '"Intermediate rail wall at the weld"' not in decisions  # replaced by its base metal line
+    headings = {ln.symbol for ln in c.lines if ln.kind == "heading"}
+    assert {"Base metal: post wall fusion face (chord)",
+            "Base metal: intermediate rail wall fusion face (branch)"} <= headings
+    assert _line(c, 't_"post"') == P2.tdes and _line(c, 't_"int"') == P125.tdes
+    a_post, a_int = base_allows()
+    assert _line(c, 'frac(R_(n,"BM,post"), Omega_"BM")').m_as("lbf/inch") == pytest.approx(a_post, rel=1e-9)
+    assert _line(c, 'frac(R_(n,"BM,int"), Omega_"BM")').m_as("lbf/inch") == pytest.approx(a_int, rel=1e-9)
+    gov = next(ln for ln in c.lines if ln.kind == "decision" and ln.text.endswith("governs"))
+    assert gov.text == "Intermediate rail wall governs" and " < " in gov.symbol
+    assert gov.note.startswith("Base metal is checked at the fusion face of both connected parts")
+    assert chk.base_governs == "intermediate rail wall"
+    for case in chk.checked:
+        assert case.base_allow.m_as("lbf/inch") == pytest.approx(a_int, rel=1e-9)
+        assert case.base_ratio == pytest.approx(case.f_v.m_as("lbf/inch") / a_int, rel=1e-9)
 
 
 def test_check_4b_below_minimum_size_is_ng():
@@ -283,8 +304,9 @@ def test_a_weld_reaction_above_p_runs_the_full_check_4b_on_the_top_rail_ring():
         assert c.ratio == pytest.approx(plain[c.direction][2], rel=1e-9)
     head = chk.controlling.lines
     assert head[0].kind == "decision" and head[0].text == "Computed in full"
-    branch = next(ln for ln in head if ln.symbol == '"Intermediate rail wall at the weld"')
-    assert branch.text == "Shear only"
+    # Equal walls (Pipe2STD on Pipe2STD): a tie goes to the post wall, the chord.
+    gov = next(ln for ln in head if ln.kind == "decision" and ln.text.endswith("governs"))
+    assert gov.text == "Post wall governs" and " = " in gov.symbol and chk.base_governs == "post wall"
     # Same as the top rail, the weld is the rail to post size, 1/8 in.
     assert _line(chk.controlling, "w").m_as("inch") == 0.125
 
@@ -317,7 +339,8 @@ def test_a_post_wall_thinner_than_the_rail_wall_runs_the_full_check_4b():
         assert c.ratio == pytest.approx(plain[c.direction][2], rel=1e-9)
     guards = [ln for ln in chk.controlling.lines if ln.kind == "decision" and ln.text == "Computed in full"]
     assert len(guards) == 1 and guards[0].symbol.startswith('t_"des,post"') and "thinner" in guards[0].note
-    assert _line(chk.controlling, 't_"post"') == P2.tdes  # base metal on the post wall
+    assert _line(chk.controlling, 't_"post"') == P2.tdes
+    assert chk.base_governs == "post wall"  # the thinner wall: 0.143 in against the rail's 0.204 in
 
 
 def test_a_post_wall_no_thinner_than_the_rail_wall_keeps_the_observation():

@@ -77,6 +77,7 @@ class WeldCheck(Check):
     """A weld check, with the result of its minimum size line."""
 
     min_size_ok: bool = True
+    base_governs: str = ""  # Check 4b's governing fusion face: "post wall" or "intermediate rail wall"
 
 
 @dataclass
@@ -185,17 +186,19 @@ class BaseMetal:
     lines: list[Line]
 
 
-def base_metal(registry: Registry, heading: str, Fu_entry: str, Fu_note: str, part: Part) -> BaseMetal:
-    """Shear rupture of the base metal at a fusion face, per inch of weld (W5, W6)."""
+def base_metal(registry: Registry, heading: str, Fu_entry: str, Fu_note: str, part: Part,
+               sub: str = "BM") -> BaseMetal:
+    """Shear rupture of the base metal at a fusion face, per inch of weld (W5, W6).
+    ``sub`` tells two fusion faces apart in one check (Check 4b)."""
     sh = Sheet(registry)
     sh.heading(heading)
     Fu = sh.code_value("F_u", Fu_entry, Fu_note)
     t = sh.given(part.symbol, part.t, part.note, part.source)
-    R = sh.line('R_(n,"BM")', sh.coeff("aisc360.eq.J4-4.coeff") * Fu * t,
+    R = sh.line(f'R_(n,"{sub}")', sh.coeff("aisc360.eq.J4-4.coeff") * Fu * t,
                 "Shear rupture at the fusion face, per inch of weld",
                 cite_ids=("aisc360.eq.J4-4", "aisc_manual.part9.base_metal"), unit=PER_INCH)
     Om = sh.code_value('Omega_"BM"', "aisc360.J4.2.omega_rupture", "Safety factor, shear rupture (ASD)")
-    allow = sh.line('frac(R_(n,"BM"), Omega_"BM")', R / Om, "Allowable base metal strength per inch",
+    allow = sh.line(f'frac(R_(n,"{sub}"), Omega_"BM")', R / Om, "Allowable base metal strength per inch",
                     cite_ids=("aisc360.eq.B3-2",), unit=PER_INCH)
     return BaseMetal(allow=allow, lines=sh.lines)
 
@@ -552,10 +555,11 @@ def check_4b(registry: Registry, project: Project, post: PipeSection, inter: Pip
     intermediate rail's perimeter at the post face, a simple shear
     connection consistent with the simple-span member, so the reaction R
     acts at the weld with no end moment (Micah 2026-10-09, revising S4-9 and
-    S4-12); k_ds = 1.0, a branch-to-chord joint (W2); base metal on the post
-    wall, the chord, in-plane shear (W6); the post wall's chord limit states
-    are not checked (W7, extended); the intermediate rail wall carries shear
-    only, and member shear is not checked. Same as the top rail with R <= P
+    S4-12); k_ds = 1.0, a branch-to-chord joint (W2); base metal on both
+    connected walls, the post wall (the chord) and the intermediate rail wall
+    (the branch), each in shear rupture against the in-plane shear, the lower
+    allowable governing (Micah 2026-10-09, the W5 rule); the post wall's chord
+    limit states are not checked (W7, extended). Same as the top rail with R <= P
     and the post wall no thinner than the rail wall, the observation line
     instead (S4-8; wall guard, Micah 2026-10-09); with no intermediate rail,
     "none"."""
@@ -610,21 +614,35 @@ def check_4b(registry: Registry, project: Project, post: PipeSection, inter: Pip
     kd = Sheet(registry)
     k_ds = kd.code_value('k_"ds"', "ej.weld.branch_kds",
                          "No directional increase at the intermediate rail to post weld (a branch-to-chord joint)")
-    grade = project.post.grade
-    t_post = Part('t_"post"', post.tdes, f"Post design wall thickness, {post.label}", DB)  # W4
-    base = base_metal(registry, "Base metal: post wall fusion face", FU_ENTRY[grade], f"Tensile strength, {grade}",
-                      t_post)
+    # Base metal at both fusion faces, each in shear rupture against the
+    # in-plane shear; the lower allowable governs (Micah, 2026-10-09). W4: t_des.
+    post_grade, int_grade = project.post.grade, project.intermediate_member.grade
+    t_post = Part('t_"post"', post.tdes, f"Post design wall thickness, {post.label}", DB)
+    t_int = Part('t_"int"', inter.tdes, f"Intermediate rail design wall thickness, {inter.label}", DB)
+    base_post = base_metal(registry, "Base metal: post wall fusion face (chord)", FU_ENTRY[post_grade],
+                           f"Tensile strength, {post_grade}", t_post, sub="BM,post")
+    base_int = base_metal(registry, "Base metal: intermediate rail wall fusion face (branch)", FU_ENTRY[int_grade],
+                          f"Tensile strength, {int_grade}", t_int, sub="BM,int")
+    both = registry.get("ej.weld.intermediate_base_metal")
+    a_post, a_int = base_post.allow.value, base_int.allow.value
+    gov = Sheet(registry)
+    if a_int < a_post:  # a tie goes to the post wall, the chord, as Check 3 checks its chord
+        base, chk.base_governs, relation = base_int, "intermediate rail wall", "<"
+    else:
+        base, chk.base_governs, relation = base_post, "post wall", "=" if a_int == a_post else ">"
+    gov.decision(f'frac(R_(n,"BM,int"), Omega_"BM") = {fmt_quantity(a_int)} {relation} '
+                 f'frac(R_(n,"BM,post"), Omega_"BM") = {fmt_quantity(a_post)}',
+                 f"{chk.base_governs.capitalize()} governs", both.value, cite_ids=(both.id,))
     chord = registry.get("ej.weld.post_wall_chord_intermediate")
-    branch = registry.get("ej.weld.intermediate_wall_shear")
     walls = Sheet(registry)
     walls.decision(mtext("Post wall, chord limit states"), "Not checked", chord.value, cite_ids=(chord.id,))
-    walls.decision(mtext("Intermediate rail wall at the weld"), "Shear only", branch.value, cite_ids=(branch.id,))
-    head = head_guard + rg.lines + model.lines + limits.lines + wm.lines + kd.lines + base.lines + walls.lines
+    head = (head_guard + rg.lines + model.lines + limits.lines + wm.lines + kd.lines + base_post.lines
+            + base_int.lines + gov.lines + walls.lines)
     ws = WeldLines(
         rg=rg, wm=wm, base=base, head=head,
         k_ds=lambda _sh, _f_r: (None, k_ds),
         base_demand=lambda f: f.f_v,
-        base_note="Post wall fusion face: in-plane shear only",
+        base_note=f"Base metal, {chk.base_governs} fusion face (governs): in-plane shear only",
     )
     _min_size(chk, limits)
     for direction in COMPONENT_DIRECTIONS:

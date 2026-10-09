@@ -34,8 +34,11 @@ cases 1–4 must pass exactly as they do today.
 > L ≥ 2·D_post stop of S4-12, and every later mention of them in this plan
 > (the Engineering, Input, T3 and figures sections). The Fu/Fy ≥ 1.20
 > guard on the intermediate rail's grade (S4-12) is dropped too; the post
-> grade keeps it (Micah, 2026-10-09). docs/brief/welds.md holds the
-> decisions.
+> grade keeps it (Micah, 2026-10-09). Later the same day (ruling on the
+> case 5 independent calc's open question 9a), Check 4b checks base metal
+> on both walls, post and intermediate rail, the lower governing; this
+> replaces the branch wall's "shear only, member shear not checked" line.
+> docs/brief/welds.md holds the decisions.
 
 S4-1 to S4-12 are in the brief, with Micah's name and date on each. In
 short:

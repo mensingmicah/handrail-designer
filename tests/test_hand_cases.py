@@ -227,7 +227,10 @@ def _intermediate_values(res):
             "check4b.min_size": "OK" if c4b.min_size_ok else "NG",
             "check4b.Fnw_ksi": _line_value(head, 'F_"nw"').m_as("ksi"),
             "check4b.weld_allow_lbpin": c4b.checked[0].weld_allow.m_as("lbf/inch"),
-            "check4b.base_allow_lbpin": c4b.checked[0].base_allow.m_as("lbf/inch"),
+            # Base metal on both walls, the lower governing (Micah, 2026-10-09).
+            "check4b.base_allow_post_lbpin": _line_value(head, 'frac(R_(n,"BM,post"), Omega_"BM")').m_as("lbf/inch"),
+            "check4b.base_allow_int_lbpin": _line_value(head, 'frac(R_(n,"BM,int"), Omega_"BM")').m_as("lbf/inch"),
+            "check4b.base_governs": c4b.base_governs,
         })
         for c in c4b.checked:
             k = _case_key(c)
@@ -303,7 +306,7 @@ def _weld_values(res, number):
 
 CONTROLLING = {f"check{n}.controlling": n for n in (1, 2, 3, "4a", "4b", 5, 6, 7)}
 CHECK_GROUPS = {key.split(".")[0] for key in CONTROLLING}
-TEXT_KEYS = ("controlling", "equation", "Fcr_equation", "fiber", "min_size", "load_type")
+TEXT_KEYS = ("controlling", "equation", "Fcr_equation", "fiber", "min_size", "load_type", "base_governs")
 
 
 def _is_text(key: str) -> bool:
@@ -542,6 +545,8 @@ def render_template(case: Path, keys) -> str:
         "#   fiber (Checks 3 and 7): \"compression side\" or \"tension side\" of",
         "#     bending, whichever governs; \"uniform\" where the case has no moment.",
         "#   min_size: \"OK\" or \"NG\" (Table J2.4 minimum fillet size).",
+        "#   check4b.base_governs: \"post wall\" or \"intermediate rail wall\", the",
+        "#     fusion face with the lower base metal allowable (a tie: \"post wall\").",
         "#   reactions.load_type: \"concentrated\", \"distributed\", or",
         "#     \"concentrated and distributed\" when P = w s.",
         "#   controlling: direction, comma, load type, e.g. \"outward, distributed\".",

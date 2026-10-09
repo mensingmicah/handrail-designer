@@ -483,6 +483,13 @@ horizontal = 0.0728636
 # no end moment), revising S4-9 and S4-12. Only the check4b values below
 # came from that session; [provenance] records the original calc. Calc:
 # case-05.md section 9.
+# Micah ruled on open question 9a the same day: base metal is checked on
+# both walls, post and intermediate rail, the lower governing. So
+# base_allow_lbpin became base_allow_post_lbpin and base_allow_int_lbpin,
+# base_governs is new, and ratio_base (now the governing wall's), ratio and
+# controlling are "pending" again, for a fresh session to redo (rule 5).
+# The session that made this change had read src/, so it filled none of
+# them (rule 6).
 [independent.check4b]
 R_D_lb = 6.81
 L_w_in = 5.21504
@@ -492,8 +499,10 @@ w_min_in = 0.125
 min_size = "OK"
 Fnw_ksi = 42.0
 weld_allow_lbpin = 1855.88
-base_allow_lbpin = 2574.0
-controlling = "downward, component"
+base_allow_post_lbpin = "pending"
+base_allow_int_lbpin = "pending"
+base_governs = "pending"  # text, in quotes
+controlling = "pending"  # text, in quotes
 
 [independent.check4b.R_lb]
 downward_component = 56.81
@@ -512,12 +521,12 @@ downward_component = 0.00586973
 horizontal_component = 0.0052138
 
 [independent.check4b.ratio_base]
-downward_component = 0.00423212
-horizontal_component = 0.00375919
+downward_component = "pending"
+horizontal_component = "pending"
 
 [independent.check4b.ratio]
-downward_component = 0.00586973
-horizontal_component = 0.0052138
+downward_component = "pending"
+horizontal_component = "pending"
 
 [independent.reactions]
 W_bp_lb = 6.80556
