@@ -225,8 +225,9 @@ plan's decision numbers.
     rail's section and the top rail's rail to post weld size. Check 4b
     prints "Intermediate rail weld: controlled by Check 3 by observation:
     same section (ring ≥ Check 3's, since post OD ≤ rail OD per W8), same
-    weld size, component load P_c ≤ P." Guard: if P_c > P, the full
-    check runs instead.
+    weld size, weld reaction R = [value] ≤ P = [value]." R is the larger
+    of the two cases in S4-9. Guard: if R > P, the full check runs
+    instead. (Wording and guard amended by S4-9, Micah 2026-10-09.)
   - **Own section:** a required weld size input for the intermediate rail
     to post weld. The Check 3 method runs on the intermediate rail's ring
     (its perimeter, coped to the side of the post): weld metal with
@@ -234,13 +235,30 @@ plan's decision numbers.
     minimum size (W11), and the same stated assumptions (the W1/W9 ring
     model and the W7 chord wall).
   - **None:** Check 4b prints "none" with Check 4a.
-  - Still to settle in the slice 4 interview: the eccentricity and the
-    load; which wall is the chord (the post, here) for the base metal and
-    W7 lines; and a cope limit, intermediate rail OD ≤ post OD (the
-    mirror of W8).
+  - Still to settle in the slice 4 interview: which wall is the chord
+    (the post, here) for the base metal and W7 lines; and a cope limit,
+    intermediate rail OD ≤ post OD (the mirror of W8).
   - The stated assumption "The intermediate rail's connection to the
     post, and the component load's effect on the post, are not checked."
     (output.md) loses its first half. Proposed text: "The component
     load's effect on the post is not checked." output.md changes on the
     slice 4 branch in the same commit that prints it, because a test
     holds the printed list to output.md word for word.
+- **Check 4b load and eccentricity.** (S4-9, Micah 2026-10-09.)
+  - The component load is placed adjacent to the post, so the weld at
+    that end takes the full P_c. (This is the worst position for the end
+    reaction; the slice 4 interview's first proposal, P_c/2 from a
+    midspan load, was unconservative by a factor of 2.) The dead-load
+    reaction is R_D = w_D,int·L/2. ASD D + L, the component load as L.
+  - Two cases (S4-10, checks.md). Horizontal: R = √(P_c² + R_D²), the
+    two reactions in the ring's plane at right angles. Downward:
+    R = R_D + P_c, same direction.
+  - Eccentricity e = D_post/2, from the post centerline (where the
+    center-to-center span puts the support) to the post face; M = R·e,
+    out of the ring's plane, about the axis perpendicular to R. For the
+    round ring f_b = R·e/S_w and f_v = R/(πD_int), combined at the
+    governing point (W3, W10). Conservative: the saddle lies between
+    √(R_p² − r_i²) and R_p from the post centerline.
+  - The load acts through the intermediate rail's centerline, which
+    passes through the ring's centroid: no torsion (the Check 3
+    centerline ruling).

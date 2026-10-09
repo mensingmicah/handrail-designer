@@ -434,3 +434,8 @@ multi-span frame with moment-connected posts. (Micah, 2026-10-08.)
 A sketch drawn from the inputs (to the project's dimensions and
 sections) is an after-v1 idea; v1 has the static key sketch (slice 8).
 (Micah, 2026-10-08.)
+
+An OSHA toggle that sets the component load to OSHA 1910.29(b)(5)'s
+150 lb is after v1. In v1 the default stays 50 lb (ASCE 7-22) and the
+input info box tells the engineer to enter 150 lb where OSHA applies
+(S4-10, checks.md). (Micah, 2026-10-09.)

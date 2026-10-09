@@ -13,11 +13,14 @@ properties. Weld method is in welds.md.
 3. Top rail weld to post: horizontal shear V plus the moment V·e, where e is
    the distance from the rail centerline to the weld plane. Downward load
    passes through the weld; no credit is taken for bearing at the cope.
-4. Intermediate rail component check: the ASCE 7-22 §4.5.1.2 component load,
-   applied horizontally at midspan of the intermediate rail spanning between
-   posts. It acts alone: not combined with dead load and not concurrent with
-   the top-rail loads. Includes a deflection check under the component
-   load, default L/120, editable and bypassable. When the intermediate rail
+4. Intermediate rail component check: the component load at midspan of
+   the intermediate rail spanning between posts, in two cases (S4-10,
+   below). Horizontal: the ASCE 7-22 §4.5.1.2 load, acting alone, not
+   combined with dead load. Downward: the same load plus the intermediate
+   rail's dead load on the same axis, ASD D + L (engineering judgement,
+   after OSHA 1910.29(b)(5)). Neither is concurrent with the top-rail
+   loads. Includes a deflection check under each case, default L/120,
+   editable and bypassable. When the intermediate rail
    is the same as the top rail, Check 4 is controlled by Checks 1 and 2 by
    observation and not computed, unless the component load exceeds the
    concentrated guard load (S4-1 and S4-2, below). If there is no
@@ -195,4 +198,24 @@ plan's decision numbers, kept for the record.
   conservative (for a 7'-0" span, spreading 50 lb over a 12 in patch would
   lower M by P_c·b/8 = 75 lb-in, about 7%). P_c is an input,
   `[loads] component_lb`, defaulting to the registry value; the
-  §4.5.1.1 exemption does not affect it.
+  §4.5.1.1 exemption does not affect it. This position is for the member
+  (Check 4a). For the weld (Check 4b) the load is placed adjacent to the
+  post (S4-9, welds.md). Both directions use the same P_c (S4-10).
+- **Two directions for the component load.** (S4-10, Micah 2026-10-09.)
+  The component load is checked horizontal and downward. ASCE 7-22
+  §4.5.1.2 specifies horizontal only; the downward case is engineering
+  judgement, after OSHA 1910.29(b)(5), which requires midrails to
+  withstand 150 lb in any downward or outward direction.
+  - Check 4a, two cases. Horizontal: the component load alone, as before.
+    Downward: the component load at midspan plus the intermediate rail's
+    dead load, on the same axis, ASD D + L. Deflection under each case,
+    with the S4-2 limits.
+  - Check 4b, two cases (welds.md, S4-9).
+  - The same-as-top observation for Check 4a still holds when P_c ≤ P:
+    Checks 1 and 2 already run the top rail downward and horizontal at P,
+    with the same section, span and dead load.
+  - The default component load stays 50 lb (ASCE 7-22). The input info
+    box adds: "OSHA 1910.29(b)(5) requires intermediate members to
+    withstand 150 lb downward or outward; enter 150 lb where OSHA
+    applies." Its text is a registry entry, like the exemption info box.
+    An OSHA toggle is out of v1 (docs/ROADMAP.md, after v1).
