@@ -1,0 +1,6 @@
+# Every text file is stored and checked out with LF line endings, on every
+# OS, whatever core.autocrlf says. Tools that edit text then never have to
+# reproduce CRLF, which is how stray \r escapes got into the registry in
+# slice 4 (architecture review F4, Micah 2026-10-09). Binary files (the
+# AISC workbook, PDFs) are detected and left alone.
+* text=auto eol=lf

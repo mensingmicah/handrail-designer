@@ -1,6 +1,8 @@
+import tomllib
+
 import pytest
 
-from handrail.registry import MissingEntry, Registry, RegistryError
+from handrail.registry import REGISTRY_PATH, MissingEntry, Registry, RegistryError
 
 
 def entry(id, status="drafted", by="", date="", **extra):
@@ -81,3 +83,94 @@ def test_quantity_carries_units():
     reg = Registry()
     assert reg.get("material.steel.E").quantity.m_as("ksi") == 29000
     assert reg.get("asce7.guard.uniform").quantity.m_as("lbf/inch") == pytest.approx(50 / 12)
+
+
+# ---------------------------------------------------------------------------
+# Registry lint (.claude/rules/code-values.md, "Editing the file itself").
+#
+# Shell edits have rewritten backslashes and line endings in the registry
+# (slice 4: d72e4aa wrote literal \r escapes into a note; 5fa154a repaired
+# it). TOML accepts those escapes, so the registry loads and nothing else
+# notices. This lint fails on them instead.
+# ---------------------------------------------------------------------------
+
+BACKSLASH = "\\"
+
+
+def lint(text: str) -> list[str]:
+    """Problems in registry text: every backslash escape other than \\" and
+    a line continuation (a backslash as the last character on its line),
+    and every control character inside a parsed string (a stray \\r, \\t,
+    or a newline left by a broken continuation). The working copy may
+    have CRLF line endings, so they are read as LF first."""
+    text = text.replace("\r\n", "\n")
+    problems = []
+    for number, line in enumerate(text.split("\n"), 1):
+        body = line.rstrip(" \t")
+        i = 0
+        while i < len(body):
+            if body[i] != BACKSLASH:
+                i += 1
+                continue
+            if i == len(body) - 1:
+                break  # line continuation
+            if body[i + 1] != '"':
+                problems.append(f"line {number}: escape {body[i:i + 2]!r} in {line.strip()[:70]!r}")
+            i += 2
+    try:
+        parsed = tomllib.loads(text)
+    except tomllib.TOMLDecodeError as e:
+        return problems + [f"not valid TOML: {e}"]
+
+    def strings(node, where):
+        if isinstance(node, dict):
+            for k, v in node.items():
+                yield from strings(v, f"{where}.{k}" if where else k)
+        elif isinstance(node, list):
+            for n, v in enumerate(node):
+                yield from strings(v, f"{where}[{n}]")
+        elif isinstance(node, str):
+            yield where, node
+
+    for where, s in strings(parsed, ""):
+        bad = sorted({repr(c) for c in s if ord(c) < 32 or ord(c) == 127})
+        if bad:
+            problems.append(f"{where}: control character(s) {', '.join(bad)} in {s[:70]!r}")
+    return problems
+
+
+def test_registry_has_no_stray_escapes_or_control_characters():
+    with open(REGISTRY_PATH, encoding="utf-8", newline="") as f:
+        problems = lint(f.read())
+    assert not problems, (
+        "registry/code-values.toml has text a shell edit may have mangled. Fix it with the file-edit "
+        "tool (.claude/rules/code-values.md):\n" + "\n".join(problems)
+    )
+
+
+GOOD = (
+    'review = []\n'
+    '[[entry]]\n'
+    'id = "a"\n'
+    'value = "Text with a \\"quoted\\" word."\n'
+    'note = """\n'
+    'First line, continued \\\n'
+    'on the next."""\n'
+)
+
+
+@pytest.mark.parametrize("newline", ["\n", "\r\n"])
+def test_lint_accepts_quotes_and_line_continuations(newline):
+    assert lint(GOOD.replace("\n", newline)) == []
+
+
+@pytest.mark.parametrize("bad, found", [
+    # The slice 4 failure: a continuation written as a \r escape.
+    (GOOD.replace("continued \\\n", "continued \\r\n"), "'\\\\r'"),
+    (GOOD.replace("with a", "with\\ta"), "'\\\\t'"),
+    # A doubled backslash: the continuation is lost and a newline lands in the text.
+    (GOOD.replace("continued \\\n", "continued \\\\\n"), "'\\n'"),
+])
+def test_lint_finds_mangled_escapes(bad, found):
+    problems = lint(bad)
+    assert problems and any(found in p for p in problems), problems
