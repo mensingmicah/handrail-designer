@@ -219,10 +219,8 @@ def _intermediate_values(res):
     if c4b.computed:
         head = c4b.checked[0].lines
         v.update({
-            "check4b.e_in": _line_value(head, "e").m_as("inch"),
             "check4b.R_D_lb": _line_value(head, "R_D").m_as("lbf"),
             "check4b.L_w_in": _line_value(head, "L_w").m_as("inch"),
-            "check4b.S_w_in2": _line_value(head, "S_w").m_as("in^2"),
             "check4b.throat_in": _line_value(head, "t_e").m_as("inch"),
             "check4b.t_min_in": _line_value(head, 't_"min"').m_as("inch"),
             "check4b.w_min_in": _line_value(head, 'w_"min"').m_as("inch"),
@@ -234,9 +232,7 @@ def _intermediate_values(res):
         for c in c4b.checked:
             k = _case_key(c)
             v[f"check4b.R_lb.{k}"] = _line_value(c.lines, "R").m_as("lbf")
-            v[f"check4b.M_lbin.{k}"] = _line_value(c.lines, "M").m_as("lbf*inch")
             v[f"check4b.f_v_lbpin.{k}"] = c.f_v.m_as("lbf/inch")
-            v[f"check4b.f_b_lbpin.{k}"] = c.f_b.m_as("lbf/inch")
             v[f"check4b.f_r_lbpin.{k}"] = c.f_r.m_as("lbf/inch")
             v[f"check4b.ratio_weld.{k}"] = c.weld_ratio
             v[f"check4b.ratio_base.{k}"] = c.base_ratio

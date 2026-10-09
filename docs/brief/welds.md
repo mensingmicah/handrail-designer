@@ -260,12 +260,12 @@ plan's decision numbers.
   - Two cases (S4-10, checks.md). Horizontal: R = √(P_c² + R_D²), the
     two reactions in the ring's plane at right angles. Downward:
     R = R_D + P_c, same direction.
-  - Eccentricity e = D_post/2, from the post centerline (where the
+  - ~~Eccentricity e = D_post/2, from the post centerline (where the
     center-to-center span puts the support) to the post face; M = R·e,
     out of the ring's plane, about the axis perpendicular to R. For the
     round ring f_b = R·e/S_w and f_v = R/(πD_int), combined at the
-    governing point (W3, W10). Conservative: the saddle lies between
-    √(R_p² − r_i²) and R_p from the post centerline.
+    governing point (W3, W10).~~ Superseded: Check 4b is a simple shear
+    connection, e = 0, no end moment (below, Micah 2026-10-09).
   - The load acts through the intermediate rail's centerline, which
     passes through the ring's centroid: no torsion (the Check 3
     centerline ruling).
@@ -278,38 +278,51 @@ plan's decision numbers.
     same-as-top and own-section states. The message names both ODs and
     says to uncheck `same_as_top_rail` and enter a section no wider than
     the post.
-  - At equal ODs the fillet model is kept all around, as W9. Unlike W9,
-    under the horizontal component load the flare-bevel tangent points
-    are at the ring's extreme fibers, not its neutral axis. It still
-    cannot flip a result: the downward case governs Check 4b, with its
-    extreme fibers at the top and bottom where the joint is a normal
-    fillet, and the check runs near 0.01 for pipe.
-  - A printed stated assumption covers the joint. Proposed text, added
-    to output.md on the slice 4 branch in the commit that prints it:
-    "The intermediate rail to post weld is modeled the same way, as a
-    flat ring of the intermediate rail's perimeter at the post face, with
-    eccentricity e = half the post diameter from the post centerline. It
-    is modeled as a fillet of the entered size all around, although at
-    equal diameters the sides of the saddle form a flare-bevel joint."
+  - At equal ODs the fillet model is kept all around, as W9. It cannot
+    flip a result: with the simple shear connection (below) the shear is
+    taken as uniform around the ring, and the check runs near 0.01 for
+    pipe.
+  - A printed stated assumption covers the joint (output.md; text
+    revised for the simple shear connection, Micah 2026-10-09): "The
+    intermediate rail to post weld is modeled as a flat ring of the
+    intermediate rail's perimeter at the post face, a simple shear
+    connection consistent with the simple-span intermediate rail: the end
+    reaction acts at the weld with no end moment. It is modeled as a
+    fillet of the entered size all around, although at equal diameters
+    the sides of the saddle form a flare-bevel joint."
 - **Base metal at Check 4b: the roles of Check 3 reversed.** (S4-12,
-  Micah 2026-10-09.) The intermediate rail is the branch (coped); the
-  post wall is the chord. Both Check 4b load cases lie in the ring's
-  plane, tangent to the post wall; the moment R·e is normal to it.
+  Micah 2026-10-09; revised the same day by the simple shear connection,
+  below.) The intermediate rail is the branch (coped); the post wall is
+  the chord. Both Check 4b load cases lie in the ring's plane, tangent
+  to the post wall.
   - Chord side (post wall), in-plane force: shear rupture only,
     0.6·Fu·t_des,post/2.00 against f_v = R/(πD_int), as W6.
-  - Chord side, normal force (the R·e moment): a Chapter K chord-wall
-    limit state on the post, not checked. The W7 stated assumption is
-    extended, on the slice 4 branch in the commit that prints it, to:
-    "Local strength of the rail wall at the post, and of the post wall
-    at the intermediate rail (AISC 360-22 Chapter K chord limit states),
-    is not checked." The W7 non-round stop covers the intermediate rail.
-  - Branch side (intermediate rail wall): no separate number. A printed
-    line says it is covered by the member check: "covered by Check 4a"
-    in the own-section state, and "covered by Checks 1 and 2" in the
-    same-as-top state, where Check 4a is not run. The end moment
-    R·e = (R_D + P_c)·D_post/2 is no more than the downward midspan
-    moment of that member check whenever L ≥ 2·D_post; member shear is
-    not checked (a stated assumption). This is W5's argument, so W5's
-    Fu/Fy ≥ 1.20 grade guard applies to the intermediate rail's grade.
-  - `validate()` stops the calc if L < 2·D_post, so the branch-side
-    line cannot become false. No real guard comes near it.
+  - Chord side: the Chapter K chord-wall limit states on the post are
+    not checked. The W7 stated assumption is extended, on the slice 4
+    branch in the commit that prints it, to: "Local strength of the rail
+    wall at the post, and of the post wall at the intermediate rail (AISC
+    360-22 Chapter K chord limit states), is not checked." The W7
+    non-round stop covers the intermediate rail. (The printed line no
+    longer names a normal force from R·e: there is no end moment.)
+  - Branch side (intermediate rail wall): the printed line is
+    "Intermediate rail wall at the weld: shear only, member shear not
+    checked (stated assumption)." (Micah, 2026-10-09.) This replaces the
+    earlier argument that the end moment R·e is no more than the member
+    check's midspan moment whenever L ≥ 2·D_post; with no end moment it
+    is moot, and the `validate()` stop for L < 2·D_post is removed with
+    it, since nothing else needed it.
+  - Open (for Micah): W5's Fu/Fy ≥ 1.20 guard on the intermediate rail's
+    grade was there because the member check covered the wall at the
+    weld. That argument is gone; the guard stays in `validate()` until
+    Micah rules whether to keep it. A53 Gr B passes it (1.71).
+- **Check 4b is a simple shear connection.** (Micah, 2026-10-09,
+  revising S4-9 and S4-12.) Consistent with Check 4a's simple-span
+  member model, the reaction R acts at the weld: e = 0, no end moment.
+  Check 4b prints "Simple shear connection consistent with the
+  simple-span member assumption; no end moment at the weld." It keeps the
+  weld metal line with f_v = R/(πD_int) (the resultant per inch is f_v),
+  the post wall base metal line, the Table J2.4 minimum size and the
+  chord-wall stated assumption. R is unchanged (S4-9): the component load
+  adjacent to the post with the dead-load end reaction, horizontal by
+  vector sum and downward by sum. The same-as-top observation and its
+  two guards (R ≤ P; t_des,post ≥ t_des,rail) are unchanged.

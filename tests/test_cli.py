@@ -502,15 +502,12 @@ def test_an_intermediate_rail_as_wide_as_the_post_is_allowed():
     _validate(_own())
 
 
-def test_a_span_under_twice_the_post_od_stops_with_an_intermediate_rail_only():
-    # S4-12: L = 4 in < 2 x 2.375 in.
+def test_a_short_span_no_longer_stops_with_an_intermediate_rail():
+    # The L >= 2 D_post stop served only Check 4b's branch-wall argument, which
+    # the simple shear connection replaced (Micah, 2026-10-09).
     raw = _own()
     raw["geometry"]["span"] = 4
-    with pytest.raises(project.ProjectError,
-                       match=r"The span \(4\) is less than twice the post OD \(2 x 2\.375 in = 4\.750 in\)"):
-        _validate(raw)
-    raw["intermediate_rail"], raw["welds"] = {"none": True}, {"rail_to_post": "1/8", "post_to_baseplate": "1/4"}
-    _validate(raw)  # no intermediate rail, no branch-wall line, no stop
+    _validate(raw)
 
 
 @pytest.mark.parametrize("name, other", [("B", "N"), ("N", "B")])

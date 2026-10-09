@@ -478,51 +478,46 @@ horizontal_deflection = 0.121439
 downward = 0.0852686
 horizontal = 0.0728636
 
+# Check 4b redone in a fresh session: Micah ruled on 2026-10-09 (PR #20)
+# that Check 4b is a simple shear connection (e = 0, no end moment),
+# revising S4-9 and S4-12. Every check4b value is pending until then
+# (rule 5); e_in, S_w_in2, M_lbin and f_b_lbpin are no longer tool values. The
+# Check 4b section of case-05.md predates the ruling.
 [independent.check4b]
-e_in = 1.1875
-R_D_lb = 6.81
-L_w_in = 5.21504
-S_w_in2 = 2.16424
-throat_in = 0.0883883
-t_min_in = 0.14
-w_min_in = 0.125
-min_size = "OK"
-Fnw_ksi = 42.0
-weld_allow_lbpin = 1856.16
-base_allow_lbpin = 2574.0
-controlling = "downward, component"
+R_D_lb = "pending"
+L_w_in = "pending"
+throat_in = "pending"
+t_min_in = "pending"
+w_min_in = "pending"
+min_size = "pending"  # text, in quotes
+Fnw_ksi = "pending"
+weld_allow_lbpin = "pending"
+base_allow_lbpin = "pending"
+controlling = "pending"  # text, in quotes
 
 [independent.check4b.R_lb]
-downward_component = 56.81
-horizontal_component = 50.4616
-
-[independent.check4b.M_lbin]
-downward_component = 67.4619
-horizontal_component = 59.9232
+downward_component = "pending"
+horizontal_component = "pending"
 
 [independent.check4b.f_v_lbpin]
-downward_component = 10.8935
-horizontal_component = 9.67617
-
-[independent.check4b.f_b_lbpin]
-downward_component = 31.1711
-horizontal_component = 27.6878
+downward_component = "pending"
+horizontal_component = "pending"
 
 [independent.check4b.f_r_lbpin]
-downward_component = 33.0198
-horizontal_component = 29.3299
+downward_component = "pending"
+horizontal_component = "pending"
 
 [independent.check4b.ratio_weld]
-downward_component = 0.0177893
-horizontal_component = 0.0158014
+downward_component = "pending"
+horizontal_component = "pending"
 
 [independent.check4b.ratio_base]
-downward_component = 0.00423212
-horizontal_component = 0.00375919
+downward_component = "pending"
+horizontal_component = "pending"
 
 [independent.check4b.ratio]
-downward_component = 0.0177893
-horizontal_component = 0.0158014
+downward_component = "pending"
+horizontal_component = "pending"
 
 [independent.reactions]
 W_bp_lb = 6.80556

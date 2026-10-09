@@ -27,6 +27,14 @@ cases 1–4 must pass exactly as they do today.
 
 ## Decisions settled for this slice
 
+> **Revision, 2026-10-09 (Micah, PR #20 review):** Check 4b is a simple
+> shear connection, consistent with Check 4a's simple-span member: the
+> reaction R acts at the weld, e = 0, no end moment. This supersedes the
+> e = D_post/2 and M = R·e of S4-9, the branch-wall argument and the
+> L ≥ 2·D_post stop of S4-12, and every later mention of them in this plan
+> (the Engineering, Input, T3 and figures sections). docs/brief/welds.md
+> holds the decision.
+
 S4-1 to S4-12 are in the brief, with Micah's name and date on each. In
 short:
 
@@ -40,10 +48,10 @@ short:
 | S4-6 | B parallel to the rail, N perpendicular; required, no default; stop if ≤ 0 or smaller than the post OD. W_bp = ρ·B·N·t_p in the reaction sets' D only. | inputs.md, loads-and-envelope.md |
 | S4-7 | Reaction tables: V, N, M at 4 significant figures; N signed, tension positive, with the word; the convention note under each table; "V and M act in the same vertical plane; M = V·h"; combination label, governing load type, D breakdown and total. | output.md |
 | S4-8 | Check 4b, the intermediate rail weld to the post, treated like Check 3 (a deliberate scope addition). Same as top: "controlled by Check 3 by observation", guard R > P. Own section: a required weld size; the Check 3 method on the intermediate rail's ring, k_ds = 1.0, base metal, minimum size. | welds.md |
-| S4-9 | Check 4b load: P_c adjacent to the post (full P_c to that end), R_D = w_D,int·L/2, ASD D + L; horizontal R = √(P_c² + R_D²), downward R = R_D + P_c; e = D_post/2, M = R·e; no torsion. | welds.md |
+| S4-9 | Check 4b load: P_c adjacent to the post (full P_c to that end), R_D = w_D,int·L/2, ASD D + L; horizontal R = √(P_c² + R_D²), downward R = R_D + P_c; ~~e = D_post/2, M = R·e~~ **revised 2026-10-09 (Micah): a simple shear connection, e = 0, no end moment**; no torsion. | welds.md |
 | S4-10 | The component load runs horizontal and downward (downward is engineering judgement, after OSHA 1910.29(b)(5)). 4a downward adds the intermediate rail's dead load, ASD D + L; deflection as Check 2 combines it (horizontal L only, downward D + L). Default stays 50 lb; the info box tells the engineer to enter 150 lb where OSHA applies. | checks.md |
 | S4-11 | Validation stop when D_int > D_post (the cope), both states; equal ODs allowed, fillet model kept; a printed assumption for the joint. | welds.md |
-| S4-12 | Check 4b base metal with branch and chord reversed: post wall shear rupture (W6); chord-wall normal force not checked (W7 assumption extended); branch wall "covered by Check 4a" (own section) or "by Checks 1 and 2" (same as top); Fu/Fy ≥ 1.20 guard on the intermediate grade; stop if L < 2·D_post. | welds.md |
+| S4-12 | Check 4b base metal with branch and chord reversed: post wall shear rupture (W6); chord-wall normal force not checked (W7 assumption extended); branch wall "covered by Check 4a" (own section) or "by Checks 1 and 2" (same as top); Fu/Fy ≥ 1.20 guard on the intermediate grade; stop if L < 2·D_post. **Revised 2026-10-09 (Micah): the branch wall is "shear only, member shear not checked"; the L ≥ 2·D_post stop is removed; the chord-wall line names no R·e normal force.** | welds.md |
 | ADR 0007 | Micah's release-review recompute covers each new reaction set (V, N, M) as well as each new check. | verification.md |
 
 Three decisions were Claude's, confirmed by Micah on 2026-10-09:

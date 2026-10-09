@@ -54,7 +54,7 @@ class WeldCase(Case):
     f_a: object = None         # axial force per inch
     f_b: object = None         # bending force per inch at the extreme fiber; None without moment
     f_v: object = None         # shear per inch; None without horizontal load
-    f_n: object = None         # normal force per inch at the governing fiber
+    f_n: object = None         # normal force per inch at the governing fiber; None with shear only (Check 4b)
     f_r: object = None         # resultant per inch at the governing fiber
     fiber: str = ""            # "compression side", "tension side" or "uniform"
     theta: object = None       # angle of f_r to the weld axis; None where k_ds is not computed from it
@@ -83,21 +83,25 @@ class WeldCheck(Check):
 class Ring:
     w: Sym
     L_w: Sym
-    S_w: Sym
+    S_w: Sym | None  # None where the ring carries no moment (Check 4b, a simple shear connection)
     t_e: Sym
     lines: list[Line]
 
 
-def ring(registry: Registry, sec: PipeSection, size: Dimension, member: str = "post", symbol: str = "D") -> Ring:
+def ring(registry: Registry, sec: PipeSection, size: Dimension, member: str = "post", symbol: str = "D",
+         bending: bool = True) -> Ring:
     """Line properties of a fillet weld all around a round member (W3): the
-    post for Checks 3 and 7, the intermediate rail for Check 4b."""
+    post for Checks 3 and 7, the intermediate rail for Check 4b. Without
+    bending (Check 4b) the section modulus S_w is not needed or printed."""
     sh = Sheet(registry)
     sh.heading("Weld properties")
     D = sh.given(symbol, sec.OD, f"{sec.label}: outside diameter; the weld ring is the {member} perimeter", DB)
     w = sh.given("w", size.value, f"Fillet weld leg size, all around ({size.entered} as entered)", "Input")
     L_w = sh.line("L_w", PI * D, f"Weld length: the {member} perimeter", cite_ids=(LINE_METHOD,), unit="inch")
-    S_w = sh.line("S_w", PI * D**2 / 4, "Section modulus of the ring as a line", cite_ids=(LINE_METHOD,),
-                  unit="inch**2")
+    S_w = None
+    if bending:
+        S_w = sh.line("S_w", PI * D**2 / 4, "Section modulus of the ring as a line", cite_ids=(LINE_METHOD,),
+                      unit="inch**2")
     t_e = sh.line("t_e", sh.coeff("aisc360.J2.2a.throat.coeff") * w, "Effective throat, equal-leg fillet",
                   cite_ids=("aisc360.J2.2a.throat",), unit="inch")
     return Ring(w=w, L_w=L_w, S_w=S_w, t_e=t_e, lines=sh.lines)
@@ -214,7 +218,7 @@ class RingForces:
     f_a: Sym | None  # None where the ring carries no axial force (Check 4b)
     f_b: Sym | None
     f_v: Sym | None
-    f_n: Sym
+    f_n: Sym | None  # None where the ring carries shear only (Check 4b)
     f_r: Sym
     fiber: str
 
@@ -263,21 +267,15 @@ def ring_forces(sh: Sheet, rg: Ring, P: Sym, sense: str, V: Sym | None = None, M
     return RingForces(f_a=f_a, f_b=f_b, f_v=f_v, f_n=f_n, f_r=f_r, fiber=fiber)
 
 
-def shear_and_bending(sh: Sheet, rg: Ring, V: Sym, M: Sym) -> RingForces:
-    """Forces per inch of weld with no axial force (Check 4b): shear in the
-    ring's plane, uniform, and bending out of it, the same at both extreme
-    fibers; combined by vector sum (W3, W10)."""
+def shear_only(sh: Sheet, rg: Ring, V: Sym) -> RingForces:
+    """Forces per inch of weld for a simple shear connection (Check 4b,
+    Micah 2026-10-09): the reaction in the ring's plane, taken as uniform
+    around the ring (W3); no axial force and no moment."""
     f_v = sh.line("f_v", V / rg.L_w, "Shear per inch of weld, taken as uniform around the ring",
                   cite_ids=(LINE_METHOD,), unit=PER_INCH)
-    f_b = sh.line("f_b", M / rg.S_w, "Bending force per inch at the extreme fiber", cite_ids=(LINE_METHOD,),
-                  unit=PER_INCH)
-    sh.decision(mtext("No axial force"), "Both extreme fibers alike",
-                "No bearing credit: the weld carries the bending in compression as in tension",
-                cite_ids=(NO_BEARING,))
-    f_n = sh.line("f_n", f_b, "Normal force per inch at the extreme fiber", cite_ids=(NO_BEARING,), unit=PER_INCH)
-    f_r = sh.line("f_r", sqrt(f_n**2 + f_v**2), "Resultant per inch at the extreme fiber: vector sum",
+    f_r = sh.line("f_r", f_v, "Resultant per inch: shear only, no axial force and no moment",
                   cite_ids=(LINE_METHOD,), unit=PER_INCH)
-    return RingForces(f_a=None, f_b=f_b, f_v=f_v, f_n=f_n, f_r=f_r, fiber="extreme fiber")
+    return RingForces(f_a=None, f_b=None, f_v=f_v, f_n=None, f_r=f_r, fiber="uniform")
 
 
 def directional_increase(sh: Sheet, registry: Registry, f_r: Sym, section: PipeSection) -> tuple[Sym, Sym]:
@@ -399,7 +397,8 @@ def _weld_result(sh: Sheet, ws: WeldLines, f: RingForces, direction: str, load_t
     return WeldCase(direction, load_type, "checked", label,
                     demand=demand_value, capacity=capacity_value, ratio=s.ratio.value, lines=sh.lines,
                     sense=sense, f_a=f.f_a.value if f.f_a else None, f_b=f.f_b.value if f.f_b else None,
-                    f_v=f.f_v.value if f.f_v else None, f_n=f.f_n.value, f_r=f.f_r.value, fiber=f.fiber,
+                    f_v=f.f_v.value if f.f_v else None, f_n=f.f_n.value if f.f_n else None, f_r=f.f_r.value,
+                    fiber=f.fiber,
                     theta=theta.value if theta else None, k_ds=k_ds.value, weld_allow=s.weld_allow.value,
                     base_allow=ws.base.allow.value, base_demand=bd.value if bd else None,
                     weld_ratio=s.weld_ratio.value,
@@ -550,11 +549,13 @@ def _reaction_4b(registry: Registry, project: Project, loading: Loading, directi
 def check_4b(registry: Registry, project: Project, post: PipeSection, inter: PipeSection | None,
              loading: Loading) -> WeldCheck:
     """The intermediate rail to post weld (S4-8 to S4-12): a flat ring of the
-    intermediate rail's perimeter at the post face, loaded at e = D_post/2
-    (S4-9); k_ds = 1.0, a branch-to-chord joint (W2); base metal on the post
-    wall, the chord, in-plane shear only (W6); the post wall's normal force
-    is not checked (W7, extended); the intermediate rail wall, the branch, is
-    covered by the member check (S4-12). Same as the top rail with R <= P
+    intermediate rail's perimeter at the post face, a simple shear
+    connection consistent with the simple-span member, so the reaction R
+    acts at the weld with no end moment (Micah 2026-10-09, revising S4-9 and
+    S4-12); k_ds = 1.0, a branch-to-chord joint (W2); base metal on the post
+    wall, the chord, in-plane shear (W6); the post wall's chord limit states
+    are not checked (W7, extended); the intermediate rail wall carries shear
+    only, and member shear is not checked. Same as the top rail with R <= P
     and the post wall no thinner than the rail wall, the observation line
     instead (S4-8; wall guard, Micah 2026-10-09); with no intermediate rail,
     "none"."""
@@ -596,14 +597,13 @@ def check_4b(registry: Registry, project: Project, post: PipeSection, inter: Pip
                        cite_ids=("ej.weld.intermediate.same_as_top",))
         head_guard = g.lines
 
-    ecc = Sheet(registry)
-    ecc.heading("Eccentricity")
-    d = ecc.given('D_"post"', post.OD, f"{post.label}: outside diameter", DB)
-    e = ecc.line("e", d / 2, "Eccentricity: post centerline (the span's support point) to the post face",
-                 cite_ids=(INT_RING,), unit="inch")
-    e_line = ecc.lines[-1]
+    model = Sheet(registry)
+    model.heading("Connection model")
+    simple = registry.get("ej.weld.intermediate_simple_shear")
+    model.decision(mtext("Intermediate rail to post weld"), "Simple shear connection", simple.value,
+                   cite_ids=(simple.id, INT_RING))
     size = project.welds.rail_to_post if same else project.welds.intermediate_rail_to_post
-    rg = ring(registry, inter, size, member="intermediate rail", symbol='D_"int"')
+    rg = ring(registry, inter, size, member="intermediate rail", symbol='D_"int"', bending=False)
     limits = size_limits(registry, rg.w, (nominal_wall("int", "Intermediate rail", inter),
                                           nominal_wall("post", "Post", post)))
     wm = weld_metal(registry, project.welds.electrode)
@@ -614,29 +614,24 @@ def check_4b(registry: Registry, project: Project, post: PipeSection, inter: Pip
     t_post = Part('t_"post"', post.tdes, f"Post design wall thickness, {post.label}", DB)  # W4
     base = base_metal(registry, "Base metal: post wall fusion face", FU_ENTRY[grade], f"Tensile strength, {grade}",
                       t_post)
-    normal = registry.get("ej.weld.post_wall_normal_intermediate")
-    branch = registry.get("ej.weld.branch_wall_covered")
-    covered = "Checks 1 and 2" if same else "Check 4a"
+    chord = registry.get("ej.weld.post_wall_chord_intermediate")
+    branch = registry.get("ej.weld.intermediate_wall_shear")
     walls = Sheet(registry)
-    walls.decision(mtext("Post wall, normal force"), "Not checked", normal.value, cite_ids=(normal.id,))
-    walls.decision(mtext("Intermediate rail wall at the weld"), f"Covered by {covered}",
-                   branch.value.format(covered=covered), cite_ids=(branch.id,))
-    head = head_guard + rg.lines + ecc.lines + limits.lines + wm.lines + kd.lines + base.lines + walls.lines
+    walls.decision(mtext("Post wall, chord limit states"), "Not checked", chord.value, cite_ids=(chord.id,))
+    walls.decision(mtext("Intermediate rail wall at the weld"), "Shear only", branch.value, cite_ids=(branch.id,))
+    head = head_guard + rg.lines + model.lines + limits.lines + wm.lines + kd.lines + base.lines + walls.lines
     ws = WeldLines(
         rg=rg, wm=wm, base=base, head=head,
         k_ds=lambda _sh, _f_r: (None, k_ds),
         base_demand=lambda f: f.f_v,
         base_note="Post wall fusion face: in-plane shear only",
     )
-    chk.derived_lengths = [e_line]
     _min_size(chk, limits)
     for direction in COMPONENT_DIRECTIONS:
         dsh, R, label = _reaction_4b(registry, project, loading, direction)
-        M = dsh.line("M", R * e, "Moment at the post face: R at the post centerline, arm e", cite_ids=(INT_RING,),
-                     unit="lbf*inch")
         sh = Sheet(registry)
         sh.lines.extend(ws.head)
         sh.lines.extend(dsh.lines)
-        f = shear_and_bending(sh, rg, R, M)
+        f = shear_only(sh, rg, R)
         chk.cases.append(_weld_result(sh, ws, f, direction, COMPONENT, label, ""))
     return chk

@@ -35,10 +35,10 @@ LOCKED_ASSUMPTIONS = (
     "with eccentricity e = half the rail depth from the rail centerline; this is conservative against the "
     "saddle centroid (2R/π for equal round diameters). It is modeled as a fillet of the entered size all "
     "around, although at equal diameters the sides of the saddle form a flare-bevel joint.",
-    "The intermediate rail to post weld is modeled the same way, as a flat ring of the intermediate rail's "
-    "perimeter at the post face, with eccentricity e = half the post diameter from the post centerline. It is "
-    "modeled as a fillet of the entered size all around, although at equal diameters the sides of the saddle "
-    "form a flare-bevel joint.",
+    "The intermediate rail to post weld is modeled as a flat ring of the intermediate rail's perimeter at the "
+    "post face, a simple shear connection consistent with the simple-span intermediate rail: the end reaction "
+    "acts at the weld with no end moment. It is modeled as a fillet of the entered size all around, although at "
+    "equal diameters the sides of the saddle form a flare-bevel joint.",
     "Local strength of the rail wall at the post, and of the post wall at the intermediate rail (AISC 360-22 "
     "Chapter K chord limit states), is not checked.",
     "The component load's effect on the post is not checked.",
@@ -200,7 +200,7 @@ def _envelope_weld(chk: Check) -> str:
     for i, c in enumerate(chk.cases):
         if c.status == "checked":
             row = [c.direction, c.load_type, c.combination,
-                   f"{fmt_quantity_plain(c.f_n)}\n{c.fiber}",
+                   f"{fmt_quantity_plain(c.f_n)}\n{c.fiber}" if c.f_n is not None else "—\nshear only",
                    fmt_quantity_plain(c.f_v) if c.f_v is not None else "—",
                    fmt_quantity_plain(c.f_r)]
             if with_theta:

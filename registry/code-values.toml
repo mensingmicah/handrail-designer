@@ -108,8 +108,9 @@ review = [
   "ej.intermediate.same_as_top",
   "ej.weld.intermediate_ring_model",
   "aisc_manual.t3-23.case1.R",
-  "ej.weld.post_wall_normal_intermediate",
-  "ej.weld.branch_wall_covered",
+  "ej.weld.intermediate_simple_shear",
+  "ej.weld.post_wall_chord_intermediate",
+  "ej.weld.intermediate_wall_shear",
   "ej.weld.intermediate.same_as_top",
   "ej.combo.reaction",
   "ej.reaction.location",
@@ -1382,9 +1383,11 @@ note = """
 calc stops, naming the post grade and its Fu/Fy, so the printed "covered \
 by Check 5" line cannot become false (W5). A53 Gr B: 60/35 = 1.71. \
 Slice 4 (S4-12): the same guard applies to the intermediate rail's grade, \
-whose wall at Check 4b is covered by the member check (Check 4a, or \
-Checks 1 and 2 when it is the same as the top rail; \
-ej.weld.branch_wall_covered)."""
+whose wall at Check 4b was covered by the member check. Since Check 4b \
+became a simple shear connection (Micah, 2026-10-09) that wall is \
+"shear only, member shear not checked" (ej.weld.intermediate_wall_shear), \
+so the guard's basis is gone; it stays in validation until Micah rules \
+whether to keep it."""
 
 # --- Fillet weld strength, AISC 360-22 §J2 ---------------------------------
 
@@ -1804,7 +1807,7 @@ Micah, 2026-10-04 (W7). Printed in Check 3 beside the rail fusion face \
 line, which takes the in-plane force only (W6). From memory, unverified: \
 the margin for pipe on pipe is about 20 times. Slice 4 (S4-12): the W7 \
 stated assumption is extended to the post wall at the intermediate rail, \
-whose printed line is ej.weld.post_wall_normal_intermediate."""
+whose printed line is ej.weld.post_wall_chord_intermediate."""
 
 [[entry]]
 id = "ej.weld.max_size_not_applicable"
@@ -1962,12 +1965,12 @@ and dead load (S4-10). When P_c > P the full Check 4a runs instead."""
 
 [[entry]]
 id = "ej.weld.intermediate_ring_model"
-value = "The intermediate rail to post weld is a flat ring of the intermediate rail's perimeter at the post face. The component load is placed adjacent to the post, so the weld takes the full P_c with the dead-load end reaction; it acts at an eccentricity of half the post diameter, from the post centerline to the post face, through the intermediate rail's centerline (no torsion)"
+value = "The intermediate rail to post weld is a flat ring of the intermediate rail's perimeter at the post face, a simple shear connection: the end reaction acts at the weld, with no eccentricity and no end moment. The component load is placed adjacent to the post, so the weld takes the full P_c with the dead-load end reaction, through the intermediate rail's centerline (no torsion)"
 unit = "equation"
-cite = "Engineering judgement (EOR): weld ring at the post face, e = D_post/2, P_c at the post"
+cite = "Engineering judgement (EOR): weld ring at the post face, simple shear, P_c at the post"
 document = "Engineering decision of the engineer of record"
-edition = "docs/brief/welds.md, S4-9 and S4-11"
-section = "Intermediate rail weld to post (Check 4b): load and eccentricity"
+edition = "docs/brief/welds.md, S4-9 (revised 2026-10-09) and S4-11"
+section = "Intermediate rail weld to post (Check 4b): load, and the simple shear connection"
 source = "engineer"
 status = "drafted"
 drafted_on = 2026-10-09
@@ -1976,10 +1979,30 @@ verified_date = ""
 note = """
 Micah, 2026-10-09 (S4-9). Horizontal case: the component load and the \
 dead-load reaction in the ring's plane at right angles, combined by \
-vector sum; downward case: the two added. Conservative: the saddle lies \
-between sqrt(R_p^2 - r_i^2) and R_p from the post centerline. The fillet \
-model is kept all around at equal ODs (S4-11). A stated assumption, \
-printed in the front matter."""
+vector sum; downward case: the two added. The fillet model is kept all \
+around at equal ODs (S4-11). A stated assumption, printed in the front \
+matter. Revised by Micah 2026-10-09: a simple shear connection, \
+consistent with Check 4a's simple-span member, so e = 0 and no end \
+moment, replacing e = D_post/2 and M = R e (value and cite changed; \
+still drafted)."""
+
+[[entry]]
+id = "ej.weld.intermediate_simple_shear"
+value = "Simple shear connection consistent with the simple-span member assumption; no end moment at the weld."
+unit = "text"
+cite = "Engineering judgement (EOR): intermediate rail to post weld as a simple shear connection"
+document = "Engineering decision of the engineer of record"
+edition = "docs/brief/welds.md, Check 4b simple shear connection (revises S4-9 and S4-12)"
+section = "Intermediate rail weld to post (Check 4b): the simple shear connection"
+source = "engineer"
+status = "drafted"
+drafted_on = 2026-10-09
+verified_by = ""
+verified_date = ""
+note = """
+Micah, 2026-10-09, wording his. Printed at the head of Check 4b with \
+ej.weld.intermediate_ring_model. The reaction R acts at the weld, e = 0: \
+the weld carries shear only, f_v = R/(pi D_int)."""
 
 [[entry]]
 id = "aisc_manual.t3-23.case1.R"
@@ -2000,13 +2023,13 @@ The intermediate rail's dead-load reaction at the post, R_D = w_D L/2 \
 was corroborated by a web search summary; not read from the Manual."""
 
 [[entry]]
-id = "ej.weld.post_wall_normal_intermediate"
-value = "Post wall at the intermediate rail, force normal to the wall (the R·e moment): a chord-wall limit state of the round T-connection (AISC 360-22 Chapter K), not weld base metal; not checked (stated assumption)."
+id = "ej.weld.post_wall_chord_intermediate"
+value = "Post wall at the intermediate rail: chord-wall limit states of the round T-connection (AISC 360-22 Chapter K) not checked (stated assumption)."
 unit = "text"
 cite = "Engineering judgement (EOR): post wall chord limit states at the intermediate rail not checked"
 document = "Engineering decision of the engineer of record"
-edition = "docs/brief/welds.md, S4-12"
-section = "Base metal at Check 4b: the roles of Check 3 reversed; chord side, normal force"
+edition = "docs/brief/welds.md, S4-12 (revised 2026-10-09)"
+section = "Base metal at Check 4b: chord side (post wall)"
 source = "engineer"
 status = "drafted"
 drafted_on = 2026-10-09
@@ -2014,18 +2037,20 @@ verified_by = ""
 verified_date = ""
 note = """
 Micah, 2026-10-09 (S4-12). Printed in Check 4b beside the post wall \
-fusion face line, which takes the in-plane force only (W6). Its own \
-entry because ej.weld.rail_wall_normal prints "Rail wall", the chord of \
-Check 3; at Check 4b the post is the chord. The W7 stated assumption is \
-extended to cover it."""
+fusion face line, which takes the in-plane shear (W6). Its own entry \
+because ej.weld.rail_wall_normal prints "Rail wall", the chord of Check \
+3; at Check 4b the post is the chord. The W7 stated assumption is \
+extended to cover it. Replaces ej.weld.post_wall_normal_intermediate, \
+whose text named the R e moment's normal force: with the simple shear \
+connection (Micah, 2026-10-09) there is no end moment."""
 
 [[entry]]
-id = "ej.weld.branch_wall_covered"
-value = "Intermediate rail wall at the weld: covered by {covered}. The end moment R·e = (R_D + P_c)·D_post/2 is no more than the downward midspan moment of that member check while L ≥ 2·D_post (checked at input); member shear is not checked (stated assumption)."
+id = "ej.weld.intermediate_wall_shear"
+value = "Intermediate rail wall at the weld: shear only, member shear not checked (stated assumption)."
 unit = "text"
-cite = "Engineering judgement (EOR): intermediate rail wall at the weld covered by the member check"
+cite = "Engineering judgement (EOR): intermediate rail wall at the weld, shear only"
 document = "Engineering decision of the engineer of record"
-edition = "docs/brief/welds.md, S4-12"
+edition = "docs/brief/welds.md, Check 4b simple shear connection (revises S4-12)"
 section = "Base metal at Check 4b: branch side (intermediate rail wall)"
 source = "engineer"
 status = "drafted"
@@ -2033,11 +2058,11 @@ drafted_on = 2026-10-09
 verified_by = ""
 verified_date = ""
 note = """
-Micah, 2026-10-09 (S4-12). {covered} is filled with "Check 4a" in the \
-own-section state and "Checks 1 and 2" in the same-as-top state. W5's \
-argument, so W5's Fu/Fy >= 1.20 guard applies to the intermediate rail's \
-grade (ej.weld.post_wall.fu_fy_min), and validation stops if \
-L < 2 D_post."""
+Micah, 2026-10-09, wording his. Replaces ej.weld.branch_wall_covered \
+(the end moment no more than the member check's midspan moment while \
+L >= 2 D_post), which the simple shear connection made moot; the \
+L >= 2 D_post validation stop is removed with it. "Member shear not \
+checked" is the stated assumption "No shear checks in any member.""""
 
 [[entry]]
 id = "ej.weld.intermediate.same_as_top"

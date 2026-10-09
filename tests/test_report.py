@@ -356,8 +356,7 @@ def test_dimensions_page_echoes_b_and_n_and_the_intermediate_weld():
     assert '"Baseplate B, parallel to the rail", "6", "6\\"", "6.000 in"' in dims
     assert '"Baseplate N, perpendicular to the rail", "8", "8\\"", "8.000 in"' in dims
     assert '"Fillet weld, intermediate rail to post", "1/8"' in dims
-    assert '"Eccentricity: post centerline (the span\'s support point) to the post face", [$e = frac(D_"post", "2")$]' \
-        in dims and '"Check 4b"' in dims
+    assert '"Check 4b"' not in dims  # a simple shear connection: no eccentricity, no derived length
     _, src = _slice4_source(state=SAME_AS_TOP)
     assert "intermediate rail to post" not in _section(src, "= Dimensions")
 

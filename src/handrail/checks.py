@@ -570,9 +570,9 @@ def validate(project: Project, registry: Registry) -> None:
       (W7, extended to the intermediate rail by S4-12);
     - the post is no wider than the rail (W8);
     - the post grade's Fu/Fy keeps its wall at the weld covered by Check 5 (W5);
-    - the intermediate rail is no wider than the post (S4-11), the span is at
-      least twice the post OD (S4-12), and the intermediate rail grade's
-      Fu/Fy keeps its wall at the weld covered by the member check (S4-12);
+    - the intermediate rail is no wider than the post (S4-11), and the
+      intermediate rail grade's Fu/Fy is at least 1.20 (S4-12; its basis
+      awaits Micah's ruling now that Check 4b is a simple shear connection);
     - the baseplate is no smaller in plan than the post OD (S4-6).
     """
     rail = shapes.pipe(project.top_rail.section)
@@ -621,13 +621,6 @@ def validate(project: Project, registry: Registry) -> None:
                 f"The intermediate rail ({sec.label}, OD {fmt_quantity_plain(sec.OD)}) is wider than the post "
                 f"({post.label}, OD {fmt_quantity_plain(D_post)}). Its end is coped to the side of the post, "
                 f"which requires intermediate rail OD <= post OD. {how}"
-            )
-        span = project.span
-        if span.value < 2 * D_post:
-            raise ProjectError(
-                f"The span ({span.entered}) is less than twice the post OD (2 x {fmt_quantity_plain(D_post)} = "
-                f"{fmt_quantity_plain(2 * D_post)}). The intermediate rail wall at the post is covered by its "
-                f"member check only when L >= 2 D_post. Check the inputs."
             )
         _fu_fy_guard(registry, member.grade, "intermediate rail",
                      "Checks 1 and 2" if same else "Check 4a")
