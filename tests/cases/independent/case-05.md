@@ -66,9 +66,11 @@ Loads and material values:
 
 Input validation conditions (brief), confirmed by me: post OD 2.375 ≤ rail
 OD 2.375 (W8, equal allowed); D_int 1.660 ≤ D_post 2.375 (S4-11);
-L = 72 ≥ 2·D_post = 4.750 (S4-12); F_u/F_y = 60/35 = 1.714 ≥ 1.20 for post
-and intermediate grade (W5, S4-12); B = 6, N = 8 > post OD 2.375 (S4-6);
-0 < t_p = 0.5 < h (D9). All pass, so the full calc runs.
+F_u/F_y = 60/35 = 1.714 ≥ 1.20 for the post grade (W5); B = 6, N = 8 > post
+OD 2.375 (S4-6); 0 < t_p = 0.5 < h (D9). All pass, so the full calc runs.
+(The L ≥ 2·D_post stop and the F_u/F_y guard on the intermediate rail's
+grade were both removed when Check 4b became a simple shear connection,
+Micah 2026-10-09; welds.md.)
 
 ## 2. Limit states considered
 
@@ -127,13 +129,13 @@ checked (Check 4a).
 **Welds (Checks 3, 4b, 7).**
 
 - Weld metal shear on the effective throat, §J2.4 (Table J2.5): checked.
-- Base metal, §J4: shear rupture on the chord wall in-plane (Checks 3, 4b)
-  and on the baseplate through t_p (Check 7). Shear yielding §J4.2(a) is
-  not a fusion-face limit state (W6). The post side of Check 7 and the
-  branch sides of Checks 3 and 4b are covered by the member checks (W5,
-  S4-12). I confirmed the S4-12 condition: the Check 4b end moment
-  R·e = 67.46 lb-in is no more than Check 4a's downward midspan moment of
-  1,023 lb-in.
+- Base metal, §J4: shear rupture on the in-plane fusion faces. Check 3:
+  the rail wall (chord). Check 4b: both walls, the post (chord) and the
+  intermediate rail (branch), the lower allowable governing (welds.md,
+  S4-12 as revised by Micah 2026-10-09). Check 7: the baseplate through
+  t_p. Shear yielding §J4.2(a) is not a fusion-face limit state (W6). The
+  post side of Check 7 and the branch side of Check 3 (the post) are
+  covered by Check 5 (W5).
 - Minimum fillet size, Table J2.4: checked. Maximum size, §J2.2b(b): not
   applicable at T-joints (W11).
 - Minimum effective length, §J2.2b (4w): ring lengths of 5.2 to 7.5 in are
@@ -188,7 +190,8 @@ Where each load goes:
   `ej.combo.deflection.D_plus_L`). Not concurrent with the top rail loads.
 - **Intermediate rail weld, Check 4b.** P_c adjacent to the post, so the
   full P_c reaches the weld, plus R_D = w_D,int·L/2. Horizontal: R =
-  √(P_c² + R_D²). Downward: R = R_D + P_c. M = R·e, with e = D_post/2.
+  √(P_c² + R_D²). Downward: R = R_D + P_c. A simple shear connection: R
+  acts at the weld, e = 0, no end moment (Micah, 2026-10-09).
 - **Post, Checks 5, 6, 7.** Both guard load types act at the post top (P,
   or w·s = 300 lb). Fixed at the top of the baseplate; arm h − t_p =
   41.50 in. D at the post (48.24 lb) is axial compression at the critical
@@ -366,12 +369,19 @@ shear connection", and the revision note in docs/plans/slice-4.md). This
 session read the same sources as the header lists, plus this file's own
 section headings and Check 4b section and the `check4b` key names of the
 values file. It did not read src/, tool output, drafted entries or diffs.
-Only this section was rewritten. Lines elsewhere in this file that still
-describe the superseded R·e model are out of date and this section governs
-over them: section 1 (the L ≥ 2·D_post stop and the Fu/Fy guard on the
-intermediate grade, both removed), section 2 (the branch-wall argument
-from R·e), section 3 (M = R·e), section 14 (the 4b summary row, 0.01779)
-and section 17 item 4 (e = D_post/2 for Check 4b).
+
+**Base metal redone 2026-10-09** in a second fresh session on `slice-4` at
+`1457057dcdd9206298e087cbb344aaa9099bb62f`, after Micah's ruling on open
+question 9a (welds.md, S4-12 as revised): Check 4b checks base metal on
+both walls, post and intermediate rail, the lower allowable governing, a
+tie going to the post wall. That session worked the base metal lines, the
+ratios and the controlling case below, and brought sections 1, 2, 3, 14
+and 17 item 4 in line with the simple shear model. It read the case
+inputs (the skill's command), docs/brief/welds.md, docs/plans/slice-4.md,
+the Check 4 text of docs/brief/checks.md, the verified registry entries,
+this file, and `tests/cases/independent/case-05.toml` (independent values
+only). It did not read src/, tool output, drafted entries or diffs. Every
+other value in this section is the first session's, unchanged.
 
 **Model.** A flat ring of the intermediate rail's perimeter at the post
 face (S4-8, S4-11), a fillet weld of the entered size all around. The
@@ -391,7 +401,7 @@ resultant per inch is f_r = f_v.
 | Weld metal shear on the effective throat, §J2.4, Table J2.5 | Yes, checked | The weld carries R. k_ds = 1.0 (branch-to-chord, W2), so the varying angle of the force around the ring does not matter. |
 | Base metal, chord (post wall) fusion face, shear rupture §J4.2(b) | Yes, checked | R is tangent to the post wall in both cases (S4-12). |
 | Base metal, shear yielding §J4.2(a) | Not checked | W6: a gross-shear-area limit state, not a fusion face. |
-| Base metal, branch (intermediate rail wall) fusion face | Not checked (brief); flagged | S4-12: "shear only, member shear not checked". The branch wall is the thinner part, t_des = 0.130 < 0.143 in, so its shear rupture line, 0.6 × 60 × 0.130/2.00 = 2,340 lb/in, is lower than the chord's 2,574 lb/in. Ratio 10.89/2,340 = 0.004655, not governing. Open question 9a. |
+| Base metal, branch (intermediate rail wall) fusion face, shear rupture §J4.2(b) | Yes, checked | R is in the plane of the intermediate rail's end, along its wall (S4-12 as revised, Micah 2026-10-09, ruling on 9a). The lower of the two walls' allowables governs. |
 | Minimum fillet size, Table J2.4 | Yes, checked | Pass/fail on the thinner part's t_nom (W11). |
 | Maximum fillet size, §J2.2b(b) | Does not apply | Along edges of material only; this is a T-joint (W11). |
 | Chapter K chord-wall limit states on the post | Not checked | W7 assumption as extended by S4-12. With e = 0 and R tangent to the post wall, there is no branch force normal to the chord wall in either case. |
@@ -423,18 +433,23 @@ the component load (checks.md, Check 4).
 | k_ds | 1.0 | W2 (branch-to-chord) |
 | Ω (weld) | 2.00 | Table J2.5; own reading |
 | Weld allowable = F_nw·t_e·k_ds/Ω = 42.00 × 0.088375 × 1.0/2.00 | 1.856 kip/in = 1,856 lb/in | §J2.4, Eq. J2-3 per unit length; own reading |
-| Base metal, post wall shear rupture 0.6F_u·t_des,post/Ω = 0.6 × 60 × 0.143/2.00 | 2.574 kip/in = 2,574 lb/in | §J4.2(b), Eq. J4-4, Ω = 2.00; F_u = 60 ksi, A53 Gr B (Manual Table 2-4); own reading; S4-12, W4 |
+| Base metal, post wall (chord) shear rupture 0.6F_u·t_des,post/Ω = 0.6 × 60 × 0.143/2.00 | 2.574 kip/in = 2,574 lb/in | §J4.2(b), Eq. J4-4, Ω = 2.00; F_u = 60 ksi, A53 Gr B (Manual Table 2-4); own reading; S4-12, W4 |
+| Base metal, intermediate rail wall (branch) shear rupture 0.6F_u·t_des,int/Ω = 0.6 × 60 × 0.130/2.00 | 2.340 kip/in = 2,340 lb/in | §J4.2(b), Eq. J4-4, Ω = 2.00; F_u = 60 ksi, A53 Gr B, the intermediate rail's grade (defaulted to the top rail's, S4-1; Manual Table 2-4); own reading; S4-12 as revised, W4 |
+| Base metal governing: lower allowable, min(2,574, 2,340) | **intermediate rail wall**, 2,340 lb/in | welds.md, S4-12 as revised (a tie would go to the post wall; not a tie here) |
 | Minimum size, Table J2.4: thinner part t_nom = min(0.140, 0.154) = 0.140 in ≤ 1/4 in | w_min = 1/8 in; 1/8 ≥ 1/8 **OK** (at the minimum) | Table J2.4, own reading; t_nom per W11 |
 
 **Demands and ratios** (forces in lb/in; f_r = f_v):
 
-| Case | R (lb) | f_v = R/L_w | f_r | Ratio weld = f_r/1,856 | Ratio base = f_v/2,574 | Ratio |
-| --- | --- | --- | --- | --- | --- | --- |
-| Horizontal, component | √(50² + 6.810²) = 50.46 | 50.46/5.215 = 9.676 | 9.676 | 0.005214 | 0.003759 | 0.005214 |
-| Downward, component | 6.810 + 50 = 56.81 | 56.81/5.215 = 10.89 | 10.89 | **0.005870** | 0.004232 | **0.005870** |
+| Case | R (lb) | f_v = R/L_w | f_r | Ratio weld = f_r/1,856 | Base, post wall = f_v/2,574 | Base, int. rail wall = f_v/2,340 | Ratio base (governing wall) | Ratio |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Horizontal, component | √(50² + 6.810²) = 50.46 | 50.46/5.215 = 9.676 | 9.676 | 0.005214 | 0.003759 | 0.004135 | 0.004135 | 0.005214 |
+| Downward, component | 6.810 + 50 = 56.81 | 56.81/5.215 = 10.89 | 10.89 | **0.005870** | 0.004232 | 0.004655 | 0.004655 | **0.005870** |
 
-The check ratio is the larger of weld and base metal; in both cases it is
-the weld (weld allowable 1,856 < base 2,574 lb/in).
+The base metal ratio is the governing wall's, the intermediate rail wall
+(the lower allowable, t_des,int = 0.130 < t_des,post = 0.143 in, same F_u).
+The post wall line is printed for the record. The check ratio is the larger
+of weld and base metal; in both cases it is the weld (weld allowable 1,856
+< governing base 2,340 lb/in).
 
 **Controlling: downward, component, 0.005870 → 0.01 OK.** The
 downward case governs because R_D adds directly to P_c; in the horizontal
@@ -444,7 +459,8 @@ case it adds only in quadrature.
 (ASCE 7-22 §4.5.1.2); F_EXX = 70 ksi (E70XX, AWS A5.1, as used in AISC
 360-22 Table J2.5); F_nw = 0.60F_EXX, Ω = 2.00 and t_e = 0.707w (AISC
 360-22 §J2.4, Table J2.5, §J2.2a); k_ds = 1.0 for this joint (brief W2,
-§J2.4); F_u = 60 ksi for A53 Gr B (AISC Manual 16th Ed. Table 2-4); shear
+§J2.4); F_u = 60 ksi for A53 Gr B, both walls (AISC Manual 16th Ed. Table
+2-4); shear
 rupture 0.6F_u·t with Ω = 2.00 (AISC 360-22 §J4.2(b), Eq. J4-4); the
 Table J2.4 minimum of 1/8 in for a thinner part ≤ 1/4 in (AISC 360-22
 Table J2.4, "thinner part joined", as in 360-16); the simple-span end
@@ -452,14 +468,15 @@ reaction wL/2 (AISC Manual Table 3-23 Case 1). All from memory.
 
 **Open questions for this check.**
 
-- **9a. Branch-side base metal.** The brief checks base metal on the
-  chord (post wall) only. The branch (intermediate rail) wall is thinner,
-  t_des = 0.130 in against 0.143 in, so if its fusion face were checked
-  it would govern the base metal line: 2,340 lb/in, ratio 0.004655 in the
-  downward case. Still below the weld metal ratio (0.005870), so it
-  cannot change the result here. Is "member shear not checked" meant to
-  cover the branch fusion face too? For Check 3 the branch side is the
-  post, covered by Check 5; here nothing covers it.
+- **9a. Branch-side base metal. Resolved** (Micah, 2026-10-09): base
+  metal is checked on both walls, the lower governing (welds.md, S4-12 as
+  revised). Worked above; the intermediate rail wall governs the base
+  metal line and the weld metal still governs the check.
+- **9c. Throat rounding within this calc** (no value changed). Check 4b's
+  t_e uses 0.707w = 0.088375 in (weld allowable 1,855.88 lb/in); Check 3
+  uses (√2/2)w = 0.08839 in (1,856.16 lb/in). A 0.015% difference, far
+  inside the test tolerance, but the two weld checks should use one
+  convention. Which one the tool prints is for the comparison to show.
 - **9b. Rotational restraint.** A fillet weld all around a pipe end is
   stiff, and the joint may attract end moment the simple shear model
   ignores. Bounding case for sensitivity only (not a check value): full
@@ -476,9 +493,9 @@ reaction wL/2 (AISC Manual Table 3-23 Case 1). All from memory.
    rail loads (not concurrent). Yes.
 2. Direction and worst case: horizontal and downward (S4-10); P_c at the
    post maximizes the end reaction. Downward governs, by calculation.
-3. Checks complete: weld metal, chord base metal, minimum size checked;
-   branch base metal flagged (9a); chord wall and end moment not checked
-   by ruling (9b).
+3. Checks complete: weld metal, base metal on both walls (post and
+   intermediate rail, the lower governing), minimum size checked; chord
+   wall and end moment not checked by ruling (9b).
 4. Geometry: L = 72 in center to center for R_D; ring D = D_int = 1.660
    in; e = 0.
 5. Method: elastic weld group, concentric in-plane load, uniform f_v (W3);
@@ -614,7 +631,7 @@ baseplate 6.806 = **55.04 lb**.
 | 2 Top rail deflection | downward, concentrated | 0.1523 | OK |
 | 3 Rail to post weld | outward, distributed (weld metal) | 0.04986 | OK |
 | 4a Intermediate rail | downward, bending | 0.1600 | OK |
-| 4b Intermediate rail weld | downward, component (weld metal) | 0.01779 | OK |
+| 4b Intermediate rail weld | downward, component (weld metal; base metal governed by the intermediate rail wall, 0.004655) | 0.005870 | OK |
 | 5 Post combined | outward, distributed, H1-1b | 0.8353 | OK |
 | 6 Post deflection | outward, distributed | 0.5683 | OK |
 | 7 Post to baseplate weld | outward, distributed (weld metal) | 0.5059 | OK |
@@ -696,8 +713,8 @@ P_e, the classification limits, and the tension-side f_r of Check 7.
    Nothing new to flag.
 4. **Geometry.** h − t_p = 41.50 in for Checks 5, 6 and 7 (moment, Δ, weld
    arm); h = 42 in for L_c (D3) and the reaction arm; e = D_rail/2 =
-   1.1875 in (Check 3); e = D_post/2 = 1.1875 in (Check 4b; equal to Check
-   3's only because rail and post OD are equal); span 72 in; Check 4b
+   1.1875 in (Check 3); e = 0 for Check 4b (a simple shear connection,
+   no end moment; Micah 2026-10-09); span 72 in; Check 4b
    ring D_int = 1.660 in; Check 3 and 7 ring D_post = 2.375 in. Yes.
 5. **Method and equations.** Both sections are compact and inside §F8
    scope; the post is nonslender in compression; L_c/r = 111.5 < 135.6, so
