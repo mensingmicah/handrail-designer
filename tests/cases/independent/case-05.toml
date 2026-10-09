@@ -478,46 +478,46 @@ horizontal_deflection = 0.121439
 downward = 0.0852686
 horizontal = 0.0728636
 
-# Check 4b redone in a fresh session: Micah ruled on 2026-10-09 (PR #20)
-# that Check 4b is a simple shear connection (e = 0, no end moment),
-# revising S4-9 and S4-12. Every check4b value is pending until then
-# (rule 5); e_in, S_w_in2, M_lbin and f_b_lbpin are no longer tool values. The
-# Check 4b section of case-05.md predates the ruling.
+# Check 4b redone in a fresh session on be21096 (2026-10-09), after
+# Micah ruled (PR #20) that Check 4b is a simple shear connection (e = 0,
+# no end moment), revising S4-9 and S4-12. Only the check4b values below
+# came from that session; [provenance] records the original calc. Calc:
+# case-05.md section 9.
 [independent.check4b]
-R_D_lb = "pending"
-L_w_in = "pending"
-throat_in = "pending"
-t_min_in = "pending"
-w_min_in = "pending"
-min_size = "pending"  # text, in quotes
-Fnw_ksi = "pending"
-weld_allow_lbpin = "pending"
-base_allow_lbpin = "pending"
-controlling = "pending"  # text, in quotes
+R_D_lb = 6.81
+L_w_in = 5.21504
+throat_in = 0.088375
+t_min_in = 0.14
+w_min_in = 0.125
+min_size = "OK"
+Fnw_ksi = 42.0
+weld_allow_lbpin = 1855.88
+base_allow_lbpin = 2574.0
+controlling = "downward, component"
 
 [independent.check4b.R_lb]
-downward_component = "pending"
-horizontal_component = "pending"
+downward_component = 56.81
+horizontal_component = 50.4616
 
 [independent.check4b.f_v_lbpin]
-downward_component = "pending"
-horizontal_component = "pending"
+downward_component = 10.8935
+horizontal_component = 9.67617
 
 [independent.check4b.f_r_lbpin]
-downward_component = "pending"
-horizontal_component = "pending"
+downward_component = 10.8935
+horizontal_component = 9.67617
 
 [independent.check4b.ratio_weld]
-downward_component = "pending"
-horizontal_component = "pending"
+downward_component = 0.00586973
+horizontal_component = 0.0052138
 
 [independent.check4b.ratio_base]
-downward_component = "pending"
-horizontal_component = "pending"
+downward_component = 0.00423212
+horizontal_component = 0.00375919
 
 [independent.check4b.ratio]
-downward_component = "pending"
-horizontal_component = "pending"
+downward_component = 0.00586973
+horizontal_component = 0.0052138
 
 [independent.reactions]
 W_bp_lb = 6.80556

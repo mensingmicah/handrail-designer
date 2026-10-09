@@ -359,32 +359,138 @@ controlling: downward, 0.1421 → 0.14 OK.
 
 ## 9. Check 4b: intermediate rail weld to post
 
-Ring of the intermediate rail's perimeter at the post face (S4-8, S4-11),
-k_ds = 1.0 (branch-to-chord), base metal on the post wall (chord, S4-12).
+**Redone 2026-10-09** in a fresh session on `slice-4` at
+`be2109621d8b12c0b6c44e9facce5f02683167fa` (Micah's ruling of 2026-10-09, PR #20: Check 4b is a simple
+shear connection, e = 0, no end moment; welds.md "Check 4b is a simple
+shear connection", and the revision note in docs/plans/slice-4.md). This
+session read the same sources as the header lists, plus this file's own
+section headings and Check 4b section and the `check4b` key names of the
+values file. It did not read src/, tool output, drafted entries or diffs.
+Only this section was rewritten. Lines elsewhere in this file that still
+describe the superseded R·e model are out of date and this section governs
+over them: section 1 (the L ≥ 2·D_post stop and the Fu/Fy guard on the
+intermediate grade, both removed), section 2 (the branch-wall argument
+from R·e), section 3 (M = R·e), section 14 (the 4b summary row, 0.01779)
+and section 17 item 4 (e = D_post/2 for Check 4b).
+
+**Model.** A flat ring of the intermediate rail's perimeter at the post
+face (S4-8, S4-11), a fillet weld of the entered size all around. The
+intermediate rail is a simple span (Check 4a), so the end reaction R acts
+at the weld with no end moment (e = 0). The load acts through the
+intermediate rail's centerline, which passes through the ring's centroid:
+no torsion. R lies in the ring's plane, so the weld group is loaded
+concentrically in its plane and the elastic method gives a uniform force
+per inch, f_v = R/(πD_int) (W3). With no axial or bending component, the
+resultant per inch is f_r = f_v.
+
+**Limit states considered for this connection** (from the code, AISC
+360-22 Chapters J and K; own reading):
+
+| Limit state | Applies? | Why |
+| --- | --- | --- |
+| Weld metal shear on the effective throat, §J2.4, Table J2.5 | Yes, checked | The weld carries R. k_ds = 1.0 (branch-to-chord, W2), so the varying angle of the force around the ring does not matter. |
+| Base metal, chord (post wall) fusion face, shear rupture §J4.2(b) | Yes, checked | R is tangent to the post wall in both cases (S4-12). |
+| Base metal, shear yielding §J4.2(a) | Not checked | W6: a gross-shear-area limit state, not a fusion face. |
+| Base metal, branch (intermediate rail wall) fusion face | Not checked (brief); flagged | S4-12: "shear only, member shear not checked". The branch wall is the thinner part, t_des = 0.130 < 0.143 in, so its shear rupture line, 0.6 × 60 × 0.130/2.00 = 2,340 lb/in, is lower than the chord's 2,574 lb/in. Ratio 10.89/2,340 = 0.004655, not governing. Open question 9a. |
+| Minimum fillet size, Table J2.4 | Yes, checked | Pass/fail on the thinner part's t_nom (W11). |
+| Maximum fillet size, §J2.2b(b) | Does not apply | Along edges of material only; this is a T-joint (W11). |
+| Chapter K chord-wall limit states on the post | Not checked | W7 assumption as extended by S4-12. With e = 0 and R tangent to the post wall, there is no branch force normal to the chord wall in either case. |
+| End moment from rotational restraint of the welded joint | Not checked (ruled) | Micah's simple shear ruling. Sensitivity: open question 9b. |
+
+**Loads and load path.** The component load P_c = 50 lb (ASCE 7-22
+§4.5.1.2; own reading, no verified entry) is placed adjacent to the post,
+so the weld at that end takes the full P_c (S4-9). The intermediate
+rail's own dead load gives the end reaction R_D = w_D,int·L/2 (S4-9),
+with w_D,int = W = 2.27 plf (Shapes Database, Pipe1-1/4STD) and L = 72 in
+center to center. ASD D + L (verified `asce7.combo.asd.D_plus_L`), the
+component load as L. Two cases (S4-10): horizontal, P_c horizontal and
+R_D vertical, at right angles in the ring's plane, R = √(P_c² + R_D²);
+downward, P_c and R_D in the same direction, R = R_D + P_c. No upward
+component case (S4-10). The top-rail guard loads are not concurrent with
+the component load (checks.md, Check 4).
+
+**Ring and capacities (case-independent).**
 
 | Line | Value | Citation, source |
 | --- | --- | --- |
-| D_int | 1.660 in | |
-| L_w = πD_int | 5.215 in | W3 |
-| S_w = πD_int²/4 | 2.164 in² | W3 |
-| e = D_post/2 | 1.1875 in | S4-9 |
-| R_D = w_D,int·L/2 = 0.1892 × 36 | 6.810 lb | S4-9 |
-| t_e = 0.707 × 0.125 | 0.08839 in | §J2.2a, own reading |
-| F_nw | 42.00 ksi | §J2.4, own reading |
-| Weld allowable (k_ds = 1.0) | 1,856 lb/in | §J2.4, Ω = 2.00, own reading |
-| Base metal, post wall shear rupture 0.6 × 60 × 0.143/2.00 | 2,574 lb/in | §J4.2(b), own reading; S4-12, t_des,post |
-| Minimum size: thinner part t_nom = min(0.140, 0.154) = 0.140 in ≤ 1/4 | w_min = 1/8; 1/8 ≥ 1/8 **OK** (at the minimum) | Table J2.4, own reading |
+| D_int (OD, Pipe1-1/4STD) | 1.660 in | Shapes Database v16.0 |
+| L_w = πD_int = π × 1.660 | 5.215 in | W3 |
+| w_D,int = 2.27/12 | 0.1892 lb/in | Shapes Database (W) |
+| R_D = w_D,int·L/2 = 0.1892 × 72/2 | 6.810 lb | S4-9; Table 3-23 Case 1 end reaction, own reading |
+| e | 0 (no end moment) | Simple shear connection, Micah 2026-10-09 |
+| Weld w = 1/8 in; throat t_e = 0.707w = 0.707 × 0.125 | 0.08838 in | AISC 360-22 §J2.2a; own reading |
+| F_nw = 0.60F_EXX = 0.60 × 70 | 42.00 ksi | §J2.4, Table J2.5; F_EXX = 70 ksi for E70XX; own reading |
+| k_ds | 1.0 | W2 (branch-to-chord) |
+| Ω (weld) | 2.00 | Table J2.5; own reading |
+| Weld allowable = F_nw·t_e·k_ds/Ω = 42.00 × 0.088375 × 1.0/2.00 | 1.856 kip/in = 1,856 lb/in | §J2.4, Eq. J2-3 per unit length; own reading |
+| Base metal, post wall shear rupture 0.6F_u·t_des,post/Ω = 0.6 × 60 × 0.143/2.00 | 2.574 kip/in = 2,574 lb/in | §J4.2(b), Eq. J4-4, Ω = 2.00; F_u = 60 ksi, A53 Gr B (Manual Table 2-4); own reading; S4-12, W4 |
+| Minimum size, Table J2.4: thinner part t_nom = min(0.140, 0.154) = 0.140 in ≤ 1/4 in | w_min = 1/8 in; 1/8 ≥ 1/8 **OK** (at the minimum) | Table J2.4, own reading; t_nom per W11 |
 
-| Case | R (lb) | M = R·e (lb-in) | f_b = M/S_w | f_v = R/L_w | f_r = √(f_b² + f_v²) | Ratio weld | Ratio base |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| Horizontal | √(50² + 6.810²) = 50.46 | 59.92 | 27.69 | 9.676 | 29.33 | 0.01580 | 0.003759 |
-| Downward | 6.810 + 50 = 56.81 | 67.46 | 31.17 | 10.89 | 33.02 | **0.01779** | 0.004232 |
+**Demands and ratios** (forces in lb/in; f_r = f_v):
 
-(Forces in lb/in.) No axial force on this ring, so no f_a term. The R·e
-moment is normal to the ring's plane, so the extreme-fiber f_b and the
-in-plane f_v are perpendicular and combine by SRSS.
+| Case | R (lb) | f_v = R/L_w | f_r | Ratio weld = f_r/1,856 | Ratio base = f_v/2,574 | Ratio |
+| --- | --- | --- | --- | --- | --- | --- |
+| Horizontal, component | √(50² + 6.810²) = 50.46 | 50.46/5.215 = 9.676 | 9.676 | 0.005214 | 0.003759 | 0.005214 |
+| Downward, component | 6.810 + 50 = 56.81 | 56.81/5.215 = 10.89 | 10.89 | **0.005870** | 0.004232 | **0.005870** |
 
-**Controlling: downward, component, 0.01779 → 0.02 OK.**
+The check ratio is the larger of weld and base metal; in both cases it is
+the weld (weld allowable 1,856 < base 2,574 lb/in).
+
+**Controlling: downward, component, 0.005870 → 0.01 OK.** The
+downward case governs because R_D adds directly to P_c; in the horizontal
+case it adds only in quadrature.
+
+**Values from my own reading (no verified entry) used here:** P_c = 50 lb
+(ASCE 7-22 §4.5.1.2); F_EXX = 70 ksi (E70XX, AWS A5.1, as used in AISC
+360-22 Table J2.5); F_nw = 0.60F_EXX, Ω = 2.00 and t_e = 0.707w (AISC
+360-22 §J2.4, Table J2.5, §J2.2a); k_ds = 1.0 for this joint (brief W2,
+§J2.4); F_u = 60 ksi for A53 Gr B (AISC Manual 16th Ed. Table 2-4); shear
+rupture 0.6F_u·t with Ω = 2.00 (AISC 360-22 §J4.2(b), Eq. J4-4); the
+Table J2.4 minimum of 1/8 in for a thinner part ≤ 1/4 in (AISC 360-22
+Table J2.4, "thinner part joined", as in 360-16); the simple-span end
+reaction wL/2 (AISC Manual Table 3-23 Case 1). All from memory.
+
+**Open questions for this check.**
+
+- **9a. Branch-side base metal.** The brief checks base metal on the
+  chord (post wall) only. The branch (intermediate rail) wall is thinner,
+  t_des = 0.130 in against 0.143 in, so if its fusion face were checked
+  it would govern the base metal line: 2,340 lb/in, ratio 0.004655 in the
+  downward case. Still below the weld metal ratio (0.005870), so it
+  cannot change the result here. Is "member shear not checked" meant to
+  cover the branch fusion face too? For Check 3 the branch side is the
+  post, covered by Check 5; here nothing covers it.
+- **9b. Rotational restraint.** A fillet weld all around a pipe end is
+  stiff, and the joint may attract end moment the simple shear model
+  ignores. Bounding case for sensitivity only (not a check value): full
+  fixity with P_c at midspan gives M_end = P_c·L/8 + w_D,int·L²/12 = 450.0
+  + 81.72 = 531.7 lb-in, f_b = 531.7/2.164 = 245.7 lb/in (S_w = πD²/4),
+  f_v = (25 + 6.810)/5.215 = 6.100 lb/in, f_r = 245.8 lb/in, ratio 0.1324.
+  Under the load-adjacent position the fixed-end moment goes to zero. So
+  the ruling cannot flip this case's result; it moves the ratio by about
+  20× in the worst bound.
+
+**Checklist (items 1–9) for this check.**
+
+1. Loads complete: P_c and the intermediate rail's own dead load; no top
+   rail loads (not concurrent). Yes.
+2. Direction and worst case: horizontal and downward (S4-10); P_c at the
+   post maximizes the end reaction. Downward governs, by calculation.
+3. Checks complete: weld metal, chord base metal, minimum size checked;
+   branch base metal flagged (9a); chord wall and end moment not checked
+   by ruling (9b).
+4. Geometry: L = 72 in center to center for R_D; ring D = D_int = 1.660
+   in; e = 0.
+5. Method: elastic weld group, concentric in-plane load, uniform f_v (W3);
+   §J2.4 with k_ds = 1.0; §J4.2(b).
+6. Assumptions: simple shear connection (ruled); flat ring at the post
+   face; fillet all around although the saddle sides are flare-bevel at
+   equal ODs (here D_int < D_post, so less so).
+7. Code editions: AISC 360-22, AISC Manual 16th Ed., ASCE 7-22
+   throughout.
+8. Magnitude: about 11 lb/in against 1,856 lb/in; ratio about 0.006,
+   consistent with the brief's "near 0.01 for pipe".
+9. Governing case: downward, as expected.
 
 ## 10. Check 5: post combined axial and flexure
 
