@@ -192,3 +192,103 @@ def test_check_4a_cites_the_component_load_model_and_its_direction():
     assert "downward component load" in next(ln for ln in down.lines if ln.symbol == "M_a").cite
     assert down.combination.startswith("1.0D + 1.0L, vertical")
     assert _by_case(chk)[("Horizontal", "Bending")].combination.startswith("1.0L horizontal, alone")
+
+
+# ---------------------------------------------------------------------------
+# Check 4b: the intermediate rail weld to the post
+# ---------------------------------------------------------------------------
+
+FEXX, FU, OM_W, OM_BM = 70.0, 60.0, 2.00, 2.00  # ksi, ksi, -, - (registry values, restated)
+
+
+def plain_4b(inter=P125, post=P2, L=72.0, Pc=50.0, w=0.125):
+    """Check 4b by hand in plain floats: {direction: (R, f_v, f_b, f_r, ratio)} (S4-9, S4-12)."""
+    D, e = inter.OD.m_as("inch"), post.OD.m_as("inch") / 2
+    RD = inter.W.m_as("lbf/inch") * L / 2
+    Lw, Sw = 3.141592653589793 * D, 3.141592653589793 * D**2 / 4
+    weld = 0.6 * FEXX * 1000 * 0.707 * w / OM_W               # k_ds = 1.0
+    base = 0.6 * FU * 1000 * post.tdes.m_as("inch") / OM_BM   # post wall, in-plane shear only
+    out = {}
+    for direction, R in (("Downward", RD + Pc), ("Horizontal", (Pc**2 + RD**2) ** 0.5)):
+        f_v, f_b = R / Lw, R * e / Sw
+        f_r = (f_v**2 + f_b**2) ** 0.5
+        out[direction] = (R, f_v, f_b, f_r, max(f_r / weld, f_v / base))
+    return out
+
+
+def _line(case, symbol):
+    return next(ln.value for ln in case.lines if ln.symbol == symbol and ln.kind == "value")
+
+
+def test_check_4b_matches_plain_calc_and_downward_governs():
+    chk = run().check("4b")
+    by = {c.direction: c for c in chk.checked}
+    for direction, (R, f_v, f_b, f_r, ratio) in plain_4b().items():
+        c = by[direction]
+        assert _lb(_line(c, "R")) == pytest.approx(R, rel=1e-9)
+        assert c.f_v.m_as("lbf/inch") == pytest.approx(f_v, rel=1e-9)
+        assert c.f_b.m_as("lbf/inch") == pytest.approx(f_b, rel=1e-9)
+        assert c.f_r.m_as("lbf/inch") == pytest.approx(f_r, rel=1e-9)
+        assert c.ratio == pytest.approx(ratio, rel=1e-9)
+        assert c.f_a is None and c.k_ds == 1.0 and c.theta is None and c.fiber == "extreme fiber"
+    assert chk.controlling.direction == "Downward" and chk.verdict == "OK"
+    # The 1/8 in weld sits at the Table J2.4 minimum for the thinner part, t_nom = 0.140 in.
+    head = chk.controlling.lines
+    assert _line(chk.controlling, 't_"min"').m_as("inch") == pytest.approx(0.140)
+    assert chk.min_size_ok
+    assert _line(chk.controlling, "e").m_as("inch") == pytest.approx(2.375 / 2)
+    assert _line(chk.controlling, "L_w").m_as("inch") == pytest.approx(3.141592653589793 * 1.660)
+    assert any(ln.symbol == 'D_"int"' for ln in head)
+
+
+def test_check_4b_prints_the_reversed_base_metal_lines():
+    c = run().check("4b").controlling
+    decisions = {ln.symbol: ln for ln in c.lines if ln.kind == "decision"}
+    assert decisions['"Post wall, normal force"'].text == "Not checked"
+    branch = decisions['"Intermediate rail wall at the weld"']
+    assert branch.text == "Covered by Check 4a" and "covered by Check 4a" in branch.note
+    assert any(ln.kind == "heading" and ln.symbol == "Base metal: post wall fusion face" for ln in c.lines)
+    assert _line(c, 't_"post"') == P2.tdes
+
+
+def test_check_4b_below_minimum_size_is_ng():
+    chk = run(int_weld="1/16").check("4b")
+    assert not chk.min_size_ok and chk.verdict == "NG" and chk.controlling.ratio < 1.0
+
+
+def test_same_as_top_rail_check_4b_prints_the_observation_and_how_r_was_found():
+    chk = run(state=SAME_AS_TOP).check("4b")
+    RD = P2.W.m_as("lbf/inch") * 72 / 2
+    R = RD + 50
+    assert not chk.computed and chk.result == "Controlled by Check 3"
+    assert chk.observation == (
+        "Intermediate rail weld: controlled by Check 3 by observation: same section (ring ≥ Check 3's, since post "
+        f"OD ≤ rail OD per W8), same weld size, weld reaction R = {R:.2f} lb ≤ P = 200.0 lb.")
+    assert _lb(next(ln.value for ln in chk.observation_lines if ln.symbol == "R")) == pytest.approx(R, rel=1e-9)
+
+
+def test_a_weld_reaction_above_p_runs_the_full_check_4b_on_the_top_rail_ring():
+    # The guard (S4-9): P_c = 250 lb, so R = R_D + 250 lb > P = 200 lb.
+    chk = run(state=SAME_AS_TOP, loads=Loads(component=250 * _LBF)).check("4b")
+    assert chk.computed
+    plain = plain_4b(inter=P2, Pc=250.0)
+    for c in chk.checked:
+        assert c.ratio == pytest.approx(plain[c.direction][4], rel=1e-9)
+    head = chk.controlling.lines
+    assert head[0].kind == "decision" and head[0].text == "Computed in full"
+    branch = next(ln for ln in head if ln.symbol == '"Intermediate rail wall at the weld"')
+    assert branch.text == "Covered by Checks 1 and 2"
+    # Same as the top rail, the weld is the rail to post size, 1/8 in.
+    assert _line(chk.controlling, "w").m_as("inch") == 0.125
+
+
+def test_no_intermediate_rail_check_4b_prints_none():
+    chk = run(state=NO_INTERMEDIATE).check("4b")
+    assert chk.observation == "None: no intermediate rail." and chk.verdict == "None"
+
+
+def test_checks_3_and_7_rings_are_still_the_post_perimeter():
+    res = run()
+    for number in (3, 7):
+        ring_d = next(ln for ln in res.check(number).controlling.lines if ln.symbol == "D")
+        assert ring_d.note.endswith("the weld ring is the post perimeter")

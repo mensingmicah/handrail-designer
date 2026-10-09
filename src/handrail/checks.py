@@ -89,6 +89,7 @@ class Check:
     # envelope, and the summary row's result, with no ratio and no OK or NG
     # of its own ("Controlled by Checks 1 and 2", "None").
     observation: str = ""
+    observation_lines: list[Line] = field(default_factory=list)  # printed under it, so its values can be traced
     result: str = ""
 
     @property
@@ -648,7 +649,7 @@ def compute(project: Project, registry: Registry) -> Results:
     from handrail import shapes
     from handrail.intermediate import check_4a
     from handrail.post import check_5, check_6
-    from handrail.welds import check_3, check_7
+    from handrail.welds import check_3, check_4b, check_7
 
     rail = shapes.pipe(project.top_rail.section)
     post = shapes.pipe(project.post.section)
@@ -661,7 +662,7 @@ def compute(project: Project, registry: Registry) -> Results:
     inter_props = section_lines(registry, inter) if inter is not None and not same else []
     checks = [check_1(registry, project, rail, loading), check_2(registry, project, rail, loading),
               check_3(registry, project, rail, post, loading),
-              check_4a(registry, project, inter, loading),
+              check_4a(registry, project, inter, loading), check_4b(registry, project, post, inter, loading),
               check_5(registry, project, post, loading), check_6(registry, project, post, loading),
               check_7(registry, project, post, loading)]
     return Results(project, rail, post, loading, props, post_props, checks, inter, inter_props)

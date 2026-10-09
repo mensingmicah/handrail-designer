@@ -261,6 +261,8 @@ def _check(chk: Check) -> str:
         return "\n\n".join(out)
     if chk.observation:
         out.append(f"#{typst_str(chk.observation)}")
+        if chk.observation_lines:
+            out.append(_lines(chk.observation_lines))
         return "\n\n".join(out)
     for f in chk.flags:
         out.append(f"#flag({typst_str(f)})")

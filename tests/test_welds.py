@@ -273,7 +273,7 @@ def test_check_7_stops_on_a_post_that_is_not_round(monkeypatch):
 
 def test_both_weld_checks_run_in_check_number_order():
     res = checks.run(project(), Registry())
-    assert [c.number for c in res.checks] == [1, 2, 3, "4a", 5, 6, 7]
+    assert [c.number for c in res.checks] == [1, 2, 3, "4a", "4b", 5, 6, 7]
 
 
 def test_minimum_size_reads_the_nominal_wall_and_strength_the_design_wall():

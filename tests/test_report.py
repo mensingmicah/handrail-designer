@@ -301,7 +301,7 @@ def test_weld_checks_print_in_check_number_order_with_their_envelopes():
     src = report.build_source(res, reg, CLEAN)
     heads = [ln for ln in src.splitlines() if ln.startswith("= Check ")]
     assert [h.split(":")[0] for h in heads] == ["= Check 1", "= Check 2", "= Check 3", "= Check 4a",
-                                                "= Check 5", "= Check 6", "= Check 7"]
+                                                "= Check 4b", "= Check 5", "= Check 6", "= Check 7"]
     check_3 = src.split("= Check 3: Top rail weld to post")[1].split("\n= ")[0]
     check_7 = src.split("= Check 7: Post weld to baseplate")[1].split("\n= ")[0]
     # theta and k_ds are an envelope column only where k_ds comes from theta (Check 7).
