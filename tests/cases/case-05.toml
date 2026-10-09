@@ -1,0 +1,128 @@
+# Test case 5 (docs/plans/slice-4.md, T1): the milestone, a fresh guard
+# that runs every check top to bottom, with an intermediate rail of its own
+# section and both anchor reaction sets.
+#
+# Pipe2STD top rail and post, A53 Gr B; L = 6'-0", h = 42 in, t_p = 1/2 in;
+# baseplate B = 6 in (parallel to the rail) x N = 8 in (perpendicular to the
+# rail), A36. Intermediate rail: its own section, Pipe1-1/4STD (OD 1.660 in
+# <= post OD 2.375 in), grade defaulted to the top rail's (A53 Gr B), so the
+# full Checks 4a and 4b run. Fillet welds all around, E70XX: rail to post
+# 1/8 in, post to baseplate 1/4 in, intermediate rail to post 1/8 in.
+# Default loads (P = 200 lb, w = 50 plf, P_c = 50 lb), no exemption;
+# default deflection limits.
+#
+# This is the first case where the intermediate rail's dead load flows into
+# Checks 5 and 7 and the baseplate weight into the reactions; only a calc
+# that runs the whole guard catches an integration error there. Branches
+# it reaches: Checks 4a and 4b in full; the upward reaction set present;
+# the distributed load type named in both sets; a weld at the Table J2.4
+# minimum in Check 4b.
+#
+# Values: an independent-calc case (docs/brief/verification.md). The
+# independent calc records every value the test compares in
+# tests/cases/independent/case-05.toml, written up beside it as case-05.md,
+# in a fresh session by the independent-calc skill (CLAUDE.md rule 6). Every
+# value there is "pending" until then, and a pending value blocks merge.
+#
+# [hand] below holds Micah's governing-case values for what is new in slice
+# 4 only: Checks 4a and 4b, and the lateral and upward reaction sets (V, N
+# and M each, ADR 0007). Checks 1-3 and 5-7 are covered by the independent
+# calc and verified in earlier slices, so [verification] recompute names
+# the new groups (Micah, 2026-10-09). He follows the tool's printed
+# controlling case and recomputes it line by line; each value is his own
+# result, never copied from the PDF (CLAUDE.md rule 5).
+#
+# Each [hand] value is "deferred" to the release review (ADRs 0006, 0007;
+# issue #18). At that review, replace each "deferred" with the recomputed
+# value, in the unit named by the key's suffix. Record every number,
+# ratios included, to 4 significant figures. N is signed, tension positive
+# (the lateral set's N is compression, negative); a zero V or M is 0.
+#
+# Text values, in quotes:
+#   check4a.controlling     direction, comma, limit state, e.g. "downward, bending"
+#   check4b.controlling     direction, comma, "component", e.g. "downward, component"
+#
+# The ratio keys name the downward cases, which the planning arithmetic
+# expects to govern. If your recompute finds another case governs, rename
+# the key to that case (e.g. horizontal_bending).
+#
+# A mismatch fails and, per CLAUDE.md rule 2, stops the work: neither side
+# is changed until we know which one is wrong.
+
+[project]
+name = "Test case 5"
+phase = "Verification"
+description = "Full guard: Pipe2STD rail and post, Pipe1-1/4STD intermediate rail, both reaction sets"
+
+[geometry]
+span = "6'-0\""
+post_height = 42
+baseplate_thickness = "1/2"
+
+[top_rail]
+section = "Pipe2STD"
+grade = "A53 Gr B"
+
+[post]
+section = "Pipe2STD"
+grade = "A53 Gr B"
+
+[intermediate_rail]
+same_as_top_rail = false
+section = "Pipe1-1/4STD"     # grade defaults to the top rail's, A53 Gr B
+
+[baseplate]
+B = 6                        # parallel to the rail
+N = 8                        # perpendicular to the rail
+grade = "A36"
+
+[welds]
+rail_to_post = "1/8"
+post_to_baseplate = "1/4"
+intermediate_rail_to_post = "1/8"
+electrode = "E70XX"
+
+[deflection.rail]
+limit_L_over = 120
+bypass = false
+
+[deflection.post]
+limit_L_over = 60
+bypass = false
+
+[deflection.intermediate_rail]
+limit_L_over = 120
+bypass = false
+
+[verification]
+kind = "independent-calc"
+covers = ["section", "check1", "check2", "check3", "intermediate", "check4a", "check4b",
+          "post", "check5", "check6", "check7", "reactions"]
+recompute = ["check4a", "check4b", "reactions"]
+
+# ---------------------------------------------------------------------------
+# Hand values: Micah's governing cases, new in slice 4 (deferred)
+# ---------------------------------------------------------------------------
+
+[hand.check4a]
+controlling = "deferred"      # e.g. "downward, bending"
+
+[hand.check4a.ratio]
+downward_bending = "deferred"
+downward_deflection = "deferred"
+
+[hand.check4b]
+controlling = "deferred"      # e.g. "downward, component"
+
+[hand.check4b.ratio]
+downward_component = "deferred"
+
+[hand.reactions.lateral]
+V_lb = "deferred"
+N_lb = "deferred"             # signed: compression is negative
+M_lbin = "deferred"
+
+[hand.reactions.upward]
+V_lb = "deferred"
+N_lb = "deferred"             # signed: tension is positive
+M_lbin = "deferred"
