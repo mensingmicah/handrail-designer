@@ -421,7 +421,7 @@ unless a real problem forces a change (ADR 0006).
 
 | Issue | Placement | Note |
 | --- | --- | --- |
-| #4 Calc-code cleanup | Slice 3, the next calc branch | Items 1–3 were done on the slice 2 branch; the later items remain. |
+| #4 Calc-code cleanup | Slice 4, build step 1 | Items 1–7 done on the slice 2 and 3 branches; the "do first" items (shared demand function, `live_at_post`) and the slice 3 self-review items open slice 4. |
 | #3 Noncompact hand case for Eq. F8-2 | Slice 5 | v1 scope (Micah, 2026-09-30). `future` label removed, because its trigger (thin-wall round HSS) is in v1 scope. |
 | #13 Questions 5–10: citations and package length | Slice 9, layout pass before the release review | Deferred by Micah, 2026-10-04. |
 | #1 Display-unit settings | After v1 | Matches its `future` label and scope.md. |
