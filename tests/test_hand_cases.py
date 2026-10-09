@@ -181,14 +181,13 @@ def _weld_values(res, number):
     chk = _check(res, number)
     g = f"check{number}"
     head = chk.checked[0].lines  # every case prints the same head: ring, size limits, capacities
-    min_size = next(ln for ln in head if ln.kind == "decision" and ln.symbol.startswith("w ="))
     v = {
         f"{g}.L_w_in": _line_value(head, "L_w").m_as("inch"),
         f"{g}.S_w_in2": _line_value(head, "S_w").m_as("in^2"),
         f"{g}.throat_in": _line_value(head, "t_e").m_as("inch"),
         f"{g}.t_min_in": _line_value(head, 't_"min"').m_as("inch"),
         f"{g}.w_min_in": _line_value(head, 'w_"min"').m_as("inch"),
-        f"{g}.min_size": "NG" if min_size.text.startswith("NG") else "OK",
+        f"{g}.min_size": "OK" if chk.min_size_ok else "NG",
         f"{g}.Fnw_ksi": _line_value(head, 'F_"nw"').m_as("ksi"),
         f"{g}.base_allow_lbpin": chk.checked[0].base_allow.m_as("lbf/inch"),
     }

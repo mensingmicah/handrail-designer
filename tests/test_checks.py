@@ -179,6 +179,17 @@ def test_unsupported_grade_is_refused():
         checks.run(p, Registry())
 
 
+def test_a_grade_with_fy_but_no_fu_entry_is_refused(monkeypatch):
+    """Issue #4: a grade added to FY_ENTRY alone must stop at validation,
+    not as a KeyError at Check 3's rail fusion face."""
+    from handrail.project import ProjectError
+
+    monkeypatch.setitem(checks.FY_ENTRY, "A500 Gr C", "material.A53_GrB.Fy")
+    p = dataclasses.replace(project(), top_rail=Member("Pipe2STD", "A500 Gr C"))
+    with pytest.raises(ProjectError, match="top rail grade 'A500 Gr C': this version supports A53 Gr B only"):
+        checks.validate(p, Registry())
+
+
 def test_entries_used_are_tracked():
     reg = Registry()
     checks.run(project(), reg)

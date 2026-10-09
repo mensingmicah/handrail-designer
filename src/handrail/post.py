@@ -25,15 +25,15 @@ from typing import Callable
 
 from handrail.calc import PI, Const, Line, Sheet, Sym, fmt_sig, sqrt
 from handrail.checks import (
-    COMBO, DB, DIRECTIONS, DISTRIBUTED, FY_ENTRY, LOAD_TYPES, CONCENTRATED,
+    DB, DIRECTIONS, DISTRIBUTED, FY_ENTRY, LOAD_TYPES,
     Case, Check, Loading, SectionStop, combo_text, exempt_case, flexural_capacity,
+)
+from handrail.demand import (
+    ASD, DOWNWARD, HORIZONTAL, UPWARD, Demand, Given, Wording, demand, live_at_post,
 )
 from handrail.project import Project
 from handrail.registry import Entry, Registry
 from handrail.shapes import PipeSection
-from handrail.units import Q_
-
-TRIBUTARY = "Stated assumption: the tributary length is the span"
 
 
 @dataclass
@@ -189,35 +189,44 @@ def _capacity(registry: Registry, project: Project, post: PipeSection) -> Capaci
 
 
 # ---------------------------------------------------------------------------
-# Check 5 demand, per case
+# Check 5 cases: capacity, the shared demand (demand.py), and the ratio
 # ---------------------------------------------------------------------------
 
+# Check 5 prints required strengths and factors the moment (M_r = 1.0 M_L).
+WORDING = Wording(
+    where={DOWNWARD: "vertical at the top of the post",
+           HORIZONTAL: "horizontal ({direction}) at the top of the post",
+           UPWARD: "upward at the top of the post"},
+    axial="P_r",
+    axial_notes={DOWNWARD: "Required axial strength, compression; no moment",
+                 HORIZONTAL: "Required axial strength: dead load, compression",
+                 UPWARD: "Required axial strength: net tension, guard load opposing dead load"},
+    factored="moment", factored_symbol="M_r", factored_note="Required flexural strength",
+    moment_symbol="M_L", moment_note="Live-load moment at the top of the baseplate",
+    moment_cite="aisc_manual.t3-23.case22.M",
+)
 
-def _live_at_post(sh: Sheet, symbol: str, load_type: str, loading: Loading, project: Project, where: str) -> Sym:
-    """The guard load reaching the top of the post: P, or w_L over the tributary length."""
-    if load_type == CONCENTRATED:
-        return sh.given(symbol, loading.P, f"Concentrated guard load P, {where}", "Loading")
-    w = sh.given("w_L", loading.w_L, "Uniform guard load", "Loading")
-    L = sh.given("L", project.span.value, "Span: the tributary length for the post", "Input")
-    return sh.line(symbol, w * L, f"Uniform guard load collected over the span, {where}", cite=TRIBUTARY, unit="lbf")
+
+def _demand(registry, project, loading, direction, load_type) -> Demand:
+    acting_down = ", acting down" if direction == UPWARD else ""
+    dead = Given("P_D", loading.P_D, f"D at the post: axial dead load{acting_down}", "Loading")
+    arm = Given('L_"post"', loading.L_post, "Cantilever length, h - t_p (critical section at the top of the baseplate)",
+                "Loading")
+    return demand(registry, project, loading, direction, load_type, ASD, WORDING, dead, arm)
 
 
 def _downward(registry, project, loading, cap: Capacity5, load_type) -> PostCase:
     sh = Sheet(registry)
     sh.heading("Capacity")
     sh.lines.extend(cap.compression.head + cap.compression.body)
-    sh.heading(f"Demand: downward, {load_type.lower()} load")
-    combo = registry.get(COMBO)
-    PD = sh.given("P_D", loading.P_D, "D at the post: axial dead load", "Loading")
-    PL = _live_at_post(sh, "P_L", load_type, loading, project, "vertical at the top of the post")
-    Pr = sh.line("P_r", sh.factor(combo.id, "D") * PD + sh.factor(combo.id, "L") * PL,
-                 "Required axial strength, compression; no moment", unit="lbf")
-    Pc = cap.compression.Pc
+    d = _demand(registry, project, loading, DOWNWARD, load_type)
+    sh.lines.extend(d.lines)
+    Pr, Pc = d.P, cap.compression.Pc
     ratio = sh.line('"Ratio"', Pr / Pc, "Axial only; Chapter E ratio reported", cite_ids=("aisc360.eq.B3-2",),
                     ratio=True)
-    return PostCase("Downward", load_type, "checked", f"{combo_text(combo)}, axial\n{combo.cite}",
+    return PostCase(DOWNWARD, load_type, "checked", d.label,
                     demand=Pr.value, capacity=Pc.value, ratio=ratio.value, lines=sh.lines,
-                    Pr=Pr.value, sense="compression", P_allow=Pc.value,
+                    Pr=Pr.value, sense=d.sense, P_allow=Pc.value,
                     equation=f"Pr/Pc ({cap.compression.Pn_entry.equation_number})")
 
 
@@ -226,17 +235,9 @@ def _moment_case(registry, project, post, loading, cap: Capacity5, direction, lo
     comp = cap.compression
     sh.heading("Capacity")
     sh.lines.extend(cap.flexure + comp.body)
-    sh.heading(f"Demand: {direction.lower()}, {load_type.lower()} load")
-    combo = registry.get(COMBO)
-    PD = sh.given("P_D", loading.P_D, "D at the post: axial dead load", "Loading")
-    Pr = sh.line("P_r", sh.factor(combo.id, "D") * PD, "Required axial strength: dead load, compression",
-                 unit="lbf")
-    V = _live_at_post(sh, "V_L", load_type, loading, project, f"horizontal ({direction.lower()}) at the top of the post")
-    Lp = sh.given('L_"post"', loading.L_post, "Cantilever length, h - t_p (critical section at the top of the baseplate)",
-                  "Loading")
-    ML = sh.line("M_L", V * Lp, "Live-load moment at the top of the baseplate",
-                 cite_ids=("aisc_manual.t3-23.case22.M",), unit="lbf*inch")
-    Mr = sh.line("M_r", sh.factor(combo.id, "L") * ML, "Required flexural strength", unit="lbf*inch")
+    d = _demand(registry, project, loading, direction, load_type)
+    sh.lines.extend(d.lines)
+    Pr, Mr = d.P, d.M
 
     # Second-order effects: a ratio and a stop, not an amplifier (plan D1).
     I = sh.given("I", post.I, "Moment of inertia", DB)
@@ -272,38 +273,28 @@ def _moment_case(registry, project, post, loading, cap: Capacity5, direction, lo
                     cite_ids=(t.id,))
         ratio = sh.line('"Ratio"', Pr / (sh.coeff("aisc360.eq.H1-1b.coeff") * Pc) + Mr / Mc,
                         "Combined axial and flexure", cite_ids=(eq.id,), ratio=True)
-    axes = {"D": "axial", "L": "horizontal"}
-    return PostCase(direction, load_type, "checked", f"{combo_text(combo, axes, ', ')}\n{combo.cite}",
+    return PostCase(direction, load_type, "checked", d.label,
                     demand=Mr.value, capacity=Mc.value, ratio=ratio.value, lines=sh.lines,
-                    Pr=Pr.value, sense="compression", Mr=Mr.value, P_allow=Pc.value, M_allow=Mc.value,
+                    Pr=Pr.value, sense=d.sense, Mr=Mr.value, P_allow=Pc.value, M_allow=Mc.value,
                     equation=eq.equation_number,
                     second_order=a_ratio.value)
 
 
 def _upward(registry, project, loading, cap: Capacity5, load_type) -> PostCase:
-    sh = Sheet(registry)
-    combo = registry.get("ej.combo.bending.upward")
-    label = f"{combo_text(combo)}, net axial\n{combo.cite}"
-    demand = Sheet(registry)
-    demand.heading(f"Demand: upward, {load_type.lower()} load")
-    PD = demand.given("P_D", loading.P_D, "D at the post: axial dead load, acting down", "Loading")
-    PL = _live_at_post(demand, "P_L", load_type, loading, project, "upward at the top of the post")
-    # One expression gives both the printed value and the decision (ADR 0002).
-    net = demand.factor(combo.id, "L") * PL - demand.factor(combo.id, "D") * PD
-    if not net.eval() > Q_(0, "lbf"):
-        no_net = f"{float(combo.value['D'])!r}D >= {float(combo.value['L'])!r}L"  # the factors in net
-        return PostCase("Upward", load_type, "not checked", label,
-                        remark=f"No net tension ({no_net}); compression covered by downward")
+    d = _demand(registry, project, loading, UPWARD, load_type)
+    if d.P is None:
+        return PostCase(UPWARD, load_type, "not checked", d.label, remark=d.remark)
     tension = cap.tension()
+    sh = Sheet(registry)
     sh.heading("Capacity")
     sh.lines.extend(tension.lines)
-    sh.lines.extend(demand.lines)
-    Pr = sh.line("P_r", net, "Required axial strength: net tension, guard load opposing dead load", unit="lbf")
+    sh.lines.extend(d.lines)
+    Pr = d.P
     ratio = sh.line('"Ratio"', Pr / tension.Pt, "Axial only; Chapter D ratio reported",
                     cite_ids=("aisc360.eq.B3-2",), ratio=True)
-    return PostCase("Upward", load_type, "checked", label,
+    return PostCase(UPWARD, load_type, "checked", d.label,
                     demand=Pr.value, capacity=tension.Pt.value, ratio=ratio.value, lines=sh.lines,
-                    Pr=Pr.value, sense="tension", P_allow=tension.Pt.value,
+                    Pr=Pr.value, sense=d.sense, P_allow=tension.Pt.value,
                     equation=f"Pr/Pt ({tension.Pn_entry.equation_number})")
 
 
@@ -335,7 +326,7 @@ def _deflection_case(registry, project, post, loading, direction, load_type) -> 
     Lp = sh.given('L_"post"', loading.L_post, "Cantilever length, h - t_p", "Loading")
     E = sh.code_value("E", "material.steel.E", "Modulus of elasticity")
     I = sh.given("I", post.I, "Moment of inertia", DB)
-    V = _live_at_post(sh, "V_L", load_type, loading, project, f"horizontal ({direction.lower()}) at the top of the post")
+    V = live_at_post(sh, "V_L", load_type, loading, project, f"horizontal ({direction.lower()}) at the top of the post")
     DL = sh.line("Delta_L", V * Lp**3 / (3 * E * I), "Live-load deflection at the top of the post",
                  cite_ids=("aisc_manual.t3-23.case22.delta",), unit="inch")
     D = sh.line("Delta", sh.factor(combo.id, "L") * DL, "Live load only; dead load acts axially", unit="inch")

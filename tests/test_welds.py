@@ -196,6 +196,7 @@ def test_a_weld_below_minimum_size_is_ng_whatever_its_ratio():
     assert chk.controlling.ratio < 1.0
     assert chk.failures and "below the minimum size" in chk.failures[0]
     assert not chk.ok and chk.verdict == "NG" and chk.summary_flag == "below minimum size"
+    assert not chk.min_size_ok and checks.run(project(), Registry()).check(3).min_size_ok
 
 
 def test_upward_with_no_net_tension_is_listed_not_checked():

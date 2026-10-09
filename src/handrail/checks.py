@@ -152,15 +152,18 @@ class Results:
 
 
 def require_supported_grade(member: Member, name: str) -> None:
-    """Refuse a grade this slice has no Fy entry for.
+    """Refuse a grade this slice has no Fy or no Fu entry for. Both are
+    needed: Fy for the member checks, Fu for the fusion face of a weld
+    (Check 3's rail side) and the post wall's Fu/Fy guard.
 
     The brief's unusual-pairing warning (a grade outside the shape's standard
     list) returns when a slice accepts more than one grade; with A53 Gr B the
     only grade allowed, it could never fire.
     """
-    if member.grade not in FY_ENTRY:
+    if member.grade not in FY_ENTRY or member.grade not in FU_ENTRY:
+        supported = [g for g in FY_ENTRY if g in FU_ENTRY]
         raise ProjectError(
-            f"{name} grade {member.grade!r}: this version supports {', '.join(FY_ENTRY)} only"
+            f"{name} grade {member.grade!r}: this version supports {', '.join(supported)} only"
         )
 
 
