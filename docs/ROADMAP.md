@@ -34,7 +34,7 @@ hand calc of every value. From slice 2 on, each test case is an
 independent-calc case (docs/brief/verification.md): an agent writes the
 full calc, and Micah reviews it and the PDF against the checklist. His
 registry verification and his recompute of each new check's governing case
-both wait for one release review in slice 9 (below), so Micah's time per
+(and, from slice 4, each new reaction set; ADR 0007) both wait for one release review in slice 9 (below), so Micah's time per
 slice is the checklist review.
 
 After slice 4 the tool produces the full v1 package for one guard type:
@@ -364,8 +364,8 @@ First the final registry review: Micah verifies every drafted entry in
 one review, so the DRAFT stamp disappears from a normal calc (ADR 0005).
 Then Micah's governing-case recompute of every deferred test case
 (cases 2 and 3 so far, and each later slice's cases): he recomputes the
-printed controlling case line by line and replaces each "deferred" [hand]
-value with his own (ADR 0006). Afterwards the full test suite reruns. Any
+printed controlling case line by line, and each new reaction set, and
+replaces each "deferred" [hand] value with his own (ADRs 0006, 0007). Afterwards the full test suite reruns. Any
 test case value that depended on a corrected entry is redone from the
 corrected entry, independent-calc values by a fresh independent calc and
 Micah's values by Micah, never by editing them to the tool's new output

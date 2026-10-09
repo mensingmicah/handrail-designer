@@ -6,7 +6,8 @@ review, the release review, and the shapes database extraction test.
 
 This file describes the current process only. How it got here is in
 docs/adr/: 0004 (verification by independent calc), 0005 (registry
-verification at release) and 0006 (governing-case recompute at release).
+verification at release), 0006 (governing-case recompute at release) and
+0007 (reaction sets join that recompute).
 The process is frozen until v1. It changes only when a real problem forces
 it, such as a defect it let through or a step that can't be carried out as
 written, and that change gets its own ADR naming the problem (ADR 0006).
@@ -37,12 +38,13 @@ the guard fits the tool's assumptions) is separate and unchanged.
   that agreement does not verify the value: both may hold the same
   misreading.
 - **The governing case: me, by recomputation, in the release review.** For
-  each new check in each test case, I follow the tool's printed controlling
-  case (for the post: the horizontal load at the top producing moment at
-  the base) and recompute every line myself with a calculator, checking
-  each provision against the code. I record at least the governing ratio
-  (or deflection, for a deflection check) and which case governs, plus any
-  intermediate values I recompute. My [hand] values are my own recomputed
+  each new check and each new reaction set in each test case, I follow the
+  tool's printed controlling case (for the post: the horizontal load at
+  the top producing moment at the base) and recompute every line myself
+  with a calculator, checking each provision against the code. I record at
+  least the governing ratio (or deflection, for a deflection check) and
+  which case governs, plus any intermediate values I recompute; for a
+  reaction set, its V, N and M (ADR 0007, Micah 2026-10-09). My [hand] values are my own recomputed
   results, never copied from the PDF (CLAUDE.md rule 5). This check is not
   blind; blind independence comes from the independent calc. Because it
   follows the printed case, it confirms what the tool did rather than
@@ -66,8 +68,8 @@ Before v1, in one review (issue #18, label `release-blocker`; docs/ROADMAP.md,
 slice 9), in this order:
 
 1. I verify every drafted registry entry.
-2. I recompute the printed controlling case of each new check in every
-   deferred test case, and replace each "deferred" [hand] value with my
+2. I recompute the printed controlling case of each new check and each
+   new reaction set in every deferred test case, and replace each "deferred" [hand] value with my
    own result. The test then compares those too.
 3. The full test suite reruns.
 
