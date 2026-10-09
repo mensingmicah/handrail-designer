@@ -6,8 +6,9 @@ review, the release review, and the shapes database extraction test.
 
 This file describes the current process only. How it got here is in
 docs/adr/: 0004 (verification by independent calc), 0005 (registry
-verification at release), 0006 (governing-case recompute at release) and
-0007 (reaction sets join that recompute).
+verification at release, replaced by 0008), 0006 (governing-case recompute
+at release), 0007 (reaction sets join that recompute) and 0008 (registry
+verification at each slice close).
 The process is frozen until v1. It changes only when a real problem forces
 it, such as a defect it let through or a step that can't be carried out as
 written, and that change gets its own ADR naming the problem (ADR 0006).
@@ -29,14 +30,16 @@ the guard fits the tool's assumptions) is separate and unchanged.
   independent calc line by line, the way I review a junior engineer's
   calc, and read the tool's printed calc for the controlling case, using
   the checklist below.
-- **Code values: me, in the release review.** I verify every drafted
-  registry entry against the standard (CLAUDE.md rule 1) in one review
-  before v1, not slice by slice. Until then the check code runs on drafted
-  entries and every calc prints the DRAFT stamp. The independent calc reads
-  verified entries only, so it works every still-drafted value from its own
-  reading of the code. When it agrees with the tool on a drafted value,
-  that agreement does not verify the value: both may hold the same
-  misreading.
+- **Code values: me, at each slice close.** I verify the slice's drafted
+  registry entries against the standard (CLAUDE.md rule 1) from the registry
+  review workbook, before the next slice's build starts (ADR 0008). The
+  entries drafted before that decision are caught up in batches, highest
+  fan-out first (the number of test cases that read the entry). Until an
+  entry is verified, the check code runs on it and every calc that uses it
+  prints the DRAFT stamp. The independent calc reads verified entries only,
+  so it works every still-drafted value from its own reading of the code.
+  When it agrees with the tool on a drafted value, that agreement does not
+  verify the value: both may hold the same misreading.
 - **The governing case: me, by recomputation, in the release review.** For
   each new check and each new reaction set in each test case, I follow the
   tool's printed controlling case (for the post: the horizontal load at
@@ -59,15 +62,22 @@ the guard fits the tool's assumptions) is separate and unchanged.
    checklist.
 3. The test compares the tool to every independent-calc value at 0.5%.
 4. My [hand] values for the case are marked "deferred". When the slice
-   closes, its deferred cases and its batch of drafted registry entries
-   are added to the release-review issue's checklist (#18; CLAUDE.md).
+   closes, its deferred cases are added to the release-review issue's
+   checklist (#18; CLAUDE.md), and Claude produces the registry review
+   workbook for the slice's drafted entries (an xlsx in out/, not
+   committed: id, value and unit, cite, source, fan-out, a verdict
+   dropdown and a notes column, one tab by fan-out and one by document and
+   section). I verify those entries before the next slice's build starts
+   (ADR 0008).
 
 ## The release review
 
 Before v1, in one review (issue #18, label `release-blocker`; docs/ROADMAP.md,
 slice 9), in this order:
 
-1. I verify every drafted registry entry.
+1. I verify any drafted registry entry still open: entries drafted or
+   revised since the last slice close, and the catch-up batches if any
+   remain (ADR 0008).
 2. I recompute the printed controlling case of each new check and each
    new reaction set in every deferred test case, and replace each "deferred" [hand] value with my
    own result. The test then compares those too.

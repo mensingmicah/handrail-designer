@@ -39,9 +39,11 @@ A test case costs Micah less than it did in slice 1. Case 1 was a full
 hand calc of every value. From slice 2 on, each test case is an
 independent-calc case (docs/brief/verification.md): an agent writes the
 full calc, and Micah reviews it and the PDF against the checklist. His
-registry verification and his recompute of each new check's governing case
-(and, from slice 4, each new reaction set; ADR 0007) both wait for one release review in slice 9 (below), so Micah's time per
-slice is the checklist review.
+recompute of each new check's governing case (and, from slice 4, each new
+reaction set; ADR 0007) waits for one release review in slice 9 (below).
+His registry verification happens at each slice close, before the next
+slice's build starts (ADR 0008), so Micah's time per slice is the
+checklist review plus that slice's drafted entries.
 
 After slice 4 the tool produces the full v1 package for one guard type:
 all seven checks, the summary table and the reaction sets, for an all-pipe
@@ -381,9 +383,9 @@ Micah on 2026-10-04. It goes before the release review because that
 review recomputes from the printed calc. Then the release review, tracked
 as a checklist in issue #18
 (label `release-blocker`): the release can't ship while any box is open.
-First the final registry review: Micah verifies every drafted entry in
-one review, so the DRAFT stamp disappears from a normal calc (ADR 0005).
-Then Micah's governing-case recompute of every deferred test case
+First the registry residual: Micah verifies whatever is still drafted,
+which after ADR 0008 is only entries drafted or revised since the last
+slice close, so the DRAFT stamp disappears from a normal calc. Then Micah's governing-case recompute of every deferred test case
 (cases 2 and 3 so far, and each later slice's cases): he recomputes the
 printed controlling case line by line, and each new reaction set, and
 replaces each "deferred" [hand] value with his own (ADRs 0006, 0007). Afterwards the full test suite reruns. Any
@@ -398,14 +400,26 @@ against what shipped. CHANGELOG v1.0.0.
 **Depends on.** Everything above.
 
 **Size.** Little code, but most of the time is Micah's. The registry
-already holds 109 entries after slice 4 (77 drafted); at the overrun seen
-so far, expect roughly 140–165 drafted entries by this slice, and a
-recompute of each deferred test case (25 deferred [hand] values in cases
-2–5 as of v0.4.0). Rough estimate from the architecture review of
-2026-10-09: 20–35 hours of Micah's time, plus any independent calcs that
-must be redone after a correction.
+held 109 entries after slice 4 (77 drafted); at the overrun seen so far it
+would reach roughly 140–165 entries by this slice. Under ADR 0008 those are
+verified at each slice close, so the release review carries only the
+residual plus a recompute of each deferred test case (25 deferred [hand]
+values in cases 2–5 as of v0.4.0). The architecture review of 2026-10-09
+estimated 20–35 hours of Micah's time with all registry verification at
+the end, plus any independent calcs redone after a correction; the registry
+share of that (8–13 hours) moves to the slice closes, and I'm not sure the
+total falls.
 
-## Registry verification at release
+## Registry verification at slice close
+
+Decided (Micah, 2026-10-09; ADR 0008), replacing the release-review decision
+below: each slice's drafted entries are verified when the slice closes,
+before the next slice's build starts, and the 77 entries drafted by then are
+caught up in batches, highest fan-out first. The governing-case recompute
+stays at slice 9. The rest of this section records the 2026-10-03 decision
+it replaced.
+
+### Registry verification at release (replaced)
 
 Decided (Micah, 2026-10-03), replacing the 2026-09-30 decision to verify
 each slice's entries within the slice. No slice's "done when" includes

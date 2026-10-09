@@ -24,8 +24,10 @@ any software term the first time you use it in a report.
 
 When you finish a task, update the pinned 'Slice status' GitHub issue: done,
 now, next, waiting on Micah. When a slice closes, add its new deferred test
-cases and its batch of drafted registry entries to the checklist of the
-release-review issue (#18, label `release-blocker`; ADR 0006). Move the
+cases to the checklist of the release-review issue (#18, label
+`release-blocker`; ADR 0006), and produce the registry review workbook for
+that slice's drafted entries. I verify them before the next slice's build
+starts (ADR 0008). Move the
 slice plan's binding engineering decisions into the brief before marking
 the plan completed.
 
