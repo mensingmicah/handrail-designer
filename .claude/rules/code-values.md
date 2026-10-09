@@ -26,3 +26,17 @@ Editing a verified entry: a change to its note or edition field keeps it
 verified, since neither prints in the calc. A change to its value, unit,
 cite or section sends it back to drafted: set status "drafted", blank
 verified-by and date, and add its id to the review list.
+
+Editing the file itself: change registry/code-values.toml only with the
+file-edit tool (Edit or Write). Never edit it through a shell command:
+no sed, awk, heredoc, echo or printf redirection, and no `python -c`
+one-liner. The shell rewrites backslashes and line endings on the way
+through, which is how slice 4 put stray `\r` escapes into a note
+(d72e4aa, repaired in 5fa154a). If a bulk change needs a script, write
+the script as a .py file in the scratchpad and run that file. Never type
+an escape such as `\r`, `\n` or `\t` into a value, cite or note; a
+line continuation in a multi-line string is a single backslash as the
+last character on the line. The registry lint test in
+tests/test_registry.py fails on any control character in the registry's
+text and on any backslash escape other than `\"` and that line
+continuation.
