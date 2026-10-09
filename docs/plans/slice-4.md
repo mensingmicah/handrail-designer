@@ -1,6 +1,6 @@
 # Slice 4 plan: the intermediate rail (Check 4) and the anchor reaction sets
 
-Status: **planned** (Micah, 2026-10-09). Not started; no branch yet.
+Status: **in progress** (branch slice-4, PR #20). Steps 1-9 built 2026-10-09; step 10, the case 5 independent calc, is next, in a fresh session.
 
 > This plan is a record of what slice 4 sets out to build and why. The
 > binding engineering decisions (S4-1 to S4-12) were recorded in the brief
