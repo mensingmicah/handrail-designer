@@ -1,0 +1,50 @@
+# Run the full test suite on every pull request to main and every push to
+# main (issue #7). Windows as well as Linux, since the tool runs on the
+# engineer's Windows PC (ADR 0001).
+#
+# A second job fails if any test case value is still "pending". A pending
+# value blocks merge (docs/brief/verification.md; the calc-code-review
+# skill); this job enforces that rule as written, without changing it. A
+# slice PR opened before its independent calc is done shows this job red
+# until every value is filled, which is the intended signal.
+
+name: tests
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  pytest:
+    name: pytest (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The footer stamp reads the commit that last touched the registry.
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@v6
+      - name: Install from the lock file
+        run: uv sync --locked
+      - name: Run the test suite
+        run: uv run pytest -q
+
+  no-pending:
+    name: no pending test case values
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fail on any "pending" value in tests/cases/
+        run: |
+          # A value line is 'key = "pending"'; comment lines are ignored.
+          if grep -rnE --include='*.toml' '^[^#]*=[[:space:]]*"pending"' tests/cases/; then
+            echo "::error::Test case values above are still pending. A pending value blocks merge."
+            exit 1
+          fi
+          echo "No pending test case values."
