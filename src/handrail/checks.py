@@ -75,7 +75,7 @@ class Case:
 
 @dataclass
 class Check:
-    number: int
+    number: int | str    # "4a" and "4b": the intermediate rail's two parts
     title: str
     demand_label: str    # Typst math
     capacity_label: str  # Typst math
@@ -85,6 +85,11 @@ class Check:
     failures: list[str] = field(default_factory=list)  # NG whatever the ratio (a weld below minimum size)
     bypassed: bool = False
     derived_lengths: list[Line] = field(default_factory=list)  # listed on the Dimensions page
+    # A check not computed (Check 4a or 4b): the line printed in place of the
+    # envelope, and the summary row's result, with no ratio and no OK or NG
+    # of its own ("Controlled by Checks 1 and 2", "None").
+    observation: str = ""
+    result: str = ""
 
     @property
     def checked(self) -> list[Case]:
@@ -100,13 +105,20 @@ class Check:
         return best
 
     @property
+    def computed(self) -> bool:
+        return not self.bypassed and not self.result
+
+    @property
     def ok(self) -> bool:
-        return self.bypassed or (not self.failures and self.controlling.ratio <= 1.0)
+        # A check not computed defers to the checks it names; it fails nothing itself.
+        return not self.computed or (not self.failures and self.controlling.ratio <= 1.0)
 
     @property
     def verdict(self) -> str:
         if self.bypassed:
             return "Bypassed by engineer"
+        if self.result:
+            return self.result
         return "OK" if self.ok else "NG"
 
 
@@ -126,6 +138,7 @@ class Loading:
     # post, w_D,int times the span; None when there is no intermediate rail.
     w_D_int: object = None
     D_int: object = None
+    P_c: object = None  # the component load on the intermediate rail (S4-3); None without one
 
 
 @dataclass
@@ -137,6 +150,8 @@ class Results:
     section_lines: list[Line]       # top rail
     post_section_lines: list[Line]
     checks: list[Check]
+    inter: PipeSection | None = None  # the intermediate rail's section: the top rail's, its own, or None
+    inter_section_lines: list[Line] = field(default_factory=list)  # its own section only
 
     def check(self, number: int) -> Check:
         return next(c for c in self.checks if c.number == number)
@@ -208,6 +223,20 @@ def build_loading(project: Project, registry: Registry, rail: PipeSection, post:
             cite=f"Input; {code_w.cite}",
         ).value
 
+    P_c = None
+    if inter is not None:
+        code_Pc = registry.get("asce7.guard.component")
+        if ld.component is None:
+            P_c = sh.code_value("P_c", code_Pc.id, "Component load on the intermediate rail, horizontal; also "
+                                "applied downward (engineering judgement)").value
+        else:
+            P_c = sh.input(
+                "P_c", ld.component,
+                f"Component load on the intermediate rail, engineer override "
+                f"(code value {fmt_quantity_plain(code_Pc.quantity)})",
+                cite=f"Input; {code_Pc.cite}",
+            ).value
+
     w_D = sh.given("w_D", rail.W, f"Top rail self-weight: tabulated W = {rail.W.m_as('lbf/ft'):g} lb/ft", DB)
 
     # Dead load reaching the post (docs/plans/slice-2.md, D2). The critical
@@ -244,7 +273,7 @@ def build_loading(project: Project, registry: Registry, rail: PipeSection, post:
         w_D_int, D_int = w_D_int.value, D_int.value
     return Loading(P=P.value, w_L=w_L, w_D=w_D.value, L_post=L_post.value, D_rail=D_rail.value, P_D=P_D.value,
                    exempt=ld.uniform_exempt, exemption_statement=ld.exemption_statement, lines=sh.lines,
-                   derived_lengths=[L_post_line], w_D_int=w_D_int, D_int=D_int)
+                   derived_lengths=[L_post_line], w_D_int=w_D_int, D_int=D_int, P_c=P_c)
 
 
 def section_lines(registry: Registry, sec: PipeSection, with_r: bool = False) -> list[Line]:
@@ -617,6 +646,7 @@ def compute(project: Project, registry: Registry) -> Results:
     # Imported here, not at the top: post.py and welds.py build on this
     # module's Case, Check and Loading, so a top-level import would be circular.
     from handrail import shapes
+    from handrail.intermediate import check_4a
     from handrail.post import check_5, check_6
     from handrail.welds import check_3, check_7
 
@@ -628,11 +658,13 @@ def compute(project: Project, registry: Registry) -> Results:
     loading = build_loading(project, registry, rail, post, inter)
     props = section_lines(registry, rail)
     post_props = section_lines(registry, post, with_r=True)
+    inter_props = section_lines(registry, inter) if inter is not None and not same else []
     checks = [check_1(registry, project, rail, loading), check_2(registry, project, rail, loading),
               check_3(registry, project, rail, post, loading),
+              check_4a(registry, project, inter, loading),
               check_5(registry, project, post, loading), check_6(registry, project, post, loading),
               check_7(registry, project, post, loading)]
-    return Results(project, rail, post, loading, props, post_props, checks)
+    return Results(project, rail, post, loading, props, post_props, checks, inter, inter_props)
 
 
 def run(project: Project, registry: Registry) -> Results:

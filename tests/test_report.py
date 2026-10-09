@@ -104,7 +104,9 @@ def test_closing_line_prints_the_checks_verdict_not_a_recomputed_one(monkeypatch
     res, reg = run()
     monkeypatch.setattr(Check, "verdict", property(lambda self: "SENTINEL"))
     src = report.build_source(res, reg, CLEAN)
-    assert src.count('#h(10pt) #"SENTINEL"') == len(res.checks)  # one closing line per check
+    # One closing line per computed check; a check not computed (Check 4a with
+    # no intermediate rail) prints its observation line instead.
+    assert src.count('#h(10pt) #"SENTINEL"') == len([c for c in res.checks if c.computed])
 
 
 def _printed_equations(lines):
@@ -128,7 +130,7 @@ def test_mn_over_omega_prints_its_symbol_once():
 
 def test_no_printed_line_repeats_a_part_side_by_side():
     res, reg = run()
-    for chk in res.checks:
+    for chk in (c for c in res.checks if c.computed):
         for eq in _printed_equations(chk.controlling.lines):
             for a, b in zip(eq, eq[1:]):
                 assert a != b, f"repeated part in printed line: {' = '.join(eq)}"
@@ -298,8 +300,8 @@ def test_weld_checks_print_in_check_number_order_with_their_envelopes():
     res, reg = run()
     src = report.build_source(res, reg, CLEAN)
     heads = [ln for ln in src.splitlines() if ln.startswith("= Check ")]
-    assert [h.split(":")[0] for h in heads] == ["= Check 1", "= Check 2", "= Check 3", "= Check 5",
-                                                "= Check 6", "= Check 7"]
+    assert [h.split(":")[0] for h in heads] == ["= Check 1", "= Check 2", "= Check 3", "= Check 4a",
+                                                "= Check 5", "= Check 6", "= Check 7"]
     check_3 = src.split("= Check 3: Top rail weld to post")[1].split("\n= ")[0]
     check_7 = src.split("= Check 7: Post weld to baseplate")[1].split("\n= ")[0]
     # theta and k_ds are an envelope column only where k_ds comes from theta (Check 7).

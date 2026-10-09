@@ -14,6 +14,7 @@ import typst
 
 from handrail.calc import Line, fmt_quantity_plain, fmt_ratio, fmt_sig, typst_str
 from handrail.checks import Case, Check, Results
+from handrail.intermediate import ComponentCase
 from handrail.post import PostCase
 from handrail.registry import Registry
 from handrail.welds import WeldCase
@@ -215,6 +216,38 @@ def _envelope_weld(chk: Check) -> str:
     return f"#text(size: 8pt)[{table}]"
 
 
+def _envelope_4a(chk: Check) -> str:
+    """Check 4a envelope: bending and deflection, each downward and
+    horizontal, with the controlling row over both limit states."""
+    ctrl = chk.controlling
+    rows, bold = [], []
+    for i, c in enumerate(chk.cases):
+        if c.status == "checked":
+            rows.append([c.limit_state, c.direction, c.combination, fmt_quantity_plain(c.demand),
+                         fmt_quantity_plain(c.capacity), fmt_ratio(c.ratio), "Controls" if c is ctrl else ""])
+            if c is ctrl:
+                bold.append(i)
+        else:
+            rows.append([c.limit_state, c.direction, c.remark, "", "", "", ""])
+    return _table(
+        ["[*Limit state*]", "[*Direction*]", "[*Combination*]", "[*Demand* $M_a$ or $Delta$]",
+         '[*Capacity* $M_n / Omega_b$ or $Delta_"allow"$]', "[*Ratio*]", "[]"],
+        rows, "(auto, auto, 1fr, auto, auto, auto, auto)", bold, raw_header=True,
+    )
+
+
+def _governing_by_limit_state(chk: Check) -> list[Case]:
+    """Check 4a: the governing case of each limit state, the controlling one
+    first, so bending and deflection each print in full as Checks 1 and 2 do."""
+    out: dict[str, Case] = {}
+    for c in chk.checked:
+        best = out.get(c.limit_state)
+        if best is None or c.ratio > best.ratio:
+            out[c.limit_state] = c
+    ctrl = chk.controlling
+    return [ctrl] + [c for c in out.values() if c is not ctrl]
+
+
 def _weld_capacities(c: WeldCase) -> str:
     """Weld metal, and base metal where the fusion face carries force in the case."""
     base = f"Base {fmt_quantity_plain(c.base_allow)}" if c.base_demand is not None else "Base —"
@@ -226,6 +259,9 @@ def _check(chk: Check) -> str:
     if chk.bypassed:
         out.append("*Bypassed by engineer.* No calculation is shown.")
         return "\n\n".join(out)
+    if chk.observation:
+        out.append(f"#{typst_str(chk.observation)}")
+        return "\n\n".join(out)
     for f in chk.flags:
         out.append(f"#flag({typst_str(f)})")
     out.append("== Envelope summary")
@@ -235,12 +271,17 @@ def _check(chk: Check) -> str:
         out.append(_envelope_5(chk))
     elif isinstance(chk.controlling, WeldCase):
         out.append(_envelope_weld(chk))
+    elif isinstance(chk.controlling, ComponentCase):
+        out.append(_envelope_4a(chk))
     else:
         out.append(_envelope(chk))
     ctrl = chk.controlling
-    combination = ctrl.combination.replace("\n", "; ")  # table cells break the label; a heading doesn't
-    out.append(f"#heading(level: 2, {typst_str(f'Controlling case: {ctrl.label} ({combination})')})")
-    out.append(_lines(ctrl.lines))
+    printed = _governing_by_limit_state(chk) if isinstance(ctrl, ComponentCase) else [ctrl]
+    for c in printed:
+        combination = c.combination.replace("\n", "; ")  # table cells break the label; a heading doesn't
+        title = "Controlling case" if c is ctrl else f"Governing {c.limit_state.lower()} case"
+        out.append(f"#heading(level: 2, {typst_str(f'{title}: {c.label} ({combination})')})")
+        out.append(_lines(c.lines))
     # The verdict is decided once, by the Check; the page only prints it. The
     # sign compares the ratio alone: a check can be NG with its ratio under
     # 1.00 (a weld below the minimum size), and then says why.
@@ -279,8 +320,8 @@ def _post_terms(c: PostCase) -> tuple[str, str, str, str]:
 def _summary(checks: list[Check]) -> str:
     rows = []
     for chk in checks:
-        if chk.bypassed:
-            rows.append([f"{chk.number}. {chk.title}", "", "", "", "", "Bypassed by engineer"])
+        if not chk.computed:
+            rows.append([f"{chk.number}. {chk.title}", "", "", "", "", chk.verdict])
             continue
         c = chk.controlling
         demand, capacity = _demand_capacity(c)
