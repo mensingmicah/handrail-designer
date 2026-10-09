@@ -1,7 +1,7 @@
 # Roadmap: slices from v0.1.0 to v1
 
 Status: **accepted by Micah, 2026-09-30.** Slice 2 is the post (option A
-below). Slices 1 and 2 are done (v0.1.0, v0.2.0); slice 3 is planned (docs/plans/slice-3.md). What the tool must do is set by the brief
+below). Slices 1–3 are done (v0.1.0 to v0.3.0); slice 4 is planned (docs/plans/slice-4.md). What the tool must do is set by the brief
 (docs/BRIEF.md); if this roadmap disagrees with the brief, the brief wins.
 Each slice gets its own plan in docs/plans/ before work starts. That plan
 settles the slice's open questions, and it can reorder or split the slice.
@@ -12,8 +12,8 @@ settles the slice's open questions, and it can reorder or split the slice.
 | --- | --- | --- | --- | --- | --- |
 | 1 (done, v0.1.0) | Checks 1–2, pipe top rail | — | L | 1 | — |
 | 2 (done, v0.2.0) | Checks 5–6: the post (pipe) | 1 | M | 2 | — |
-| 3 | Checks 3 and 7: both welds (pipe rail on pipe post) | 2 | M | 1 | #4 |
-| 4 | Check 4 (intermediate rail) and the anchor reaction sets | 2 (3 for a full package) | S–M | 1 | — |
+| 3 (done, v0.3.0) | Checks 3 and 7: both welds (pipe rail on pipe post) | 2 | M | 1 | — |
+| 4 | Check 4 (intermediate rail, 4a member and 4b weld) and the anchor reaction sets | 2 (3 for a full package) | M | 1 | #4 |
 | 5 | Round section family: round HSS, custom round tube, solid round bar | 4 | M | 2 | #3 |
 | 6 | Rectangular tubes: rectangular HSS, custom rectangular tube | 5 | L | 2 | — |
 | 7 | Solid rectangular bar | 6 | M | 1–2 | — |
@@ -227,8 +227,7 @@ LRFD reaction sets (lateral, in any horizontal direction, and upward only
 when there is net tension; S4-4 in loads-and-envelope.md), each
 simultaneous, at the top of concrete, labeled as engineering-judgement
 combinations, with the reversal note and B × N printed beside them. The
-reaction tables go at the end of the PDF. Decisions are being settled in
-docs/plans/slice-4.md (S4 numbers, recorded in the brief as made).
+reaction tables go at the end of the PDF.
 
 **Depends on.** Slice 2 (base forces). Slice 3 is needed for a complete
 package, but not for this slice's code.
@@ -237,6 +236,14 @@ package, but not for this slice's code.
 as engineering judgement, the stated assumptions that newly apply). One test
 case: the complete all-pipe guard, all seven checks and the
 reactions. This case is the milestone.
+
+**Settled** (Micah, 2026-10-08 and 2026-10-09): S4-1 to S4-12 in the
+brief, including two additions to the scope above: a weld check for the
+intermediate rail (Check 4b, S4-8) and a downward component load case
+after OSHA (S4-10). The reaction sets are two, lateral and upward (S4-4).
+About 10–12 registry entries. Micah's release recompute now covers the
+reaction sets (ADR 0007). **Plan:** docs/plans/slice-4.md, with test
+case 5.
 
 ### Slice 5: round section family
 
