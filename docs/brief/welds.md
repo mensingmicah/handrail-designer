@@ -235,8 +235,7 @@ plan's decision numbers.
     minimum size (W11), and the same stated assumptions (the W1/W9 ring
     model and the W7 chord wall).
   - **None:** Check 4b prints "none" with Check 4a.
-  - Still to settle in the slice 4 interview: which wall is the chord
-    (the post, here) for the base metal and W7 lines.
+  - Base metal and the chord wall: S4-12, below.
   - The stated assumption "The intermediate rail's connection to the
     post, and the component load's effect on the post, are not checked."
     (output.md) loses its first half. Proposed text: "The component
@@ -283,3 +282,25 @@ plan's decision numbers.
     eccentricity e = half the post diameter from the post centerline. It
     is modeled as a fillet of the entered size all around, although at
     equal diameters the sides of the saddle form a flare-bevel joint."
+- **Base metal at Check 4b: the roles of Check 3 reversed.** (S4-12,
+  Micah 2026-10-09.) The intermediate rail is the branch (coped); the
+  post wall is the chord. Both Check 4b load cases lie in the ring's
+  plane, tangent to the post wall; the moment R·e is normal to it.
+  - Chord side (post wall), in-plane force: shear rupture only,
+    0.6·Fu·t_des,post/2.00 against f_v = R/(πD_int), as W6.
+  - Chord side, normal force (the R·e moment): a Chapter K chord-wall
+    limit state on the post, not checked. The W7 stated assumption is
+    extended, on the slice 4 branch in the commit that prints it, to:
+    "Local strength of the rail wall at the post, and of the post wall
+    at the intermediate rail (AISC 360-22 Chapter K chord limit states),
+    is not checked." The W7 non-round stop covers the intermediate rail.
+  - Branch side (intermediate rail wall): no separate number. A printed
+    line says it is covered by the member check: "covered by Check 4a"
+    in the own-section state, and "covered by Checks 1 and 2" in the
+    same-as-top state, where Check 4a is not run. The end moment
+    R·e = (R_D + P_c)·D_post/2 is no more than the downward midspan
+    moment of that member check whenever L ≥ 2·D_post; member shear is
+    not checked (a stated assumption). This is W5's argument, so W5's
+    Fu/Fy ≥ 1.20 grade guard applies to the intermediate rail's grade.
+  - `validate()` stops the calc if L < 2·D_post, so the branch-side
+    line cannot become false. No real guard comes near it.
