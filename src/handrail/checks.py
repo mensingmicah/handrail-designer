@@ -24,7 +24,7 @@ from dataclasses import dataclass, field
 
 from handrail.calc import Const, Line, Sheet, Sym, absolute, fmt_quantity_plain, fmt_sig, minimum, mtext, sqrt
 from handrail.errors import InputError
-from handrail.project import Member, Project, ProjectError
+from handrail.project import SAME_AS_TOP, Member, Project, ProjectError
 from handrail.registry import Entry, Registry
 from handrail.shapes import PipeSection
 from handrail.units import Q_
@@ -122,6 +122,10 @@ class Loading:
     exemption_statement: str
     lines: list[Line]
     derived_lengths: list[Line]  # listed on the Dimensions page
+    # The intermediate rail's self-weight and its dead load delivered to the
+    # post, w_D,int times the span; None when there is no intermediate rail.
+    w_D_int: object = None
+    D_int: object = None
 
 
 @dataclass
@@ -167,7 +171,11 @@ def require_supported_grade(member: Member, name: str) -> None:
         )
 
 
-def build_loading(project: Project, registry: Registry, rail: PipeSection, post: PipeSection) -> Loading:
+def build_loading(project: Project, registry: Registry, rail: PipeSection, post: PipeSection,
+                  inter: PipeSection | None = None) -> Loading:
+    """The guard loads and the dead load at the post. ``inter`` is the
+    intermediate rail's section (the top rail's when it is the same), or
+    None when there is none."""
     sh = Sheet(registry)
     ld = project.loads
 
@@ -218,11 +226,25 @@ def build_loading(project: Project, registry: Registry, rail: PipeSection, post:
                      cite_ids=(dl,), unit="lbf")
     s = sh.given("L", project.span.value, "Span: the tributary length for the post (stated assumption)", "Input")
     D_rail = sh.line('D_"rail"', w_D * s, "Top rail dead load delivered to the post", cite_ids=(dl,), unit="lbf")
-    P_D = sh.line("P_D", D_rail + D_post, "D at the post: axial dead load at the top of the baseplate",
-                  cite_ids=(dl,), unit="lbf")
+    if inter is None:
+        P_D = sh.line("P_D", D_rail + D_post, "D at the post: axial dead load at the top of the baseplate",
+                      cite_ids=(dl,), unit="lbf")
+        w_D_int = D_int = None
+    else:
+        # The intermediate rail frames into the side of the post below the
+        # rail to post weld, so its dead load reaches D at the post but not
+        # Check 3's D (docs/plans/slice-4.md, where the dead load goes).
+        same = " (same section as the top rail)" if inter is rail else ""
+        w_D_int = sh.given('w_(D,"int")', inter.W, f"Intermediate rail self-weight: {inter.label}{same}, "
+                           f"tabulated W = {inter.W.m_as('lbf/ft'):g} lb/ft", DB)
+        D_int = sh.line('D_"int"', w_D_int * s, "Intermediate rail dead load delivered to the post",
+                        cite_ids=(dl,), unit="lbf")
+        P_D = sh.line("P_D", D_rail + D_int + D_post, "D at the post: axial dead load at the top of the baseplate",
+                      cite_ids=(dl,), unit="lbf")
+        w_D_int, D_int = w_D_int.value, D_int.value
     return Loading(P=P.value, w_L=w_L, w_D=w_D.value, L_post=L_post.value, D_rail=D_rail.value, P_D=P_D.value,
                    exempt=ld.uniform_exempt, exemption_statement=ld.exemption_statement, lines=sh.lines,
-                   derived_lengths=[L_post_line])
+                   derived_lengths=[L_post_line], w_D_int=w_D_int, D_int=D_int)
 
 
 def section_lines(registry: Registry, sec: PipeSection, with_r: bool = False) -> list[Line]:
@@ -519,7 +541,6 @@ def validate(project: Project, registry: Registry) -> None:
     - the baseplate is no smaller in plan than the post OD (S4-6).
     """
     from handrail import shapes
-    from handrail.project import SAME_AS_TOP
 
     rail = shapes.pipe(project.top_rail.section)
     post = shapes.pipe(project.post.section)
@@ -601,7 +622,10 @@ def compute(project: Project, registry: Registry) -> Results:
 
     rail = shapes.pipe(project.top_rail.section)
     post = shapes.pipe(project.post.section)
-    loading = build_loading(project, registry, rail, post)
+    member = project.intermediate_member
+    same = project.intermediate_rail.state == SAME_AS_TOP
+    inter = None if member is None else rail if same else shapes.pipe(member.section)
+    loading = build_loading(project, registry, rail, post, inter)
     props = section_lines(registry, rail)
     post_props = section_lines(registry, post, with_r=True)
     checks = [check_1(registry, project, rail, loading), check_2(registry, project, rail, loading),

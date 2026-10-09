@@ -1241,18 +1241,18 @@ note = "Printed in the controlling case's calc lines when it has moment; {ratio}
 
 [[entry]]
 id = "ej.post.axial_dead_load"
-value = "Axial dead load at the top of the baseplate: the top rail self-weight over the span (the tributary length) plus the post's tabulated weight W over h - t_p, all acting at the critical section"
+value = "Axial dead load at the top of the baseplate: the top rail and intermediate rail self-weights over the span (the tributary length) plus the post's tabulated weight W over h - t_p, all acting at the critical section"
 unit = "equation"
 cite = "Engineering judgement (EOR): post dead load"
 document = "Engineering decision of the engineer of record"
-edition = "docs/plans/slice-2.md D2; docs/brief/output.md (tributary length assumption)"
+edition = "docs/plans/slice-2.md D2; docs/plans/slice-4.md (where the intermediate rail's dead load goes); docs/brief/output.md (tributary length assumption)"
 section = "D2, post self-weight: full weight at the base, over h - t_p"
 source = "engineer"
 status = "drafted"
 drafted_on = 2026-09-30
 verified_by = ""
 verified_date = ""
-note = "Not in the slice 2 plan's list; added so the D_post and D lines cite a source (rule 1), as slice 1 did for its other EOR formulas."
+note = "Not in the slice 2 plan's list; added so the D_post and D lines cite a source (rule 1), as slice 1 did for its other EOR formulas. Slice 4 (2026-10-09): value broadened to add the intermediate rail, w_D,int times the span, which reaches D at the post (Checks 5 and 7, and the reaction sets) but not Check 3's D; none when there is no intermediate rail. Still drafted."
 
 [[entry]]
 id = "aisc_manual.t3-23.case22.M"
