@@ -22,8 +22,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from handrail.calc import Line, Sheet, fmt_quantity, mtext
-from handrail.checks import CONCENTRATED, DISTRIBUTED, Loading
-from handrail.demand import DOWNWARD, HORIZONTAL, UPWARD, Combinations, Given, Wording, demand
+from handrail.checks import CONCENTRATED, DISTRIBUTED, DOWNWARD, UPWARD, Loading
+from handrail.demand import HORIZONTAL_KIND, Combinations, Given, Wording, demand
 from handrail.project import Project
 from handrail.registry import Registry
 
@@ -40,11 +40,11 @@ COMBINATIONS = Combinations(with_dead=COMBO, against_dead=COMBO)
 # magnitude, its sense in the note; the table gives N its sign.
 WORDING = Wording(
     where={DOWNWARD: "vertical at the top of the post",
-           HORIZONTAL: "horizontal at the top of the post, in any horizontal direction",
+           HORIZONTAL_KIND: "horizontal at the top of the post, in any horizontal direction",
            UPWARD: "upward at the top of the post"},
     axial="abs(N_u)",
     axial_notes={DOWNWARD: "Axial force at the base, compression",
-                 HORIZONTAL: "Axial force at the base: dead load, compression",
+                 HORIZONTAL_KIND: "Axial force at the base: dead load, compression",
                  UPWARD: "Axial force at the base: net tension (uplift), guard load opposing dead load"},
     factored="shear", factored_symbol="V_u", factored_note="Base shear",
     moment_symbol="M_u", moment_note="Base moment at the top of concrete: V_u at the top rail centerline, arm h",

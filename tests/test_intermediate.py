@@ -15,6 +15,7 @@ from handrail.project import (
 )
 from handrail.registry import Registry
 from handrail.units import Q_
+from handrail.welds import _reaction_4b
 
 _LBF = Q_(1, "lbf")
 P2, P125 = shapes.pipe("Pipe2STD"), shapes.pipe("Pipe1-1/4STD")
@@ -317,3 +318,14 @@ def test_a_post_wall_no_thinner_than_the_rail_wall_keeps_the_observation():
     chk = run(state=SAME_AS_TOP, post="Pipe2XS").check("4b")
     assert not chk.computed and chk.result == "Controlled by Check 3"
     assert chk.observation.endswith("post wall t_des,post = 0.2040 in ≥ rail wall t_des,rail = 0.1430 in.")
+
+
+def test_the_check_4b_reaction_refuses_a_direction_it_does_not_know():
+    """Review of PR #20: an unknown direction stops, never falls through to
+    the horizontal (vector-sum) reaction."""
+    res = run()
+    for direction in ("Upward", "horizontal", "Outward"):
+        with pytest.raises(ValueError, match=f"Check 4b: no component load direction '{direction}'"):
+            _reaction_4b(Registry(), res.project, res.loading, direction)
+    for direction in checks.COMPONENT_DIRECTIONS:
+        _reaction_4b(Registry(), res.project, res.loading, direction)

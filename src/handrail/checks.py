@@ -21,7 +21,9 @@ Direction cases (docs/brief/loads-and-envelope.md; slice 1 plan):
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import TYPE_CHECKING
 
+from handrail import beams, shapes
 from handrail.calc import Const, Line, Sheet, Sym, absolute, fmt_quantity_plain, fmt_sig, minimum, mtext, sqrt
 from handrail.errors import InputError
 from handrail.project import SAME_AS_TOP, Member, Project, ProjectError
@@ -29,7 +31,14 @@ from handrail.registry import Entry, Registry
 from handrail.shapes import PipeSection
 from handrail.units import Q_
 
-DIRECTIONS = ("Downward", "Outward", "Inward", "Upward", "Longitudinal")
+if TYPE_CHECKING:
+    from handrail.reactions import Reactions
+
+DOWNWARD, UPWARD, HORIZONTAL = "Downward", "Upward", "Horizontal"
+DIRECTIONS = (DOWNWARD, "Outward", "Inward", UPWARD, "Longitudinal")
+# The component load's two directions and its load type: Checks 4a and 4b (S4-10).
+COMPONENT_DIRECTIONS = (DOWNWARD, HORIZONTAL)
+COMPONENT = "Component"
 CONCENTRATED, DISTRIBUTED = "Concentrated", "Distributed"
 LOAD_TYPES = (CONCENTRATED, DISTRIBUTED)
 
@@ -137,10 +146,10 @@ class Loading:
     derived_lengths: list[Line]  # listed on the Dimensions page
     # The intermediate rail's self-weight and its dead load delivered to the
     # post, w_D,int times the span; None when there is no intermediate rail.
-    w_D_int: object = None
-    D_int: object = None
-    D_post: object = None  # the post's dead load, W over h - t_p (the reaction sets' D breakdown)
-    P_c: object = None  # the component load on the intermediate rail (S4-3); None without one
+    w_D_int: Q_ | None = None
+    D_int: Q_ | None = None
+    D_post: Q_ | None = None  # the post's dead load, W over h - t_p (the reaction sets' D breakdown)
+    P_c: Q_ | None = None     # the component load on the intermediate rail (S4-3); None without one
 
 
 @dataclass
@@ -154,9 +163,9 @@ class Results:
     checks: list[Check]
     inter: PipeSection | None = None  # the intermediate rail's section: the top rail's, its own, or None
     inter_section_lines: list[Line] = field(default_factory=list)  # its own section only
-    reactions: object = None          # the anchor reaction sets (reactions.Reactions)
+    reactions: Reactions | None = None  # the anchor reaction sets
 
-    def check(self, number: int) -> Check:
+    def check(self, number: int | str) -> Check:
         return next(c for c in self.checks if c.number == number)
 
     @property
@@ -391,11 +400,9 @@ def flexural_capacity(registry: Registry, rail: PipeSection, grade: str) -> Capa
 def _live_moment(sh: Sheet, load_type: str, L: Sym, loading: Loading) -> Sym:
     if load_type == CONCENTRATED:
         P = sh.given("P", loading.P, "Concentrated guard load at midspan", "Loading")
-        return sh.line("M_L", P * L / 4, "Live-load moment, midspan",
-                       cite_ids=("aisc_manual.t3-23.case7.M",), unit="lbf*inch")
+        return beams.point_moment(sh, "M_L", P, L, "Live-load moment, midspan")
     w = sh.given("w_L", loading.w_L, "Uniform guard load", "Loading")
-    return sh.line("M_L", w * L**2 / 8, "Live-load moment, midspan",
-                   cite_ids=("aisc_manual.t3-23.case1.M",), unit="lbf*inch")
+    return beams.uniform_moment(sh, "M_L", w, L, "Live-load moment, midspan")
 
 
 def combo_text(entry: Entry, axes: dict[str, str] | None = None, joiner: str = " + ") -> str:
@@ -418,8 +425,7 @@ def _bending_case(registry, project, rail, loading, cap: Capacity, direction, lo
     sh.heading(f"Demand: {direction.lower()}, {load_type.lower()} load")
     L = sh.given("L", project.span.value, "Span, simple beam", "Input")
     wD = sh.given("w_D", loading.w_D, "Top rail self-weight", "Loading")
-    MD = sh.line("M_D", wD * L**2 / 8, "Dead-load moment, midspan",
-                 cite_ids=("aisc_manual.t3-23.case1.M",), unit="lbf*inch")
+    MD = beams.uniform_moment(sh, "M_D", wD, L, "Dead-load moment, midspan")
     ML = _live_moment(sh, load_type, L, loading)
 
     if direction == "Downward":
@@ -464,17 +470,14 @@ def _deflection_case(registry, project, rail, loading, direction, load_type) -> 
     I = sh.given("I", rail.I, "Moment of inertia", DB)
     if load_type == CONCENTRATED:
         P = sh.given("P", loading.P, "Concentrated guard load at midspan", "Loading")
-        DL = sh.line("Delta_L", P * L**3 / (48 * E * I), "Live-load deflection, midspan",
-                     cite_ids=("aisc_manual.t3-23.case7.delta",), unit="inch")
+        DL = beams.point_deflection(sh, "Delta_L", P, L, E, I, "Live-load deflection, midspan")
     else:
         w = sh.given("w_L", loading.w_L, "Uniform guard load", "Loading")
-        DL = sh.line("Delta_L", 5 * w * L**4 / (384 * E * I), "Live-load deflection, midspan",
-                     cite_ids=("aisc_manual.t3-23.case1.delta",), unit="inch")
+        DL = beams.uniform_deflection(sh, "Delta_L", w, L, E, I, "Live-load deflection, midspan")
     if direction == "Downward":
         combo = registry.get("ej.combo.deflection.D_plus_L")
         wD = sh.given("w_D", loading.w_D, "Top rail self-weight", "Loading")
-        DD = sh.line("Delta_D", 5 * wD * L**4 / (384 * E * I), "Dead-load deflection, midspan",
-                     cite_ids=("aisc_manual.t3-23.case1.delta",), unit="inch")
+        DD = beams.uniform_deflection(sh, "Delta_D", wD, L, E, I, "Dead-load deflection, midspan")
         D = sh.line("Delta", sh.factor(combo.id, "D") * DD + sh.factor(combo.id, "L") * DL,
                     "D and L on the same (vertical) axis", unit="inch")
         axis = "vertical"
@@ -572,8 +575,6 @@ def validate(project: Project, registry: Registry) -> None:
       Fu/Fy keeps its wall at the weld covered by the member check (S4-12);
     - the baseplate is no smaller in plan than the post OD (S4-6).
     """
-    from handrail import shapes
-
     rail = shapes.pipe(project.top_rail.section)
     post = shapes.pipe(project.post.section)
     require_supported_grade(project.top_rail, "top rail")
@@ -648,7 +649,6 @@ def compute(project: Project, registry: Registry) -> Results:
     """
     # Imported here, not at the top: post.py and welds.py build on this
     # module's Case, Check and Loading, so a top-level import would be circular.
-    from handrail import shapes
     from handrail.intermediate import check_4a
     from handrail.post import check_5, check_6
     from handrail.reactions import reaction_sets

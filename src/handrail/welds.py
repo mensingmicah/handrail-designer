@@ -29,12 +29,14 @@ from typing import Callable
 from handrail.calc import (PI, Line, Sheet, Sym, absolute, arccos, fmt_quantity, fmt_quantity_plain, maximum,
                            minimum, mtext, sin, sqrt)
 from handrail.checks import (
-    COMBO, DB, DIRECTIONS, DISTRIBUTED, FEXX_ENTRY, FU_ENTRY, LOAD_TYPES,
+    COMBO, COMPONENT, COMPONENT_DIRECTIONS, DB, DIRECTIONS, DISTRIBUTED, DOWNWARD, FEXX_ENTRY, FU_ENTRY, HORIZONTAL,
+    LOAD_TYPES, UPWARD,
     Case, Check, Loading, SectionStop, combo_text, exempt_case,
 )
-from handrail.demand import ASD, DOWNWARD, HORIZONTAL, UPWARD, Given, Wording, demand
+from handrail.demand import ASD, HORIZONTAL_KIND, Given, Wording, demand
 from handrail.dimensions import Dimension
-from handrail.project import Project
+from handrail.intermediate import NONE_TEXT
+from handrail.project import NO_INTERMEDIATE, SAME_AS_TOP, Project
 from handrail.registry import Registry
 from handrail.shapes import ROUND_HOLLOW, PipeSection
 from handrail.units import Q_
@@ -59,7 +61,7 @@ class WeldCase(Case):
     k_ds: float | None = None
     weld_allow: object = None  # weld metal R_n/Omega per inch
     base_allow: object = None  # base metal R_n/Omega per inch at the checked fusion face
-    base_demand: object = None # force per inch on the base metal line; None when the face sees none
+    base_demand: object = None  # force per inch on the base metal line; None when the face sees none
     weld_ratio: float | None = None
     base_ratio: float | None = None  # None when the fusion face sees no force in this case
     governs: str = ""          # the line demand, capacity and ratio come from: "weld metal" or "base metal"
@@ -335,11 +337,11 @@ def weld_wording(where: str, moment_note: str, moment_cite: str) -> Wording:
     """What a weld check's demand block prints: forces on the weld, the shear
     factored before the moment. ``where`` is where the guard load acts."""
     return Wording(
-        where={DOWNWARD: f"vertical, {where}", HORIZONTAL: f"horizontal ({{direction}}), {where}",
+        where={DOWNWARD: f"vertical, {where}", HORIZONTAL_KIND: f"horizontal ({{direction}}), {where}",
                UPWARD: f"upward, {where}"},
         axial="P",
         axial_notes={DOWNWARD: "Axial force on the weld, compression; no moment",
-                     HORIZONTAL: "Axial force on the weld: dead load, compression",
+                     HORIZONTAL_KIND: "Axial force on the weld: dead load, compression",
                      UPWARD: "Axial force on the weld: net tension, guard load opposing dead load"},
         factored="shear", factored_symbol="V", factored_note="Horizontal force on the weld",
         moment_symbol="M", moment_note=moment_note, moment_cite=moment_cite,
@@ -512,8 +514,6 @@ def check_7(registry: Registry, project: Project, post: PipeSection, loading: Lo
 # ---------------------------------------------------------------------------
 
 INT_RING = "ej.weld.intermediate_ring_model"
-INT_DIRECTIONS = ("Downward", "Horizontal")
-COMPONENT = "Component"
 
 
 def _reaction_4b(registry: Registry, project: Project, loading: Loading, direction: str
@@ -532,15 +532,18 @@ def _reaction_4b(registry: Registry, project: Project, loading: Loading, directi
     Pc = sh.given("P_c", loading.P_c, "Component load adjacent to the post: the full P_c to this end",
                   registry.get(INT_RING).cite)
     gD, gL = sh.factor(combo.id, "D"), sh.factor(combo.id, "L")
-    if direction == "Downward":
+    if direction == DOWNWARD:
         R = sh.line("R", gD * RD + gL * Pc, "Weld reaction: dead and component loads in the same (vertical) "
                     "direction, in the ring's plane", cite_ids=(INT_RING, down.id), unit="lbf")
         label = f"{combo_text(combo)}, vertical\n{combo.cite}; {down.cite}"
-    else:
+    elif direction == HORIZONTAL:
         R = sh.line("R", sqrt((gL * Pc) ** 2 + (gD * RD) ** 2), "Weld reaction: horizontal component load and "
                     "vertical dead-load reaction at right angles, both in the ring's plane", cite_ids=(INT_RING,),
                     unit="lbf")
         label = f"{combo_text(combo, {'D': 'vertical', 'L': 'horizontal'}, ', ')}, vector sum\n{combo.cite}"
+    else:
+        raise ValueError(f"Check 4b: no component load direction {direction!r}; expected one of "
+                         f"{', '.join(COMPONENT_DIRECTIONS)}")
     return sh, R, label
 
 
@@ -555,9 +558,6 @@ def check_4b(registry: Registry, project: Project, post: PipeSection, inter: Pip
     and the post wall no thinner than the rail wall, the observation line
     instead (S4-8; wall guard, Micah 2026-10-09); with no intermediate rail,
     "none"."""
-    from handrail.intermediate import NONE_TEXT
-    from handrail.project import NO_INTERMEDIATE, SAME_AS_TOP
-
     chk = WeldCheck("4b", "Intermediate rail weld to post", "f_r", "frac(R_n, Omega_w)")
     state = project.intermediate_rail.state
     if state == NO_INTERMEDIATE:
@@ -569,7 +569,7 @@ def check_4b(registry: Registry, project: Project, post: PipeSection, inter: Pip
     if same:
         # R is the larger of the two cases (the downward one, R_D + P_c, always
         # is); its lines print under the observation, so R can be traced.
-        reactions = [_reaction_4b(registry, project, loading, direction) for direction in INT_DIRECTIONS]
+        reactions = [_reaction_4b(registry, project, loading, direction) for direction in COMPONENT_DIRECTIONS]
         rsh, R, _ = max(reactions, key=lambda t: t[1].value)
         P = loading.P
         # Two guards (Micah, 2026-10-09): R <= P, and the post wall, Check
@@ -602,7 +602,7 @@ def check_4b(registry: Registry, project: Project, post: PipeSection, inter: Pip
     e = ecc.line("e", d / 2, "Eccentricity: post centerline (the span's support point) to the post face",
                  cite_ids=(INT_RING,), unit="inch")
     e_line = ecc.lines[-1]
-    size =project.welds.rail_to_post if same else project.welds.intermediate_rail_to_post
+    size = project.welds.rail_to_post if same else project.welds.intermediate_rail_to_post
     rg = ring(registry, inter, size, member="intermediate rail", symbol='D_"int"')
     limits = size_limits(registry, rg.w, (nominal_wall("int", "Intermediate rail", inter),
                                           nominal_wall("post", "Post", post)))
@@ -630,7 +630,7 @@ def check_4b(registry: Registry, project: Project, post: PipeSection, inter: Pip
     )
     chk.derived_lengths = [e_line]
     _min_size(chk, limits)
-    for direction in INT_DIRECTIONS:
+    for direction in COMPONENT_DIRECTIONS:
         dsh, R, label = _reaction_4b(registry, project, loading, direction)
         M = dsh.line("M", R * e, "Moment at the post face: R at the post centerline, arm e", cite_ids=(INT_RING,),
                      unit="lbf*inch")
@@ -640,4 +640,3 @@ def check_4b(registry: Registry, project: Project, post: PipeSection, inter: Pip
         f = shear_and_bending(sh, rg, R, M)
         chk.cases.append(_weld_result(sh, ws, f, direction, COMPONENT, label, ""))
     return chk
-

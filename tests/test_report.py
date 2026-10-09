@@ -4,14 +4,18 @@ import dataclasses
 from pathlib import Path
 
 import pytest
+import typst
 
 from handrail import checks, dimensions, report
 from handrail.calc import typst_str
 from handrail.project import (
-    NO_INTERMEDIATE, Baseplate, DeflectionLimit, IntermediateRail, Member, Project, ProjectInfo, Welds,
+    NO_INTERMEDIATE, SAME_AS_TOP, Baseplate, DeflectionLimit, IntermediateRail, Loads, Member, Project, ProjectInfo,
+    Welds,
 )
 from handrail.registry import Registry
+from handrail.units import Q_
 from handrail.version import Stamp
+from test_intermediate import project as slice4_project
 
 
 def run(**kw):
@@ -138,7 +142,6 @@ def test_no_printed_line_repeats_a_part_side_by_side():
 
 def test_a_slash_symbol_is_refused():
     from handrail.calc import Sheet, Sym
-    from handrail.units import Q_
 
     sh = Sheet(Registry())
     a, b = Sym("M_n", Q_(1, "lbf*inch")), Sym("Omega_b", 1.67)
@@ -337,10 +340,9 @@ def test_a_weld_below_minimum_size_closes_ng_with_the_reason_and_its_true_sign()
 
 def _slice4_source(**kw):
     """Case 5's guard (test_intermediate.project): its own Pipe1-1/4STD intermediate rail, B x N = 6 x 8 in."""
-    from test_intermediate import project
 
     reg = Registry()
-    res = checks.run(project(**kw), reg)
+    res = checks.run(slice4_project(**kw), reg)
     return res, report.build_source(res, reg, CLEAN)
 
 
@@ -349,8 +351,6 @@ def _section(src, start, end="\n= "):
 
 
 def test_dimensions_page_echoes_b_and_n_and_the_intermediate_weld():
-    from handrail.project import SAME_AS_TOP
-
     _, src = _slice4_source()
     dims = _section(src, "= Dimensions")
     assert '"Baseplate B, parallel to the rail", "6", "6\\"", "6.000 in"' in dims
@@ -363,8 +363,6 @@ def test_dimensions_page_echoes_b_and_n_and_the_intermediate_weld():
 
 
 def test_section_properties_page_names_the_intermediate_rail_in_each_state():
-    from handrail.project import NO_INTERMEDIATE, SAME_AS_TOP
-
     _, src = _slice4_source()
     page = _section(src, "= Section properties")
     assert '#text("Intermediate rail: Pipe1-1/4STD, A53 Gr B.")' in page
@@ -396,9 +394,6 @@ def test_reaction_tables_follow_the_summary_with_signed_n_and_their_notes():
 
 
 def test_no_upward_set_prints_its_status():
-    from handrail.project import Loads
-    from handrail.units import Q_
-
     _, src = _slice4_source(loads=Loads(concentrated=Q_(20, "lbf"), uniform=Q_(2, "lbf/ft")))
     upward = src.split("== Upward set")[1]
     assert '#"No net uplift (0.9D >= 1.6L): no upward set."' in upward
@@ -406,8 +401,6 @@ def test_no_upward_set_prints_its_status():
 
 
 def test_summary_rows_for_check_4_in_each_state():
-    from handrail.project import NO_INTERMEDIATE, SAME_AS_TOP
-
     _, src = _slice4_source()
     summary = _section(src, "= Summary")
     assert '"4a. Intermediate rail", "1,023 lb-in", "6,392 lb-in", "0.16", "Downward, bending", "OK"' in summary
@@ -434,8 +427,6 @@ def test_front_matter_names_the_intermediate_rail_and_the_reactions():
 
 
 def test_slice_4_pdf_compiles(tmp_path):
-    import typst
-
     for kw in ({}, {"state": "same as top rail"}, {"state": "none"}):
         _, src = _slice4_source(**kw)
         typ = tmp_path / "s4.typ"

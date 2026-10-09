@@ -5,15 +5,17 @@ Every direction case puts a guard load at the top of the post (or on the
 rail at the post), with the dead load acting axially:
 
 - Downward: P = gamma_D D + gamma_L L, compression; no moment.
-- Outward, inward, longitudinal: P = gamma_D D, compression; the guard load
-  horizontal, with a moment equal to it times the moment arm.
+- Outward, inward, longitudinal (and the reaction sets' lateral): P =
+  gamma_D D, compression; the guard load horizontal, with a moment equal
+  to it times the moment arm.
 - Upward: P = gamma_L L - gamma_D D, tension, or no net tension.
 
 The load combination is data: registry entries holding the D and L factors,
 and the printed label is generated from them. The moment arm is an input:
-h - t_p for Checks 5 and 7, the eccentricity e for Check 3. What a demand
-block prints, its symbols and notes, is the caller's Wording, so each check
-prints exactly what it printed before the function was shared.
+h - t_p for Checks 5 and 7 (the top of the baseplate), the eccentricity e
+for Check 3, and h for the reaction sets (the top of concrete). What a
+demand block prints, its symbols and notes, is the caller's Wording, so
+each check prints exactly what it printed before the function was shared.
 """
 
 from __future__ import annotations
@@ -21,20 +23,21 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from handrail.calc import Line, Sheet, Sym
-from handrail.checks import COMBO, CONCENTRATED, Loading, combo_text
+from handrail.checks import COMBO, CONCENTRATED, DOWNWARD, UPWARD, Loading, combo_text
 from handrail.project import Project
 from handrail.registry import Registry
 from handrail.units import Q_
 
 TRIBUTARY = "Stated assumption: the tributary length is the span"
 
-# The three kinds of direction case. Outward, inward and longitudinal are one
-# kind: the guard load horizontal, the dead load axial.
-DOWNWARD, HORIZONTAL, UPWARD = "Downward", "horizontal", "Upward"
+# The three kinds of direction case: downward, upward, and the horizontal
+# kind, which is outward, inward and longitudinal (and the reaction sets'
+# lateral): the guard load horizontal, the dead load axial.
+HORIZONTAL_KIND = "horizontal"
 
 
 def kind(direction: str) -> str:
-    return direction if direction in (DOWNWARD, UPWARD) else HORIZONTAL
+    return direction if direction in (DOWNWARD, UPWARD) else HORIZONTAL_KIND
 
 
 def live_at_post(sh: Sheet, symbol: str, load_type: str, loading: Loading, project: Project, where: str) -> Sym:
@@ -78,7 +81,8 @@ class Given:
 @dataclass(frozen=True)
 class Wording:
     """What a demand block prints. ``where`` and ``axial_notes`` are keyed by
-    kind; "{direction}" in ``where`` is filled with the direction.
+    kind (DOWNWARD, HORIZONTAL_KIND, UPWARD); "{direction}" in ``where`` is
+    filled with the direction.
 
     ``factored`` says which horizontal line carries the live-load factor:
     "shear" prints V = gamma_L V_L, then M = V times the arm (the welds);

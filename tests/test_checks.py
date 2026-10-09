@@ -14,7 +14,8 @@ from handrail import checks, dimensions, shapes
 from handrail.calc import fmt_sig
 from handrail.checks import SectionStop
 from handrail.project import (
-    NO_INTERMEDIATE, Baseplate, DeflectionLimit, IntermediateRail, Loads, Member, Project, ProjectInfo, Welds,
+    NO_INTERMEDIATE, Baseplate, DeflectionLimit, IntermediateRail, Loads, Member, Project, ProjectError, ProjectInfo,
+    Welds,
 )
 from handrail.registry import Registry
 from handrail.units import Q_
@@ -175,8 +176,6 @@ def test_deflection_bypass_computes_nothing():
 
 
 def test_unsupported_grade_is_refused():
-    from handrail.project import ProjectError
-
     p = dataclasses.replace(project(), top_rail=Member("Pipe2STD", "A500 Gr B"))
     with pytest.raises(ProjectError, match="A53 Gr B only"):
         checks.run(p, Registry())
@@ -185,7 +184,6 @@ def test_unsupported_grade_is_refused():
 def test_a_grade_with_fy_but_no_fu_entry_is_refused(monkeypatch):
     """Issue #4: a grade added to FY_ENTRY alone must stop at validation,
     not as a KeyError at Check 3's rail fusion face."""
-    from handrail.project import ProjectError
 
     monkeypatch.setitem(checks.FY_ENTRY, "A500 Gr C", "material.A53_GrB.Fy")
     p = dataclasses.replace(project(), top_rail=Member("Pipe2STD", "A500 Gr C"))

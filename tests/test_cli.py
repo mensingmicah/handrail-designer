@@ -1,10 +1,14 @@
 """The one command, end to end, and the project file reader."""
 
+import copy
+import dataclasses
+import tomllib
 from pathlib import Path
 
 import pytest
 
-from handrail import cli, project
+from handrail import checks, cli, project, shapes
+from handrail.registry import Registry
 
 EXAMPLE = Path(__file__).resolve().parents[1] / "examples" / "slice-1.toml"
 
@@ -211,8 +215,6 @@ def _full_project_files():
     """Project files that between them give every key SCHEMA allows. No one
     file can: none = true conflicts with the intermediate rail's own inputs
     (S4-1), so one file has its own section and the other has none."""
-    import copy
-    import tomllib
 
     raw = tomllib.loads(EXAMPLE.read_text(encoding="utf-8"))
     raw["loads"].update(concentrated_lb=250, uniform_plf=60, component_lb=150)
@@ -242,7 +244,6 @@ def test_the_parser_reads_every_key_schema_allows_and_no_other():
 
 def test_left_out_optional_keys_take_the_dataclass_defaults():
     """Issue #4, item 5: each default is stated once, on its dataclass."""
-    import tomllib
 
     raw = tomllib.loads(EXAMPLE.read_text(encoding="utf-8"))
     for table in ("loads", "deflection", "intermediate_rail"):
@@ -258,8 +259,6 @@ def test_left_out_optional_keys_take_the_dataclass_defaults():
 
 
 def test_a_partial_deflection_table_keeps_the_members_own_default_ratio():
-    import tomllib
-
     raw = tomllib.loads(EXAMPLE.read_text(encoding="utf-8"))
     raw["deflection"] = {"rail": {"bypass": True}, "post": {"bypass": True}}
     proj = project.from_dict(raw)
@@ -338,9 +337,6 @@ def test_post_wider_than_rail_stops_naming_both_ods(tmp_path, capsys):
 
 
 def test_equal_ods_are_allowed():
-    from handrail import checks
-    from handrail.registry import Registry
-
     proj = project.load(EXAMPLE)  # Pipe2STD rail and post
     checks.validate(proj, Registry())
 
@@ -348,11 +344,6 @@ def test_equal_ods_are_allowed():
 def _validate_with(monkeypatch, *, family=None, fu=None):
     """validate() on the example with a stand-in: a section of another family,
     or a post grade with a lower Fu. Stand-ins for machinery tests only."""
-    import dataclasses
-
-    from handrail import checks, shapes
-    from handrail.registry import Registry
-
     real = shapes.pipe
     if family:
         monkeypatch.setattr(shapes, "pipe", lambda d: dataclasses.replace(real(d), family=family))
@@ -387,7 +378,6 @@ def test_a_post_grade_below_the_fu_fy_limit_stops(monkeypatch):
 
 def _example_raw(**tables):
     """The example as a dict, with whole tables replaced or added."""
-    import tomllib
 
     raw = tomllib.loads(EXAMPLE.read_text(encoding="utf-8"))
     for name, table in tables.items():
@@ -489,9 +479,6 @@ def test_conflicting_or_missing_intermediate_and_baseplate_inputs_stop(raw, mess
 
 
 def _validate(raw):
-    from handrail import checks
-    from handrail.registry import Registry
-
     checks.validate(project.from_dict(raw), Registry())
 
 
@@ -538,11 +525,6 @@ def test_a_baseplate_smaller_than_the_post_od_stops(name, other):
 
 def test_an_intermediate_grade_below_the_fu_fy_limit_stops(monkeypatch):
     # S4-12, with a stand-in grade: Fy 35 ksi from A53 Gr B, Fu 40 ksi.
-    import dataclasses
-
-    from handrail import checks
-    from handrail.registry import Registry
-
     reg = Registry()
     fu = reg.entries["material.A53_GrB.Fu"]
     reg.entries["stand-in.Fu"] = dataclasses.replace(fu, id="stand-in.Fu", value=40)
@@ -556,10 +538,6 @@ def test_an_intermediate_grade_below_the_fu_fy_limit_stops(monkeypatch):
 
 def test_a_non_round_intermediate_rail_stops(monkeypatch):
     # W7 extended (S4-12), with a stand-in family on the intermediate section only.
-    import dataclasses
-
-    from handrail import shapes
-
     real = shapes.pipe
     monkeypatch.setattr(shapes, "pipe", lambda d: dataclasses.replace(real(d), family="rectangular HSS")
                         if d == "Pipe1-1/4STD" else real(d))

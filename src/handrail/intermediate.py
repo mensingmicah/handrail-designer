@@ -23,15 +23,16 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from handrail import beams
 from handrail.calc import Const, Line, Sheet, fmt_quantity, fmt_quantity_plain
-from handrail.checks import COMBO, DB, Case, Check, Loading, combo_text, flexural_capacity
+from handrail.checks import (
+    COMBO, COMPONENT, COMPONENT_DIRECTIONS, DB, DOWNWARD, Case, Check, Loading, combo_text, flexural_capacity,
+)
 from handrail.project import NO_INTERMEDIATE, SAME_AS_TOP, DeflectionLimit, Project
 from handrail.registry import Registry
 from handrail.shapes import PipeSection
 
-HORIZONTAL, DOWNWARD = "Horizontal", "Downward"
 BENDING, DEFLECTION = "Bending", "Deflection"
-COMPONENT = "Component"
 MIDSPAN, DOWN = "ej.component.midspan", "ej.component.downward"
 NONE_TEXT = "None: no intermediate rail."
 
@@ -47,8 +48,8 @@ class ComponentCase(Case):
         return f"{self.direction}, {self.limit_state.lower()}"
 
 
-def _bending_case(registry: Registry, project: Project, inter: PipeSection, loading: Loading, cap,
-                  head: list[Line], direction: str) -> ComponentCase:
+def _bending_case(registry: Registry, project: Project, loading: Loading, cap, head: list[Line],
+                  direction: str) -> ComponentCase:
     sh = Sheet(registry)
     sh.lines.extend(head)
     sh.heading("Capacity")
@@ -57,12 +58,10 @@ def _bending_case(registry: Registry, project: Project, inter: PipeSection, load
     combo, down = registry.get(COMBO), registry.get(DOWN)
     L = sh.given("L", project.span.value, "Span, simple beam", "Input")
     Pc = sh.given("P_c", loading.P_c, "Component load, a point load at midspan", "Loading")
-    ML = sh.line("M_L", Pc * L / 4, "Component load moment, midspan",
-                 cite_ids=("aisc_manual.t3-23.case7.M", MIDSPAN), unit="lbf*inch")
+    ML = beams.point_moment(sh, "M_L", Pc, L, "Component load moment, midspan", cite_ids=(MIDSPAN,))
     if direction == DOWNWARD:
         wD = sh.given('w_(D,"int")', loading.w_D_int, "Intermediate rail self-weight", "Loading")
-        MD = sh.line("M_D", wD * L**2 / 8, "Dead-load moment, midspan",
-                     cite_ids=("aisc_manual.t3-23.case1.M",), unit="lbf*inch")
+        MD = beams.uniform_moment(sh, "M_D", wD, L, "Dead-load moment, midspan")
         M = sh.line("M_a", sh.factor(combo.id, "D") * MD + sh.factor(combo.id, "L") * ML,
                     "Required flexural strength: D and L on the same axis", cite_ids=(down.id,), unit="lbf*inch")
         label = f"{combo_text(combo)}, vertical\n{combo.cite}; {down.cite}"
@@ -84,13 +83,12 @@ def _deflection_case(registry: Registry, project: Project, inter: PipeSection, l
     E = sh.code_value("E", "material.steel.E", "Modulus of elasticity")
     I = sh.given('I_"int"', inter.I, f"Moment of inertia, {inter.label}", DB)
     Pc = sh.given("P_c", loading.P_c, "Component load, a point load at midspan", "Loading")
-    DL = sh.line("Delta_L", Pc * L**3 / (48 * E * I), "Component load deflection, midspan",
-                 cite_ids=("aisc_manual.t3-23.case7.delta", MIDSPAN), unit="inch")
+    DL = beams.point_deflection(sh, "Delta_L", Pc, L, E, I, "Component load deflection, midspan",
+                                cite_ids=(MIDSPAN,))
     if direction == DOWNWARD:
         combo = registry.get("ej.combo.deflection.D_plus_L")
         wD = sh.given('w_(D,"int")', loading.w_D_int, "Intermediate rail self-weight", "Loading")
-        DD = sh.line("Delta_D", 5 * wD * L**4 / (384 * E * I), "Dead-load deflection, midspan",
-                     cite_ids=("aisc_manual.t3-23.case1.delta",), unit="inch")
+        DD = beams.uniform_deflection(sh, "Delta_D", wD, L, E, I, "Dead-load deflection, midspan")
         D = sh.line("Delta", sh.factor(combo.id, "D") * DD + sh.factor(combo.id, "L") * DL,
                     "D and L on the same (vertical) axis", cite_ids=(DOWN,), unit="inch")
         axis = "vertical"
@@ -139,9 +137,9 @@ def check_4a(registry: Registry, project: Project, inter: PipeSection | None, lo
     grade = project.intermediate_member.grade
     cap = flexural_capacity(registry, inter, grade)
     chk.flags = cap.flags
-    for direction in (DOWNWARD, HORIZONTAL):
-        chk.cases.append(_bending_case(registry, project, inter, loading, cap, head, direction))
-    for direction in (DOWNWARD, HORIZONTAL):
+    for direction in COMPONENT_DIRECTIONS:
+        chk.cases.append(_bending_case(registry, project, loading, cap, head, direction))
+    for direction in COMPONENT_DIRECTIONS:
         if limit.bypass:
             chk.cases.append(ComponentCase(direction, COMPONENT, "bypassed", limit_state=DEFLECTION,
                                            remark="Deflection bypassed by engineer"))

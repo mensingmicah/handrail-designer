@@ -25,11 +25,11 @@ from typing import Callable
 
 from handrail.calc import PI, Const, Line, Sheet, Sym, fmt_sig, sqrt
 from handrail.checks import (
-    DB, DIRECTIONS, DISTRIBUTED, FY_ENTRY, LOAD_TYPES,
+    DB, DIRECTIONS, DISTRIBUTED, DOWNWARD, FY_ENTRY, LOAD_TYPES, UPWARD,
     Case, Check, Loading, SectionStop, combo_text, exempt_case, flexural_capacity,
 )
 from handrail.demand import (
-    ASD, DOWNWARD, HORIZONTAL, UPWARD, Demand, Given, Wording, demand, live_at_post,
+    ASD, HORIZONTAL_KIND, Demand, Given, Wording, demand, live_at_post,
 )
 from handrail.project import Project
 from handrail.registry import Entry, Registry
@@ -195,11 +195,11 @@ def _capacity(registry: Registry, project: Project, post: PipeSection) -> Capaci
 # Check 5 prints required strengths and factors the moment (M_r = 1.0 M_L).
 WORDING = Wording(
     where={DOWNWARD: "vertical at the top of the post",
-           HORIZONTAL: "horizontal ({direction}) at the top of the post",
+           HORIZONTAL_KIND: "horizontal ({direction}) at the top of the post",
            UPWARD: "upward at the top of the post"},
     axial="P_r",
     axial_notes={DOWNWARD: "Required axial strength, compression; no moment",
-                 HORIZONTAL: "Required axial strength: dead load, compression",
+                 HORIZONTAL_KIND: "Required axial strength: dead load, compression",
                  UPWARD: "Required axial strength: net tension, guard load opposing dead load"},
     factored="moment", factored_symbol="M_r", factored_note="Required flexural strength",
     moment_symbol="M_L", moment_note="Live-load moment at the top of the baseplate",
