@@ -6,8 +6,6 @@ floats in lb, in and ksi. Test case 5 (an independent calc) is the
 independent check.
 """
 
-import dataclasses
-
 import pytest
 
 from handrail import checks, dimensions, shapes

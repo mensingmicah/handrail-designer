@@ -347,19 +347,27 @@ def weld_wording(where: str, moment_note: str, moment_cite: str) -> Wording:
 
 
 @dataclass
-class WeldSetup:
-    """What differs between Checks 3 and 7; everything else is shared."""
+class WeldLines:
+    """What a weld check's strength lines need: the ring, the weld metal and
+    base metal, and how k_ds and the base metal demand are found. Checks 3,
+    4b and 7 each set their own."""
 
     rg: Ring
     wm: WeldMetal
     base: BaseMetal
     head: list[Line]              # printed at the top of every case
-    wording: Wording | None       # what the demand block prints; None for Check 4b's own demand
-    dead: Given | None            # the axial dead load on the ring; None for Check 4b
-    arm: Sym                      # moment arm of V to the weld, printed in the head
     k_ds: Callable[[Sheet, Sym], tuple[Sym | None, Sym]]  # (theta or None, k_ds) at the governing point
     base_demand: Callable[[RingForces], Sym | None]       # the force on the base metal line, or None
     base_note: str
+
+
+@dataclass
+class WeldSetup(WeldLines):
+    """Checks 3 and 7: the weld lines plus the guard-load envelope's demand."""
+
+    wording: Wording              # what the demand block prints
+    dead: Given                   # the axial dead load on the ring
+    arm: Sym                      # moment arm of V to the weld, printed in the head
 
 
 def _weld_case(registry: Registry, project: Project, loading: Loading, ws: WeldSetup,
@@ -374,7 +382,7 @@ def _weld_case(registry: Registry, project: Project, loading: Loading, ws: WeldS
     return _weld_result(sh, ws, f, direction, load_type, d.label, d.sense)
 
 
-def _weld_result(sh: Sheet, ws: WeldSetup, f: RingForces, direction: str, load_type: str, label: str,
+def _weld_result(sh: Sheet, ws: WeldLines, f: RingForces, direction: str, load_type: str, label: str,
                  sense: str) -> WeldCase:
     """k_ds, the weld metal and base metal lines, and the case. Demand and
     capacity come from the line the ratio comes from; a tie goes to the weld
@@ -600,9 +608,8 @@ def check_4b(registry: Registry, project: Project, post: PipeSection, inter: Pip
     walls.decision(mtext("Intermediate rail wall at the weld"), f"Covered by {covered}",
                    branch.value.format(covered=covered), cite_ids=(branch.id,))
     head = head_guard + rg.lines + ecc.lines + limits.lines + wm.lines + kd.lines + base.lines + walls.lines
-    ws = WeldSetup(
+    ws = WeldLines(
         rg=rg, wm=wm, base=base, head=head,
-        wording=None, dead=None, arm=e,  # the demand is Check 4b's own (S4-9), not the guard-load envelope
         k_ds=lambda _sh, _f_r: (None, k_ds),
         base_demand=lambda f: f.f_v,
         base_note="Post wall fusion face: in-plane shear only",

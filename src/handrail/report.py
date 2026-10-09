@@ -16,7 +16,7 @@ from handrail.calc import Line, fmt_quantity_plain, fmt_ratio, fmt_sig, typst_st
 from handrail.checks import Case, Check, Results
 from handrail.intermediate import ComponentCase
 from handrail.post import PostCase
-from handrail.project import NO_INTERMEDIATE, OWN_SECTION, SAME_AS_TOP
+from handrail.project import OWN_SECTION, SAME_AS_TOP
 from handrail.reactions import LATERAL, Reactions, ReactionSet
 from handrail.registry import Registry
 from handrail.welds import WeldCase
@@ -273,8 +273,15 @@ def _check(chk: Check) -> str:
     for f in chk.flags:
         out.append(f"#flag({typst_str(f)})")
     out.append("== Envelope summary")
-    out.append("Every direction case and load type is computed. The full calculation follows for the "
-               "controlling case only.")
+    if isinstance(chk.controlling, ComponentCase):
+        out.append("Each limit state is computed in both directions of the component load. The full calculation "
+                   "follows for the governing case of each limit state.")
+    elif chk.number == "4b":
+        out.append("Both directions of the component load are computed. The full calculation follows for the "
+                   "controlling case only.")
+    else:
+        out.append("Every direction case and load type is computed. The full calculation follows for the "
+                   "controlling case only.")
     if chk.number == 5:
         out.append(_envelope_5(chk))
     elif isinstance(chk.controlling, WeldCase):
