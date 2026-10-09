@@ -277,7 +277,10 @@ that both still hold for every round rail this slice adds.
 **Covers.** Rectangular HSS from the database and custom rectangular tubes
 (AISC corner-radius convention, §B4.2 design thickness). Table B4.1a/B4.1b
 limits for rectangular HSS walls, flexure per §F7, and the input for which
-axis resists the horizontal guard load. Biaxial bending per Chapter H for
+axis resists the horizontal guard load, for the top rail and for the
+intermediate rail (S4-10: Check 4a's horizontal and downward component
+load cases then bend different axes, and the horizontal case can govern
+on the weak axis). Biaxial bending per Chapter H for
 non-round sections, replacing SRSS for these shapes. The longitudinal case
 on the post's other axis. Rectangular post welds: all around, or on one
 pair of faces picked by width or depth, with the elastic line properties of
@@ -310,7 +313,11 @@ rectangular rail, whose depth and weld pattern differ.
 (yielding and LTB) with Cb from the §F1 moment diagram for each load case
 (simple span for the rail, cantilever for the post). This is the first
 section where LTB can govern. Includes a flat bar rail loaded about its
-weak axis, the case the brief names where a horizontal case may control.
+weak axis, the case the brief names where a horizontal case may control,
+and a flat bar intermediate rail: Check 4a's two component load cases
+(horizontal, downward; S4-10) on different axes, with Cb for the
+midspan point load. Check 4b's weld ring (S4-8, S4-9) and the cope limit
+(S4-11) are round-only until slices 6 and 7 extend them.
 
 **Depends on.** Slice 6 (rectangular axis input, biaxial H provisions,
 face-pair welds).

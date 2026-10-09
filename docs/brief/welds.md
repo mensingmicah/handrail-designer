@@ -236,8 +236,7 @@ plan's decision numbers.
     model and the W7 chord wall).
   - **None:** Check 4b prints "none" with Check 4a.
   - Still to settle in the slice 4 interview: which wall is the chord
-    (the post, here) for the base metal and W7 lines; and a cope limit,
-    intermediate rail OD ≤ post OD (the mirror of W8).
+    (the post, here) for the base metal and W7 lines.
   - The stated assumption "The intermediate rail's connection to the
     post, and the component load's effect on the post, are not checked."
     (output.md) loses its first half. Proposed text: "The component
@@ -262,3 +261,25 @@ plan's decision numbers.
   - The load acts through the intermediate rail's centerline, which
     passes through the ring's centroid: no torsion (the Check 3
     centerline ruling).
+- **The intermediate rail may not be wider than the post.** (S4-11,
+  Micah 2026-10-09.) The intermediate rail's end is coped to the side of
+  the post, and a branch cannot be coped to a narrower chord, so
+  D_int ≤ D_post; equal ODs are allowed. With W8 (D_post ≤ D_rail), the
+  same-as-top state is buildable only when D_rail = D_post.
+  - `validate()` stops the calc, next to the W8 stop, in both the
+    same-as-top and own-section states. The message names both ODs and
+    says to uncheck `same_as_top_rail` and enter a section no wider than
+    the post.
+  - At equal ODs the fillet model is kept all around, as W9. Unlike W9,
+    under the horizontal component load the flare-bevel tangent points
+    are at the ring's extreme fibers, not its neutral axis. It still
+    cannot flip a result: the downward case governs Check 4b, with its
+    extreme fibers at the top and bottom where the joint is a normal
+    fillet, and the check runs near 0.01 for pipe.
+  - A printed stated assumption covers the joint. Proposed text, added
+    to output.md on the slice 4 branch in the commit that prints it:
+    "The intermediate rail to post weld is modeled the same way, as a
+    flat ring of the intermediate rail's perimeter at the post face, with
+    eccentricity e = half the post diameter from the post centerline. It
+    is modeled as a fillet of the entered size all around, although at
+    equal diameters the sides of the saddle form a flare-bevel joint."
