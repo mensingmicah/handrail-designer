@@ -209,7 +209,9 @@ plan's decision numbers, kept for the record.
   - Check 4a, two cases. Horizontal: the component load alone, as before.
     Downward: the component load at midspan plus the intermediate rail's
     dead load, on the same axis, ASD D + L. Deflection under each case,
-    with the S4-2 limits.
+    with the S4-2 limits, combined as Check 2 does: the horizontal case
+    live load only, the downward case D + L (the engineering-judgement
+    serviceability combination of Check 2).
   - Check 4b, two cases (welds.md, S4-9).
   - The same-as-top observation for Check 4a still holds when P_c ≤ P:
     Checks 1 and 2 already run the top rail downward and horizontal at P,
