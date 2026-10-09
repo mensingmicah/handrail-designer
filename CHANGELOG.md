@@ -47,8 +47,9 @@ for a real hand calc, under the DRAFT stamp.
 
 - Test case 5, the milestone case, has a full independent calc of all
   seven checks and both reaction sets (391 values); every value agrees
-  with the tool within 0.5%. Micah ruled on its open questions (Check 4b as a simple shear
-  connection, base metal on both walls, t_e = 0.707w).
+  with the tool within 0.5%. Micah reviewed the case 5 PDF against the
+  checklist and ruled on the independent calc's open questions (Check 4b as
+  a simple shear connection, base metal on both walls, t_e = 0.707w).
 - Cases 1–4 gained inputs only; every recorded value is unchanged.
 - At release: 1138 tests passed, 25 skipped (the deferred [hand] values).
 
