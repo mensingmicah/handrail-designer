@@ -2056,7 +2056,11 @@ note = """
 Micah, 2026-10-08 (S4-8), wording and guard amended 2026-10-09 (S4-9). \
 Printed as Check 4b when the intermediate rail is the same as the top \
 rail and R <= P; {R} is the larger of the two Check 4b cases and {P} the \
-concentrated guard load. When R > P the full Check 4b runs instead."""
+concentrated guard load. When R > P the full Check 4b runs instead. \r
+Second guard (Micah, 2026-10-09): the observation also needs \r
+t_des,post >= t_des,rail, since the base metal line checks the chord's \r
+wall (the rail in Check 3, the post in Check 4b); otherwise the full \r
+check runs."""
 
 # --- Engineering judgement: the anchor reaction sets ------------------------
 

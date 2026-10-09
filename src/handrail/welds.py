@@ -551,8 +551,10 @@ def check_4b(registry: Registry, project: Project, post: PipeSection, inter: Pip
     (S4-9); k_ds = 1.0, a branch-to-chord joint (W2); base metal on the post
     wall, the chord, in-plane shear only (W6); the post wall's normal force
     is not checked (W7, extended); the intermediate rail wall, the branch, is
-    covered by the member check (S4-12). Same as the top rail with R <= P,
-    the observation line instead (S4-8); with no intermediate rail, "none"."""
+    covered by the member check (S4-12). Same as the top rail with R <= P
+    and the post wall no thinner than the rail wall, the observation line
+    instead (S4-8; wall guard, Micah 2026-10-09); with no intermediate rail,
+    "none"."""
     from handrail.intermediate import NONE_TEXT
     from handrail.project import NO_INTERMEDIATE, SAME_AS_TOP
 
@@ -570,16 +572,27 @@ def check_4b(registry: Registry, project: Project, post: PipeSection, inter: Pip
         reactions = [_reaction_4b(registry, project, loading, direction) for direction in INT_DIRECTIONS]
         rsh, R, _ = max(reactions, key=lambda t: t[1].value)
         P = loading.P
-        if R.value <= P:
+        # Two guards (Micah, 2026-10-09): R <= P, and the post wall, Check
+        # 4b's chord, no thinner than the rail wall, Check 3's chord, whose
+        # base metal line Check 3 checks.
+        t_post, t_rail = post.tdes, inter.tdes
+        if R.value <= P and t_post >= t_rail:
             text = registry.get("ej.weld.intermediate.same_as_top").value
             chk.observation = text.format(R=fmt_quantity_plain(R.value), P=fmt_quantity_plain(P))
             chk.observation_lines = rsh.lines
             chk.result = "Controlled by Check 3"
             return chk
         g = Sheet(registry)
-        g.decision(f"R = {fmt_quantity(R.value)} > P = {fmt_quantity(P)}", "Computed in full",
-                   "Same section as the top rail, but the weld reaction exceeds the concentrated guard load, "
-                   "so Check 3 does not cover it", cite_ids=("ej.weld.intermediate.same_as_top",))
+        if R.value > P:
+            g.decision(f"R = {fmt_quantity(R.value)} > P = {fmt_quantity(P)}", "Computed in full",
+                       "Same section as the top rail, but the weld reaction exceeds the concentrated guard load, "
+                       "so Check 3 does not cover it", cite_ids=("ej.weld.intermediate.same_as_top",))
+        if t_post < t_rail:
+            g.decision(f't_"des,post" = {fmt_quantity(t_post)} < t_"des,rail" = {fmt_quantity(t_rail)}',
+                       "Computed in full",
+                       "Same section as the top rail, but the post wall (the chord here) is thinner than the rail "
+                       "wall (the chord in Check 3), so Check 3's base metal line does not cover it",
+                       cite_ids=("ej.weld.intermediate.same_as_top",))
         head_guard = g.lines
 
     ecc = Sheet(registry)

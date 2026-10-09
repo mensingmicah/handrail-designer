@@ -290,3 +290,28 @@ def test_checks_3_and_7_rings_are_still_the_post_perimeter():
     for number in (3, 7):
         ring_d = next(ln for ln in res.check(number).controlling.lines if ln.symbol == "D")
         assert ring_d.note.endswith("the weld ring is the post perimeter")
+
+
+def test_a_post_wall_thinner_than_the_rail_wall_runs_the_full_check_4b():
+    """The wall guard (Micah, 2026-10-09): same as the top rail with R <= P,
+    but a Pipe2XS rail (t_des 0.204 in) on a Pipe2STD post (t_des 0.143 in),
+    equal ODs. Check 3 checks the rail wall's base metal and Check 4b the
+    post wall's, so the observation does not hold and the full check runs."""
+    p2xs = shapes.pipe("Pipe2XS")
+    assert p2xs.OD == P2.OD and P2.tdes < p2xs.tdes  # the premise
+    res = run(state=SAME_AS_TOP, rail="Pipe2XS")
+    chk = res.check("4b")
+    assert chk.computed and not chk.observation
+    plain = plain_4b(inter=p2xs, post=P2)
+    assert plain["Downward"][0] <= 200  # R <= P: the wall guard alone sends it to the full check
+    for c in chk.checked:
+        assert c.ratio == pytest.approx(plain[c.direction][4], rel=1e-9)
+    guards = [ln for ln in chk.controlling.lines if ln.kind == "decision" and ln.text == "Computed in full"]
+    assert len(guards) == 1 and guards[0].symbol.startswith('t_"des,post"') and "thinner" in guards[0].note
+    assert _line(chk.controlling, 't_"post"') == P2.tdes  # base metal on the post wall
+
+
+def test_a_post_wall_no_thinner_than_the_rail_wall_keeps_the_observation():
+    # The reverse: a Pipe2STD rail on a Pipe2XS post, R <= P.
+    chk = run(state=SAME_AS_TOP, post="Pipe2XS").check("4b")
+    assert not chk.computed and chk.result == "Controlled by Check 3"
