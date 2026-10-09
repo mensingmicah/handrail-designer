@@ -45,7 +45,8 @@ Out of scope for v1 (push back if I try to add these):
 - Aluminum and stainless
 - Infill: mesh, glass, pickets
 - LRFD member checks
-- Connection design
+- Connection design beyond the fillet welds checked in Checks 3, 4b and 7
+  (for example the Chapter K chord limit states, and baseplate design)
 - Automatic member selection. This is a checker, not an optimizer.
 - Shear checks in any member (decided; stated in the output's assumptions)
 - Slender sections, in flexure or compression. The tool stops and computes

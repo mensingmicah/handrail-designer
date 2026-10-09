@@ -13,7 +13,7 @@ The uppermost horizontal member of the guard, spanning between posts and receivi
 _Avoid_: Handrail (when meaning this member), cap rail
 
 **Intermediate rail**:
-A horizontal member below the top rail, spanning between posts, checked only for the component load.
+A horizontal member below the top rail, spanning between posts. It is checked for the component load only (Check 4a), and its weld to the post is Check 4b; its dead load is carried down to the post.
 _Avoid_: Mid rail, middle rail
 
 **Post**:
@@ -46,7 +46,7 @@ The ASCE 7-22 concentrated or distributed load applied to the top rail.
 _Avoid_: Handrail load, rail load
 
 **Component load**:
-The ASCE 7-22 §4.5.1.2 load applied horizontally to an intermediate rail, acting alone.
+The ASCE 7-22 §4.5.1.2 load on an intermediate rail, not concurrent with the guard loads. It is applied horizontally, acting alone, and downward with the intermediate rail's dead load (engineering judgement, after OSHA 1910.29(b)(5); S4-10).
 _Avoid_: Infill load
 
 **Direction case**:

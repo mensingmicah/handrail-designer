@@ -1,7 +1,10 @@
 # Roadmap: slices from v0.1.0 to v1
 
 Status: **accepted by Micah, 2026-09-30.** Slice 2 is the post (option A
-below). Slices 1–4 are done (v0.1.0 to v0.4.0; slice 4 in docs/plans/slice-4.md). What the tool must do is set by the brief
+below). **Current status (2026-10-09):** slices 1–4 are done (v0.1.0 to
+v0.4.0, the first complete all-pipe package); slice 5 is next, and its
+plan starts with the open decisions on its milestone (regrouping slices
+5–7, recompute for new section families). What the tool must do is set by the brief
 (docs/BRIEF.md); if this roadmap disagrees with the brief, the brief wins.
 Each slice gets its own plan in docs/plans/ before work starts. That plan
 settles the slice's open questions, and it can reorder or split the slice.
@@ -13,7 +16,7 @@ settles the slice's open questions, and it can reorder or split the slice.
 | 1 (done, v0.1.0) | Checks 1–2, pipe top rail | — | L | 1 | — |
 | 2 (done, v0.2.0) | Checks 5–6: the post (pipe) | 1 | M | 2 | — |
 | 3 (done, v0.3.0) | Checks 3 and 7: both welds (pipe rail on pipe post) | 2 | M | 1 | — |
-| 4 | Check 4 (intermediate rail, 4a member and 4b weld) and the anchor reaction sets | 2 (3 for a full package) | M | 1 | #4 |
+| 4 (done, v0.4.0) | Check 4 (intermediate rail, 4a member and 4b weld) and the anchor reaction sets | 2 (3 for a full package) | M | 1 | #4 (closed) |
 | 5 | Round section family: round HSS, custom round tube, solid round bar | 4 | M | 2 | #3 |
 | 6 | Rectangular tubes: rectangular HSS, custom rectangular tube | 5 | L | 2 | — |
 | 7 | Solid rectangular bar | 6 | M | 1–2 | — |
@@ -27,7 +30,10 @@ three things: how much check code it adds, how many registry entries it
 drafts (slice 1 drafted 35), and how many new test cases it needs.
 These are rough guesses. Slice 2, the first check against them, drafted 31
 registry entries against an estimate of 18–23 and needed the 2 test cases
-planned. The estimates for slices 3–9 have not been revised since.
+planned. Slices 3 and 4 drafted 28 and 15 entries against estimates of
+about 15 and 6–8, so the actuals have run 1.5–2 times the estimates. The
+estimates for slices 5–9 below have not been revised; read them with that
+overrun in mind.
 
 A test case costs Micah less than it did in slice 1. Case 1 was a full
 hand calc of every value. From slice 2 on, each test case is an
@@ -189,7 +195,7 @@ post self-weight (full weight at the base, over h − t_p), Cb (deferred to
 the first LTB-susceptible section), and Lc/r above 200 (a visible flag, not
 a stop).
 
-### Slice 3: welds (Checks 3 and 7), pipe rail on pipe post
+### Slice 3: welds (Checks 3 and 7), pipe rail on pipe post (done, v0.3.0)
 
 **Covers.** The weld method in welds.md, built once and used by both
 checks. Weld inputs are fillet size and electrode (E70XX by default), with
@@ -207,14 +213,14 @@ per AISC Manual Table 2-5) and Fu for A53 Gr B.
 **Size.** M. About 15 new registry entries (§J2.4 strength, the
 directional-increase equation and its limits, the Chapter K restriction,
 J2.2b and Table J2.4 size limits, §J4.2 rupture, Ω for each, FEXX, Fu for
-two grades). One test case.
+two grades). One test case. (Actual: 28 entries.)
 
 **Settled** (Micah, 2026-10-04 and 2026-10-08): the eccentricity, the
 directional increase and the fusion face thickness, with nine further
 decisions, W1–W12 in docs/brief/welds.md. **Plan:** docs/plans/slice-3.md,
 with test case 4 (case 2's geometry plus welds).
 
-### Slice 4: intermediate rail (Check 4) and anchor reaction sets
+### Slice 4: intermediate rail (Check 4) and anchor reaction sets (done, v0.4.0)
 
 **Covers.** The optional intermediate rail, which defaults to the top rail
 section. Check 4: the §4.5.1.2 component load, horizontal at midspan,
@@ -232,7 +238,8 @@ reaction tables go at the end of the PDF.
 **Depends on.** Slice 2 (base forces). Slice 3 is needed for a complete
 package, but not for this slice's code.
 
-**Size.** S–M. About 6–8 new registry entries (component load, 0.9D + 1.6L
+**Size.** S–M as planned; M as built, with the Check 4b scope addition.
+About 6–8 new registry entries planned, 15 drafted (component load, 0.9D + 1.6L
 as engineering judgement, the stated assumptions that newly apply). One test
 case: the complete all-pipe guard, all seven checks and the
 reactions. This case is the milestone.
@@ -278,6 +285,13 @@ dimensions it compares for rectangular sections. The weld envelope's
 orthogonal-cases ruling and the load-at-the-rail-centerline ruling
 (welds.md) are revisited for rectangular rails in slice 6; confirm here
 that both still hold for every round rail this slice adds.
+Check 4b now checks base metal on both walls, the post and the
+intermediate rail (welds.md, Micah 2026-10-09): settle what that line
+becomes for a solid bar intermediate rail, which has no wall, with the
+solid bar post question above. (The slice 4 plan's flag on the
+"branch-wall argument" is moot: that argument was removed with the
+simple shear connection.) Whether solid round bar stays in this slice
+is open on the Slice 5 milestone (regrouping slices 5–7).
 
 ### Slice 6: rectangular tubes
 
@@ -383,10 +397,13 @@ against what shipped. CHANGELOG v1.0.0.
 
 **Depends on.** Everything above.
 
-**Size.** Little code, but most of the time is Micah's: by then the
-registry will hold roughly 110–130 entries, most of them drafted, and
-every test case from slice 2 on waits for his recompute. Add the time
-for any independent calcs that must be redone after a correction.
+**Size.** Little code, but most of the time is Micah's. The registry
+already holds 109 entries after slice 4 (77 drafted); at the overrun seen
+so far, expect roughly 140–165 drafted entries by this slice, and a
+recompute of each deferred test case (25 deferred [hand] values in cases
+2–5 as of v0.4.0). Rough estimate from the architecture review of
+2026-10-09: 20–35 hours of Micah's time, plus any independent calcs that
+must be redone after a correction.
 
 ## Registry verification at release
 
@@ -419,12 +436,12 @@ unless a real problem forces a change (ADR 0006).
 
 ## Where the open issues go
 
-| Issue | Placement | Note |
-| --- | --- | --- |
-| #4 Calc-code cleanup | Slice 4, build step 1 | Items 1–7 done on the slice 2 and 3 branches; the "do first" items (shared demand function, `live_at_post`) and the slice 3 self-review items open slice 4. |
-| #3 Noncompact hand case for Eq. F8-2 | Slice 5 | v1 scope (Micah, 2026-09-30). `future` label removed, because its trigger (thin-wall round HSS) is in v1 scope. |
-| #13 Questions 5–10: citations and package length | Slice 9, layout pass before the release review | Deferred by Micah, 2026-10-04. |
-| #1 Display-unit settings | After v1 | Matches its `future` label and scope.md. |
+Every open issue sits in exactly one GitHub milestone: Slice 5 to Slice 8,
+"Slice 9 (v1 release)", or "After v1" (which replaces the old `future`
+label). The milestones page is the placement list:
+https://github.com/mensingmicah/handrail-designer/milestones. The pinned
+"Slice status" issue (#16) has no milestone. Issues that need Micah's
+ruling carry the `needs-decision` label and are assigned to him.
 
 ## After v1
 
