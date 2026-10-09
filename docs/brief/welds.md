@@ -85,6 +85,12 @@ plan's decision numbers, kept for the record.
   taken as uniform, and the components combine by vector sum at the
   governing point. No plastic distribution in v1. Micah expects θ = 90°
   at the extreme fiber of the base ring.
+- **Effective throat.** (Micah, 2026-10-09.) Every weld check (Checks 3,
+  4b and 7) uses t_e = 0.707w for its equal-leg fillets, the form the calc
+  prints on its AISC 360-22 §J2.2a line (registry
+  `aisc360.J2.2a.throat.coeff`). Independent calcs use the same form, not
+  w/√2 or another rounding, so the 0.5% comparison tests the method rather
+  than the coefficient's last digit. No values change.
 - **Fusion face thickness.** The rail and the post use the published
   design wall t_des (0.135 in for Pipe1-1/2STD, against 0.145 nominal),
   consistent with section properties used as published (checks.md). The

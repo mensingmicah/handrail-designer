@@ -20,6 +20,8 @@
 #   fiber (Checks 3 and 7): "compression side" or "tension side" of
 #     bending, whichever governs; "uniform" where the case has no moment.
 #   min_size: "OK" or "NG" (Table J2.4 minimum fillet size).
+#   check4b.base_governs: "post wall" or "intermediate rail wall", the
+#     fusion face with the lower base metal allowable (a tie: "post wall").
 #   reactions.load_type: "concentrated", "distributed", or
 #     "concentrated and distributed" when P = w s.
 #   controlling: direction, comma, load type, e.g. "outward, distributed".
