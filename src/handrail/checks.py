@@ -139,6 +139,7 @@ class Loading:
     # post, w_D,int times the span; None when there is no intermediate rail.
     w_D_int: object = None
     D_int: object = None
+    D_post: object = None  # the post's dead load, W over h - t_p (the reaction sets' D breakdown)
     P_c: object = None  # the component load on the intermediate rail (S4-3); None without one
 
 
@@ -153,6 +154,7 @@ class Results:
     checks: list[Check]
     inter: PipeSection | None = None  # the intermediate rail's section: the top rail's, its own, or None
     inter_section_lines: list[Line] = field(default_factory=list)  # its own section only
+    reactions: object = None          # the anchor reaction sets (reactions.Reactions)
 
     def check(self, number: int) -> Check:
         return next(c for c in self.checks if c.number == number)
@@ -274,7 +276,7 @@ def build_loading(project: Project, registry: Registry, rail: PipeSection, post:
         w_D_int, D_int = w_D_int.value, D_int.value
     return Loading(P=P.value, w_L=w_L, w_D=w_D.value, L_post=L_post.value, D_rail=D_rail.value, P_D=P_D.value,
                    exempt=ld.uniform_exempt, exemption_statement=ld.exemption_statement, lines=sh.lines,
-                   derived_lengths=[L_post_line], w_D_int=w_D_int, D_int=D_int, P_c=P_c)
+                   derived_lengths=[L_post_line], w_D_int=w_D_int, D_int=D_int, P_c=P_c, D_post=D_post.value)
 
 
 def section_lines(registry: Registry, sec: PipeSection, with_r: bool = False) -> list[Line]:
@@ -649,6 +651,7 @@ def compute(project: Project, registry: Registry) -> Results:
     from handrail import shapes
     from handrail.intermediate import check_4a
     from handrail.post import check_5, check_6
+    from handrail.reactions import reaction_sets
     from handrail.welds import check_3, check_4b, check_7
 
     rail = shapes.pipe(project.top_rail.section)
@@ -665,7 +668,8 @@ def compute(project: Project, registry: Registry) -> Results:
               check_4a(registry, project, inter, loading), check_4b(registry, project, post, inter, loading),
               check_5(registry, project, post, loading), check_6(registry, project, post, loading),
               check_7(registry, project, post, loading)]
-    return Results(project, rail, post, loading, props, post_props, checks, inter, inter_props)
+    reactions = reaction_sets(registry, project, loading)
+    return Results(project, rail, post, loading, props, post_props, checks, inter, inter_props, reactions)
 
 
 def run(project: Project, registry: Registry) -> Results:
