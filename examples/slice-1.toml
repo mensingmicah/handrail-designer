@@ -1,6 +1,7 @@
-# Handrail Designer project file (slices 1 to 3: top rail bending and
-# deflection, the rail to post weld, post combined axial and flexure, post
-# deflection, and the post to baseplate weld).
+# Handrail Designer project file (slices 1 to 4: top rail bending and
+# deflection, the rail to post weld, the intermediate rail and its weld to
+# the post, post combined axial and flexure, post deflection, the post to
+# baseplate weld, and the anchor reaction sets).
 #
 # Loading is per ASCE 7-22.
 #
@@ -30,7 +31,19 @@ grade = "A53 Gr B"        # A53 Gr B is the only grade supported so far
 section = "Pipe2STD"      # AISC designation (AISC Shapes Database v16.0)
 grade = "A53 Gr B"
 
+[intermediate_rail]
+# One of three states. Same as the top rail (the default): its section,
+# grade and rail to post weld size. Its own section: set
+# same_as_top_rail = false and give section (grade defaults to the top
+# rail's), [welds] intermediate_rail_to_post and, optionally,
+# [deflection.intermediate_rail]. None: set none = true.
+same_as_top_rail = true
+# section = "Pipe1-1/4STD"
+# grade = "A53 Gr B"
+
 [baseplate]
+B = 6                     # plan dimension parallel to the rail
+N = 8                     # plan dimension perpendicular to the rail
 grade = "A36"             # A36 is the only baseplate grade supported (all of v1)
 
 [welds]
@@ -43,6 +56,9 @@ electrode = "E70XX"       # E70XX is the only electrode supported
 # Leave these out to use the ASCE 7-22 values from the registry.
 # concentrated_lb = 200
 # uniform_plf = 50
+# component_lb = 50       # intermediate rail. OSHA 1910.29(b)(5) requires
+#                         # intermediate members to withstand 150 lb downward
+#                         # or outward; enter 150 lb where OSHA applies.
 
 [loads.uniform_exemption]
 applies = false

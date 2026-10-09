@@ -1,10 +1,14 @@
 """The one command, end to end, and the project file reader."""
 
+import copy
+import dataclasses
+import tomllib
 from pathlib import Path
 
 import pytest
 
-from handrail import cli, project
+from handrail import checks, cli, project, shapes
+from handrail.registry import Registry
 
 EXAMPLE = Path(__file__).resolve().parents[1] / "examples" / "slice-1.toml"
 
@@ -207,36 +211,42 @@ def _schema_keys(schema, where=""):
             yield f"{where}{key}"
 
 
-def _full_project_file():
-    """A project file that gives every key SCHEMA allows."""
-    import tomllib
+def _full_project_files():
+    """Project files that between them give every key SCHEMA allows. No one
+    file can: none = true conflicts with the intermediate rail's own inputs
+    (S4-1), so one file has its own section and the other has none."""
 
     raw = tomllib.loads(EXAMPLE.read_text(encoding="utf-8"))
-    raw["loads"].update(concentrated_lb=250, uniform_plf=60)
+    raw["loads"].update(concentrated_lb=250, uniform_plf=60, component_lb=150)
     raw["project"].update(references=["Sheet A-501"], assumptions=["Extra."])
-    return raw
+    none = copy.deepcopy(raw)
+    raw["intermediate_rail"] = {"same_as_top_rail": False, "section": "Pipe1-1/4STD", "grade": "A53 Gr B"}
+    raw["welds"]["intermediate_rail_to_post"] = "1/8"
+    raw["deflection"]["intermediate_rail"] = {"limit_L_over": 120, "bypass": False}
+    none["intermediate_rail"] = {"same_as_top_rail": False, "none": True}
+    return raw, none
 
 
 def test_the_parser_reads_every_key_schema_allows_and_no_other():
     """SCHEMA and from_dict list the same keys separately (issue #4, item 6). A key
     in SCHEMA but never read would be accepted and silently ignored; a key read
     but not in SCHEMA would be refused before it could be read."""
-    raw = _full_project_file()
+    files = _full_project_files()
     schema = set(_schema_keys(project.SCHEMA))
-    given = set(_schema_keys(raw))
-    assert given == schema, f"the test's project file must give every SCHEMA key: {sorted(schema ^ given)}"
+    given = set().union(*(_schema_keys(raw) for raw in files))
+    assert given == schema, f"the test's project files must give every SCHEMA key: {sorted(schema ^ given)}"
     log: set[str] = set()
-    project.from_dict(_Tracking(raw, "", log))
+    for raw in files:
+        project.from_dict(_Tracking(raw, "", log))
     assert not schema - log, f"in SCHEMA, never read: {sorted(schema - log)}"
     assert not log - schema, f"read, not in SCHEMA: {sorted(log - schema)}"
 
 
 def test_left_out_optional_keys_take_the_dataclass_defaults():
     """Issue #4, item 5: each default is stated once, on its dataclass."""
-    import tomllib
 
     raw = tomllib.loads(EXAMPLE.read_text(encoding="utf-8"))
-    for table in ("loads", "deflection"):
+    for table in ("loads", "deflection", "intermediate_rail"):
         del raw[table]
     for key in ("phase", "description", "references", "assumptions"):
         del raw["project"][key]
@@ -244,12 +254,11 @@ def test_left_out_optional_keys_take_the_dataclass_defaults():
     assert proj.loads == project.Loads()
     assert proj.rail_deflection == project.RAIL_DEFLECTION
     assert proj.post_deflection == project.POST_DEFLECTION
+    assert proj.intermediate_rail == project.IntermediateRail()
     assert proj.info == project.ProjectInfo(name=raw["project"]["name"])
 
 
 def test_a_partial_deflection_table_keeps_the_members_own_default_ratio():
-    import tomllib
-
     raw = tomllib.loads(EXAMPLE.read_text(encoding="utf-8"))
     raw["deflection"] = {"rail": {"bypass": True}, "post": {"bypass": True}}
     proj = project.from_dict(raw)
@@ -328,9 +337,6 @@ def test_post_wider_than_rail_stops_naming_both_ods(tmp_path, capsys):
 
 
 def test_equal_ods_are_allowed():
-    from handrail import checks
-    from handrail.registry import Registry
-
     proj = project.load(EXAMPLE)  # Pipe2STD rail and post
     checks.validate(proj, Registry())
 
@@ -338,11 +344,6 @@ def test_equal_ods_are_allowed():
 def _validate_with(monkeypatch, *, family=None, fu=None):
     """validate() on the example with a stand-in: a section of another family,
     or a post grade with a lower Fu. Stand-ins for machinery tests only."""
-    import dataclasses
-
-    from handrail import checks, shapes
-    from handrail.registry import Registry
-
     real = shapes.pipe
     if family:
         monkeypatch.setattr(shapes, "pipe", lambda d: dataclasses.replace(real(d), family=family))
@@ -367,3 +368,168 @@ def test_a_post_grade_below_the_fu_fy_limit_stops(monkeypatch):
                        match=r"post grade A53 Gr B: Fu/Fy = 1\.143 is below 1\.2 .*covered by Check 5 only"):
         _validate_with(monkeypatch, fu=40)
     _validate_with(monkeypatch, fu=42)  # 1.20 exactly passes
+
+
+# ---------------------------------------------------------------------------
+# Slice 4: the intermediate rail's states, B x N and the component load, and
+# their validation stops (docs/plans/slice-4.md, T3)
+# ---------------------------------------------------------------------------
+
+
+def _example_raw(**tables):
+    """The example as a dict, with whole tables replaced or added."""
+
+    raw = tomllib.loads(EXAMPLE.read_text(encoding="utf-8"))
+    for name, table in tables.items():
+        raw[name] = table
+    return raw
+
+
+OWN = {"same_as_top_rail": False, "section": "Pipe1-1/4STD"}
+
+
+def _own(**extra):
+    """The example with the intermediate rail in its own section."""
+    raw = _example_raw(intermediate_rail={**OWN, **extra})
+    raw["welds"]["intermediate_rail_to_post"] = "1/8"
+    return raw
+
+
+def test_the_example_is_same_as_top_rail_with_b_and_n():
+    proj = project.load(EXAMPLE)
+    assert proj.intermediate_rail == project.IntermediateRail(project.SAME_AS_TOP)
+    assert proj.intermediate_member == proj.top_rail
+    assert proj.baseplate.B.value.m_as("inch") == 6 and proj.baseplate.N.value.m_as("inch") == 8
+    assert proj.loads.component is None  # the registry value applies
+
+
+def test_own_section_reads_its_inputs_and_defaults_its_grade_to_the_top_rails():
+    raw = _own()
+    raw["deflection"]["intermediate_rail"] = {"limit_L_over": 180, "bypass": True}
+    raw["loads"]["component_lb"] = 150
+    proj = project.from_dict(raw)
+    ir = proj.intermediate_rail
+    assert ir.state == project.OWN_SECTION
+    assert ir.member == project.Member("Pipe1-1/4STD", "A53 Gr B")
+    assert proj.intermediate_member == ir.member
+    assert ir.deflection == project.DeflectionLimit(ratio=180, bypass=True)
+    assert proj.welds.intermediate_rail_to_post.value.m_as("inch") == 0.125
+    assert proj.loads.component.m_as("lbf") == 150
+
+
+def test_own_section_deflection_limit_defaults_to_l_over_120():
+    assert project.from_dict(_own()).intermediate_rail.deflection == project.RAIL_DEFLECTION
+
+
+def test_none_has_no_intermediate_member():
+    proj = project.from_dict(_example_raw(intermediate_rail={"none": True}))
+    assert proj.intermediate_rail.state == project.NO_INTERMEDIATE and proj.intermediate_member is None
+
+
+def _none_with(**inputs):
+    raw = _example_raw(intermediate_rail={"none": True, **inputs.pop("table", {})})
+    if inputs.pop("weld", False):
+        raw["welds"]["intermediate_rail_to_post"] = "1/8"
+    if inputs.pop("deflection", False):
+        raw["deflection"]["intermediate_rail"] = {"limit_L_over": 120}
+    return raw
+
+
+def _same_with(**inputs):
+    raw = _example_raw(intermediate_rail=inputs.pop("table", {}))
+    if inputs.pop("weld", False):
+        raw["welds"]["intermediate_rail_to_post"] = "1/8"
+    if inputs.pop("deflection", False):
+        raw["deflection"]["intermediate_rail"] = {"bypass": True}
+    return raw
+
+
+@pytest.mark.parametrize(
+    "raw, message",
+    [
+        # none = true with any of the own-section inputs.
+        (_none_with(table={"section": "Pipe1-1/4STD"}), "none = true, but [intermediate_rail] section is given"),
+        (_none_with(table={"grade": "A53 Gr B"}), "none = true, but [intermediate_rail] grade is given"),
+        (_none_with(weld=True), "none = true, but [welds] intermediate_rail_to_post is given"),
+        (_none_with(deflection=True), "none = true, but [deflection.intermediate_rail] is given"),
+        (_none_with(table={"same_as_top_rail": True}), "none = true and same_as_top_rail = true contradict"),
+        # same_as_top_rail true (given, or by default) with any of them.
+        (_same_with(table={"same_as_top_rail": True, "section": "Pipe1-1/4STD"}),
+         "same_as_top_rail = true, but [intermediate_rail] section is given"),
+        (_same_with(table={"grade": "A53 Gr B"}),
+         "same_as_top_rail = true (the default), but [intermediate_rail] grade is given"),
+        (_same_with(weld=True), "same_as_top_rail = true (the default), but [welds] intermediate_rail_to_post"),
+        (_same_with(deflection=True), "but [deflection.intermediate_rail] is given"),
+        # Its own section needs a section and a weld size.
+        (_example_raw(intermediate_rail={"same_as_top_rail": False}),
+         "same_as_top_rail = false needs a section"),
+        (_example_raw(intermediate_rail=OWN), "[welds] is missing 'intermediate_rail_to_post', required when"),
+        # B and N are required and positive.
+        (_example_raw(baseplate={"N": 8}), "[baseplate] is missing 'B'"),
+        (_example_raw(baseplate={"B": 6}), "[baseplate] is missing 'N'"),
+        (_example_raw(baseplate={"B": 0, "N": 8}), "[baseplate] B must be greater than zero"),
+        (_example_raw(baseplate={"B": 6, "N": -8}), "[baseplate] N: '-8': dimensions cannot be negative"),
+        (_example_raw(intermediate_rail={"none": "true"}), "'intermediate_rail.none' must be true or false"),
+    ],
+)
+def test_conflicting_or_missing_intermediate_and_baseplate_inputs_stop(raw, message):
+    with pytest.raises(project.ProjectError) as e:
+        project.from_dict(raw)
+    assert message in str(e.value), str(e.value)
+
+
+def _validate(raw):
+    checks.validate(project.from_dict(raw), Registry())
+
+
+def test_an_intermediate_rail_wider_than_the_post_stops_in_both_states():
+    # S4-11. Same as the top rail: a Pipe2-1/2STD rail on a Pipe2STD post
+    # passes W8 (post OD <= rail OD) and stops here.
+    raw = _example_raw()
+    raw["top_rail"]["section"] = "Pipe2-1/2STD"
+    with pytest.raises(project.ProjectError,
+                       match=r"The intermediate rail \(Pipe2-1/2STD, OD 2\.875 in\) is wider than the post "
+                             r"\(Pipe2STD, OD 2\.375 in\).*requires intermediate rail OD <= post OD\. "
+                             r"With same_as_top_rail = true.*uncheck same_as_top_rail"):
+        _validate(raw)
+    with pytest.raises(project.ProjectError,
+                       match=r"The intermediate rail \(Pipe2-1/2STD, OD 2\.875 in\).*Enter a section no wider"):
+        _validate(_own(section="Pipe2-1/2STD"))
+
+
+def test_an_intermediate_rail_as_wide_as_the_post_is_allowed():
+    _validate(_own(section="Pipe2STD"))  # equal ODs (S4-11)
+    _validate(_own())
+
+
+def test_a_short_span_no_longer_stops_with_an_intermediate_rail():
+    # The L >= 2 D_post stop served only Check 4b's branch-wall argument, which
+    # the simple shear connection replaced (Micah, 2026-10-09).
+    raw = _own()
+    raw["geometry"]["span"] = 4
+    _validate(raw)
+
+
+@pytest.mark.parametrize("name, other", [("B", "N"), ("N", "B")])
+def test_a_baseplate_smaller_than_the_post_od_stops(name, other):
+    # S4-6: Pipe2STD post, OD 2.375 in.
+    raw = _example_raw(baseplate={name: 2, other: 8})
+    with pytest.raises(project.ProjectError,
+                       match=rf"\[baseplate\] {name} = 2 .* is smaller than the post OD \(Pipe2STD, 2\.375 in\)"):
+        _validate(raw)
+    _validate(_example_raw(baseplate={name: 2.375, other: 8}))  # equal to the OD passes
+
+
+def test_a_non_round_intermediate_rail_stops(monkeypatch):
+    # W7 extended (S4-12), with a stand-in family on the intermediate section only.
+    real = shapes.pipe
+    monkeypatch.setattr(shapes, "pipe", lambda d: dataclasses.replace(real(d), family="rectangular HSS")
+                        if d == "Pipe1-1/4STD" else real(d))
+    with pytest.raises(project.ProjectError,
+                       match=r"intermediate rail Pipe1-1/4STD \(rectangular HSS\) is not a round hollow section"):
+        _validate(_own())
+
+
+def test_an_intermediate_grade_this_version_does_not_support_stops():
+    with pytest.raises(project.ProjectError, match="intermediate rail grade 'A500 Gr B': this version supports"):
+        _validate(_own(grade="A500 Gr B"))

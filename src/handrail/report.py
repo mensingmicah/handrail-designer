@@ -14,7 +14,10 @@ import typst
 
 from handrail.calc import Line, fmt_quantity_plain, fmt_ratio, fmt_sig, typst_str
 from handrail.checks import Case, Check, Results
+from handrail.intermediate import ComponentCase
 from handrail.post import PostCase
+from handrail.project import OWN_SECTION, SAME_AS_TOP
+from handrail.reactions import LATERAL, Reactions, ReactionSet
 from handrail.registry import Registry
 from handrail.welds import WeldCase
 from handrail.version import Stamp
@@ -32,9 +35,13 @@ LOCKED_ASSUMPTIONS = (
     "with eccentricity e = half the rail depth from the rail centerline; this is conservative against the "
     "saddle centroid (2R/π for equal round diameters). It is modeled as a fillet of the entered size all "
     "around, although at equal diameters the sides of the saddle form a flare-bevel joint.",
-    "Local strength of the rail wall at the post (AISC 360-22 Chapter K chord limit states) is not checked.",
-    "The intermediate rail's connection to the post, and the component load's effect on the post, "
-    "are not checked.",
+    "The intermediate rail to post weld is modeled as a flat ring of the intermediate rail's perimeter at the "
+    "post face, a simple shear connection consistent with the simple-span intermediate rail: the end reaction "
+    "acts at the weld with no end moment. It is modeled as a fillet of the entered size all around, although at "
+    "equal diameters the sides of the saddle form a flare-bevel joint.",
+    "Local strength of the rail wall at the post, and of the post wall at the intermediate rail (AISC 360-22 "
+    "Chapter K chord limit states), is not checked.",
+    "The component load's effect on the post is not checked.",
     "Guard loads are not combined with floor or roof live load; wind, snow and ice are not considered.",
     "Base reactions can reverse; direction is set in the anchor software.",
     "The baseplate is rigid; the post is fixed at the top of the baseplate.",
@@ -193,7 +200,7 @@ def _envelope_weld(chk: Check) -> str:
     for i, c in enumerate(chk.cases):
         if c.status == "checked":
             row = [c.direction, c.load_type, c.combination,
-                   f"{fmt_quantity_plain(c.f_n)}\n{c.fiber}",
+                   f"{fmt_quantity_plain(c.f_n)}\n{c.fiber}" if c.f_n is not None else "—\nshear only",
                    fmt_quantity_plain(c.f_v) if c.f_v is not None else "—",
                    fmt_quantity_plain(c.f_r)]
             if with_theta:
@@ -215,6 +222,38 @@ def _envelope_weld(chk: Check) -> str:
     return f"#text(size: 8pt)[{table}]"
 
 
+def _envelope_4a(chk: Check) -> str:
+    """Check 4a envelope: bending and deflection, each downward and
+    horizontal, with the controlling row over both limit states."""
+    ctrl = chk.controlling
+    rows, bold = [], []
+    for i, c in enumerate(chk.cases):
+        if c.status == "checked":
+            rows.append([c.limit_state, c.direction, c.combination, fmt_quantity_plain(c.demand),
+                         fmt_quantity_plain(c.capacity), fmt_ratio(c.ratio), "Controls" if c is ctrl else ""])
+            if c is ctrl:
+                bold.append(i)
+        else:
+            rows.append([c.limit_state, c.direction, c.remark, "", "", "", ""])
+    return _table(
+        ["[*Limit state*]", "[*Direction*]", "[*Combination*]", "[*Demand* $M_a$ or $Delta$]",
+         '[*Capacity* $M_n / Omega_b$ or $Delta_"allow"$]', "[*Ratio*]", "[]"],
+        rows, "(auto, auto, 1fr, auto, auto, auto, auto)", bold, raw_header=True,
+    )
+
+
+def _governing_by_limit_state(chk: Check) -> list[Case]:
+    """Check 4a: the governing case of each limit state, the controlling one
+    first, so bending and deflection each print in full as Checks 1 and 2 do."""
+    out: dict[str, Case] = {}
+    for c in chk.checked:
+        best = out.get(c.limit_state)
+        if best is None or c.ratio > best.ratio:
+            out[c.limit_state] = c
+    ctrl = chk.controlling
+    return [ctrl] + [c for c in out.values() if c is not ctrl]
+
+
 def _weld_capacities(c: WeldCase) -> str:
     """Weld metal, and base metal where the fusion face carries force in the case."""
     base = f"Base {fmt_quantity_plain(c.base_allow)}" if c.base_demand is not None else "Base —"
@@ -226,21 +265,38 @@ def _check(chk: Check) -> str:
     if chk.bypassed:
         out.append("*Bypassed by engineer.* No calculation is shown.")
         return "\n\n".join(out)
+    if chk.observation:
+        out.append(f"#{typst_str(chk.observation)}")
+        if chk.observation_lines:
+            out.append(_lines(chk.observation_lines))
+        return "\n\n".join(out)
     for f in chk.flags:
         out.append(f"#flag({typst_str(f)})")
     out.append("== Envelope summary")
-    out.append("Every direction case and load type is computed. The full calculation follows for the "
-               "controlling case only.")
+    if isinstance(chk.controlling, ComponentCase):
+        out.append("Each limit state is computed in both directions of the component load. The full calculation "
+                   "follows for the governing case of each limit state.")
+    elif chk.number == "4b":
+        out.append("Both directions of the component load are computed. The full calculation follows for the "
+                   "controlling case only.")
+    else:
+        out.append("Every direction case and load type is computed. The full calculation follows for the "
+                   "controlling case only.")
     if chk.number == 5:
         out.append(_envelope_5(chk))
     elif isinstance(chk.controlling, WeldCase):
         out.append(_envelope_weld(chk))
+    elif isinstance(chk.controlling, ComponentCase):
+        out.append(_envelope_4a(chk))
     else:
         out.append(_envelope(chk))
     ctrl = chk.controlling
-    combination = ctrl.combination.replace("\n", "; ")  # table cells break the label; a heading doesn't
-    out.append(f"#heading(level: 2, {typst_str(f'Controlling case: {ctrl.label} ({combination})')})")
-    out.append(_lines(ctrl.lines))
+    printed = _governing_by_limit_state(chk) if isinstance(ctrl, ComponentCase) else [ctrl]
+    for c in printed:
+        combination = c.combination.replace("\n", "; ")  # table cells break the label; a heading doesn't
+        title = "Controlling case" if c is ctrl else f"Governing {c.limit_state.lower()} case"
+        out.append(f"#heading(level: 2, {typst_str(f'{title}: {c.label} ({combination})')})")
+        out.append(_lines(c.lines))
     # The verdict is decided once, by the Check; the page only prints it. The
     # sign compares the ratio alone: a check can be NG with its ratio under
     # 1.00 (a weld below the minimum size), and then says why.
@@ -279,8 +335,8 @@ def _post_terms(c: PostCase) -> tuple[str, str, str, str]:
 def _summary(checks: list[Check]) -> str:
     rows = []
     for chk in checks:
-        if chk.bypassed:
-            rows.append([f"{chk.number}. {chk.title}", "", "", "", "", "Bypassed by engineer"])
+        if not chk.computed:
+            rows.append([f"{chk.number}. {chk.title}", "", "", "", "", chk.verdict])
             continue
         c = chk.controlling
         demand, capacity = _demand_capacity(c)
@@ -288,6 +344,63 @@ def _summary(checks: list[Check]) -> str:
         rows.append([f"{chk.number}. {chk.title}", demand, capacity, fmt_ratio(c.ratio), c.label, verdict])
     return _table(["Check", "Demand", "Capacity", "Ratio", "Controlling direction", "Result"], rows,
                   "(1fr, auto, auto, auto, auto, auto)")
+
+
+# Printed under each reaction table (S4-7): the sign convention and the
+# reversibility of V and M. Output wording, not a code provision.
+REACTION_CONVENTION = ("N positive = tension (uplift), matching common anchor-software convention. "
+                       "V and M are reversible; apply them in the governing direction.")
+SAME_PLANE = "V and M act in the same vertical plane; M = V·h."
+
+
+def _signed_N(N) -> str:
+    """N with its sign and its sense in words (S4-7): '+430.5 lb (tension)'."""
+    text = fmt_quantity_plain(abs(N))
+    if N.magnitude > 0:
+        return f"+{text} (tension)"
+    if N.magnitude < 0:
+        return f"\u2212{text} (compression)"
+    return text
+
+
+def _plate(proj) -> str:
+    bp = proj.baseplate
+    return (f"B = {fmt_quantity_plain(bp.B.value)} (parallel to rail) \u00d7 "
+            f"N = {fmt_quantity_plain(bp.N.value)} (perpendicular to rail)")
+
+
+def _reaction_set(rs: ReactionSet, reactions: Reactions) -> list[str]:
+    out = [f"== {rs.name} set"]
+    if not rs.present:
+        out.append(f"#{typst_str(rs.remark + '.')}")
+        out.append(_lines(rs.lines))
+        return out
+    out.append(_table(["V", "N", "M"], [[fmt_quantity_plain(rs.V), _signed_N(rs.N), fmt_quantity_plain(rs.M)]],
+                      "(1fr, 1fr, 1fr)"))
+    out.append(f"#text(size: 8.5pt, {typst_str(REACTION_CONVENTION)})")
+    rows = [["Combination", rs.combination.replace("\n", "; ")],
+            ["Governing load type", rs.load_type]]
+    rows += [[f"D, {name.lower()}" if name != "Total D" else "D, total", fmt_quantity_plain(v)]
+             for name, v in reactions.dead]
+    out.append(_table([], rows, "(auto, 1fr)", bold_rows=(len(rows) - 1,)))
+    if rs.name == LATERAL:
+        out.append(f"#{typst_str(SAME_PLANE)}")
+        out.append(f"#{typst_str(reactions.lateral_note)}")
+    out.append(_lines(rs.lines))
+    return out
+
+
+def _reactions(results: Results) -> list[str]:
+    """The reaction tables, after the summary (S4-7)."""
+    r = results.reactions
+    out = ["= Anchor reactions",
+           "LRFD reactions at the top of concrete, for direct input into anchor software: reporting, not a "
+           "pass/fail check. Each set is simultaneous: the shear, axial force and moment that occur together.",
+           f"#text(weight: \"bold\", {typst_str('Baseplate: ' + _plate(results.project))})",
+           _lines(r.head)]
+    for rs in r.sets:
+        out += _reaction_set(rs, r)
+    return out
 
 
 def _derived_lengths(results: Results) -> str:
@@ -325,8 +438,9 @@ def build_source(results: Results, registry: Registry, stamp: Stamp) -> str:
 
     # Front matter
     src.append("#align(center, text(size: 16pt, weight: \"bold\")[Guard Calculation])")
-    src.append("#align(center)[Top rail bending and deflection; top rail weld to post; post combined axial "
-               "and flexure, and deflection; post weld to baseplate]")
+    src.append("#align(center)[Top rail bending and deflection; top rail weld to post; intermediate rail and "
+               "its weld to the post; post combined axial and flexure, and deflection; post weld to baseplate; "
+               "anchor reactions]")
     src.append("== Project")
     src.append(_table([], [["Project", info.name], ["Phase", info.phase], ["Description", info.description]],
                       "(auto, 1fr)", stroke="none"))
@@ -351,13 +465,18 @@ def build_source(results: Results, registry: Registry, stamp: Stamp) -> str:
     # Dimensions
     src.append("= Dimensions")
     src.append("Every dimension as entered, and as the tool read it. A bare number is inches.")
-    rows = [[label, d.entered, d.normalized, fmt_quantity_plain(d.value)] for label, d in (
+    dims = [
         ("Span, post to post (c/c)", proj.span),
         ("Post height h, top of concrete to top rail centerline", proj.post_height),
         ("Baseplate thickness t_p", proj.baseplate_thickness),
+        ("Baseplate B, parallel to the rail", proj.baseplate.B),
+        ("Baseplate N, perpendicular to the rail", proj.baseplate.N),
         ("Fillet weld, top rail to post", proj.welds.rail_to_post),
         ("Fillet weld, post to baseplate", proj.welds.post_to_baseplate),
-    )]
+    ]
+    if proj.intermediate_rail.state == OWN_SECTION:
+        dims.append(("Fillet weld, intermediate rail to post", proj.welds.intermediate_rail_to_post))
+    rows = [[label, d.entered, d.normalized, fmt_quantity_plain(d.value)] for label, d in dims]
     src.append(_table(["Dimension", "As entered", "Read as", "Inches"], rows, "(1fr, auto, auto, auto)"))
     src.append("Derived lengths, each computed in the calc where it is used:")
     src.append(_derived_lengths(results))
@@ -369,6 +488,15 @@ def build_source(results: Results, registry: Registry, stamp: Stamp) -> str:
     src.append(_lines(results.section_lines))
     src.append(f"#text({typst_str(f'Post: {results.post.label}, {proj.post.grade}.')})")
     src.append(_lines(results.post_section_lines))
+    state = proj.intermediate_rail.state
+    if state == OWN_SECTION:
+        member = proj.intermediate_member
+        src.append(f"#text({typst_str(f'Intermediate rail: {results.inter.label}, {member.grade}.')})")
+        src.append(_lines(results.inter_section_lines))
+    elif state == SAME_AS_TOP:
+        src.append(f"#text({typst_str('Intermediate rail: same section and grade as the top rail.')})")
+    else:
+        src.append(f"#text({typst_str('Intermediate rail: none.')})")
     materials = f"Baseplate: {proj.baseplate.grade}. Welds: fillet, all around, electrode {proj.welds.electrode}."
     src.append(f"#text({typst_str(materials)})")
 
@@ -387,6 +515,7 @@ def build_source(results: Results, registry: Registry, stamp: Stamp) -> str:
 
     src.append("= Summary")
     src.append(_summary(results.checks))
+    src += _reactions(results)
     return "\n\n".join(src) + "\n"
 
 

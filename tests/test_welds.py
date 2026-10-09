@@ -134,7 +134,9 @@ def test_strength_without_base_metal_demand_is_the_weld_metal_ratio():
 # ---------------------------------------------------------------------------
 
 from handrail import checks  # noqa: E402
-from handrail.project import Loads, Member, Project, ProjectInfo, Welds  # noqa: E402
+from handrail.project import (  # noqa: E402
+    NO_INTERMEDIATE, Baseplate, IntermediateRail, Loads, Member, Project, ProjectInfo, Welds,
+)
 
 P_CONC, W_PLF = 200.0, 50.0  # lb, lb/ft (registry code values, restated for the plain calc)
 
@@ -143,7 +145,9 @@ def project(rail="Pipe2STD", post="Pipe2STD", span="6'-0\"", r2p="1/8", p2b="1/4
     return Project(info=ProjectInfo(name="Test"), span=dimensions.parse(span),
                    top_rail=Member(rail, "A53 Gr B"), post=Member(post, "A53 Gr B"),
                    post_height=dimensions.parse("42"), baseplate_thickness=dimensions.parse(tp),
-                   welds=Welds(dimensions.parse(r2p), dimensions.parse(p2b)), **kw)
+                   welds=Welds(dimensions.parse(r2p), dimensions.parse(p2b)),
+                   **{"baseplate": Baseplate(dimensions.parse("30"), dimensions.parse("30")),
+                      "intermediate_rail": IntermediateRail(NO_INTERMEDIATE), **kw})
 
 
 def plain_check_3(rail="Pipe2STD", post="Pipe2STD", L_ft=6.0, w=0.125, P=P_CONC, w_plf=W_PLF):
@@ -196,6 +200,7 @@ def test_a_weld_below_minimum_size_is_ng_whatever_its_ratio():
     assert chk.controlling.ratio < 1.0
     assert chk.failures and "below the minimum size" in chk.failures[0]
     assert not chk.ok and chk.verdict == "NG" and chk.summary_flag == "below minimum size"
+    assert not chk.min_size_ok and checks.run(project(), Registry()).check(3).min_size_ok
 
 
 def test_upward_with_no_net_tension_is_listed_not_checked():
@@ -268,7 +273,7 @@ def test_check_7_stops_on_a_post_that_is_not_round(monkeypatch):
 
 def test_both_weld_checks_run_in_check_number_order():
     res = checks.run(project(), Registry())
-    assert [c.number for c in res.checks] == [1, 2, 3, 5, 6, 7]
+    assert [c.number for c in res.checks] == [1, 2, 3, "4a", "4b", 5, 6, 7]
 
 
 def test_minimum_size_reads_the_nominal_wall_and_strength_the_design_wall():

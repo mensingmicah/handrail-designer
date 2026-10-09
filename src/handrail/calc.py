@@ -41,6 +41,7 @@ _DISPLAY = [
     (ureg.inch**2, "in", 2),
     (ureg.inch**3, "in", 3),
     (ureg.inch**4, "in", 4),
+    (ureg.lbf / ureg.inch**3, "lb/in", 3),  # steel unit weight (the baseplate weight, slice 4)
 ]
 
 

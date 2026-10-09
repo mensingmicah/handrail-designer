@@ -99,6 +99,22 @@ review = [
   "ej.weld.post_wall_covered",
   "ej.weld.rail_wall_normal",
   "ej.weld.max_size_not_applicable",
+  # Slice 4 (the intermediate rail and the anchor reaction sets), drafted 2026-10-09
+  "asce7.guard.component",
+  "asce7.guard.component.provision",
+  "osha.1910.29.b5.info",
+  "ej.component.midspan",
+  "ej.component.downward",
+  "ej.intermediate.same_as_top",
+  "ej.weld.intermediate_ring_model",
+  "aisc_manual.t3-23.case1.R",
+  "ej.weld.intermediate_simple_shear",
+  "ej.weld.post_wall_chord_intermediate",
+  "ej.weld.intermediate_base_metal",
+  "ej.weld.intermediate.same_as_top",
+  "ej.combo.reaction",
+  "ej.reaction.location",
+  "ej.reaction.lateral_note",
 ]
 
 # ---------------------------------------------------------------------------
@@ -108,7 +124,7 @@ review = [
 [[entry]]
 id = "material.steel.density"
 value = 490
-unit = "lb/ft^3"
+unit = "lbf/ft^3"
 cite = "AISC Manual 16th Ed., Part 17"
 document = "AISC Steel Construction Manual"
 edition = "16th Edition"
@@ -132,7 +148,11 @@ to cite. Separate warning: tabulated W for HSS and PIPE is about 3.57 to \
 nominal wall and A from design wall. Density times A is therefore not the \
 tabulated weight for those shapes; see the brief's dead-load bullet for \
 custom sections. \
-Review 2026-09-30, Micah: Unsure. 'this is just engineering practice not really covered in AISC I would just state that this is an assumed or engineering judgement value'"""
+Review 2026-09-30, Micah: Unsure. 'this is just engineering practice not really covered in AISC I would just state that this is an assumed or engineering judgement value' \
+Slice 4 (2026-10-09): first used, for the baseplate weight in the anchor \
+reaction sets, W_bp = rho B N t_p (S4-6). The unit changed from lb/ft^3 \
+to lbf/ft^3: 490 lb/ft^3 is a weight density, and the tool's lb is a \
+force (pint's lb is a mass). Still drafted."""
 
 [[entry]]
 id = "material.steel.E"
@@ -704,7 +724,7 @@ status = "verified"
 drafted_on = 2026-09-30
 verified_by = "Micah Mensing"
 verified_date = 2026-09-30
-note = "Serviceability, not an ASD strength combination; labeled engineering judgement per Micah (PR #2 ruling)."
+note = "Serviceability, not an ASD strength combination; labeled engineering judgement per Micah (PR #2 ruling). Also Check 4a's downward case: the component load plus the intermediate rail's dead load on the same axis (S4-10, slice 4). Note broadened 2026-10-09; value unchanged."
 
 [[entry]]
 id = "ej.combo.deflection.L_only"
@@ -719,7 +739,7 @@ status = "verified"
 drafted_on = 2026-09-30
 verified_by = "Micah Mensing"
 verified_date = 2026-09-30
-note = "Dead load is on the other axis for the horizontal cases, and is not credited against the upward case."
+note = "Dead load is on the other axis for the horizontal cases, and is not credited against the upward case. Also Check 4a's horizontal case: the component load alone (S4-10, slice 4). Note broadened 2026-10-09; value unchanged."
 
 [[entry]]
 id = "ej.deflection.limit"
@@ -734,7 +754,7 @@ status = "verified"
 drafted_on = 2026-09-30
 verified_by = "Micah Mensing"
 verified_date = 2026-09-30
-note = "The default ratio (120) is an input default in the project reader, not a code value."
+note = "The default ratio (120) is an input default in the project reader, not a code value. The same entry covers the intermediate rail's own deflection limit in Check 4a, [deflection.intermediate_rail], default L/120, editable and bypassable (S4-2, slice 4); same as the top rail, Check 4a follows Check 2's limit. Note broadened 2026-10-09; value unchanged."
 
 # ---------------------------------------------------------------------------
 # Design method and §F8 limit states (Micah's PDF backcheck)
@@ -1222,18 +1242,18 @@ note = "Printed in the controlling case's calc lines when it has moment; {ratio}
 
 [[entry]]
 id = "ej.post.axial_dead_load"
-value = "Axial dead load at the top of the baseplate: the top rail self-weight over the span (the tributary length) plus the post's tabulated weight W over h - t_p, all acting at the critical section"
+value = "Axial dead load at the top of the baseplate: the top rail and intermediate rail self-weights over the span (the tributary length) plus the post's tabulated weight W over h - t_p, all acting at the critical section"
 unit = "equation"
 cite = "Engineering judgement (EOR): post dead load"
 document = "Engineering decision of the engineer of record"
-edition = "docs/plans/slice-2.md D2; docs/brief/output.md (tributary length assumption)"
+edition = "docs/plans/slice-2.md D2; docs/plans/slice-4.md (where the intermediate rail's dead load goes); docs/brief/output.md (tributary length assumption)"
 section = "D2, post self-weight: full weight at the base, over h - t_p"
 source = "engineer"
 status = "drafted"
 drafted_on = 2026-09-30
 verified_by = ""
 verified_date = ""
-note = "Not in the slice 2 plan's list; added so the D_post and D lines cite a source (rule 1), as slice 1 did for its other EOR formulas."
+note = "Not in the slice 2 plan's list; added so the D_post and D lines cite a source (rule 1), as slice 1 did for its other EOR formulas. Slice 4 (2026-10-09): value broadened to add the intermediate rail, w_D,int times the span, which reaches D at the post (Checks 5 and 7, and the reaction sets) but not Check 3's D; none when there is no intermediate rail. Still drafted."
 
 [[entry]]
 id = "aisc_manual.t3-23.case22.M"
@@ -1361,7 +1381,13 @@ verified_date = ""
 note = """
 2.00/1.67 = 1.198, rounded to 1.20 in the brief. Below this ratio the \
 calc stops, naming the post grade and its Fu/Fy, so the printed "covered \
-by Check 5" line cannot become false (W5). A53 Gr B: 60/35 = 1.71."""
+by Check 5" line cannot become false (W5). A53 Gr B: 60/35 = 1.71. \
+Slice 4 (S4-12) applied the same guard to the intermediate rail's grade, \
+whose wall at Check 4b the member check then covered. Check 4b became a \
+simple shear connection (its wall later given its own base metal \
+line, ej.weld.intermediate_base_metal), and Micah dropped the \
+intermediate grade's guard (2026-10-09); the guard is on the post grade \
+only."""
 
 # --- Fillet weld strength, AISC 360-22 §J2 ---------------------------------
 
@@ -1705,7 +1731,10 @@ verified_date = ""
 note = """
 Micah, 2026-10-04 (W2): per the AISC 360-22 Chapter K commentary on \
 branch-to-chord connections, and because W1 already simplifies the saddle \
-to a flat ring. The commentary location is not recorded."""
+to a flat ring. The commentary location is not recorded. Slice 4 \
+(S4-8): also the intermediate rail to post weld (Check 4b), where the \
+intermediate rail is the branch and the post the chord; the cite's "rail \
+to post weld" covers both."""
 
 [[entry]]
 id = "ej.weld.line_method"
@@ -1776,7 +1805,9 @@ verified_date = ""
 note = """
 Micah, 2026-10-04 (W7). Printed in Check 3 beside the rail fusion face \
 line, which takes the in-plane force only (W6). From memory, unverified: \
-the margin for pipe on pipe is about 20 times."""
+the margin for pipe on pipe is about 20 times. Slice 4 (S4-12): the W7 \
+stated assumption is extended to the post wall at the intermediate rail, \
+whose printed line is ej.weld.post_wall_chord_intermediate."""
 
 [[entry]]
 id = "ej.weld.max_size_not_applicable"
@@ -1792,3 +1823,332 @@ drafted_on = 2026-10-08
 verified_by = ""
 verified_date = ""
 note = "Micah, 2026-10-08 (W11). Printed with aisc360.J2.2b.max_size_edges."
+
+# ---------------------------------------------------------------------------
+# Slice 4: the intermediate rail (Check 4) and the anchor reaction sets.
+# docs/plans/slice-4.md; decisions S4-1 to S4-12 in docs/brief/checks.md,
+# welds.md, loads-and-envelope.md, inputs.md and output.md.
+# ---------------------------------------------------------------------------
+
+# --- The component load, ASCE 7-22 §4.5.1.2, and OSHA 1910.29(b)(5) ---------
+
+[[entry]]
+id = "asce7.guard.component"
+value = 50
+unit = "lbf"
+cite = "ASCE 7-22 §4.5.1.2"
+document = "ASCE/SEI 7-22, Minimum Design Loads and Associated Criteria for Buildings and Other Structures"
+edition = "2022"
+section = "§4.5.1.2, Component Loads (intermediate rails, balusters and panel fillers)"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-10-09
+verified_by = ""
+verified_date = ""
+note = """
+50 lb from memory of ASCE 7-16 §4.5.1.2; I believe ASCE 7-22 keeps the \
+value and the section number, but have not read the 7-22 text. The \
+default for [loads] component_lb (S4-3); the engineer may override it, \
+for example to 150 lb where OSHA applies (osha.1910.29.b5.info). The \
+§4.5.1.1 exemption does not affect it."""
+
+[[entry]]
+id = "asce7.guard.component.provision"
+value = "Intermediate rails (all but the handrail or top rail), balusters and panel fillers are designed for a horizontal load normal to the guard of 50 lb on an area not over 12 in by 12 in (1 ft²), including openings and the space between rails, placed for maximum effect. Its reactions need not be superimposed with the guard loads of §4.5.1 and §4.5.1.1."
+unit = "provision"
+cite = "ASCE 7-22 §4.5.1.2"
+document = "ASCE/SEI 7-22, Minimum Design Loads and Associated Criteria for Buildings and Other Structures"
+edition = "2022"
+section = "§4.5.1.2, Component Loads"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-10-09
+verified_by = ""
+verified_date = ""
+note = """
+Paraphrase, from memory of ASCE 7-16 §4.5.1.2. Confirm against the 7-22 \
+text: the area (12 in by 12 in), that the load is horizontal and normal \
+to the guard, and which sections the non-superposition sentence names \
+(I recall §4.5.1.1; the brief says not concurrent with the top-rail \
+loads). The tool models the load as a point load at midspan \
+(ej.component.midspan) and adds a downward case \
+(ej.component.downward). Not printed in the calc; for the input form's \
+info box (slice 8)."""
+
+[[entry]]
+id = "osha.1910.29.b5.info"
+value = "OSHA 1910.29(b)(5) requires intermediate members to withstand 150 lb downward or outward; enter 150 lb where OSHA applies."
+unit = "text"
+cite = "29 CFR 1910.29(b)(5)"
+document = "OSHA, 29 CFR 1910 Subpart D, Walking-Working Surfaces"
+edition = "2016 final rule (81 FR 82494), as currently codified"
+section = "§1910.29(b)(5), guardrail systems: midrails, screens, mesh, intermediate vertical members, solid panels and equivalent intermediate members, at least 150 lb in any downward or outward direction at any point along the member"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-10-09
+verified_by = ""
+verified_date = ""
+note = """
+The input info box text for the component load (S4-10, docs/brief/checks.md); \
+until the slice 8 form, the example project file's comment carries it. \
+From memory: (b)(5) reads that midrails and equivalent intermediate \
+members are capable of withstanding, without failure, a force of at \
+least 150 pounds applied in any downward or outward direction at any \
+point along the member. Confirm at \
+https://www.osha.gov/laws-regs/regulations/standardnumber/1910/1910.29 \
+(not read for this entry). OSHA is a federal regulation, so it may be \
+quoted in full if wanted. The value 150 lb is not a calc value: the \
+tool's default stays the ASCE 7-22 50 lb, and an OSHA toggle is after v1."""
+
+# --- Engineering judgement: the intermediate rail (Check 4a) -----------------
+
+[[entry]]
+id = "ej.component.midspan"
+value = "The component load on the intermediate rail is a point load at midspan of the simple span; the 1 ft² loaded area is not modeled"
+unit = "provision"
+cite = "Engineering judgement (EOR): component load as a point load at midspan"
+document = "Engineering decision of the engineer of record"
+edition = "docs/brief/checks.md, S4-3"
+section = "The intermediate rail (Check 4): component load model"
+source = "engineer"
+status = "drafted"
+drafted_on = 2026-10-09
+verified_by = ""
+verified_date = ""
+note = """
+Micah, 2026-10-08 (S4-3). Conservative: for a 7'-0" span, spreading 50 lb \
+over a 12 in patch would lower M by P_c b/8 = 75 lb-in, about 7%. The \
+same model as Check 1's concentrated case (AISC Manual Table 3-23, \
+Case 7). For the member (Check 4a) only; Check 4b places the load \
+adjacent to the post (ej.weld.intermediate_ring_model)."""
+
+[[entry]]
+id = "ej.component.downward"
+value = "The component load is also applied downward, with the intermediate rail's dead load on the same axis, ASD D + L; the horizontal case is the component load alone. Neither is concurrent with the top-rail guard loads"
+unit = "provision"
+cite = "Engineering judgement (EOR): downward component load, after OSHA 1910.29(b)(5)"
+document = "Engineering decision of the engineer of record"
+edition = "docs/brief/checks.md, S4-10"
+section = "The intermediate rail (Check 4): two directions for the component load"
+source = "engineer"
+status = "drafted"
+drafted_on = 2026-10-09
+verified_by = ""
+verified_date = ""
+note = """
+Micah, 2026-10-09 (S4-10). ASCE 7-22 §4.5.1.2 specifies a horizontal \
+load only; OSHA 1910.29(b)(5) requires intermediate members to take \
+150 lb downward or outward (osha.1910.29.b5.info). The same P_c acts in \
+both directions. Also governs Check 4b's two cases (S4-9)."""
+
+[[entry]]
+id = "ej.intermediate.same_as_top"
+value = "Controlled by Checks 1 and 2 by observation: same section, grade and span as the top rail; component load P_c = {Pc} ≤ concentrated guard load P = {P}. See Checks 1 and 2 for the result."
+unit = "text"
+cite = "Engineering judgement (EOR): intermediate rail controlled by Checks 1 and 2"
+document = "Engineering decision of the engineer of record"
+edition = "docs/brief/checks.md, S4-2 and S4-10"
+section = "The intermediate rail (Check 4): Check 4 when the intermediate rail is the same as the top rail"
+source = "engineer"
+status = "drafted"
+drafted_on = 2026-10-09
+verified_by = ""
+verified_date = ""
+note = """
+Micah, 2026-10-08 (S4-2), wording from the brief. Printed as Check 4a \
+when the intermediate rail is the same as the top rail and P_c <= P; \
+{Pc} and {P} are filled with the two loads. Checks 1 and 2 already run \
+the top rail downward and horizontal at P with the same section, span \
+and dead load (S4-10). When P_c > P the full Check 4a runs instead."""
+
+# --- Engineering judgement: the intermediate rail weld (Check 4b) ------------
+
+[[entry]]
+id = "ej.weld.intermediate_ring_model"
+value = "The intermediate rail to post weld is a flat ring of the intermediate rail's perimeter at the post face, a simple shear connection: the end reaction acts at the weld, with no eccentricity and no end moment. The component load is placed adjacent to the post, so the weld takes the full P_c with the dead-load end reaction, through the intermediate rail's centerline (no torsion)"
+unit = "equation"
+cite = "Engineering judgement (EOR): weld ring at the post face, simple shear, P_c at the post"
+document = "Engineering decision of the engineer of record"
+edition = "docs/brief/welds.md, S4-9 (revised 2026-10-09) and S4-11"
+section = "Intermediate rail weld to post (Check 4b): load, and the simple shear connection"
+source = "engineer"
+status = "drafted"
+drafted_on = 2026-10-09
+verified_by = ""
+verified_date = ""
+note = """
+Micah, 2026-10-09 (S4-9). Horizontal case: the component load and the \
+dead-load reaction in the ring's plane at right angles, combined by \
+vector sum; downward case: the two added. The fillet model is kept all \
+around at equal ODs (S4-11). A stated assumption, printed in the front \
+matter. Revised by Micah 2026-10-09: a simple shear connection, \
+consistent with Check 4a's simple-span member, so e = 0 and no end \
+moment, replacing e = D_post/2 and M = R e (value and cite changed; \
+still drafted)."""
+
+[[entry]]
+id = "ej.weld.intermediate_simple_shear"
+value = "Simple shear connection consistent with the simple-span member assumption; no end moment at the weld."
+unit = "text"
+cite = "Engineering judgement (EOR): intermediate rail to post weld as a simple shear connection"
+document = "Engineering decision of the engineer of record"
+edition = "docs/brief/welds.md, Check 4b simple shear connection (revises S4-9 and S4-12)"
+section = "Intermediate rail weld to post (Check 4b): the simple shear connection"
+source = "engineer"
+status = "drafted"
+drafted_on = 2026-10-09
+verified_by = ""
+verified_date = ""
+note = """
+Micah, 2026-10-09, wording his. Printed at the head of Check 4b with \
+ej.weld.intermediate_ring_model. The reaction R acts at the weld, e = 0: \
+the weld carries shear only, f_v = R/(pi D_int)."""
+
+[[entry]]
+id = "aisc_manual.t3-23.case1.R"
+value = "Simple beam, uniformly distributed load: end reaction"
+unit = "equation"
+cite = "AISC Manual Table 3-23, Case 1"
+document = "AISC Steel Construction Manual"
+edition = "16th Edition"
+section = "Part 3, Table 3-23, Case 1, Simple Beam - Uniformly Distributed Load, R = V (end reaction)"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-10-09
+verified_by = ""
+verified_date = ""
+note = """
+The intermediate rail's dead-load reaction at the post, R_D = w_D L/2 \
+(Check 4b, S4-9). Same case as aisc_manual.t3-23.case1.M, whose number \
+was corroborated by a web search summary; not read from the Manual."""
+
+[[entry]]
+id = "ej.weld.post_wall_chord_intermediate"
+value = "Post wall at the intermediate rail: chord-wall limit states of the round T-connection (AISC 360-22 Chapter K) not checked (stated assumption)."
+unit = "text"
+cite = "Engineering judgement (EOR): post wall chord limit states at the intermediate rail not checked"
+document = "Engineering decision of the engineer of record"
+edition = "docs/brief/welds.md, S4-12 (revised 2026-10-09)"
+section = "Base metal at Check 4b: chord side (post wall)"
+source = "engineer"
+status = "drafted"
+drafted_on = 2026-10-09
+verified_by = ""
+verified_date = ""
+note = """
+Micah, 2026-10-09 (S4-12). Printed in Check 4b beside the post wall \
+fusion face line, which takes the in-plane shear (W6). Its own entry \
+because ej.weld.rail_wall_normal prints "Rail wall", the chord of Check \
+3; at Check 4b the post is the chord. The W7 stated assumption is \
+extended to cover it. Replaces ej.weld.post_wall_normal_intermediate, \
+whose text named the R e moment's normal force: with the simple shear \
+connection (Micah, 2026-10-09) there is no end moment."""
+
+[[entry]]
+id = "ej.weld.intermediate_base_metal"
+value = "Base metal is checked at the fusion face of both connected parts, the post wall (the chord) and the intermediate rail wall (the branch), each in shear rupture against the in-plane shear per inch; the lower allowable governs."
+unit = "text"
+cite = "Engineering judgement (EOR): Check 4b base metal on both walls, lower governs"
+document = "Engineering decision of the engineer of record"
+edition = "docs/brief/welds.md, Check 4b base metal on both walls (revises S4-12)"
+section = "Base metal at Check 4b: post wall and intermediate rail wall, each shear rupture per AISC 360-22 §J4.2(b), the lower governing (the W5 rule)"
+source = "engineer"
+status = "drafted"
+drafted_on = 2026-10-09
+verified_by = ""
+verified_date = ""
+note = """
+Micah, 2026-10-09, ruling on open question 9a of the case 5 independent \
+calc: the brief's general rule (base metal at the fusion face of each \
+connected part, the lower governs) applies to Check 4b. Replaces \
+ej.weld.intermediate_wall_shear ("Intermediate rail wall at the weld: \
+shear only, member shear not checked"). For case 5 the intermediate rail \
+wall is the thinner, Pipe1-1/4STD t_des = 0.130 in against the Pipe2STD \
+post's 0.143 in, same grade."""
+
+[[entry]]
+id = "ej.weld.intermediate.same_as_top"
+value = "Intermediate rail weld: controlled by Check 3 by observation: same section (ring ≥ Check 3's, since post OD ≤ rail OD per W8), same weld size, weld reaction R = {R} ≤ P = {P}, post wall t_des,post = {t_post} ≥ rail wall t_des,rail = {t_rail}."
+unit = "text"
+cite = "Engineering judgement (EOR): intermediate rail weld controlled by Check 3"
+document = "Engineering decision of the engineer of record"
+edition = "docs/brief/welds.md, S4-8 and S4-9"
+section = "Intermediate rail weld to post (Check 4b): same as the top rail"
+source = "engineer"
+status = "drafted"
+drafted_on = 2026-10-09
+verified_by = ""
+verified_date = ""
+note = """
+Micah, 2026-10-08 (S4-8), wording and guard amended 2026-10-09 (S4-9). \
+Printed as Check 4b when the intermediate rail is the same as the top \
+rail and R <= P; {R} is the larger of the two Check 4b cases and {P} the \
+concentrated guard load. When R > P the full Check 4b runs instead. \
+Second guard (Micah, 2026-10-09): the observation also needs \
+t_des,post >= t_des,rail, since the base metal line checks the chord's \
+wall (the rail in Check 3, the post in Check 4b); otherwise the full \
+check runs. Sentence amended 2026-10-09 (Micah) to print the wall \
+comparison, {t_post} and {t_rail} filled with the two design wall \
+thicknesses; still drafted."""
+
+# --- Engineering judgement: the anchor reaction sets ------------------------
+
+[[entry]]
+id = "ej.combo.reaction"
+value = { D = 0.9, L = 1.6 }
+unit = "factors"
+cite = "Engineering judgement (EOR): anchor reactions, LRFD, not an ASCE combination"
+document = "Engineering decision of the engineer of record"
+edition = "docs/brief/loads-and-envelope.md, S4-4"
+section = "Base reactions: both sets (lateral; upward) use 0.9D + 1.6L"
+source = "engineer"
+status = "drafted"
+drafted_on = 2026-10-09
+verified_by = ""
+verified_date = ""
+note = """
+Micah, 2026-10-08 (S4-4). Both factors are engineering judgement and \
+labeled that way, not as an ASCE 7-22 §2.3 combination. Lateral set: \
+N = 0.9D compression with V = 1.6L at the top of the post. Upward set, \
+only when 1.6L > 0.9D: N = 1.6L - 0.9D tension. The guard load is the \
+larger of P and w·s (S4-5)."""
+
+[[entry]]
+id = "ej.reaction.location"
+value = "Anchor reactions are reported at the top of concrete, with the guard load at the top rail centerline (moment arm h). Dead load is the top rail, the intermediate rail, the post and the baseplate. Each set is simultaneous and uses the larger guard load type at the top of the post; one lateral set covers any horizontal direction"
+unit = "provision"
+cite = "Engineering judgement (EOR): reactions at the top of concrete, arm h"
+document = "Engineering decision of the engineer of record"
+edition = "docs/brief/loads-and-envelope.md, S4-4 to S4-6"
+section = "Base reactions (v1, concrete substrate only)"
+source = "engineer"
+status = "drafted"
+drafted_on = 2026-10-09
+verified_by = ""
+verified_date = ""
+note = """
+Micah, 2026-10-08 (S4-4, S4-5, S4-6). The baseplate weight rho·B·N·t_p \
+enters the reaction sets' D only, not Checks 5 and 7, because the plate \
+is below their critical section at the top of the baseplate. Transverse \
+and longitudinal give identical reactions in v1 (both guard loads at the \
+top of the post with the span as the tributary length), so one lateral \
+set. If P = w·s, one set names both types; with the exemption on, P is \
+the only type."""
+
+[[entry]]
+id = "ej.reaction.lateral_note"
+value = "Lateral set applies in any horizontal direction; enter it in the anchor software in the orientation that governs the anchor pattern. Loads can reverse."
+unit = "text"
+cite = "Engineering judgement (EOR): one lateral set, any horizontal direction"
+document = "Engineering decision of the engineer of record"
+edition = "docs/brief/loads-and-envelope.md, S4-4"
+section = "Base reactions: one lateral set covers transverse and longitudinal"
+source = "engineer"
+status = "drafted"
+drafted_on = 2026-10-09
+verified_by = ""
+verified_date = ""
+note = """
+Micah, 2026-10-08 (S4-4), wording from the brief. Printed with the \
+lateral reaction set. To revisit if the longitudinal load is ever \
+modeled differently (docs/ROADMAP.md, after v1)."""

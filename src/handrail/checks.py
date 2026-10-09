@@ -21,15 +21,24 @@ Direction cases (docs/brief/loads-and-envelope.md; slice 1 plan):
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import TYPE_CHECKING
 
+from handrail import beams, shapes
 from handrail.calc import Const, Line, Sheet, Sym, absolute, fmt_quantity_plain, fmt_sig, minimum, mtext, sqrt
 from handrail.errors import InputError
-from handrail.project import Member, Project, ProjectError
+from handrail.project import SAME_AS_TOP, Member, Project, ProjectError
 from handrail.registry import Entry, Registry
 from handrail.shapes import PipeSection
 from handrail.units import Q_
 
-DIRECTIONS = ("Downward", "Outward", "Inward", "Upward", "Longitudinal")
+if TYPE_CHECKING:
+    from handrail.reactions import Reactions
+
+DOWNWARD, UPWARD, HORIZONTAL = "Downward", "Upward", "Horizontal"
+DIRECTIONS = (DOWNWARD, "Outward", "Inward", UPWARD, "Longitudinal")
+# The component load's two directions and its load type: Checks 4a and 4b (S4-10).
+COMPONENT_DIRECTIONS = (DOWNWARD, HORIZONTAL)
+COMPONENT = "Component"
 CONCENTRATED, DISTRIBUTED = "Concentrated", "Distributed"
 LOAD_TYPES = (CONCENTRATED, DISTRIBUTED)
 
@@ -75,7 +84,7 @@ class Case:
 
 @dataclass
 class Check:
-    number: int
+    number: int | str    # "4a" and "4b": the intermediate rail's two parts
     title: str
     demand_label: str    # Typst math
     capacity_label: str  # Typst math
@@ -85,6 +94,12 @@ class Check:
     failures: list[str] = field(default_factory=list)  # NG whatever the ratio (a weld below minimum size)
     bypassed: bool = False
     derived_lengths: list[Line] = field(default_factory=list)  # listed on the Dimensions page
+    # A check not computed (Check 4a or 4b): the line printed in place of the
+    # envelope, and the summary row's result, with no ratio and no OK or NG
+    # of its own ("Controlled by Checks 1 and 2", "None").
+    observation: str = ""
+    observation_lines: list[Line] = field(default_factory=list)  # printed under it, so its values can be traced
+    result: str = ""
 
     @property
     def checked(self) -> list[Case]:
@@ -100,13 +115,20 @@ class Check:
         return best
 
     @property
+    def computed(self) -> bool:
+        return not self.bypassed and not self.result
+
+    @property
     def ok(self) -> bool:
-        return self.bypassed or (not self.failures and self.controlling.ratio <= 1.0)
+        # A check not computed defers to the checks it names; it fails nothing itself.
+        return not self.computed or (not self.failures and self.controlling.ratio <= 1.0)
 
     @property
     def verdict(self) -> str:
         if self.bypassed:
             return "Bypassed by engineer"
+        if self.result:
+            return self.result
         return "OK" if self.ok else "NG"
 
 
@@ -122,6 +144,12 @@ class Loading:
     exemption_statement: str
     lines: list[Line]
     derived_lengths: list[Line]  # listed on the Dimensions page
+    # The intermediate rail's self-weight and its dead load delivered to the
+    # post, w_D,int times the span; None when there is no intermediate rail.
+    w_D_int: Q_ | None = None
+    D_int: Q_ | None = None
+    D_post: Q_ | None = None  # the post's dead load, W over h - t_p (the reaction sets' D breakdown)
+    P_c: Q_ | None = None     # the component load on the intermediate rail (S4-3); None without one
 
 
 @dataclass
@@ -133,8 +161,11 @@ class Results:
     section_lines: list[Line]       # top rail
     post_section_lines: list[Line]
     checks: list[Check]
+    inter: PipeSection | None = None  # the intermediate rail's section: the top rail's, its own, or None
+    inter_section_lines: list[Line] = field(default_factory=list)  # its own section only
+    reactions: Reactions | None = None  # the anchor reaction sets
 
-    def check(self, number: int) -> Check:
+    def check(self, number: int | str) -> Check:
         return next(c for c in self.checks if c.number == number)
 
     @property
@@ -152,19 +183,27 @@ class Results:
 
 
 def require_supported_grade(member: Member, name: str) -> None:
-    """Refuse a grade this slice has no Fy entry for.
+    """Refuse a grade this slice has no Fy or no Fu entry for. Both are
+    needed: Fy for the member checks, Fu for the fusion face of a weld
+    (Check 3's rail side, Check 4b's post and intermediate rail walls) and
+    the post wall's Fu/Fy guard.
 
     The brief's unusual-pairing warning (a grade outside the shape's standard
     list) returns when a slice accepts more than one grade; with A53 Gr B the
     only grade allowed, it could never fire.
     """
-    if member.grade not in FY_ENTRY:
+    if member.grade not in FY_ENTRY or member.grade not in FU_ENTRY:
+        supported = [g for g in FY_ENTRY if g in FU_ENTRY]
         raise ProjectError(
-            f"{name} grade {member.grade!r}: this version supports {', '.join(FY_ENTRY)} only"
+            f"{name} grade {member.grade!r}: this version supports {', '.join(supported)} only"
         )
 
 
-def build_loading(project: Project, registry: Registry, rail: PipeSection, post: PipeSection) -> Loading:
+def build_loading(project: Project, registry: Registry, rail: PipeSection, post: PipeSection,
+                  inter: PipeSection | None = None) -> Loading:
+    """The guard loads and the dead load at the post. ``inter`` is the
+    intermediate rail's section (the top rail's when it is the same), or
+    None when there is none."""
     sh = Sheet(registry)
     ld = project.loads
 
@@ -197,6 +236,20 @@ def build_loading(project: Project, registry: Registry, rail: PipeSection, post:
             cite=f"Input; {code_w.cite}",
         ).value
 
+    P_c = None
+    if inter is not None:
+        code_Pc = registry.get("asce7.guard.component")
+        if ld.component is None:
+            P_c = sh.code_value("P_c", code_Pc.id, "Component load on the intermediate rail, horizontal; also "
+                                "applied downward (engineering judgement)").value
+        else:
+            P_c = sh.input(
+                "P_c", ld.component,
+                f"Component load on the intermediate rail, engineer override "
+                f"(code value {fmt_quantity_plain(code_Pc.quantity)})",
+                cite=f"Input; {code_Pc.cite}",
+            ).value
+
     w_D = sh.given("w_D", rail.W, f"Top rail self-weight: tabulated W = {rail.W.m_as('lbf/ft'):g} lb/ft", DB)
 
     # Dead load reaching the post (docs/plans/slice-2.md, D2). The critical
@@ -215,11 +268,25 @@ def build_loading(project: Project, registry: Registry, rail: PipeSection, post:
                      cite_ids=(dl,), unit="lbf")
     s = sh.given("L", project.span.value, "Span: the tributary length for the post (stated assumption)", "Input")
     D_rail = sh.line('D_"rail"', w_D * s, "Top rail dead load delivered to the post", cite_ids=(dl,), unit="lbf")
-    P_D = sh.line("P_D", D_rail + D_post, "D at the post: axial dead load at the top of the baseplate",
-                  cite_ids=(dl,), unit="lbf")
+    if inter is None:
+        P_D = sh.line("P_D", D_rail + D_post, "D at the post: axial dead load at the top of the baseplate",
+                      cite_ids=(dl,), unit="lbf")
+        w_D_int = D_int = None
+    else:
+        # The intermediate rail frames into the side of the post below the
+        # rail to post weld, so its dead load reaches D at the post but not
+        # Check 3's D (docs/plans/slice-4.md, where the dead load goes).
+        same = " (same section as the top rail)" if inter is rail else ""
+        w_D_int = sh.given('w_(D,"int")', inter.W, f"Intermediate rail self-weight: {inter.label}{same}, "
+                           f"tabulated W = {inter.W.m_as('lbf/ft'):g} lb/ft", DB)
+        D_int = sh.line('D_"int"', w_D_int * s, "Intermediate rail dead load delivered to the post",
+                        cite_ids=(dl,), unit="lbf")
+        P_D = sh.line("P_D", D_rail + D_int + D_post, "D at the post: axial dead load at the top of the baseplate",
+                      cite_ids=(dl,), unit="lbf")
+        w_D_int, D_int = w_D_int.value, D_int.value
     return Loading(P=P.value, w_L=w_L, w_D=w_D.value, L_post=L_post.value, D_rail=D_rail.value, P_D=P_D.value,
                    exempt=ld.uniform_exempt, exemption_statement=ld.exemption_statement, lines=sh.lines,
-                   derived_lengths=[L_post_line])
+                   derived_lengths=[L_post_line], w_D_int=w_D_int, D_int=D_int, P_c=P_c, D_post=D_post.value)
 
 
 def section_lines(registry: Registry, sec: PipeSection, with_r: bool = False) -> list[Line]:
@@ -334,11 +401,9 @@ def flexural_capacity(registry: Registry, rail: PipeSection, grade: str) -> Capa
 def _live_moment(sh: Sheet, load_type: str, L: Sym, loading: Loading) -> Sym:
     if load_type == CONCENTRATED:
         P = sh.given("P", loading.P, "Concentrated guard load at midspan", "Loading")
-        return sh.line("M_L", P * L / 4, "Live-load moment, midspan",
-                       cite_ids=("aisc_manual.t3-23.case7.M",), unit="lbf*inch")
+        return beams.point_moment(sh, "M_L", P, L, "Live-load moment, midspan")
     w = sh.given("w_L", loading.w_L, "Uniform guard load", "Loading")
-    return sh.line("M_L", w * L**2 / 8, "Live-load moment, midspan",
-                   cite_ids=("aisc_manual.t3-23.case1.M",), unit="lbf*inch")
+    return beams.uniform_moment(sh, "M_L", w, L, "Live-load moment, midspan")
 
 
 def combo_text(entry: Entry, axes: dict[str, str] | None = None, joiner: str = " + ") -> str:
@@ -361,8 +426,7 @@ def _bending_case(registry, project, rail, loading, cap: Capacity, direction, lo
     sh.heading(f"Demand: {direction.lower()}, {load_type.lower()} load")
     L = sh.given("L", project.span.value, "Span, simple beam", "Input")
     wD = sh.given("w_D", loading.w_D, "Top rail self-weight", "Loading")
-    MD = sh.line("M_D", wD * L**2 / 8, "Dead-load moment, midspan",
-                 cite_ids=("aisc_manual.t3-23.case1.M",), unit="lbf*inch")
+    MD = beams.uniform_moment(sh, "M_D", wD, L, "Dead-load moment, midspan")
     ML = _live_moment(sh, load_type, L, loading)
 
     if direction == "Downward":
@@ -407,17 +471,14 @@ def _deflection_case(registry, project, rail, loading, direction, load_type) -> 
     I = sh.given("I", rail.I, "Moment of inertia", DB)
     if load_type == CONCENTRATED:
         P = sh.given("P", loading.P, "Concentrated guard load at midspan", "Loading")
-        DL = sh.line("Delta_L", P * L**3 / (48 * E * I), "Live-load deflection, midspan",
-                     cite_ids=("aisc_manual.t3-23.case7.delta",), unit="inch")
+        DL = beams.point_deflection(sh, "Delta_L", P, L, E, I, "Live-load deflection, midspan")
     else:
         w = sh.given("w_L", loading.w_L, "Uniform guard load", "Loading")
-        DL = sh.line("Delta_L", 5 * w * L**4 / (384 * E * I), "Live-load deflection, midspan",
-                     cite_ids=("aisc_manual.t3-23.case1.delta",), unit="inch")
+        DL = beams.uniform_deflection(sh, "Delta_L", w, L, E, I, "Live-load deflection, midspan")
     if direction == "Downward":
         combo = registry.get("ej.combo.deflection.D_plus_L")
         wD = sh.given("w_D", loading.w_D, "Top rail self-weight", "Loading")
-        DD = sh.line("Delta_D", 5 * wD * L**4 / (384 * E * I), "Dead-load deflection, midspan",
-                     cite_ids=("aisc_manual.t3-23.case1.delta",), unit="inch")
+        DD = beams.uniform_deflection(sh, "Delta_D", wD, L, E, I, "Dead-load deflection, midspan")
         D = sh.line("Delta", sh.factor(combo.id, "D") * DD + sh.factor(combo.id, "L") * DL,
                     "D and L on the same (vertical) axis", unit="inch")
         axis = "vertical"
@@ -491,16 +552,21 @@ def validate(project: Project, registry: Registry) -> None:
 
     - the sections exist, and each grade and the electrode is one this
       version supports (W12);
-    - the rail and the post are round hollow sections (W7);
+    - the rail, the post and the intermediate rail are round hollow sections
+      (W7, extended to the intermediate rail by S4-12);
     - the post is no wider than the rail (W8);
-    - the post grade's Fu/Fy keeps its wall at the weld covered by Check 5 (W5).
+    - the post grade's Fu/Fy keeps its wall at the weld covered by Check 5 (W5);
+    - the intermediate rail is no wider than the post (S4-11);
+    - the baseplate is no smaller in plan than the post OD (S4-6).
     """
-    from handrail import shapes
-
     rail = shapes.pipe(project.top_rail.section)
     post = shapes.pipe(project.post.section)
     require_supported_grade(project.top_rail, "top rail")
     require_supported_grade(project.post, "post")
+    own = project.intermediate_rail.member  # its own section, or None
+    inter = shapes.pipe(own.section) if own else None
+    if own:
+        require_supported_grade(own, "intermediate rail")
     electrode = project.welds.electrode
     if electrode not in FEXX_ENTRY:
         raise ProjectError(f"[welds] electrode {electrode!r}: this version supports {', '.join(FEXX_ENTRY)} only")
@@ -508,7 +574,8 @@ def validate(project: Project, registry: Registry) -> None:
         raise ProjectError(f"[baseplate] grade {project.baseplate.grade!r}: this version supports "
                            f"{', '.join(BASEPLATE_GRADES)} only")
 
-    for member, sec in (("top rail", rail), ("post", post)):
+    members = [("top rail", rail), ("post", post)] + ([("intermediate rail", inter)] if inter else [])
+    for member, sec in members:
         if sec.family not in shapes.ROUND_HOLLOW:
             raise ProjectError(
                 f"{member} {sec.label} ({sec.family}) is not a round hollow section. The stated assumption "
@@ -535,6 +602,28 @@ def validate(project: Project, registry: Registry) -> None:
             f"the tool does not check this grade's post wall at the weld."
         )
 
+    member = project.intermediate_member
+    if member is not None:
+        same = project.intermediate_rail.state == SAME_AS_TOP
+        sec = rail if same else inter
+        if sec.OD > D_post:
+            how = ("With same_as_top_rail = true it takes the top rail's section: uncheck same_as_top_rail and "
+                   "enter a section no wider than the post." if same else
+                   "Enter a section no wider than the post.")
+            raise ProjectError(
+                f"The intermediate rail ({sec.label}, OD {fmt_quantity_plain(sec.OD)}) is wider than the post "
+                f"({post.label}, OD {fmt_quantity_plain(D_post)}). Its end is coped to the side of the post, "
+                f"which requires intermediate rail OD <= post OD. {how}"
+            )
+
+    for name, d, orientation in (("B", project.baseplate.B, "parallel to the rail"),
+                                 ("N", project.baseplate.N, "perpendicular to the rail")):
+        if d.value < D_post:
+            raise ProjectError(
+                f"[baseplate] {name} = {d.entered} ({orientation}) is smaller than the post OD "
+                f"({post.label}, {fmt_quantity_plain(D_post)}). Check the inputs."
+            )
+
 
 def compute(project: Project, registry: Registry) -> Results:
     """Every check, on inputs validate() has accepted.
@@ -544,20 +633,27 @@ def compute(project: Project, registry: Registry) -> Results:
     """
     # Imported here, not at the top: post.py and welds.py build on this
     # module's Case, Check and Loading, so a top-level import would be circular.
-    from handrail import shapes
+    from handrail.intermediate import check_4a
     from handrail.post import check_5, check_6
-    from handrail.welds import check_3, check_7
+    from handrail.reactions import reaction_sets
+    from handrail.welds import check_3, check_4b, check_7
 
     rail = shapes.pipe(project.top_rail.section)
     post = shapes.pipe(project.post.section)
-    loading = build_loading(project, registry, rail, post)
+    member = project.intermediate_member
+    same = project.intermediate_rail.state == SAME_AS_TOP
+    inter = None if member is None else rail if same else shapes.pipe(member.section)
+    loading = build_loading(project, registry, rail, post, inter)
     props = section_lines(registry, rail)
     post_props = section_lines(registry, post, with_r=True)
+    inter_props = section_lines(registry, inter) if inter is not None and not same else []
     checks = [check_1(registry, project, rail, loading), check_2(registry, project, rail, loading),
               check_3(registry, project, rail, post, loading),
+              check_4a(registry, project, inter, loading), check_4b(registry, project, post, inter, loading),
               check_5(registry, project, post, loading), check_6(registry, project, post, loading),
               check_7(registry, project, post, loading)]
-    return Results(project, rail, post, loading, props, post_props, checks)
+    reactions = reaction_sets(registry, project, loading)
+    return Results(project, rail, post, loading, props, post_props, checks, inter, inter_props, reactions)
 
 
 def run(project: Project, registry: Registry) -> Results:

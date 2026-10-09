@@ -38,8 +38,8 @@ Read exactly these, through the commands given where one is given:
   ```
 
 - **Section properties** from AISC's original workbook, one row per section
-  (US customary columns). Run it once for each section in the case (rail
-  and post):
+  (US customary columns). Run it once for each section in the case (rail,
+  post and, where the case has one, the intermediate rail):
 
   ```bash
   uv run python -c "import openpyxl,sys

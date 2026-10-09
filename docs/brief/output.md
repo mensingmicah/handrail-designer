@@ -32,10 +32,16 @@ Manual, 16th Edition, and the AISC Shapes Database v16.0. (Slice 1.)
   centroid (2R/π for equal round diameters). It is modeled as a fillet of
   the entered size all around, although at equal diameters the sides of
   the saddle form a flare-bevel joint.
-- Local strength of the rail wall at the post (AISC 360-22 Chapter K chord
-  limit states) is not checked.
-- The intermediate rail's connection to the post, and the component load's
-  effect on the post, are not checked.
+- The intermediate rail to post weld is modeled as a flat ring of the
+  intermediate rail's perimeter at the post face, a simple shear
+  connection consistent with the simple-span intermediate rail: the end
+  reaction acts at the weld with no end moment. It is modeled as a fillet
+  of the entered size all around, although at equal diameters the sides
+  of the saddle form a flare-bevel joint.
+- Local strength of the rail wall at the post, and of the post wall at the
+  intermediate rail (AISC 360-22 Chapter K chord limit states), is not
+  checked.
+- The component load's effect on the post is not checked.
 - Guard loads are not combined with floor or roof live load; wind, snow and
   ice are not considered.
 - Base reactions can reverse; direction is set in the anchor software.
