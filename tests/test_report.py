@@ -328,3 +328,116 @@ def test_a_weld_below_minimum_size_closes_ng_with_the_reason_and_its_true_sign()
     assert "BELOW MINIMUM SIZE: Fillet weld w = 0.06250 in is below the minimum size 0.1250 in" in check_3
     summary = src.split("= Summary")[1]
     assert '"NG (below minimum size)"' in summary
+
+
+# ---------------------------------------------------------------------------
+# Slice 4: the intermediate rail, B x N and the reaction tables (S4-7)
+# ---------------------------------------------------------------------------
+
+
+def _slice4_source(**kw):
+    """Case 5's guard (test_intermediate.project): its own Pipe1-1/4STD intermediate rail, B x N = 6 x 8 in."""
+    from test_intermediate import project
+
+    reg = Registry()
+    res = checks.run(project(**kw), reg)
+    return res, report.build_source(res, reg, CLEAN)
+
+
+def _section(src, start, end="\n= "):
+    return src.split(start)[1].split(end)[0]
+
+
+def test_dimensions_page_echoes_b_and_n_and_the_intermediate_weld():
+    from handrail.project import SAME_AS_TOP
+
+    _, src = _slice4_source()
+    dims = _section(src, "= Dimensions")
+    assert '"Baseplate B, parallel to the rail", "6", "6\\"", "6.000 in"' in dims
+    assert '"Baseplate N, perpendicular to the rail", "8", "8\\"", "8.000 in"' in dims
+    assert '"Fillet weld, intermediate rail to post", "1/8"' in dims
+    assert '"Eccentricity: post centerline (the span\'s support point) to the post face", [$e = frac(D_"post", "2")$]' \
+        in dims and '"Check 4b"' in dims
+    _, src = _slice4_source(state=SAME_AS_TOP)
+    assert "intermediate rail to post" not in _section(src, "= Dimensions")
+
+
+def test_section_properties_page_names_the_intermediate_rail_in_each_state():
+    from handrail.project import NO_INTERMEDIATE, SAME_AS_TOP
+
+    _, src = _slice4_source()
+    page = _section(src, "= Section properties")
+    assert '#text("Intermediate rail: Pipe1-1/4STD, A53 Gr B.")' in page
+    assert page.count('"Pipe1-1/4STD: outside diameter"') == 1
+    _, src = _slice4_source(state=SAME_AS_TOP)
+    assert '#text("Intermediate rail: same section and grade as the top rail.")' in src
+    _, src = _slice4_source(state=NO_INTERMEDIATE)
+    assert '#text("Intermediate rail: none.")' in src
+
+
+def test_reaction_tables_follow_the_summary_with_signed_n_and_their_notes():
+    res, src = _slice4_source()
+    assert src.index("= Summary") < src.index("= Anchor reactions")
+    page = _section(src, "= Anchor reactions", "\n= Never")
+    assert '"Baseplate: B = 6.000 in (parallel to rail) × N = 8.000 in (perpendicular to rail)"' in page
+    lateral = _section(page, "== Lateral set", "== Upward set")
+    upward = page.split("== Upward set")[1]
+    assert '"480.0 lb", "−49.54 lb (compression)", "20,160 lb-in"' in lateral
+    assert '"0 lb", "+430.5 lb (tension)", "0 lb-in"' in upward
+    for part in (lateral, upward):
+        assert typst_str(report.REACTION_CONVENTION) in part
+        assert '"Governing load type", "Distributed"' in part
+        for name in ("top rail", "intermediate rail", "post", "baseplate"):
+            assert f'"D, {name}"' in part
+        assert 'strong("D, total"), strong("55.04 lb")' in part
+        assert "0.9D" in part and "1.6L" in part and "Engineering judgement (EOR): anchor reactions" in part
+    assert typst_str(report.SAME_PLANE) in lateral and report.SAME_PLANE not in upward
+    assert typst_str(res.reactions.lateral_note) in lateral and res.reactions.lateral_note not in upward
+
+
+def test_no_upward_set_prints_its_status():
+    from handrail.project import Loads
+    from handrail.units import Q_
+
+    _, src = _slice4_source(loads=Loads(concentrated=Q_(20, "lbf"), uniform=Q_(2, "lbf/ft")))
+    upward = src.split("== Upward set")[1]
+    assert '#"No net uplift (0.9D >= 1.6L): no upward set."' in upward
+    assert "(tension)" not in upward
+
+
+def test_summary_rows_for_check_4_in_each_state():
+    from handrail.project import NO_INTERMEDIATE, SAME_AS_TOP
+
+    _, src = _slice4_source()
+    summary = _section(src, "= Summary")
+    assert '"4a. Intermediate rail", "1,023 lb-in", "6,392 lb-in", "0.16", "Downward, bending", "OK"' in summary
+    assert '"4b. Intermediate rail weld to post"' in summary and '"Downward, component"' in summary
+    _, src = _slice4_source(state=SAME_AS_TOP)
+    summary = _section(src, "= Summary")
+    assert '"4a. Intermediate rail", "", "", "", "", "Controlled by Checks 1 and 2"' in summary
+    assert '"4b. Intermediate rail weld to post", "", "", "", "", "Controlled by Check 3"' in summary
+    _, src = _slice4_source(state=NO_INTERMEDIATE)
+    summary = _section(src, "= Summary")
+    assert '"4a. Intermediate rail", "", "", "", "", "None"' in summary
+
+
+def test_check_4a_prints_the_governing_bending_and_deflection_cases():
+    _, src = _slice4_source()
+    page = _section(src, "= Check 4a: Intermediate rail")
+    assert "Controlling case: Downward, bending" in page
+    assert "Governing deflection case: Downward, deflection" in page
+
+
+def test_front_matter_names_the_intermediate_rail_and_the_reactions():
+    _, src = _slice4_source()
+    assert "intermediate rail and its weld to the post" in src and "anchor reactions]" in src
+
+
+def test_slice_4_pdf_compiles(tmp_path):
+    import typst
+
+    for kw in ({}, {"state": "same as top rail"}, {"state": "none"}):
+        _, src = _slice4_source(**kw)
+        typ = tmp_path / "s4.typ"
+        typ.write_text(src, encoding="utf-8")
+        typst.compile(str(typ), output=str(tmp_path / "s4.pdf"))
