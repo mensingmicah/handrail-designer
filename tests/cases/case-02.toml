@@ -68,6 +68,13 @@ grade = "A53 Gr B"
 section = "Pipe1-1/2STD"
 grade = "A53 Gr B"
 
+[intermediate_rail]    # slice 4 (plan T2): input only; no Check 4 or reaction values recorded
+none = true
+
+[baseplate]            # slice 4 (plan T2): B x N input only; no reaction values recorded
+B = 6                  # parallel to the rail
+N = 8                  # perpendicular to the rail
+
 [welds]                # slice 3 (plan T2): input only; no weld values recorded
 rail_to_post = "1/8"
 post_to_baseplate = "1/4"

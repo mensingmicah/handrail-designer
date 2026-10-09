@@ -465,7 +465,8 @@ def _dev_run():
     raw = {"project": {"name": "self-test"},
            "geometry": {"span": "6'-0\"", "post_height": 42, "baseplate_thickness": "1/2"},
            "top_rail": {"section": "Pipe2STD"}, "post": {"section": "Pipe2STD"},
-           "welds": {"rail_to_post": "1/8", "post_to_baseplate": "1/4"}}
+           "welds": {"rail_to_post": "1/8", "post_to_baseplate": "1/4"},
+           "baseplate": {"B": 6, "N": 8}, "intermediate_rail": {"none": True}}
     return checks.run(project.from_dict(raw), Registry())
 
 
@@ -631,6 +632,7 @@ def test_tool_values_without_net_upward_tension_have_no_pt():
            "geometry": {"span": "6'-0\"", "post_height": 42, "baseplate_thickness": "1/2"},
            "top_rail": {"section": "Pipe12STD"}, "post": {"section": "Pipe12STD"},
            "welds": {"rail_to_post": "1/8", "post_to_baseplate": "1/4"},
+           "baseplate": {"B": 14, "N": 14}, "intermediate_rail": {"none": True},
            "loads": {"concentrated_lb": 10, "uniform_plf": 1}}
     res = checks.run(project.from_dict(raw), Registry())
     assert not [c for c in _check(res, 5).checked if c.direction == "Upward"]  # the premise

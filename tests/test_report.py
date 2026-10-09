@@ -7,13 +7,17 @@ import pytest
 
 from handrail import checks, dimensions, report
 from handrail.calc import typst_str
-from handrail.project import DeflectionLimit, Member, Project, ProjectInfo, Welds
+from handrail.project import (
+    NO_INTERMEDIATE, Baseplate, DeflectionLimit, IntermediateRail, Member, Project, ProjectInfo, Welds,
+)
 from handrail.registry import Registry
 from handrail.version import Stamp
 
 
 def run(**kw):
     kw.setdefault("welds", Welds(dimensions.parse("1/8"), dimensions.parse("1/4")))
+    kw.setdefault("baseplate", Baseplate(dimensions.parse("30"), dimensions.parse("30")))
+    kw.setdefault("intermediate_rail", IntermediateRail(NO_INTERMEDIATE))
     p = Project(info=ProjectInfo(name='Name with #hash, *stars*, "quotes" and $dollar'),
                 span=dimensions.parse("6'-0\""), top_rail=Member("Pipe2STD", "A53 Gr B"),
                 post=Member("Pipe2STD", "A53 Gr B"), post_height=dimensions.parse("42"),
@@ -248,7 +252,9 @@ def test_slenderness_flag_prints_in_the_check_5_summary_row():
     p = Project(info=ProjectInfo(name="t"), span=dimensions.parse("6'-0\""),
                 top_rail=Member("Pipe2STD", "A53 Gr B"), post=Member("Pipe1STD", "A53 Gr B"),
                 post_height=dimensions.parse("42"), baseplate_thickness=dimensions.parse("1/2"),
-                welds=Welds(dimensions.parse("1/8"), dimensions.parse("1/4")),)
+                welds=Welds(dimensions.parse("1/8"), dimensions.parse("1/4")),
+                baseplate=Baseplate(dimensions.parse("30"), dimensions.parse("30")),
+                intermediate_rail=IntermediateRail(NO_INTERMEDIATE))
     reg = Registry()
     res = checks.run(p, reg)
     src = report.build_source(res, reg, CLEAN)

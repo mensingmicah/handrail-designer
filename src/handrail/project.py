@@ -13,7 +13,15 @@ for inputs the engineer didn't intend:
 - loads and the deflection limits must be positive numbers;
 - the post is required (every v1 calc checks one post), and the baseplate
   thickness must be less than the post height;
-- both weld sizes are required, with no default (docs/brief/inputs.md).
+- both weld sizes are required, with no default (docs/brief/inputs.md);
+- the baseplate's plan dimensions B and N are required, with no default (S4-6);
+- the intermediate rail is in one of three states (S4-1): same as the top
+  rail (the default), its own section, or none. Inputs that conflict with
+  the state stop the calc, never silently ignored (docs/plans/slice-4.md):
+  none = true with a section, grade, intermediate weld size or intermediate
+  deflection limit; any of those given while same_as_top_rail is true;
+  same_as_top_rail = false with no section. Its own section needs its own
+  weld size.
 
 Top-level [hand] and [verification] tables are allowed and ignored: test
 cases keep their hand values and their kind in the same file as their
@@ -56,6 +64,7 @@ class Member:
 class Loads:
     concentrated: Q_ | None = None  # engineer override (lbf); None = code value from the registry
     uniform: Q_ | None = None       # engineer override (lbf/ft); None = code value
+    component: Q_ | None = None     # engineer override (lbf); None = code value (S4-3)
     uniform_exempt: bool = False
     exemption_statement: str = ""
 
@@ -69,13 +78,20 @@ class Welds:
     rail_to_post: Dimension       # fillet leg size, top rail to post
     post_to_baseplate: Dimension  # fillet leg size, post to baseplate
     electrode: str = "E70XX"
+    # Intermediate rail to post: its own section only, where it is required
+    # (S4-8). Same as the top rail, the rail to post size applies.
+    intermediate_rail_to_post: Dimension | None = None
 
 
 @dataclass(frozen=True)
 class Baseplate:
-    """The baseplate's grade. Its thickness t_p is in [geometry]. A36 is the
-    default and, for all of v1, the only grade accepted (W12)."""
+    """The baseplate's plan dimensions and grade. Its thickness t_p is in
+    [geometry]. B is parallel to the rail and N perpendicular to it, both
+    required (S4-6). A36 is the default and, for all of v1, the only grade
+    accepted (W12)."""
 
+    B: Dimension
+    N: Dimension
     grade: str = "A36"
 
 
@@ -92,6 +108,21 @@ class DeflectionLimit:
 RAIL_DEFLECTION = DeflectionLimit()
 POST_DEFLECTION = DeflectionLimit(ratio=60)
 
+# The intermediate rail's three input states (S4-1, docs/brief/checks.md).
+SAME_AS_TOP, OWN_SECTION, NO_INTERMEDIATE = "same as top rail", "own section", "none"
+
+
+@dataclass(frozen=True)
+class IntermediateRail:
+    """Same as the top rail (the default), its own section, or none (S4-1).
+    ``member`` and ``deflection`` are its own in the own-section state only;
+    same as the top rail, it takes the top rail's section and grade and
+    follows Check 2's deflection limit (S4-2)."""
+
+    state: str = SAME_AS_TOP
+    member: Member | None = None
+    deflection: DeflectionLimit = RAIL_DEFLECTION
+
 
 @dataclass(frozen=True)
 class Project:
@@ -102,10 +133,19 @@ class Project:
     post_height: Dimension          # h: top of concrete to top rail centerline
     baseplate_thickness: Dimension  # t_p
     welds: Welds
-    baseplate: Baseplate = field(default_factory=Baseplate)
+    baseplate: Baseplate
     loads: Loads = field(default_factory=Loads)
     rail_deflection: DeflectionLimit = RAIL_DEFLECTION
     post_deflection: DeflectionLimit = POST_DEFLECTION
+    intermediate_rail: IntermediateRail = field(default_factory=IntermediateRail)
+
+    @property
+    def intermediate_member(self) -> Member | None:
+        """The intermediate rail's section and grade: the top rail's, its own, or None."""
+        state = self.intermediate_rail.state
+        if state == NO_INTERMEDIATE:
+            return None
+        return self.top_rail if state == SAME_AS_TOP else self.intermediate_rail.member
 
 
 # Allowed keys per table. A dict value is a sub-table.
@@ -114,12 +154,15 @@ SCHEMA = {
     "geometry": {"span": None, "post_height": None, "baseplate_thickness": None},
     "top_rail": {"section": None, "grade": None},
     "post": {"section": None, "grade": None},
-    "baseplate": {"grade": None},
-    "welds": {"rail_to_post": None, "post_to_baseplate": None, "electrode": None},
-    "loads": {"concentrated_lb": None, "uniform_plf": None,
+    "intermediate_rail": {"same_as_top_rail": None, "none": None, "section": None, "grade": None},
+    "baseplate": {"B": None, "N": None, "grade": None},
+    "welds": {"rail_to_post": None, "post_to_baseplate": None, "electrode": None,
+              "intermediate_rail_to_post": None},
+    "loads": {"concentrated_lb": None, "uniform_plf": None, "component_lb": None,
               "uniform_exemption": {"applies": None, "statement": None}},
     "deflection": {"rail": {"limit_L_over": None, "bypass": None},
-                   "post": {"limit_L_over": None, "bypass": None}},
+                   "post": {"limit_L_over": None, "bypass": None},
+                   "intermediate_rail": {"limit_L_over": None, "bypass": None}},
     "hand": "ignored",
     "verification": "ignored",
 }
@@ -226,6 +269,52 @@ def _deflection_limit(raw: dict, member: str, default: DeflectionLimit) -> Defle
     return dataclasses.replace(default, **given)
 
 
+def _intermediate_rail(raw: dict, top_rail: Member, welds: Welds) -> IntermediateRail:
+    """The intermediate rail's state, refusing inputs that conflict with it."""
+    t = raw.get("intermediate_rail", {})
+    w = "intermediate_rail"
+    none = _bool(t["none"], f"{w}.none") if "none" in t else False
+    same_given = "same_as_top_rail" in t
+    same = _bool(t["same_as_top_rail"], f"{w}.same_as_top_rail") if same_given else True  # the default (S4-1)
+    section = _str(t["section"], f"{w}.section") if "section" in t else None
+    grade = _str(t["grade"], f"{w}.grade") if "grade" in t else None
+    own_inputs = [name for name, given in (
+        ("[intermediate_rail] section", section is not None),
+        ("[intermediate_rail] grade", grade is not None),
+        ("[welds] intermediate_rail_to_post", welds.intermediate_rail_to_post is not None),
+        ("[deflection.intermediate_rail]", "intermediate_rail" in raw.get("deflection", {})),
+    ) if given]
+
+    if none:
+        if same_given and same:
+            raise ProjectError("[intermediate_rail] none = true and same_as_top_rail = true contradict each "
+                               "other: choose one")
+        if own_inputs:
+            raise ProjectError(f"[intermediate_rail] none = true, but {', '.join(own_inputs)} is given: there is "
+                               f"no intermediate rail to apply it to. Remove it, or set none = false.")
+        return IntermediateRail(state=NO_INTERMEDIATE)
+    if same:
+        if own_inputs:
+            raise ProjectError(
+                f"[intermediate_rail] same_as_top_rail = true{'' if same_given else ' (the default)'}, but "
+                f"{', '.join(own_inputs)} is given. Same as the top rail, the intermediate rail takes the top "
+                f"rail's section, grade and rail to post weld size, and follows the top rail's deflection limit. "
+                f"Set same_as_top_rail = false to give it its own, or remove the input."
+            )
+        return IntermediateRail(state=SAME_AS_TOP)
+    if section is None:
+        raise ProjectError("[intermediate_rail] same_as_top_rail = false needs a section "
+                           "(or none = true for no intermediate rail)")
+    if welds.intermediate_rail_to_post is None:
+        raise ProjectError("[welds] is missing 'intermediate_rail_to_post', required when the intermediate rail "
+                           "has its own section (same_as_top_rail = false)")
+    return IntermediateRail(
+        state=OWN_SECTION,
+        member=Member(section=section, grade=grade if grade is not None else top_rail.grade),  # S4-1
+        deflection=_deflection_limit(raw, "intermediate_rail", RAIL_DEFLECTION),
+    )
+
+
 def load(path: str | Path) -> Project:
     path = Path(path)
     try:
@@ -267,14 +356,20 @@ def from_dict(raw: dict) -> Project:
         rail_to_post=_dimension(wt, "rail_to_post", "welds"),
         post_to_baseplate=_dimension(wt, "post_to_baseplate", "welds"),
         **_given(wt, "welds", {"electrode": ("electrode", _str)}),
+        **({"intermediate_rail_to_post": _dimension(wt, "intermediate_rail_to_post", "welds")}
+           if "intermediate_rail_to_post" in wt else {}),
     )
-    baseplate = Baseplate(**_given(raw.get("baseplate", {}), "baseplate", {"grade": ("grade", _str)}))
+    bt = _need(raw, "baseplate", "top level")
+    baseplate = Baseplate(B=_dimension(bt, "B", "baseplate"), N=_dimension(bt, "N", "baseplate"),
+                          **_given(bt, "baseplate", {"grade": ("grade", _str)}))
+    intermediate = _intermediate_rail(raw, top_rail, welds)
 
     ld = raw.get("loads", {})
     ex = ld.get("uniform_exemption", {})
     loads = Loads(
         **_given(ld, "loads", {"concentrated_lb": ("concentrated", _lbf),
-                               "uniform_plf": ("uniform", _lbf_per_ft)}),
+                               "uniform_plf": ("uniform", _lbf_per_ft),
+                               "component_lb": ("component", _lbf)}),
         **_given(ex, "loads.uniform_exemption", {"applies": ("uniform_exempt", _bool),
                                                  "statement": ("exemption_statement", _str)}),
     )
@@ -289,4 +384,5 @@ def from_dict(raw: dict) -> Project:
         post_height=h, baseplate_thickness=tp, welds=welds, baseplate=baseplate, loads=loads,
         rail_deflection=_deflection_limit(raw, "rail", RAIL_DEFLECTION),
         post_deflection=_deflection_limit(raw, "post", POST_DEFLECTION),
+        intermediate_rail=intermediate,
     )

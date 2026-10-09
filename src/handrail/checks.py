@@ -487,6 +487,21 @@ def check_2(registry, project, rail, loading) -> Check:
     return chk
 
 
+def _fu_fy_guard(registry: Registry, grade: str, member: str, covered: str) -> None:
+    """Stop when a wall's coverage by a member check fails: the member check
+    covers the wall at a weld only while yielding governs over rupture,
+    Fu/Fy >= 1.20 (W5; S4-12 for the intermediate rail)."""
+    Fy, Fu = registry.get(FY_ENTRY[grade]).quantity, registry.get(FU_ENTRY[grade]).quantity
+    limit = registry.get("ej.weld.post_wall.fu_fy_min")
+    ratio = Fu / Fy
+    if ratio < limit.value:
+        raise ProjectError(
+            f"{member} grade {grade}: Fu/Fy = {fmt_sig(ratio.m_as('dimensionless'))} is below {limit.value} "
+            f"({limit.cite}). The {member} wall at the weld is covered by {covered} only while yielding governs "
+            f"over rupture; the tool does not check this grade's {member} wall at the weld."
+        )
+
+
 def validate(project: Project, registry: Registry) -> None:
     """The input checks that need more than one field, or a lookup. Raises an
     InputError naming what it checked and why. Runs before compute, so no
@@ -494,16 +509,26 @@ def validate(project: Project, registry: Registry) -> None:
 
     - the sections exist, and each grade and the electrode is one this
       version supports (W12);
-    - the rail and the post are round hollow sections (W7);
+    - the rail, the post and the intermediate rail are round hollow sections
+      (W7, extended to the intermediate rail by S4-12);
     - the post is no wider than the rail (W8);
-    - the post grade's Fu/Fy keeps its wall at the weld covered by Check 5 (W5).
+    - the post grade's Fu/Fy keeps its wall at the weld covered by Check 5 (W5);
+    - the intermediate rail is no wider than the post (S4-11), the span is at
+      least twice the post OD (S4-12), and the intermediate rail grade's
+      Fu/Fy keeps its wall at the weld covered by the member check (S4-12);
+    - the baseplate is no smaller in plan than the post OD (S4-6).
     """
     from handrail import shapes
+    from handrail.project import SAME_AS_TOP
 
     rail = shapes.pipe(project.top_rail.section)
     post = shapes.pipe(project.post.section)
     require_supported_grade(project.top_rail, "top rail")
     require_supported_grade(project.post, "post")
+    own = project.intermediate_rail.member  # its own section, or None
+    inter = shapes.pipe(own.section) if own else None
+    if own:
+        require_supported_grade(own, "intermediate rail")
     electrode = project.welds.electrode
     if electrode not in FEXX_ENTRY:
         raise ProjectError(f"[welds] electrode {electrode!r}: this version supports {', '.join(FEXX_ENTRY)} only")
@@ -511,7 +536,8 @@ def validate(project: Project, registry: Registry) -> None:
         raise ProjectError(f"[baseplate] grade {project.baseplate.grade!r}: this version supports "
                            f"{', '.join(BASEPLATE_GRADES)} only")
 
-    for member, sec in (("top rail", rail), ("post", post)):
+    members = [("top rail", rail), ("post", post)] + ([("intermediate rail", inter)] if inter else [])
+    for member, sec in members:
         if sec.family not in shapes.ROUND_HOLLOW:
             raise ProjectError(
                 f"{member} {sec.label} ({sec.family}) is not a round hollow section. The stated assumption "
@@ -527,16 +553,38 @@ def validate(project: Project, registry: Registry) -> None:
             f"requires post OD <= rail OD. Check the inputs."
         )
 
-    grade = project.post.grade
-    Fy, Fu = registry.get(FY_ENTRY[grade]).quantity, registry.get(FU_ENTRY[grade]).quantity
-    limit = registry.get("ej.weld.post_wall.fu_fy_min")
-    ratio = Fu / Fy
-    if ratio < limit.value:
-        raise ProjectError(
-            f"post grade {grade}: Fu/Fy = {fmt_sig(ratio.m_as('dimensionless'))} is below {limit.value} ({limit.cite}). "
-            f"The post wall at the weld is covered by Check 5 only while yielding governs over rupture; "
-            f"the tool does not check this grade's post wall at the weld."
-        )
+    _fu_fy_guard(registry, project.post.grade, "post", "Check 5")
+
+    member = project.intermediate_member
+    if member is not None:
+        same = project.intermediate_rail.state == SAME_AS_TOP
+        sec = rail if same else inter
+        if sec.OD > D_post:
+            how = ("With same_as_top_rail = true it takes the top rail's section: uncheck same_as_top_rail and "
+                   "enter a section no wider than the post." if same else
+                   "Enter a section no wider than the post.")
+            raise ProjectError(
+                f"The intermediate rail ({sec.label}, OD {fmt_quantity_plain(sec.OD)}) is wider than the post "
+                f"({post.label}, OD {fmt_quantity_plain(D_post)}). Its end is coped to the side of the post, "
+                f"which requires intermediate rail OD <= post OD. {how}"
+            )
+        span = project.span
+        if span.value < 2 * D_post:
+            raise ProjectError(
+                f"The span ({span.entered}) is less than twice the post OD (2 x {fmt_quantity_plain(D_post)} = "
+                f"{fmt_quantity_plain(2 * D_post)}). The intermediate rail wall at the post is covered by its "
+                f"member check only when L >= 2 D_post. Check the inputs."
+            )
+        _fu_fy_guard(registry, member.grade, "intermediate rail",
+                     "Checks 1 and 2" if same else "Check 4a")
+
+    for name, d, orientation in (("B", project.baseplate.B, "parallel to the rail"),
+                                 ("N", project.baseplate.N, "perpendicular to the rail")):
+        if d.value < D_post:
+            raise ProjectError(
+                f"[baseplate] {name} = {d.entered} ({orientation}) is smaller than the post OD "
+                f"({post.label}, {fmt_quantity_plain(D_post)}). Check the inputs."
+            )
 
 
 def compute(project: Project, registry: Registry) -> Results:

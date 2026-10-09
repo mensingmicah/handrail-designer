@@ -134,7 +134,9 @@ def test_strength_without_base_metal_demand_is_the_weld_metal_ratio():
 # ---------------------------------------------------------------------------
 
 from handrail import checks  # noqa: E402
-from handrail.project import Loads, Member, Project, ProjectInfo, Welds  # noqa: E402
+from handrail.project import (  # noqa: E402
+    NO_INTERMEDIATE, Baseplate, IntermediateRail, Loads, Member, Project, ProjectInfo, Welds,
+)
 
 P_CONC, W_PLF = 200.0, 50.0  # lb, lb/ft (registry code values, restated for the plain calc)
 
@@ -143,7 +145,9 @@ def project(rail="Pipe2STD", post="Pipe2STD", span="6'-0\"", r2p="1/8", p2b="1/4
     return Project(info=ProjectInfo(name="Test"), span=dimensions.parse(span),
                    top_rail=Member(rail, "A53 Gr B"), post=Member(post, "A53 Gr B"),
                    post_height=dimensions.parse("42"), baseplate_thickness=dimensions.parse(tp),
-                   welds=Welds(dimensions.parse(r2p), dimensions.parse(p2b)), **kw)
+                   welds=Welds(dimensions.parse(r2p), dimensions.parse(p2b)),
+                   **{"baseplate": Baseplate(dimensions.parse("30"), dimensions.parse("30")),
+                      "intermediate_rail": IntermediateRail(NO_INTERMEDIATE), **kw})
 
 
 def plain_check_3(rail="Pipe2STD", post="Pipe2STD", L_ft=6.0, w=0.125, P=P_CONC, w_plf=W_PLF):

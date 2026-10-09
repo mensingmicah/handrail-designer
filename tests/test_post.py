@@ -16,7 +16,9 @@ import pytest
 from handrail import checks, dimensions, post, shapes
 from handrail.calc import fmt_sig
 from handrail.checks import SectionStop
-from handrail.project import DeflectionLimit, Loads, Member, Project, ProjectInfo, Welds
+from handrail.project import (
+    NO_INTERMEDIATE, Baseplate, DeflectionLimit, IntermediateRail, Loads, Member, Project, ProjectInfo, Welds,
+)
 from handrail.registry import Registry
 from handrail.units import Q_
 
@@ -31,7 +33,9 @@ def project(rail="Pipe2STD", span="6'-0\"", post_section="Pipe2STD", h="42", tp=
         info=ProjectInfo(name="Test"), span=dimensions.parse(span),
         top_rail=Member(rail, "A53 Gr B"), post=Member(post_section, "A53 Gr B"),
         post_height=dimensions.parse(h), baseplate_thickness=dimensions.parse(tp),
-        welds=Welds(dimensions.parse("1/8"), dimensions.parse("1/4")), **kw,
+        welds=Welds(dimensions.parse("1/8"), dimensions.parse("1/4")),
+        **{"baseplate": Baseplate(dimensions.parse("30"), dimensions.parse("30")),
+           "intermediate_rail": IntermediateRail(NO_INTERMEDIATE), **kw},
     )
 
 
