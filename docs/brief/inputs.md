@@ -41,6 +41,12 @@ and how it is entered.
   and the grade defaults to the top rail's. Or none (`none = true`): no
   intermediate rail. There is no intermediate rail height input; nothing
   in v1 uses it. (Micah, 2026-10-08.)
+  - Conflicting inputs stop the calc and are never silently ignored
+    (Claude's decision, confirmed by Micah 2026-10-09): `none = true` with
+    a section, a grade or an intermediate weld size; a section, grade or
+    intermediate weld size given while `same_as_top_rail` is true;
+    `same_as_top_rail = false` with no section. The intermediate rail to
+    post weld size is required in the own-section state only.
 - Material grade for rail, post and baseplate. The standard grade lists for
   pipe, round HSS and rectangular HSS are registry entries
   (material.grades.pipe, material.grades.hss_round, material.grades.hss_rect;

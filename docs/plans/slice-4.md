@@ -1,6 +1,6 @@
 # Slice 4 plan: the intermediate rail (Check 4) and the anchor reaction sets
 
-Status: **in progress** (branch slice-4, PR #20). Steps 1-9 built 2026-10-09; step 10, the case 5 independent calc, is next, in a fresh session.
+Status: **completed** 2026-10-09. Merged in PR #20 (v0.4.0). The binding decisions are in the brief; the dead load path and the shared demand function moved into docs/brief/loads-and-envelope.md and the conflicting-input stops into docs/brief/inputs.md at close.
 
 > This plan is a record of what slice 4 sets out to build and why. The
 > binding engineering decisions (S4-1 to S4-12) were recorded in the brief

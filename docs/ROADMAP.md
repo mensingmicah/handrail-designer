@@ -1,7 +1,7 @@
 # Roadmap: slices from v0.1.0 to v1
 
 Status: **accepted by Micah, 2026-09-30.** Slice 2 is the post (option A
-below). Slices 1–3 are done (v0.1.0 to v0.3.0); slice 4 is planned (docs/plans/slice-4.md). What the tool must do is set by the brief
+below). Slices 1–4 are done (v0.1.0 to v0.4.0; slice 4 in docs/plans/slice-4.md). What the tool must do is set by the brief
 (docs/BRIEF.md); if this roadmap disagrees with the brief, the brief wins.
 Each slice gets its own plan in docs/plans/ before work starts. That plan
 settles the slice's open questions, and it can reorder or split the slice.

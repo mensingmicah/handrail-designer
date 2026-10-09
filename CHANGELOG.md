@@ -1,5 +1,72 @@
 # Changelog
 
+## v0.4.0 (2026-10-09)
+
+Slice 4: the intermediate rail and the anchor reaction sets. Merged in PR
+#20; plan in docs/plans/slice-4.md.
+
+**Milestone: the first complete all-pipe package.** `uv run handrail calc
+examples/slice-1.toml` now prints all seven checks (Check 4 in two parts),
+the summary table and the two LRFD anchor reaction sets for an AISC pipe
+guard on a pipe post in A53 Gr B. It is the first calc that could stand in
+for a real hand calc, under the DRAFT stamp.
+
+### Checks covered
+
+- **Check 4a, intermediate rail member**: the component load at midspan
+  (M = P_c·L/4, Δ = P_c·L³/48EI), horizontal and downward (downward adds
+  the rail's dead load, ASD D + L), with its own deflection limit (L/120
+  default, bypassable). Same-as-top-rail prints an observation line
+  instead.
+- **Check 4b, intermediate rail weld to post**: a simple shear connection
+  (e = 0, no end moment) at the post face, weld metal per §J2.4 with
+  k_ds = 1.0, base metal on both walls (post wall and intermediate rail
+  wall, shear rupture, the lower governing and named), minimum size.
+- **Reaction sets**: lateral (any horizontal direction) and upward (only
+  when 1.6L > 0.9D), 0.9D + 1.6L at the top of concrete; V, N (signed,
+  tension positive) and M to 4 significant figures, with the governing
+  load type and the D breakdown including the baseplate weight W_bp.
+- Baseplate plan dimensions B × N are inputs. D at the post gains the
+  intermediate rail's dead load (Checks 5 and 7 and the reactions; not
+  Check 3 or 6).
+- Effective throat t_e = 0.707w in every weld check (Micah's ruling).
+
+### What it delivers
+
+- Project file: `[intermediate_rail]` (same as top, own section, or
+  none), `[welds] intermediate_rail_to_post`, `[baseplate] B` and `N`,
+  `[loads] component_lb`, `[deflection.intermediate_rail]`. Conflicting
+  inputs stop the calc.
+- One shared per-direction demand function for Checks 5 and 7 and the
+  reaction sets (issue #4); printed calcs of the example and cases 1–4 are
+  unchanged.
+- 15 new drafted registry entries (77 drafted, 32 verified in all). Every
+  calc still prints the DRAFT stamp.
+
+### Verification
+
+- Test case 5, the milestone case, has a full independent calc of all
+  seven checks and both reaction sets (391 values); every value agrees
+  with the tool within 0.5%. Micah ruled on its open questions (Check 4b as a simple shear
+  connection, base metal on both walls, t_e = 0.707w).
+- Cases 1–4 gained inputs only; every recorded value is unchanged.
+- At release: 1138 tests passed, 25 skipped (the deferred [hand] values).
+
+### Deferred to the release review (issue #18)
+
+- Verification of the 15 slice 4 entries.
+- Micah's recompute of case 5's Checks 4a and 4b and of the lateral and
+  upward reaction sets (V, N, M each); those [hand] values read
+  "deferred".
+
+### Known gaps
+
+- Not checked: the component load's effect on the post, the post wall's
+  chord limit states at the intermediate rail, baseplate bending,
+  anchorage, maximum fillet size, flare-bevel throats.
+- Only round hollow sections, E70XX and A36 baseplate; an intermediate
+  rail wider than the post stops the calc.
+
 ## v0.3.0 (2026-10-08)
 
 Slice 3: the welds. Merged in PR #19; plan in docs/plans/slice-3.md.

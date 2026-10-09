@@ -39,6 +39,21 @@ combinations, dead/live separation, and the anchor reaction sets.
   the top rail centerline. All of it acts as axial load at the critical
   section. The span is the tributary length, with no increase for rail
   continuity (a stated assumption, output.md). (Slice 2, D2 and D11.)
+  - From slice 4, with an intermediate rail of its own section or the
+    same as the top rail, D gains the intermediate rail's dead load over
+    the span, w_D,int·L (Micah, 2026-10-09). It reaches Check 5 and the
+    axial term of Check 7 through D at the post, the reaction sets
+    through their D, and Check 4a's downward case and Check 4b as the
+    intermediate rail's own dead load. It does not reach Check 3, whose D
+    is the top rail's dead load w_D,rail·L (the intermediate rail frames
+    into the post below that weld), nor Check 6, which is live load only.
+    With no intermediate rail it adds nothing.
+  - One per-direction demand function serves Checks 5 and 7 and the
+    reaction sets. It takes the load combination (its D and L factors and
+    printed label) as data and the moment arm as an input, and returns P,
+    V and M for each direction case. Checks 5 and 7 call it with the ASD
+    combinations and the arm h − t_p; the reaction sets with 0.9D + 1.6L
+    and the arm h. The arm used prints in each calc.
 - The post envelope, at the top of the baseplate:
 
   | Case | Axial Pr | Moment Mr | Combination |
