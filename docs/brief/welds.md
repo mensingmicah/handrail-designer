@@ -308,7 +308,8 @@ plan's decision numbers.
     0.6·Fu·t_des,int/2.00 against the same f_v, Fu of the intermediate
     rail's grade. Check 4b prints both base metal lines, post wall and
     intermediate rail wall, and which governs: the lower allowable, a tie
-    going to the post wall. The check's base metal ratio is the governing
+    going to the post wall, the chord, as Check 3 names its chord (tie
+    rule confirmed by Micah, 2026-10-09). The check's base metal ratio is the governing
     wall's. This is the general rule above (the fusion face of each
     connected part, the lower governs) applied to Check 4b. (Micah,
     2026-10-09, ruling on open question 9a of the case 5 independent
