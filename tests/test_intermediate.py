@@ -261,7 +261,8 @@ def test_same_as_top_rail_check_4b_prints_the_observation_and_how_r_was_found():
     assert not chk.computed and chk.result == "Controlled by Check 3"
     assert chk.observation == (
         "Intermediate rail weld: controlled by Check 3 by observation: same section (ring ≥ Check 3's, since post "
-        f"OD ≤ rail OD per W8), same weld size, weld reaction R = {R:.2f} lb ≤ P = 200.0 lb.")
+        f"OD ≤ rail OD per W8), same weld size, weld reaction R = {R:.2f} lb ≤ P = 200.0 lb, "
+        "post wall t_des,post = 0.1430 in ≥ rail wall t_des,rail = 0.1430 in.")
     assert _lb(next(ln.value for ln in chk.observation_lines if ln.symbol == "R")) == pytest.approx(R, rel=1e-9)
 
 
@@ -315,3 +316,4 @@ def test_a_post_wall_no_thinner_than_the_rail_wall_keeps_the_observation():
     # The reverse: a Pipe2STD rail on a Pipe2XS post, R <= P.
     chk = run(state=SAME_AS_TOP, post="Pipe2XS").check("4b")
     assert not chk.computed and chk.result == "Controlled by Check 3"
+    assert chk.observation.endswith("post wall t_des,post = 0.2040 in ≥ rail wall t_des,rail = 0.1430 in.")

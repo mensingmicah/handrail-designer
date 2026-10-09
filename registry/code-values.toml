@@ -2041,7 +2041,7 @@ L < 2 D_post."""
 
 [[entry]]
 id = "ej.weld.intermediate.same_as_top"
-value = "Intermediate rail weld: controlled by Check 3 by observation: same section (ring ≥ Check 3's, since post OD ≤ rail OD per W8), same weld size, weld reaction R = {R} ≤ P = {P}."
+value = "Intermediate rail weld: controlled by Check 3 by observation: same section (ring ≥ Check 3's, since post OD ≤ rail OD per W8), same weld size, weld reaction R = {R} ≤ P = {P}, post wall t_des,post = {t_post} ≥ rail wall t_des,rail = {t_rail}."
 unit = "text"
 cite = "Engineering judgement (EOR): intermediate rail weld controlled by Check 3"
 document = "Engineering decision of the engineer of record"
@@ -2056,11 +2056,13 @@ note = """
 Micah, 2026-10-08 (S4-8), wording and guard amended 2026-10-09 (S4-9). \
 Printed as Check 4b when the intermediate rail is the same as the top \
 rail and R <= P; {R} is the larger of the two Check 4b cases and {P} the \
-concentrated guard load. When R > P the full Check 4b runs instead. \r
-Second guard (Micah, 2026-10-09): the observation also needs \r
-t_des,post >= t_des,rail, since the base metal line checks the chord's \r
-wall (the rail in Check 3, the post in Check 4b); otherwise the full \r
-check runs."""
+concentrated guard load. When R > P the full Check 4b runs instead. \
+Second guard (Micah, 2026-10-09): the observation also needs \
+t_des,post >= t_des,rail, since the base metal line checks the chord's \
+wall (the rail in Check 3, the post in Check 4b); otherwise the full \
+check runs. Sentence amended 2026-10-09 (Micah) to print the wall \
+comparison, {t_post} and {t_rail} filled with the two design wall \
+thicknesses; still drafted."""
 
 # --- Engineering judgement: the anchor reaction sets ------------------------
 

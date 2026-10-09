@@ -578,7 +578,8 @@ def check_4b(registry: Registry, project: Project, post: PipeSection, inter: Pip
         t_post, t_rail = post.tdes, inter.tdes
         if R.value <= P and t_post >= t_rail:
             text = registry.get("ej.weld.intermediate.same_as_top").value
-            chk.observation = text.format(R=fmt_quantity_plain(R.value), P=fmt_quantity_plain(P))
+            chk.observation = text.format(R=fmt_quantity_plain(R.value), P=fmt_quantity_plain(P),
+                                          t_post=fmt_quantity_plain(t_post), t_rail=fmt_quantity_plain(t_rail))
             chk.observation_lines = rsh.lines
             chk.result = "Controlled by Check 3"
             return chk

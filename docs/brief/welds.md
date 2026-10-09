@@ -225,7 +225,8 @@ plan's decision numbers.
     rail's section and the top rail's rail to post weld size. Check 4b
     prints "Intermediate rail weld: controlled by Check 3 by observation:
     same section (ring ≥ Check 3's, since post OD ≤ rail OD per W8), same
-    weld size, weld reaction R = [value] ≤ P = [value]." R is the larger
+    weld size, weld reaction R = [value] ≤ P = [value], post wall
+    t_des,post = [value] ≥ rail wall t_des,rail = [value]." R is the larger
     of the two cases in S4-9. Guard: if R > P, the full check runs
     instead. (Wording and guard amended by S4-9, Micah 2026-10-09.)
     Second guard (Micah, 2026-10-09, PR #20 review): the observation also
@@ -234,7 +235,8 @@ plan's decision numbers.
     thinner post wall (a Pipe2XS rail on a Pipe2STD post), Check 4b's
     shear-rupture ratio could exceed Check 3's by about t_rail/t_post, so
     "controlled by Check 3" would not hold. If either guard fails, the full
-    check runs, printing which guard failed.
+    check runs, printing which guard failed. The observation sentence
+    prints both wall thicknesses beside R ≤ P (Micah, 2026-10-09).
   - **Own section:** a required weld size input for the intermediate rail
     to post weld. The Check 3 method runs on the intermediate rail's ring
     (its perimeter, coped to the side of the post): weld metal with
