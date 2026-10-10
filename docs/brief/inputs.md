@@ -51,14 +51,14 @@ and how it is entered.
   pipe, round HSS and rectangular HSS are registry entries
   (material.grades.pipe, material.grades.hss_round, material.grades.hss_rect;
   AISC Manual Table 2-4). Two different cases:
-  - A grade with no Fy or Fu registry entry stops the calc with a message
-    naming the grade and the grades supported. So far that leaves A53 Gr B
-    as the only rail and post grade, and A36 as the only baseplate grade
-    (W12).
+  - A grade with no Fy or Fu registry entry for the member's shape stops
+    the calc with a message naming the grade and the grades supported for
+    that shape. Since slice 5 the rail and post grades are those under
+    "Grades for pipe, round HSS and custom round tubes" below; A36 is
+    still the only baseplate grade (W12).
   - A grade that has its entries but is outside the standard list for the
-    shape is an unusual pairing, and gets a warning, not a block. With one
-    grade per member accepted so far, no such pairing can be entered, so
-    the warning is not built yet.
+    shape is an unusual pairing, and gets a warning, not a block. Built in
+    slice 5: it prints on the section properties page, under the member.
 
   The grade list for solid bars and baseplate is not yet in the registry.
   A500 (Gr B, Gr C) is never offered for solid bars, and the defaults
