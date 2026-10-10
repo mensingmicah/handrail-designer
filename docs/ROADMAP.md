@@ -19,7 +19,7 @@ settles the slice's open questions, and it can reorder or split the slice.
 | 3 (done, v0.3.0) | Checks 3 and 7: both welds (pipe rail on pipe post) | 2 | M | 1 | — |
 | 4 (done, v0.4.0) | Check 4 (intermediate rail, 4a member and 4b weld) and the anchor reaction sets | 2 (3 for a full package) | M | 1 | #4 (closed) |
 | 5 | Hollow round sections: round HSS, custom round tube; the two-axis section type; the engine refactor (#21) | 4 | M | 2 | #3, #21, #24 |
-| 6 | Hollow rectangular sections: rectangular HSS, custom rectangular tube | 5 | L | 2 | — |
+| 6 | Hollow rectangular sections: rectangular HSS, custom rectangular tube; Chapter K chord limit states for round and rectangular chords | 5 | XL | 3–4 | — |
 | 7 | Solid bars: solid round bar and solid rectangular bar | 6 | L | 2–3 | — |
 | 8 | Input form and front-matter image | 7 | L | 0 | — |
 | 9 | v1 release | 8 | S code, L review | 0 | — |
@@ -65,7 +65,8 @@ When the tool disagrees with a hand calc (rule 2), the question is which
 side is wrong. With one new thing per slice, there are few places to look.
 Slices 2–4 add members and connections while the section layer stays at
 pipe. Slices 5–7 then widen the section layer while the set of checks
-stays fixed. Every test case from earlier slices reruns in every later
+stays fixed, with one exception: slice 6 adds the Chapter K chord limit
+states to Checks 3 and 4b (Micah, 2026-10-09; S5-3). Every test case from earlier slices reruns in every later
 slice. That rerun is the guard: generalizing a check to new shapes must
 leave the old cases unchanged.
 
@@ -314,17 +315,36 @@ on the post's other axis. Rectangular post welds: all around, or on one
 pair of faces picked by width or depth, with the elastic line properties of
 each pattern.
 
+Also the AISC 360-22 Chapter K chord limit states, checked instead of
+assumed, for round and rectangular chords together: the rail wall at the
+post in Check 3 and the post wall at the intermediate rail in Check 4b. A
+scope addition Micah made deliberately (2026-10-09; S5-3 in
+docs/brief/welds.md, and scope.md). W7, its stated assumption and its
+non-round stop are retired when this lands; slice 5 runs on W7 with a
+stop at chord D/t > 50.
+
 **Depends on.** Slice 5 (the generic section interface, whose per-axis
 properties already hold the rectangular columns; this slice decides which
 checks read which axis).
 
-**Size.** L, the largest after slice 1. About 20–30 new registry entries.
-Two test cases: a rectangular HSS post where longitudinal governs on the
-weak axis, and a rectangular rail.
+**Size.** XL, up from L and now larger than slice 1: it was already the
+largest slice before Chapter K joined it. About 35–50 new registry
+entries, of which Chapter K is perhaps 15–20 (the limit states for round
+and rectangular T-connections under branch axial load and moment, their
+interaction, Qf, and the limits of applicability); I'm not sure of either
+count. Three or four test cases: a rectangular HSS post where longitudinal
+governs on the weak axis, a rectangular rail, and cases that reach the
+chord limit states for a round chord and a rectangular one. The chord
+limit states are new checks, so each gets Micah's release recompute (ADR
+0006). Its plan should decide first whether to split the slice, sections
+and then Chapter K.
 
-**To settle in the slice plan.** The rail wall's Chapter K limit states
-for a rectangular rail at β = 1, where the sidewall limit states can
-govern (welds.md, W7): checked, or a stated assumption with its reason.
+**To settle in the slice plan.** Which Chapter K limit states apply at
+each joint (chord plastification, and for a rectangular chord at β = 1
+the sidewall limit states, which can govern), the interaction of branch
+axial load and moment, where the lines print (inside Checks 3 and 4b, or
+as their own summary rows), the forces on the chord wall in each direction
+case, and what becomes of slice 5's D/t ≤ 50 stop.
 Also whether the five orthogonal direction cases still cover the welds
 for a rectangular rail. For pipe on pipe an inclined guard load raises
 Check 3 by under 10% on a ratio far below 1.0 (demand V·e, e = D_rail/2),

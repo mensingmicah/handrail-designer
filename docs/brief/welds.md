@@ -153,6 +153,8 @@ plan's decision numbers, kept for the record.
   3 plan, T1). Slices 5 and 6 decide (docs/ROADMAP.md):
   thin-wall custom round rails, and rectangular rails at β = 1, where
   the sidewall limit states can govern. (W7, Micah 2026-10-04.)
+  Decided for slice 5, and W7 retired from slice 6: S5-3, "Hollow round
+  sections (slice 5)" below.
 - **The post may not be wider than the rail.** The coped detail (the post
   end welded to the rail's underside) needs post OD ≤ rail OD; equal ODs
   are allowed. A post wider than the rail stops the calc at input
@@ -350,3 +352,58 @@ plan's decision numbers.
   adjacent to the post with the dead-load end reaction, horizontal by
   vector sum and downward by sum. The same-as-top observation and its
   two guards (R ≤ P; t_des,post ≥ t_des,rail) are unchanged.
+
+## Hollow round sections (slice 5)
+
+Decided in planning slice 5 (docs/plans/slice-5.md); S5 numbers are that
+plan's decision numbers.
+
+- **W7 is kept for slice 5, with a stop at chord D/t > 50.** (S5-3, Micah
+  2026-10-09.) The stated assumption that the Chapter K chord limit states
+  are not checked stays for every round hollow chord slice 5 adds (round
+  HSS and custom round tubes), with one new guard. The calc stops when a
+  chord's D/t exceeds 50, the AISC 360-22 Chapter K limit of applicability
+  for the chord of a round T-connection. The limit is a registry entry,
+  drafted, its table number confirmed when it is drafted.
+  - The chord is the top rail in Check 3, and the post in Check 4b
+    whenever there is an intermediate rail (same as the top rail, or its
+    own section). D/t is the value the section's classification uses
+    (design wall).
+  - The stop is in input validation (`validate()`), beside W7's
+    non-round stop, and reads like the slender-section stop: it names the
+    member, its D/t, the limit and W7.
+  - The supporting argument (Micah, 2026-10-09). The chord wall is not
+    what limits a thin rail: at a 6 ft span the rail's own bending ratio
+    (Check 1) runs about 3 to 4 times the chord plastification ratio, so
+    Check 1 fails long before the chord wall would. The margin narrows on
+    a short span with the concentrated load at the post: the rail's
+    moment falls with the span while the load delivered to the chord wall
+    does not.
+  - Planning arithmetic behind it (Claude, 2026-10-09; order of magnitude
+    only, from memory of the Chapter K round T-connection equations,
+    unverified, not test values): chord plastification strength goes with
+    t². With β = 1, Fy = 46 ksi and w·s = 300 lb on a 6 ft span, the
+    axial and out-of-plane-moment ratios are each about 0.03 to 0.04 for
+    Pipe1-1/2STD (D/t = 14.1), about 0.12 to 0.13 for a 2.375 in tube at
+    D/t = 46 (Check 1 about 0.5), and about 0.21 to 0.24 for a 1.900 in
+    tube at D/t = 50 (Check 1 about 1.0). At D/t = 100 they would be
+    about 0.7 to 0.8, with no code equation applicable.
+  - The printed assumption gains a clause. Proposed text, to be accepted
+    in the slice 5 pull request and changed in output.md's list in the
+    commit that prints it (a test holds the printed list to output.md
+    word for word):
+    > "Local strength of the rail wall at the post, and of the post wall
+    > at the intermediate rail (AISC 360-22 Chapter K chord limit
+    > states), is not checked; the chord's D/t is limited to 50, the
+    > Chapter K limit of applicability."
+  - Cost, accepted: the noncompact test case for Eq. F8-2 (#3) has to sit
+    in λp < D/t ≤ 50 (44.1 to 50 at Fy = 46 ksi), and a noncompact A53
+    Gr B rail (λp = 58) cannot be run.
+- **From slice 6 the Chapter K chord limit states are checked, not
+  assumed.** (S5-3, Micah 2026-10-09; a scope addition he made
+  deliberately, scope.md.) For round and rectangular chords, built
+  together in slice 6: the rail wall in Check 3 and the post wall in Check
+  4b. W7, its stated assumption and its non-round stop are retired when
+  that lands. Slice 6's plan settles which limit states, the interaction,
+  where the lines print, and what becomes of the D/t ≤ 50 stop (a limit
+  of applicability still applies to a check made under Chapter K).

@@ -32,6 +32,12 @@ In scope:
 - ASD member checks
 - ASCE 7-22 guard loading, with an option to exempt the occupancies where the
   distributed load need not be considered
+- The AISC 360-22 Chapter K chord limit states at the two HSS-to-HSS
+  joints: the rail wall at the post (Check 3) and the post wall at the
+  intermediate rail (Check 4b), for round and rectangular chords. A scope
+  addition (Micah, 2026-10-09; S5-3, welds.md), built in slice 6. Until
+  then they are a stated assumption, not checked, and the tool stops when
+  a chord's D/t exceeds 50.
 - Dead load of rails, post and baseplate: the AISC tabulated weight for
   database shapes, computed from area and steel density (a registry entry)
   for sections defined by dimensions and for the baseplate. A custom tube's
@@ -46,7 +52,7 @@ Out of scope for v1 (push back if I try to add these):
 - Infill: mesh, glass, pickets
 - LRFD member checks
 - Connection design beyond the fillet welds checked in Checks 3, 4b and 7
-  (for example the Chapter K chord limit states, and baseplate design)
+  and the chord limit states above (for example baseplate design)
 - Automatic member selection. This is a checker, not an optimizer.
 - Shear checks in any member (decided; stated in the output's assumptions)
 - Slender sections, in flexure or compression. The tool stops and computes
