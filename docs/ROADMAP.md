@@ -2,7 +2,8 @@
 
 Status: **accepted by Micah, 2026-09-30.** Slice 2 is the post (option A
 below). **Current status (2026-10-09):** slices 1–4 are done (v0.1.0 to
-v0.4.0, the first complete all-pipe package); slice 5 is next. Slices 5–7
+v0.4.0, the first complete all-pipe package); slice 5 is next and is
+planned (docs/plans/slice-5.md). Slices 5–7
 were regrouped by engineering on 2026-10-09 (Micah; S5-1 in
 docs/brief/checks.md): hollow round, then hollow rectangular, then every
 solid bar. What the tool must do is set by the brief
@@ -18,7 +19,7 @@ settles the slice's open questions, and it can reorder or split the slice.
 | 2 (done, v0.2.0) | Checks 5–6: the post (pipe) | 1 | M | 2 | — |
 | 3 (done, v0.3.0) | Checks 3 and 7: both welds (pipe rail on pipe post) | 2 | M | 1 | — |
 | 4 (done, v0.4.0) | Check 4 (intermediate rail, 4a member and 4b weld) and the anchor reaction sets | 2 (3 for a full package) | M | 1 | #4 (closed) |
-| 5 | Hollow round sections: round HSS, custom round tube; the two-axis section type; the engine refactor (#21) | 4 | M | 2 | #3, #21, #24 |
+| 5 (planned) | Hollow round sections: round HSS, custom round tube; the two-axis section type; the engine refactor (#21) | 4 | M–L | 2 | #3, #6, #7, #11, #21, #24 |
 | 6 | Hollow rectangular sections: rectangular HSS, custom rectangular tube; Chapter K chord limit states for round and rectangular chords | 5 | XL | 3–4 | — |
 | 7 | Solid bars: solid round bar and solid rectangular bar | 6 | L | 2–3 | — |
 | 8 | Input form and front-matter image | 7 | L | 0 | — |
@@ -281,25 +282,25 @@ the other #24 items.
 
 **Depends on.** Slice 4 (all checks exist to be generalized).
 
-**Size.** M. It loses the bar engineering and gains the #21 refactor and
-the two-axis type. About 15–20 new registry entries (A500 and A1085 Fy and
-Fu, §B4.2, the property formulas for a round tube, the grade defaults); I'm
-not sure of that count. Two test cases: the noncompact rail (#3) and a
-round HSS or custom tube post.
+**Size.** M–L. It loses the bar engineering and gains the #21 refactor,
+the two-axis type and every Table 2-4 grade. About 35–40 new registry
+entries, against the 12–15 first guessed: the grade rulings roughly
+doubled the count. Two test cases: case 6, a custom noncompact tube rail
+(#3), and case 7, a database round HSS post, each covering only the
+groups its member changes.
 
-**To settle in the slice plan.** Whether the stated assumption that the
-rail wall's Chapter K chord limit states are not checked (welds.md, W7)
-still holds for a thin-wall round rail, or whether Check 3 needs that
-limit state or a stop. Check 3 stops on any rail or post that is not round
-hollow. A rail welded to the side of a post wider than it, or a cap-plate
-detail, is a different connection and is out of v1; the tool stops when
-the post is wider than the rail (welds.md, W8). Slices 5 and 6 keep that
-stop as section families widen, and slice 6 decides which dimensions it
-compares for rectangular sections. The weld envelope's orthogonal-cases
-ruling and the load-at-the-rail-centerline ruling (welds.md) are revisited
-for rectangular rails in slice 6; confirm here that both still hold for
-every round rail this slice adds. Whether a new section family's first
-test case gets Micah's release recompute (#23).
+**Settled** (Micah, 2026-10-09): S5-1 to S5-9 in the brief. The W7
+assumption is kept with a stop at chord D/t > 50, and the Chapter K chord
+limit states become a check in slice 6 (S5-3). A round HSS's OD is used
+as published, with ODs within 0.01 in equal in W8 and S4-11 (S5-4). Every
+Table 2-4 grade is offered, A500 Gr B the default for round HSS (S5-5 to
+S5-7). A custom tube's wall is always nominal (S5-8). Stops are listed in
+docs/brief/stops.md with one table of allowed families per joint (S5-9).
+A new family's first case gets Micah's release recompute where it reaches
+something his arithmetic has not touched (S5-2). The weld envelope and
+load-at-centerline rulings are confirmed for every round hollow rail in
+the plan. **Plan:** docs/plans/slice-5.md, with test cases 6 and 7; three
+points are open for Micah there (O1 to O3).
 
 ### Slice 6: hollow rectangular sections
 
