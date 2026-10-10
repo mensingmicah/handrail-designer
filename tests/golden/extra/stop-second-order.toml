@@ -11,7 +11,7 @@ post_height = 42
 baseplate_thickness = "1/2"
 
 [top_rail]
-section = "Pipe26STD"
+section = "Pipe20XS"
 
 [post]
 section = "Pipe2STD"
