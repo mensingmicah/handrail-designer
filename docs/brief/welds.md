@@ -162,7 +162,8 @@ plan's decision numbers, kept for the record.
   coped post to rail underside detail requires post OD ≤ rail OD, and
   says to check the inputs. A rail welded to the side of a wider post,
   or a cap-plate detail, is a different connection and is out of v1
-  (docs/ROADMAP.md, slices 5 and 6). (W8, Micah 2026-10-08.)
+  (docs/ROADMAP.md, slices 5 and 6). (W8, Micah 2026-10-08.) ODs within
+  0.01 in are treated as equal (S5-4, below).
 - **No bearing credit; the weld carries everything.** This holds at the
   cope (Check 3, as above) and at the baseplate (Check 7). The tool
   evaluates both extreme fibers of the ring and reports the larger,
@@ -407,3 +408,21 @@ plan's decision numbers.
   that lands. Slice 6's plan settles which limit states, the interaction,
   where the lines print, and what becomes of the D/t ≤ 50 stop (a limit
   of applicability still applies to a check made under Chapter K).
+- **ODs within 0.01 in are equal in the width comparisons.** (S5-4,
+  Micah 2026-10-09.) W8 (post OD ≤ rail OD) and S4-11 (intermediate rail
+  OD ≤ post OD) treat two outside diameters within 0.01 in of each other
+  as equal, so neither stop fires. The reason is the database's rounding
+  of a round HSS's OD (checks.md, S5-4): a pipe and a round HSS of the
+  same nominal size are the same physical diameter, but read 2.375 and
+  2.38 in, and without the tolerance an HSS2.375 post under a Pipe2STD
+  rail would hit a misleading "wider than" stop. Mixed pipe and HSS of
+  one size is rare in practice.
+  - The tolerance is an engineering-judgement registry entry (source
+    "engineer"). It changes only the two comparisons. Every calc line
+    still uses each member's own published OD.
+  - It applies to every pair of round sections, custom tubes included.
+  - Known limit: the rounding is at most 0.005 in for an OD below 10 in,
+    which the tolerance covers. From HSS10.750 up the database's rounding
+    reaches 0.05 in (10.8 in against Pipe10STD's 10.75 in), so a
+    same-size pipe and HSS pair at 10.75 in or larger would still stop.
+    No guard member is that large.

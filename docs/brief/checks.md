@@ -245,3 +245,20 @@ plan's decision numbers, kept for the record.
     data a section holds, not how a check uses it: which axis each check
     reads, the axis input, and Chapter H biaxial bending for non-round
     sections are slice 6's decisions.
+- **A round HSS uses the database's values as published, the outside
+  diameter included.** (S5-4, Micah 2026-10-09.) The Shapes Database
+  stores a round HSS's OD rounded to three significant figures (2.38 in
+  for HSS2.375X0.154, 2.88 in for HSS2.875, 6.63 in for HSS6.625; 61 of
+  the 189 round HSS rows differ from their designation), and a pipe's OD
+  exactly (2.375 in for Pipe2STD). The tool uses the OD column as it
+  stands and never reads a diameter out of the designation, so "standard
+  section properties are used exactly as published" (above) has no
+  exception, and the independent calc reads the same value from the AISC
+  workbook.
+  - Accepted effect: the weld ring (πD and S_w = πD²/4) and the
+    eccentricity e = D_rail/2 use the published OD, which moves Checks 3,
+    4b and 7 by about 0.2 to 0.4% against the designation's diameter.
+    A, I, S, Z, r and D/t are the published values and do not depend on
+    the OD column.
+  - The W8 and S4-11 width comparisons treat two ODs within 0.01 in as
+    equal (welds.md, S5-4).
