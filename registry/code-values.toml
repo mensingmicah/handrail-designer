@@ -20,7 +20,10 @@
 # unit:    a pint unit string (forces are "lbf", since pint's "lb" is mass),
 #          "" for a dimensionless number, or one of "text", "list",
 #          "equation", "provision", "factors", "fraction" (a coefficient
-#          written as {numerator, denominator}, printed as a fraction).
+#          written as {numerator, denominator}, printed as a fraction), or
+#          "ksi by wall range" (a stress that depends on the wall thickness,
+#          written as {up_to_thin_limit, up_to_thick_limit} in ksi; the
+#          limits are the material.A618.wall.* entries).
 # An "equation" or "provision" entry cites a formula or rule that is
 # implemented once in the code (ADR 0002); its value describes what is cited
 # and deliberately does not restate the formula, so the two cannot drift.
@@ -115,6 +118,46 @@ review = [
   "ej.combo.reaction",
   "ej.reaction.location",
   "ej.reaction.lateral_note",
+  # Slice 5 (hollow round sections), drafted 2026-10-10
+  "material.A500_GrB.hss_round.Fy",
+  "material.A500_GrB.hss_round.Fu",
+  "material.A500_GrC.hss_round.Fy",
+  "material.A500_GrC.hss_round.Fu",
+  "material.A501_GrA.hss_round.Fy",
+  "material.A501_GrA.hss_round.Fu",
+  "material.A501_GrB.hss_round.Fy",
+  "material.A501_GrB.hss_round.Fu",
+  "material.A847.hss_round.Fy",
+  "material.A847.hss_round.Fu",
+  "material.A1085_GrA.hss_round.Fy",
+  "material.A1085_GrA.hss_round.Fu",
+  "material.A618.wall.thin_limit",
+  "material.A618.wall.thick_limit",
+  "material.A618_GrIa.Fy",
+  "material.A618_GrIa.Fu",
+  "material.A618_GrIb.Fy",
+  "material.A618_GrIb.Fu",
+  "material.A618_GrII.Fy",
+  "material.A618_GrII.Fu",
+  "material.A618_GrIII.Fy",
+  "material.A618_GrIII.Fu",
+  "aisc360.B4.2.design_wall",
+  "aisc360.B4.2.coeff",
+  "aisc360.B4.2.nominal_wall",
+  "geometry.round_tube.inside_diameter",
+  "geometry.round_tube.A",
+  "geometry.round_tube.I",
+  "geometry.round_tube.S",
+  "geometry.round_tube.Z",
+  "geometry.round_tube.r",
+  "geometry.round_tube.D_over_t",
+  "geometry.round_tube.weight",
+  "aisc360.K.round_chord.D_over_t_max",
+  "ej.weld.chord_D_over_t_stop",
+  "ej.section.od_tolerance",
+  "ej.section.custom_wall_nominal",
+  "ej.grade.A1085_database_note",
+  "ej.grade.unusual_pairing",
 ]
 
 # ---------------------------------------------------------------------------
@@ -204,7 +247,7 @@ is the only pipe specification in the column; confirm nothing else is marked."""
 
 [[entry]]
 id = "material.grades.hss_round"
-value = ["A500 Gr B", "A500 Gr C", "A501 Gr A", "A501 Gr B", "A618 Gr I", "A618 Gr II", "A618 Gr III", "A847", "A1085 Gr A", "A1065 Gr 50", "A1065 Gr 70"]
+value = ["A500 Gr B", "A500 Gr C", "A501 Gr A", "A501 Gr B", "A618 Gr Ia", "A618 Gr Ib", "A618 Gr II", "A618 Gr III", "A847", "A1085 Gr A"]
 unit = "list"
 cite = "AISC Manual Table 2-4"
 document = "AISC Steel Construction Manual"
@@ -228,7 +271,14 @@ Review 2026-09-30, Micah: Unsure. 'A500 gr. B should just be the default. I woul
 Decision 2026-09-30, Micah: leave drafted and settle in slice 5. Fy and Fu \
 for each grade belong in separate entries, not in this list. Which grades \
 the tool offers, and the default, are brief decisions; this entry only \
-mirrors the Table 2-4 column."""
+mirrors the Table 2-4 column. \
+Slice 5 (2026-10-10; S5-5 to S5-7, Micah 2026-10-09): the A618 names \
+corrected from I, II, III to Ia, Ib, II, III, each with its own Fy and \
+Fu entries; A1065 removed, since it is not a round HSS grade and moves \
+to slice 6 with rectangular HSS. Every grade here now has Fy and Fu \
+entries (material.<grade>.hss_round.* and material.A618_*), and a round \
+HSS or custom round tube may use any of them. The unusual-pairing \
+warning (ej.grade.unusual_pairing) reads this list. Still from memory."""
 
 [[entry]]
 id = "material.grades.hss_rect"
@@ -441,7 +491,13 @@ Decision 2026-09-30, Micah: keep the entry. The permission is stated in \
 several places; cite the Table 2-4 HSS heading. Re-cited from 360-22 \
 §A3.1a User Note to Manual Table 2-4; source changed to engineer since \
 Micah supplied the location. Value text unchanged: confirm on \
-verification that the paraphrase matches what the heading supports."""
+verification that the paraphrase matches what the heading supports. \
+Slice 5 (2026-10-10; note only, the entry stays verified): by S5-14 the \
+line this entry cites prints for an AISC pipe and for a custom tube of \
+A53 Gr B, and not for a round HSS or a custom tube of an HSS grade. For \
+the record, the 2016 edition of AISC 360 carries the permission as a \
+User Note in §B4.2 (read 2026-10-10 while drafting \
+aisc360.B4.2.design_wall); the 2022 edition was not opened."""
 
 # ---------------------------------------------------------------------------
 # AISC 360-22 flexure: round HSS (and pipe, per aisc360.pipe_as_round_hss)
@@ -1713,7 +1769,13 @@ Micah, 2026-10-04 (W2). A non-primary source; I did not open the STI \
 piece and have no URL for it. Applying the increase under base moment \
 extends that test basis, which was axial tension: engineering judgement. \
 The weld code applies the increase only to round hollow sections and \
-stops for any other (W2)."""
+stops for any other (W2). \
+Slice 5 (S5-12; Claude's, confirmed by Micah 2026-10-09): the increase \
+applies at Check 7 to every round hollow post, whatever its grade, \
+custom round tubes included. The test basis is cold-formed round HSS; a \
+hot-formed grade (A501, A618) extends it by the same engineering \
+judgement this entry already records for base moment. Which posts the \
+weld code allows is now the Check 7 joint's table (docs/brief/stops.md)."""
 
 [[entry]]
 id = "ej.weld.branch_kds"
@@ -1807,7 +1869,13 @@ Micah, 2026-10-04 (W7). Printed in Check 3 beside the rail fusion face \
 line, which takes the in-plane force only (W6). From memory, unverified: \
 the margin for pipe on pipe is about 20 times. Slice 4 (S4-12): the W7 \
 stated assumption is extended to the post wall at the intermediate rail, \
-whose printed line is ej.weld.post_wall_chord_intermediate."""
+whose printed line is ej.weld.post_wall_chord_intermediate. \
+Slice 5 (S5-3, Micah 2026-10-09): W7 is kept for every round hollow \
+chord, with a stop when the chord's D/t exceeds 50, the Chapter K limit \
+of applicability (aisc360.K.round_chord.D_over_t_max, \
+ej.weld.chord_D_over_t_stop). The value printed here is unchanged; the \
+stated assumption in the front matter gains the clause. From slice 6 \
+the chord limit states are checked and W7 is retired."""
 
 [[entry]]
 id = "ej.weld.max_size_not_applicable"
@@ -2152,3 +2220,756 @@ note = """
 Micah, 2026-10-08 (S4-4), wording from the brief. Printed with the \
 lateral reaction set. To revisit if the longitudinal load is ever \
 modeled differently (docs/ROADMAP.md, after v1)."""
+
+# ---------------------------------------------------------------------------
+# Slice 5: hollow round sections (round HSS and custom round tubes).
+# Drafted 2026-10-10 (docs/plans/slice-5.md, "Registry entries this slice
+# will draft").
+# ---------------------------------------------------------------------------
+
+# --- Fy and Fu for round HSS, AISC Manual Table 2-4 ------------------------
+# One entry per grade, shape and property (S5-5). The four A500 values are
+# the ones Micah verifies before slice 5's independent calcs run.
+
+[[entry]]
+id = "material.A500_GrB.hss_round.Fy"
+value = 46
+unit = "ksi"
+cite = "AISC Manual Table 2-4"
+document = "AISC Steel Construction Manual"
+edition = "16th Edition"
+section = "Part 2, Table 2-4, Applicable ASTM Specifications for Various Structural Shapes, Round HSS, ASTM A500 Gr B, minimum yield stress Fy"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-10-10
+verified_by = ""
+verified_date = ""
+note = """
+S5-5: Micah verifies this value against Table 2-4 before slice 5's \
+independent calcs run. Drafted as 46 ksi, which I believe is the ASTM \
+A500-21 value for Grade B, round and shaped alike. Before A500-21 round \
+Grade B was 42 ksi. I am not sure which the 16th Edition prints. Micah's \
+review note of 2026-09-30 on material.grades.hss_rect gives 46 ksi for \
+round. The default grade for round HSS and custom round tubes (S5-5); \
+test case 7's post runs on it."""
+
+[[entry]]
+id = "material.A500_GrB.hss_round.Fu"
+value = 58
+unit = "ksi"
+cite = "AISC Manual Table 2-4"
+document = "AISC Steel Construction Manual"
+edition = "16th Edition"
+section = "Part 2, Table 2-4, Applicable ASTM Specifications for Various Structural Shapes, Round HSS, ASTM A500 Gr B, minimum tensile stress Fu"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-10-10
+verified_by = ""
+verified_date = ""
+note = """
+S5-5: Micah verifies this value against Table 2-4 before slice 5's \
+independent calcs run. From memory: 58 ksi for Grade B before and after \
+A500-21. Fu/Fy = 58/46 = 1.26 on the drafted values, above the 1.20 \
+guard on a post grade (W5, S5-13)."""
+
+[[entry]]
+id = "material.A500_GrC.hss_round.Fy"
+value = 50
+unit = "ksi"
+cite = "AISC Manual Table 2-4"
+document = "AISC Steel Construction Manual"
+edition = "16th Edition"
+section = "Part 2, Table 2-4, Applicable ASTM Specifications for Various Structural Shapes, Round HSS, ASTM A500 Gr C, minimum yield stress Fy"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-10-10
+verified_by = ""
+verified_date = ""
+note = """
+S5-5: Micah verifies this value against Table 2-4 before slice 5's \
+independent calcs run. Drafted as 50 ksi, which I believe is the ASTM \
+A500-21 value for Grade C, round and shaped alike; a Steel Tube \
+Institute article (steeltubeinstitute.org, Understanding HSS Material \
+Specifications, read 2026-10-10) gives round Grade C as 50 ksi and 62 \
+ksi. Before A500-21 round Grade C was 46 ksi. I am not sure which the \
+16th Edition prints. Test case 6's rail runs on it: at 50 ksi its wall \
+is noncompact (lambda_p = 40.6), and at 46 ksi it still is (44.1)."""
+
+[[entry]]
+id = "material.A500_GrC.hss_round.Fu"
+value = 62
+unit = "ksi"
+cite = "AISC Manual Table 2-4"
+document = "AISC Steel Construction Manual"
+edition = "16th Edition"
+section = "Part 2, Table 2-4, Applicable ASTM Specifications for Various Structural Shapes, Round HSS, ASTM A500 Gr C, minimum tensile stress Fu"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-10-10
+verified_by = ""
+verified_date = ""
+note = """
+S5-5: Micah verifies this value against Table 2-4 before slice 5's \
+independent calcs run. From memory, and the Steel Tube Institute article \
+noted under material.A500_GrC.hss_round.Fy gives 62 ksi. Fu/Fy = 62/50 = \
+1.24 on the drafted values: the lowest ratio of any grade slice 5 \
+drafts, and above the 1.20 guard on a post grade (W5, S5-13)."""
+
+[[entry]]
+id = "material.A501_GrA.hss_round.Fy"
+value = 36
+unit = "ksi"
+cite = "AISC Manual Table 2-4"
+document = "AISC Steel Construction Manual"
+edition = "16th Edition"
+section = "Part 2, Table 2-4, Applicable ASTM Specifications for Various Structural Shapes, Round HSS, ASTM A501 Gr A, minimum yield stress Fy"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-10-10
+verified_by = ""
+verified_date = ""
+note = """
+From memory, not corroborated. A501 is hot-formed tubing. A plain grade \
+(S5-5): only Fy and Fu differ from A500, because the design wall rule of \
+AISC 360 B4.2 is by ASTM standard (aisc360.B4.2.design_wall)."""
+
+[[entry]]
+id = "material.A501_GrA.hss_round.Fu"
+value = 58
+unit = "ksi"
+cite = "AISC Manual Table 2-4"
+document = "AISC Steel Construction Manual"
+edition = "16th Edition"
+section = "Part 2, Table 2-4, Applicable ASTM Specifications for Various Structural Shapes, Round HSS, ASTM A501 Gr A, minimum tensile stress Fu"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-10-10
+verified_by = ""
+verified_date = ""
+note = "From memory, not corroborated. Fu/Fy = 58/36 = 1.61 on the drafted values."
+
+[[entry]]
+id = "material.A501_GrB.hss_round.Fy"
+value = 50
+unit = "ksi"
+cite = "AISC Manual Table 2-4"
+document = "AISC Steel Construction Manual"
+edition = "16th Edition"
+section = "Part 2, Table 2-4, Applicable ASTM Specifications for Various Structural Shapes, Round HSS, ASTM A501 Gr B, minimum yield stress Fy"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-10-10
+verified_by = ""
+verified_date = ""
+note = "From memory, not corroborated."
+
+[[entry]]
+id = "material.A501_GrB.hss_round.Fu"
+value = 70
+unit = "ksi"
+cite = "AISC Manual Table 2-4"
+document = "AISC Steel Construction Manual"
+edition = "16th Edition"
+section = "Part 2, Table 2-4, Applicable ASTM Specifications for Various Structural Shapes, Round HSS, ASTM A501 Gr B, minimum tensile stress Fu"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-10-10
+verified_by = ""
+verified_date = ""
+note = "From memory, not corroborated. Fu/Fy = 70/50 = 1.40 on the drafted values."
+
+[[entry]]
+id = "material.A847.hss_round.Fy"
+value = 50
+unit = "ksi"
+cite = "AISC Manual Table 2-4"
+document = "AISC Steel Construction Manual"
+edition = "16th Edition"
+section = "Part 2, Table 2-4, Applicable ASTM Specifications for Various Structural Shapes, Round HSS, ASTM A847, minimum yield stress Fy"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-10-10
+verified_by = ""
+verified_date = ""
+note = """
+From memory. A847 is weathering-steel tubing with no grade letter. The \
+Steel Tube Institute article noted under \
+material.A500_GrC.hss_round.Fy says its yield matches A500 Grade C."""
+
+[[entry]]
+id = "material.A847.hss_round.Fu"
+value = 70
+unit = "ksi"
+cite = "AISC Manual Table 2-4"
+document = "AISC Steel Construction Manual"
+edition = "16th Edition"
+section = "Part 2, Table 2-4, Applicable ASTM Specifications for Various Structural Shapes, Round HSS, ASTM A847, minimum tensile stress Fu"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-10-10
+verified_by = ""
+verified_date = ""
+note = """
+From memory, not corroborated: the Steel Tube Institute article says \
+only that it is a little higher than A500 Grade C's. Fu/Fy = 70/50 = \
+1.40 on the drafted values."""
+
+[[entry]]
+id = "material.A1085_GrA.hss_round.Fy"
+value = 50
+unit = "ksi"
+cite = "AISC Manual Table 2-4"
+document = "AISC Steel Construction Manual"
+edition = "16th Edition"
+section = "Part 2, Table 2-4, Applicable ASTM Specifications for Various Structural Shapes, Round HSS, ASTM A1085 Gr A, minimum yield stress Fy"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-10-10
+verified_by = ""
+verified_date = ""
+note = """
+From memory; the Steel Tube Institute article noted under \
+material.A500_GrC.hss_round.Fy gives a 50 ksi minimum and a 70 ksi \
+maximum yield for A1085. A grade with a rule of its own (S5-6): its \
+design wall is the nominal wall for a custom tube \
+(aisc360.B4.2.nominal_wall), and a database section runs on its \
+published properties with a printed note (ej.grade.A1085_database_note)."""
+
+[[entry]]
+id = "material.A1085_GrA.hss_round.Fu"
+value = 65
+unit = "ksi"
+cite = "AISC Manual Table 2-4"
+document = "AISC Steel Construction Manual"
+edition = "16th Edition"
+section = "Part 2, Table 2-4, Applicable ASTM Specifications for Various Structural Shapes, Round HSS, ASTM A1085 Gr A, minimum tensile stress Fu"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-10-10
+verified_by = ""
+verified_date = ""
+note = "From memory, not corroborated. Fu/Fy = 65/50 = 1.30 on the drafted values (welds.md, W5, names the same ratio)."
+
+# --- ASTM A618: Fy and Fu by wall thickness (S5-7) --------------------------
+# Grades Ia, Ib and II take one pair of values up to the thin limit and
+# another above it up to the thick limit; above the thick limit Table 2-4
+# gives no value and the calc stops. The wall compared is the nominal one.
+# Stored by wall range, not by shape, so slice 6's rectangular A618 reads
+# the same entries.
+
+[[entry]]
+id = "material.A618.wall.thin_limit"
+value = 0.75
+unit = "inch"
+cite = "AISC Manual Table 2-4"
+document = "AISC Steel Construction Manual"
+edition = "16th Edition"
+section = "Part 2, Table 2-4, ASTM A618 Gr Ia, Ib and II: the wall thickness up to and including which the higher Fy and Fu apply"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-10-10
+verified_by = ""
+verified_date = ""
+note = """
+From memory, as drafted in docs/brief/inputs.md (S5-7). A wall of \
+exactly 3/4 in takes the values for walls up to 3/4 in. The wall \
+compared is the nominal wall: t_nom of a database section, the wall \
+entered for a custom tube (S5-8)."""
+
+[[entry]]
+id = "material.A618.wall.thick_limit"
+value = 1.5
+unit = "inch"
+cite = "AISC Manual Table 2-4"
+document = "AISC Steel Construction Manual"
+edition = "16th Edition"
+section = "Part 2, Table 2-4, ASTM A618 Gr Ia, Ib and II: the greatest wall thickness the table gives Fy and Fu for"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-10-10
+verified_by = ""
+verified_date = ""
+note = """
+From memory, as drafted in docs/brief/inputs.md (S5-7). A Gr Ia, Ib or \
+II wall over this stops the calc, naming the member, its wall, the grade \
+and the limit."""
+
+[[entry]]
+id = "material.A618_GrIa.Fy"
+value = { up_to_thin_limit = 50, up_to_thick_limit = 46 }
+unit = "ksi by wall range"
+cite = "AISC Manual Table 2-4"
+document = "AISC Steel Construction Manual"
+edition = "16th Edition"
+section = "Part 2, Table 2-4, Applicable ASTM Specifications for Various Structural Shapes, HSS, ASTM A618 Gr Ia, minimum yield stress Fy by wall thickness"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-10-10
+verified_by = ""
+verified_date = ""
+note = """
+From memory, as drafted in docs/brief/inputs.md (S5-7): 50 ksi for \
+walls up to 3/4 in, 46 ksi over 3/4 in to 1-1/2 in. The limits are \
+material.A618.wall.thin_limit and material.A618.wall.thick_limit. No \
+test case reaches this grade; machinery tests only, a known test gap \
+listed on the release-review issue."""
+
+[[entry]]
+id = "material.A618_GrIa.Fu"
+value = { up_to_thin_limit = 70, up_to_thick_limit = 67 }
+unit = "ksi by wall range"
+cite = "AISC Manual Table 2-4"
+document = "AISC Steel Construction Manual"
+edition = "16th Edition"
+section = "Part 2, Table 2-4, Applicable ASTM Specifications for Various Structural Shapes, HSS, ASTM A618 Gr Ia, minimum tensile stress Fu by wall thickness"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-10-10
+verified_by = ""
+verified_date = ""
+note = "From memory, as drafted in docs/brief/inputs.md (S5-7): 70 ksi for walls up to 3/4 in, 67 ksi over 3/4 in to 1-1/2 in."
+
+[[entry]]
+id = "material.A618_GrIb.Fy"
+value = { up_to_thin_limit = 50, up_to_thick_limit = 46 }
+unit = "ksi by wall range"
+cite = "AISC Manual Table 2-4"
+document = "AISC Steel Construction Manual"
+edition = "16th Edition"
+section = "Part 2, Table 2-4, Applicable ASTM Specifications for Various Structural Shapes, HSS, ASTM A618 Gr Ib, minimum yield stress Fy by wall thickness"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-10-10
+verified_by = ""
+verified_date = ""
+note = "From memory, as drafted in docs/brief/inputs.md (S5-7): the same values as Gr Ia."
+
+[[entry]]
+id = "material.A618_GrIb.Fu"
+value = { up_to_thin_limit = 70, up_to_thick_limit = 67 }
+unit = "ksi by wall range"
+cite = "AISC Manual Table 2-4"
+document = "AISC Steel Construction Manual"
+edition = "16th Edition"
+section = "Part 2, Table 2-4, Applicable ASTM Specifications for Various Structural Shapes, HSS, ASTM A618 Gr Ib, minimum tensile stress Fu by wall thickness"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-10-10
+verified_by = ""
+verified_date = ""
+note = "From memory, as drafted in docs/brief/inputs.md (S5-7): the same values as Gr Ia."
+
+[[entry]]
+id = "material.A618_GrII.Fy"
+value = { up_to_thin_limit = 50, up_to_thick_limit = 46 }
+unit = "ksi by wall range"
+cite = "AISC Manual Table 2-4"
+document = "AISC Steel Construction Manual"
+edition = "16th Edition"
+section = "Part 2, Table 2-4, Applicable ASTM Specifications for Various Structural Shapes, HSS, ASTM A618 Gr II, minimum yield stress Fy by wall thickness"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-10-10
+verified_by = ""
+verified_date = ""
+note = "From memory, as drafted in docs/brief/inputs.md (S5-7): the same values as Gr Ia."
+
+[[entry]]
+id = "material.A618_GrII.Fu"
+value = { up_to_thin_limit = 70, up_to_thick_limit = 67 }
+unit = "ksi by wall range"
+cite = "AISC Manual Table 2-4"
+document = "AISC Steel Construction Manual"
+edition = "16th Edition"
+section = "Part 2, Table 2-4, Applicable ASTM Specifications for Various Structural Shapes, HSS, ASTM A618 Gr II, minimum tensile stress Fu by wall thickness"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-10-10
+verified_by = ""
+verified_date = ""
+note = "From memory, as drafted in docs/brief/inputs.md (S5-7): the same values as Gr Ia."
+
+[[entry]]
+id = "material.A618_GrIII.Fy"
+value = 50
+unit = "ksi"
+cite = "AISC Manual Table 2-4"
+document = "AISC Steel Construction Manual"
+edition = "16th Edition"
+section = "Part 2, Table 2-4, Applicable ASTM Specifications for Various Structural Shapes, HSS, ASTM A618 Gr III, minimum yield stress Fy"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-10-10
+verified_by = ""
+verified_date = ""
+note = "From memory, as drafted in docs/brief/inputs.md (S5-7): one value for every wall thickness."
+
+[[entry]]
+id = "material.A618_GrIII.Fu"
+value = 65
+unit = "ksi"
+cite = "AISC Manual Table 2-4"
+document = "AISC Steel Construction Manual"
+edition = "16th Edition"
+section = "Part 2, Table 2-4, Applicable ASTM Specifications for Various Structural Shapes, HSS, ASTM A618 Gr III, minimum tensile stress Fu"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-10-10
+verified_by = ""
+verified_date = ""
+note = "From memory, as drafted in docs/brief/inputs.md (S5-7): one value for every wall thickness. Fu/Fy = 65/50 = 1.30."
+
+# --- AISC 360-22 B4.2: design wall thickness for HSS (S5-6, S5-8) -----------
+# S5-6 asked for these to be drafted from the 360-22 text. The 2022 text
+# could not be opened (the AISC site refused the request). They are drafted
+# from the text of the 2016 edition, which keys the rule on the ASTM
+# standard, not on ERW against SAW. Check them against the 2022 edition.
+
+[[entry]]
+id = "aisc360.B4.2.design_wall"
+value = "Calculations involving the wall thickness of an HSS use the design wall thickness: the nominal wall for HSS produced to ASTM A1065 or ASTM A1085, and a fraction of the nominal wall for HSS produced to the other approved standards."
+unit = "provision"
+cite = "AISC 360-22 §B4.2"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§B4.2, Design Wall Thickness for HSS"
+source = "https://user.eng.umd.edu/~ccfu/ref/a360-16-spec-and-commentary.pdf"
+status = "drafted"
+drafted_on = 2026-10-10
+verified_by = ""
+verified_date = ""
+note = """
+Paraphrase. NOT drafted from the 360-22 text, which S5-6 asked for: \
+aisc.org refused the request for the 2022 PDF on 2026-10-10. Drafted \
+from the 2016 edition's text at the source URL (a university's copy of \
+ANSI/AISC 360-16), read the same day. There the rule is by ASTM \
+standard: nominal wall for box sections and for HSS to A1065 or A1085, \
+and 0.93 times the nominal wall for HSS to other approved standards. \
+It does not key on electric-resistance-welded against \
+submerged-arc-welded, so seamless and hot-formed tubing to A501 or A618 \
+takes 0.93 like A500 (S5-6's stop-and-ask condition is not met on this \
+evidence). Micah's recollection is that the wording has been so since \
+360-16. Check the 2022 edition's §B4.2 for any change. The same section \
+of the 2016 edition carries a User Note allowing ASTM A53 Gr B pipe to \
+be designed as round HSS (see aisc360.pipe_as_round_hss). The tool \
+applies this rule to a custom tube only; a database section uses its \
+published t_des (S5-6)."""
+
+[[entry]]
+id = "aisc360.B4.2.coeff"
+value = 0.93
+unit = ""
+cite = "AISC 360-22 §B4.2"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§B4.2, Design Wall Thickness for HSS: the coefficient on the nominal wall for HSS produced to standards other than ASTM A1065 and A1085"
+source = "https://user.eng.umd.edu/~ccfu/ref/a360-16-spec-and-commentary.pdf"
+status = "drafted"
+drafted_on = 2026-10-10
+verified_by = ""
+verified_date = ""
+note = """
+Read in the 2016 edition's text, not the 2022 edition's (see \
+aisc360.B4.2.design_wall). The design wall of a custom round tube of \
+any grade the tool accepts but A1085: t_des = 0.93 t_nom (S5-8). Test \
+case 6's rail: 0.93 x 0.055 in = 0.05115 in."""
+
+[[entry]]
+id = "aisc360.B4.2.nominal_wall"
+value = "For HSS produced to ASTM A1085 the design wall thickness is the nominal wall thickness."
+unit = "provision"
+cite = "AISC 360-22 §B4.2"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§B4.2, Design Wall Thickness for HSS: HSS produced to ASTM A1065 or ASTM A1085"
+source = "https://user.eng.umd.edu/~ccfu/ref/a360-16-spec-and-commentary.pdf"
+status = "drafted"
+drafted_on = 2026-10-10
+verified_by = ""
+verified_date = ""
+note = """
+Paraphrase, read in the 2016 edition's text, not the 2022 edition's \
+(see aisc360.B4.2.design_wall). Cited on the design wall line of a \
+custom A1085 tube: t_des = t_nom (S5-6). A1065 is the other standard \
+the provision names; it is not a round HSS grade and arrives with \
+rectangular HSS in slice 6."""
+
+# --- Properties of a round tube from its dimensions (S5-8) ------------------
+# A custom round tube's properties are computed from the outside diameter
+# and the design wall, each as a printed calc line. The formulas are
+# implemented once in the code (ADR 0002); these entries cite them.
+
+[[entry]]
+id = "geometry.round_tube.inside_diameter"
+value = "Inside diameter of a round tube: the outside diameter less twice the wall thickness"
+unit = "equation"
+cite = "AISC Manual Part 17, Properties of Geometric Sections"
+document = "AISC Steel Construction Manual"
+edition = "16th Edition"
+section = "Part 17, Properties of Geometric Sections, hollow circle (table number not recalled)"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-10-10
+verified_by = ""
+verified_date = ""
+note = """
+Geometry. From memory of the Part 17 table of properties of geometric \
+sections; I believe it is Table 17-27 and am not sure. Used with the \
+design wall for the section properties and with the nominal wall for \
+the weight."""
+
+[[entry]]
+id = "geometry.round_tube.A"
+value = "Area of a hollow circle from its outside and inside diameters"
+unit = "equation"
+cite = "AISC Manual Part 17, Properties of Geometric Sections"
+document = "AISC Steel Construction Manual"
+edition = "16th Edition"
+section = "Part 17, Properties of Geometric Sections, hollow circle, area (table number not recalled)"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-10-10
+verified_by = ""
+verified_date = ""
+note = """
+From memory; table number not recalled (see \
+geometry.round_tube.inside_diameter). The property-formula test (slice \
+5 plan, T3) runs this formula on database rows and compares the result \
+with the published area."""
+
+[[entry]]
+id = "geometry.round_tube.I"
+value = "Moment of inertia of a hollow circle about a diameter, from its outside and inside diameters"
+unit = "equation"
+cite = "AISC Manual Part 17, Properties of Geometric Sections"
+document = "AISC Steel Construction Manual"
+edition = "16th Edition"
+section = "Part 17, Properties of Geometric Sections, hollow circle, moment of inertia (table number not recalled)"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-10-10
+verified_by = ""
+verified_date = ""
+note = "From memory; table number not recalled. Compared with published values by the property-formula test (T3)."
+
+[[entry]]
+id = "geometry.round_tube.S"
+value = "Elastic section modulus of a hollow circle: the moment of inertia over the distance to the extreme fiber, half the outside diameter"
+unit = "equation"
+cite = "AISC Manual Part 17, Properties of Geometric Sections"
+document = "AISC Steel Construction Manual"
+edition = "16th Edition"
+section = "Part 17, Properties of Geometric Sections, hollow circle, section modulus (table number not recalled)"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-10-10
+verified_by = ""
+verified_date = ""
+note = "From memory; table number not recalled. Compared with published values by the property-formula test (T3)."
+
+[[entry]]
+id = "geometry.round_tube.Z"
+value = "Plastic section modulus of a hollow circle, from its outside and inside diameters"
+unit = "equation"
+cite = "AISC Manual Part 17, Properties of Geometric Sections"
+document = "AISC Steel Construction Manual"
+edition = "16th Edition"
+section = "Part 17, Properties of Geometric Sections, hollow circle, plastic section modulus (table number not recalled)"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-10-10
+verified_by = ""
+verified_date = ""
+note = """
+From memory; table number not recalled, and I am not sure the Part 17 \
+table gives the plastic modulus for a hollow circle. Compared with \
+published values by the property-formula test (T3)."""
+
+[[entry]]
+id = "geometry.round_tube.r"
+value = "Radius of gyration: the square root of the moment of inertia over the area"
+unit = "equation"
+cite = "AISC Manual Part 17, Properties of Geometric Sections"
+document = "AISC Steel Construction Manual"
+edition = "16th Edition"
+section = "Part 17, Properties of Geometric Sections, radius of gyration (table number not recalled)"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-10-10
+verified_by = ""
+verified_date = ""
+note = "From memory; table number not recalled. Compared with published values by the property-formula test (T3)."
+
+[[entry]]
+id = "geometry.round_tube.D_over_t"
+value = "Diameter-to-thickness ratio of a round HSS: the outside diameter over the design wall thickness"
+unit = "equation"
+cite = "AISC 360-22 Tables B4.1a and B4.1b"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§B4.1, Tables B4.1a (Case 9) and B4.1b (Case 20), round HSS: width-to-thickness ratio D/t, with t the design wall thickness of §B4.2"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-10-10
+verified_by = ""
+verified_date = ""
+note = """
+From memory. For a custom tube D/t is a computed calc line; for a \
+database section the tabulated D/t is used as published. Case numbers \
+as cited by the existing lambda_r entries."""
+
+[[entry]]
+id = "geometry.round_tube.weight"
+value = "Weight per foot of a custom round tube: the steel unit weight times the area computed on the nominal wall"
+unit = "equation"
+cite = "Engineering judgement (EOR): custom tube weight on the nominal wall"
+document = "Engineering decision of the engineer of record"
+edition = "docs/brief/inputs.md, S5-8"
+section = "Custom round tube input: the nominal wall feeds the weight"
+source = "engineer"
+status = "drafted"
+drafted_on = 2026-10-10
+verified_by = ""
+verified_date = ""
+note = """
+Micah, 2026-10-09 (S5-8): t_nom feeds the weight, t_des the properties \
+and strength. The unit weight is material.steel.density. The database \
+computes HSS and pipe weights on the nominal wall too (see the note on \
+material.steel.density), which the property-formula test (T3) checks \
+against published weights."""
+
+# --- Chapter K: the chord D/t limit (S5-3) ----------------------------------
+
+[[entry]]
+id = "aisc360.K.round_chord.D_over_t_max"
+value = 50
+unit = ""
+cite = "AISC 360-22 Tables K3.1A and K4.1A"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "Chapter K, Tables K3.1A and K4.1A, Limits of Applicability of Tables K3.1 and K4.1 (round HSS-to-HSS truss and moment connections): chord wall slenderness D/t for T- and Y-connections"
+source = "https://user.eng.umd.edu/~ccfu/ref/a360-16-spec-and-commentary.pdf"
+status = "drafted"
+drafted_on = 2026-10-10
+verified_by = ""
+verified_date = ""
+note = """
+The value and both table numbers were read in the 2016 edition's text \
+at the source URL, not in the 2022 edition (see \
+aisc360.B4.2.design_wall): confirm the table numbers against 360-22. \
+There the chord wall limit is D/t of 50 for T- and Y-connections, in \
+both the truss table (K3.1A) and the moment table (K4.1A), and 40 for \
+cross-connections. The same tables carry other limits the tool does \
+not test, because W7 leaves the Chapter K limit states unchecked: \
+branch wall slenderness, the width ratio (over 0.2), Fy of 52 ksi or \
+less, and Fy/Fu of 0.8 or less (A500 Grade C is noted as acceptable). \
+Slice 6 checks the chord limit states and decides what becomes of this \
+stop (S5-3)."""
+
+[[entry]]
+id = "ej.weld.chord_D_over_t_stop"
+value = "The calc stops when the D/t of a round chord exceeds the Chapter K limit of applicability: the top rail in Check 3, and the post in Check 4b when there is an intermediate rail."
+unit = "provision"
+cite = "Engineering judgement (EOR): chord D/t limited to the Chapter K limit of applicability"
+document = "Engineering decision of the engineer of record"
+edition = "docs/brief/welds.md, S5-3"
+section = "W7 kept for slice 5, with a stop at chord D/t over 50"
+source = "engineer"
+status = "drafted"
+drafted_on = 2026-10-10
+verified_by = ""
+verified_date = ""
+note = """
+Micah, 2026-10-09 (S5-3). D/t is the value the section's classification \
+uses (design wall). The limit is aisc360.K.round_chord.D_over_t_max. \
+The stop is in input validation, beside the per-joint tables, and names \
+the member, its D/t, the limit and W7. A post with no intermediate rail \
+is not a chord and is not stopped."""
+
+# --- Engineering judgement: section input (S5-4, S5-8) ----------------------
+
+[[entry]]
+id = "ej.section.od_tolerance"
+value = 0.01
+unit = "inch"
+cite = "Engineering judgement (EOR): outside diameters within 0.01 in are equal"
+document = "Engineering decision of the engineer of record"
+edition = "docs/brief/welds.md, S5-4"
+section = "W8 and S4-11 width comparisons: two outside diameters within the tolerance are equal"
+source = "engineer"
+status = "drafted"
+drafted_on = 2026-10-10
+verified_by = ""
+verified_date = ""
+note = """
+Micah, 2026-10-09 (S5-4). The Shapes Database rounds a round HSS's OD \
+to three significant figures (2.38 in for HSS2.375) and stores a pipe's \
+exactly (2.375 in), so a pipe and an HSS of one nominal size differ by \
+up to 0.005 in below 10 in. The tolerance changes only the two width \
+comparisons; every calc line uses each member's own OD. From HSS10.750 \
+up the rounding reaches 0.05 in and the tolerance does not cover it; no \
+guard member is that large."""
+
+[[entry]]
+id = "ej.section.custom_wall_nominal"
+value = "The wall thickness entered for a custom tube is the nominal wall. The design wall follows from it by AISC 360-22 §B4.2."
+unit = "provision"
+cite = "Engineering judgement (EOR): a custom tube's wall is entered as the nominal wall"
+document = "Engineering decision of the engineer of record"
+edition = "docs/brief/inputs.md, S5-8"
+section = "Custom round tube input: wall_nominal, with no nominal or design choice"
+source = "engineer"
+status = "drafted"
+drafted_on = 2026-10-10
+verified_by = ""
+verified_date = ""
+note = """
+Micah, 2026-10-09 (S5-8). Every grade allowed for a custom tube is \
+specified by its nominal wall. The only error the rule allows is \
+entering a wall already reduced, which is then reduced again: that is \
+conservative. A nominal or design flag would allow the unconservative \
+error with no sign of it in the output."""
+
+# --- Printed text: grades (S5-5, S5-6) --------------------------------------
+
+[[entry]]
+id = "ej.grade.A1085_database_note"
+value = "A1085: AISC 360-22 §B4.2 permits a design wall equal to the nominal wall. The database's properties are used as published, on t_des = 0.93 t_nom. To use the nominal wall, enter the tube as a custom section."
+unit = "text"
+cite = "Engineering judgement (EOR): A1085 database sections on published properties"
+document = "Engineering decision of the engineer of record"
+edition = "docs/brief/inputs.md, S5-6"
+section = "A1085 Gr A offered: a database section on its published properties, with a note"
+source = "engineer"
+status = "drafted"
+drafted_on = 2026-10-10
+verified_by = ""
+verified_date = ""
+note = """
+Micah, 2026-10-09 (S5-6); the wording is Claude's proposal for him to \
+accept or reword in the slice 5 pull request. Printed on the section \
+properties page for a database section given the grade A1085 Gr A. \
+Accepted: the same tube gives two answers, about 7 percent apart on \
+wall thickness, by the route it is entered; the database route is the \
+conservative one."""
+
+[[entry]]
+id = "ej.grade.unusual_pairing"
+value = "{grade} is not a grade AISC Manual Table 2-4 lists for {shape}. The calc uses the Fy and Fu of {grade}; confirm the grade."
+unit = "text"
+cite = "Engineering judgement (EOR): a grade outside the shape's standard list is allowed, with a warning"
+document = "Engineering decision of the engineer of record"
+edition = "docs/brief/inputs.md, Inputs (material grade) and S5-5"
+section = "Unusual pairings on database sections: a warning, not a block"
+source = "engineer"
+status = "drafted"
+drafted_on = 2026-10-10
+verified_by = ""
+verified_date = ""
+note = """
+The brief's unusual-pairing warning, built in slice 5 (S5-5); the \
+wording is Claude's proposal for Micah to accept or reword in the slice \
+5 pull request. Printed for an HSS grade on a Pipe designation and for \
+A53 Gr B on an HSS designation. A custom tube takes every round HSS \
+grade and A53 Gr B, and none is unusual for it. The standard lists are \
+material.grades.pipe and material.grades.hss_round."""
