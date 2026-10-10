@@ -49,7 +49,7 @@ from pathlib import Path
 
 import pytest
 
-from handrail import checks, project, report
+from handrail import engine, project, report
 from handrail.errors import InputError
 from handrail.registry import Registry
 from test_report import CLEAN
@@ -76,14 +76,14 @@ def calc_source(path: Path) -> str:
     are (slice 3 plan, T1)."""
     proj = project.from_dict(_load(path))
     registry = Registry()
-    run = checks.compute if _stops_at_validation(path) else checks.run
+    run = engine.compute if _stops_at_validation(path) else engine.run
     return report.build_source(run(proj, registry), registry, CLEAN)
 
 
 def stop_message(path: Path) -> str:
     """The message the full run stops with, for a case validation refuses."""
     with pytest.raises(InputError) as stop:
-        checks.run(project.from_dict(_load(path)), Registry())
+        engine.run(project.from_dict(_load(path)), Registry())
     return f"{stop.value}\n"
 
 

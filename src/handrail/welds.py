@@ -16,7 +16,7 @@ branch and the post wall the chord.
   round hollow sections only (W2); Check 3 takes k_ds = 1.0.
 - Weld metal: F_nw t_e k_ds / Omega per inch. Base metal at a fusion face:
   shear rupture, 0.60 Fu t / Omega per inch (W5, W6). The post wall is
-  covered by Check 5 (W5; the Fu/Fy guard is in checks.validate).
+  covered by Check 5 (W5; the Fu/Fy guard is in validate.py).
 - Minimum size per Table J2.4 on the thinner part joined, walls at their
   nominal thickness, is pass/fail; no maximum size is checked (W11).
 """
@@ -28,19 +28,20 @@ from typing import Callable
 
 from handrail.calc import (PI, Line, Sheet, Sym, absolute, arccos, compare, fmt_quantity_plain, maximum, minimum,
                            mtext, order, sin, sqrt, term)
-from handrail.checks import (
-    COMBO, DB, FEXX_ENTRY, FU_ENTRY, Case, Check, Loading, SectionStop, combo_text, exempt_case,
-)
 from handrail.demand import ASD, Given, Wording, demand
 from handrail.directions import (
     COMPONENT, COMPONENT_DIRECTIONS, DIRECTIONS, DISTRIBUTED, DOWNWARD, HORIZONTAL, LOAD_TYPES, Direction, Kind,
     LoadType, unknown,
 )
 from handrail.dimensions import Dimension
+from handrail.errors import SectionStop
 from handrail.intermediate import NONE_TEXT
+from handrail.loading import COMBO, combo_text, exempt_case
+from handrail.materials import FEXX_ENTRY, FU_ENTRY
 from handrail.project import NO_INTERMEDIATE, SAME_AS_TOP, Project
 from handrail.registry import Registry
-from handrail.shapes import ROUND_HOLLOW, PipeSection
+from handrail.results import Case, Check, Loading
+from handrail.shapes import DB, ROUND_HOLLOW, PipeSection
 from handrail.units import Q_
 
 LINE_METHOD = "ej.weld.line_method"

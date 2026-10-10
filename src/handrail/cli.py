@@ -8,7 +8,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from handrail import checks, project, report, version
+from handrail import engine, project, report, version
 from handrail.errors import InputError
 from handrail.registry import Registry
 
@@ -16,7 +16,7 @@ from handrail.registry import Registry
 def calc(project_file: Path, out: Path | None) -> Path:
     proj = project.load(project_file)
     registry = Registry()
-    results = checks.run(proj, registry)
+    results = engine.run(proj, registry)
     out = out or project_file.with_suffix(".pdf")
     report.render_pdf(results, registry, version.stamp(), out)
     return out

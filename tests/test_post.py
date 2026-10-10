@@ -13,9 +13,9 @@ import re
 
 import pytest
 
-from handrail import checks, dimensions, post, shapes
+from handrail import dimensions, engine, post, shapes
 from handrail.calc import fmt_sig
-from handrail.checks import SectionStop
+from handrail.errors import SectionStop
 from handrail.project import (
     NO_INTERMEDIATE, Baseplate, DeflectionLimit, IntermediateRail, Loads, Member, Project, ProjectInfo, Welds,
 )
@@ -71,7 +71,7 @@ def plain(rail="Pipe2STD", L=72.0, post_section="Pipe2STD", h=42.0, tp=0.5, P=P,
 
 @pytest.fixture
 def check5():
-    return checks.run(project(), Registry()).check(5)
+    return engine.run(project(), Registry()).check(5)
 
 
 def test_every_case_matches_plain_calc(check5):
@@ -114,7 +114,7 @@ def test_capacities_match_plain_calc(check5):
 def test_elastic_branch_uses_eq_E3_3():
     # Pipe1-1/2STD at h = 42 in: Lc/r = 88.2/0.626 = 140.9 > 135.6.
     reg = Registry()
-    chk = checks.run(project(post_section="Pipe1-1/2STD"), reg).check(5)
+    chk = engine.run(project(post_section="Pipe1-1/2STD"), reg).check(5)
     down = next(c for c in chk.checked if c.direction == "Downward")
     val = {ln.symbol: ln.value for ln in down.lines if ln.kind == "value"}
     Fe = math.pi**2 * E / (88.2 / 0.626) ** 2
@@ -152,7 +152,7 @@ def test_axial_only_cases_carry_the_D8_margin_note(check5, direction, note):
 def test_upward_with_no_net_tension_is_listed_not_checked():
     # Heavy rail, small guard loads: 0.6 P_D exceeds P_L, so the post stays in compression.
     loads = Loads(concentrated=Q_(10, "lbf"), uniform=Q_(1, "lbf/ft"))
-    chk = checks.run(project(rail="Pipe12STD", loads=loads), Registry()).check(5)
+    chk = engine.run(project(rail="Pipe12STD", loads=loads), Registry()).check(5)
     up = [c for c in chk.cases if c.direction == "Upward"]
     assert len(up) == 2
     for c in up:
@@ -182,7 +182,7 @@ def test_second_order_ratio_above_the_limit_stops_naming_case_ratio_and_limit():
     expected = (rf"outward, concentrated case of Check 5: alpha Pr/Pe = {re.escape(fmt_sig(a))} > "
                 rf"{lim.value} \({re.escape(lim.cite)}\)")
     with pytest.raises(SectionStop, match=expected):
-        checks.run(project(rail="Pipe26STD", span="12'-0\""), Registry())
+        engine.run(project(rail="Pipe26STD", span="12'-0\""), Registry())
 
 
 def test_downward_above_the_second_order_limit_does_not_stop():
@@ -193,7 +193,7 @@ def test_downward_above_the_second_order_limit_does_not_stop():
     PD = s.W.m_as("lbf/inch") * (84 + 41.5)
     Pe = math.pi**2 * E * 1000 * s.I.m_as("in^4") / 88.2**2
     assert 1.6 * (PD + W_L * 84) / Pe > 0.05  # the premise
-    chk = checks.run(project(rail="Pipe1-1/2STD", span="7'-0\"", post_section="Pipe1-1/2STD"),
+    chk = engine.run(project(rail="Pipe1-1/2STD", span="7'-0\"", post_section="Pipe1-1/2STD"),
                      Registry()).check(5)
     down = [c for c in chk.checked if c.direction == "Downward"]
     assert len(down) == 2 and all(c.second_order is None for c in down)
@@ -208,7 +208,7 @@ def test_eq_H1_1a_arithmetic_with_an_artificial_dead_load():
     p8 = shapes.pipe("Pipe8STD")
     # A Pipe8STD post under a Pipe2STD rail fails W8 at validation; only the
     # loading is wanted here, so compute past it.
-    base = checks.compute(proj, reg)
+    base = engine.compute(proj, reg)
     loading = dataclasses.replace(base.loading, P_D=Q_(40000, "lbf"))
     cap = post._capacity(reg, proj, p8)
     c = post._moment_case(reg, proj, p8, loading, cap, "Outward", "Concentrated")
@@ -242,7 +242,7 @@ def test_slender_in_compression_is_a_hard_stop_naming_ratio_and_limit():
 
 def test_slenderness_over_200_is_flagged_and_the_calc_continues():
     # Pipe1STD at h = 42 in: Lc/r = 88.2/0.423 = 208.5.
-    chk = checks.run(project(post_section="Pipe1STD"), Registry()).check(5)
+    chk = engine.run(project(post_section="Pipe1STD"), Registry()).check(5)
     assert any(f.startswith("SLENDERNESS: Pipe1STD Lc/r = 208.5 exceeds 200") for f in chk.flags)
     assert chk.checked  # the calc continued
     down = next(c for c in chk.checked if c.direction == "Downward")
@@ -281,7 +281,7 @@ def test_slenderness_within_200_raises_no_flag(check5):
 
 def test_exemption_removes_the_distributed_post_cases():
     loads = Loads(uniform_exempt=True, exemption_statement="Roof not occupied.")
-    chk = checks.run(project(loads=loads), Registry()).check(5)
+    chk = engine.run(project(loads=loads), Registry()).check(5)
     dist = [c for c in chk.cases if c.load_type == "Distributed"]
     assert len(dist) == 5 and all(c.status == "exempt" for c in dist)
 
@@ -289,7 +289,7 @@ def test_exemption_removes_the_distributed_post_cases():
 def test_tension_entries_are_not_listed_when_no_upward_case_is_checked():
     loads = Loads(concentrated=Q_(10, "lbf"), uniform=Q_(1, "lbf/ft"))
     reg = Registry()
-    checks.run(project(rail="Pipe12STD", loads=loads), reg)
+    engine.run(project(rail="Pipe12STD", loads=loads), reg)
     used = {e.id for e in reg.used}
     assert "aisc360.eq.D2-1" not in used and "aisc360.D2.omega_t" not in used
 
@@ -301,7 +301,7 @@ def test_tension_entries_are_not_listed_when_no_upward_case_is_checked():
 
 @pytest.fixture
 def check6():
-    return checks.run(project(), Registry()).check(6)
+    return engine.run(project(), Registry()).check(6)
 
 
 def test_deflection_matches_plain_calc(check6):
@@ -330,13 +330,13 @@ def test_deflection_envelope_checks_the_horizontal_cases_only(check6):
 
 
 def test_deflection_limit_ratio_is_the_engineers_input():
-    chk = checks.run(project(post_deflection=DeflectionLimit(ratio=90)), Registry()).check(6)
+    chk = engine.run(project(post_deflection=DeflectionLimit(ratio=90)), Registry()).check(6)
     for c in chk.checked:
         assert c.capacity.m_as("inch") == pytest.approx(41.5 / 90, rel=1e-12)
 
 
 def test_post_deflection_bypass_computes_nothing():
-    chk = checks.run(project(post_deflection=DeflectionLimit(ratio=60, bypass=True)), Registry()).check(6)
+    chk = engine.run(project(post_deflection=DeflectionLimit(ratio=60, bypass=True)), Registry()).check(6)
     assert chk.bypassed and chk.cases == [] and chk.verdict == "Bypassed by engineer"
 
 

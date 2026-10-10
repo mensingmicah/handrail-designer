@@ -10,7 +10,7 @@ branch for and expects a ValueError, never a number.
 
 import pytest
 
-from handrail import checks, intermediate, post
+from handrail import flexure, intermediate, post, rail
 from handrail.calc import Sheet
 from handrail.demand import ASD, Given, demand, live_at_post
 from handrail.directions import (
@@ -60,14 +60,14 @@ def test_the_shared_demand_stops_on_an_unknown_direction(res, direction):
 def test_check_1_bending_stops_on_a_direction_it_has_no_branch_for(res, direction):
     """Its last branch was a bare else that computed anything as upward."""
     reg = Registry()
-    cap = checks.flexural_capacity(reg, res.rail, "A53 Gr B")
+    cap = flexure.flexural_capacity(reg, res.rail, "A53 Gr B")
     with pytest.raises(ValueError, match="Check 1: no direction case"):
-        checks._bending_case(reg, res.project, res.rail, res.loading, cap, direction, LoadType.CONCENTRATED)
+        rail._bending_case(reg, res.project, res.rail, res.loading, cap, direction, LoadType.CONCENTRATED)
 
 
 def test_check_2_deflection_stops_on_a_direction_it_has_no_branch_for(res):
     with pytest.raises(ValueError, match="Check 2: no direction case 'Sideways'"):
-        checks._deflection_case(Registry(), res.project, res.rail, res.loading, "Sideways", LoadType.CONCENTRATED)
+        rail._deflection_case(Registry(), res.project, res.rail, res.loading, "Sideways", LoadType.CONCENTRATED)
 
 
 @pytest.mark.parametrize("direction", ["Downward", "Upward", "Horizontal", "Outwrd"])
@@ -82,7 +82,7 @@ def test_check_5_moment_case_takes_horizontal_direction_cases_only(res, directio
 def test_check_4a_stops_on_a_direction_the_component_load_does_not_have(res, direction):
     """Its second branch was a bare else that computed anything as horizontal."""
     reg = Registry()
-    cap = checks.flexural_capacity(reg, res.inter, "A53 Gr B")
+    cap = flexure.flexural_capacity(reg, res.inter, "A53 Gr B")
     with pytest.raises(ValueError, match=f"Check 4a: no component load direction '{direction}'"):
         intermediate._bending_case(reg, res.project, res.loading, cap, [], direction)
     with pytest.raises(ValueError, match=f"Check 4a: no component load direction '{direction}'"):
@@ -96,8 +96,8 @@ def test_an_unknown_guard_load_type_stops(res, load_type):
     reg = Registry()
     with pytest.raises(ValueError, match="no guard load type"):
         live_at_post(Sheet(reg), "V_L", "V_L", load_type, res.loading, res.project, "at the top of the post")
-    cap = checks.flexural_capacity(reg, res.rail, "A53 Gr B")
+    cap = flexure.flexural_capacity(reg, res.rail, "A53 Gr B")
     with pytest.raises(ValueError, match="Check 1: no guard load type"):
-        checks._bending_case(reg, res.project, res.rail, res.loading, cap, Direction.DOWNWARD, load_type)
+        rail._bending_case(reg, res.project, res.rail, res.loading, cap, Direction.DOWNWARD, load_type)
     with pytest.raises(ValueError, match="Check 2: no guard load type"):
-        checks._deflection_case(reg, res.project, res.rail, res.loading, Direction.DOWNWARD, load_type)
+        rail._deflection_case(reg, res.project, res.rail, res.loading, Direction.DOWNWARD, load_type)

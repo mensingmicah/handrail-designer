@@ -25,11 +25,13 @@ from dataclasses import dataclass
 
 from handrail import beams
 from handrail.calc import Const, Line, Sheet, compare, fmt_quantity_plain, term
-from handrail.checks import COMBO, DB, Case, Check, Loading, combo_text, flexural_capacity
+from handrail.flexure import flexural_capacity
+from handrail.loading import COMBO, combo_text
 from handrail.directions import COMPONENT, COMPONENT_DIRECTIONS, DOWNWARD, HORIZONTAL, Direction, unknown
 from handrail.project import NO_INTERMEDIATE, SAME_AS_TOP, DeflectionLimit, Project
 from handrail.registry import Registry
-from handrail.shapes import PipeSection
+from handrail.results import Case, Check, Loading
+from handrail.shapes import DB, PipeSection
 
 BENDING, DEFLECTION = "Bending", "Deflection"
 MIDSPAN, DOWN = "ej.component.midspan", "ej.component.downward"

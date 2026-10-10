@@ -24,16 +24,18 @@ from dataclasses import dataclass, field
 from typing import Callable
 
 from handrail.calc import PI, Const, Line, Sheet, Sym, Term, compare, fmt_g, fmt_sig, number, sqrt
-from handrail.checks import (
-    DB, FY_ENTRY, Case, Check, Loading, SectionStop, combo_text, exempt_case, flexural_capacity,
-)
 from handrail.demand import ASD, Demand, Given, Wording, demand, live_at_post
 from handrail.directions import (
     DIRECTIONS, DISTRIBUTED, DOWNWARD, LOAD_TYPES, UPWARD, Direction, Kind, LoadType, kind, unknown,
 )
+from handrail.errors import SectionStop
+from handrail.flexure import flexural_capacity
+from handrail.loading import combo_text, exempt_case
+from handrail.materials import FY_ENTRY
 from handrail.project import Project
 from handrail.registry import Entry, Registry
-from handrail.shapes import PipeSection
+from handrail.results import Case, Check, Loading
+from handrail.shapes import DB, PipeSection
 
 
 @dataclass

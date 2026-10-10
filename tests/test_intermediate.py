@@ -8,7 +8,7 @@ independent check.
 
 import pytest
 
-from handrail import checks, dimensions, shapes
+from handrail import dimensions, engine, shapes
 from handrail.directions import COMPONENT_DIRECTIONS
 from handrail.project import (
     NO_INTERMEDIATE, OWN_SECTION, SAME_AS_TOP, Baseplate, DeflectionLimit, IntermediateRail, Loads, Member, Project,
@@ -38,7 +38,7 @@ def project(state=OWN_SECTION, section="Pipe1-1/4STD", rail="Pipe2STD", post="Pi
 
 
 def run(**kw):
-    return checks.run(project(**kw), Registry())
+    return engine.run(project(**kw), Registry())
 
 
 def _lb(q):

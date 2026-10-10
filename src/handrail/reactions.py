@@ -22,11 +22,11 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from handrail.calc import Line, Sheet, mtext, order
-from handrail.checks import Loading
 from handrail.demand import Combinations, Given, Wording, demand
 from handrail.directions import CONCENTRATED, DISTRIBUTED, LATERAL, UPWARD, Direction, Kind, LoadType, unknown
 from handrail.project import Project
 from handrail.registry import Registry
+from handrail.results import Loading
 
 COMBO = "ej.combo.reaction"
 LOCATION = "ej.reaction.location"

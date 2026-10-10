@@ -12,7 +12,7 @@ import pytest
 
 from handrail import dimensions, shapes, welds
 from handrail.calc import Sheet, Sym
-from handrail.checks import SectionStop
+from handrail.errors import SectionStop
 from handrail.registry import Registry
 from handrail.units import Q_
 
@@ -133,7 +133,7 @@ def test_strength_without_base_metal_demand_is_the_weld_metal_ratio():
 # Check 3: top rail weld to post (dev section, not a test case)
 # ---------------------------------------------------------------------------
 
-from handrail import checks  # noqa: E402
+from handrail import engine  # noqa: E402
 from handrail.project import (  # noqa: E402
     NO_INTERMEDIATE, Baseplate, IntermediateRail, Loads, Member, Project, ProjectInfo, Welds,
 )
@@ -172,7 +172,7 @@ def plain_check_3(rail="Pipe2STD", post="Pipe2STD", L_ft=6.0, w=0.125, P=P_CONC,
 
 
 def test_check_3_matches_plain_calc():
-    chk = checks.run(project(), Registry()).check(3)
+    chk = engine.run(project(), Registry()).check(3)
     expected = plain_check_3()
     assert len(chk.cases) == 10
     for c in chk.cases:
@@ -185,7 +185,7 @@ def test_check_3_matches_plain_calc():
 
 
 def test_check_3_fibers_and_base_metal_line_by_case():
-    chk = checks.run(project(), Registry()).check(3)
+    chk = engine.run(project(), Registry()).check(3)
     by = {(c.direction, c.load_type): c for c in chk.checked}
     assert by[("Downward", "Concentrated")].fiber == "uniform"
     assert by[("Downward", "Concentrated")].base_ratio is None  # no in-plane force on the rail face
@@ -196,16 +196,16 @@ def test_check_3_fibers_and_base_metal_line_by_case():
 
 def test_a_weld_below_minimum_size_is_ng_whatever_its_ratio():
     # 1/16 in against the 1/8 in minimum for a 0.154 in nominal pipe wall; the ratio itself is under 1.0.
-    chk = checks.run(project(r2p="1/16"), Registry()).check(3)
+    chk = engine.run(project(r2p="1/16"), Registry()).check(3)
     assert chk.controlling.ratio < 1.0
     assert chk.failures and "below the minimum size" in chk.failures[0]
     assert not chk.ok and chk.verdict == "NG" and chk.summary_flag == "below minimum size"
-    assert not chk.min_size_ok and checks.run(project(), Registry()).check(3).min_size_ok
+    assert not chk.min_size_ok and engine.run(project(), Registry()).check(3).min_size_ok
 
 
 def test_upward_with_no_net_tension_is_listed_not_checked():
     loads = Loads(concentrated=Q_(10, "lbf"), uniform=Q_(1, "lbf/ft"))
-    chk = checks.run(project(rail="Pipe12STD", post="Pipe12STD", loads=loads), Registry()).check(3)
+    chk = engine.run(project(rail="Pipe12STD", post="Pipe12STD", loads=loads), Registry()).check(3)
     up = [c for c in chk.cases if c.direction == "Upward"]
     assert [c.status for c in up] == ["not checked", "not checked"]
     assert all(c.remark == "No net tension (0.6D >= 1.0L); compression covered by downward" for c in up)
@@ -214,7 +214,7 @@ def test_upward_with_no_net_tension_is_listed_not_checked():
 
 def test_check_3_exempt_distributed_cases():
     loads = Loads(uniform_exempt=True, exemption_statement="Not occupied.")
-    chk = checks.run(project(loads=loads), Registry()).check(3)
+    chk = engine.run(project(loads=loads), Registry()).check(3)
     assert all(c.status == "exempt" for c in chk.cases if c.load_type == "Distributed")
 
 
@@ -245,7 +245,7 @@ def plain_check_7(rail="Pipe2STD", post="Pipe2STD", L_ft=6.0, h=42.0, tp=0.5, w=
 
 
 def test_check_7_matches_plain_calc():
-    chk = checks.run(project(), Registry()).check(7)
+    chk = engine.run(project(), Registry()).check(7)
     expected = plain_check_7()
     assert len(chk.checked) == 10
     for c in chk.checked:
@@ -257,7 +257,7 @@ def test_check_7_matches_plain_calc():
 
 
 def test_check_7_theta_is_computed_at_the_governing_point():
-    c = checks.run(project(), Registry()).check(7).controlling
+    c = engine.run(project(), Registry()).check(7).controlling
     printed = {ln.symbol: ln for ln in c.lines if ln.kind == "value"}
     assert printed["theta"].symbolic == "arccos(frac(f_parallel, f_r))"
     assert 'sin(theta)^("1.5")' in printed['k_"ds"'].symbolic
@@ -268,11 +268,11 @@ def test_check_7_stops_on_a_post_that_is_not_round(monkeypatch):
     real = shapes.pipe
     monkeypatch.setattr(shapes, "pipe", lambda d: dataclasses.replace(real(d), family="rectangular HSS"))
     with pytest.raises(SectionStop, match=r"directional strength increase rule for this section family"):
-        checks.compute(project(), Registry())
+        engine.compute(project(), Registry())
 
 
 def test_both_weld_checks_run_in_check_number_order():
-    res = checks.run(project(), Registry())
+    res = engine.run(project(), Registry())
     assert [c.number for c in res.checks] == [1, 2, 3, "4a", "4b", 5, 6, 7]
 
 
@@ -282,7 +282,7 @@ def test_minimum_size_reads_the_nominal_wall_and_strength_the_design_wall():
     gives a 3/16 in minimum, where t_des = 0.241 would give 1/8 in."""
     p5 = shapes.pipe("Pipe5STD")
     assert p5.tnom.m_as("inch") > 0.25 >= p5.tdes.m_as("inch")  # the premise
-    res = checks.run(project(rail="Pipe5STD", post="Pipe5STD", r2p="1/8", p2b="1/8"), Registry())
+    res = engine.run(project(rail="Pipe5STD", post="Pipe5STD", r2p="1/8", p2b="1/8"), Registry())
     for n in (3, 7):
         chk = res.check(n)
         head = {ln.symbol: ln for ln in chk.checked[0].lines if ln.kind == "value"}
@@ -300,7 +300,7 @@ def test_thin_baseplate_base_metal_governs_and_sets_demand_and_capacity():
     summary prints them."""
     from handrail import report
 
-    res = checks.run(project(tp="1/4"), Registry())
+    res = engine.run(project(tp="1/4"), Registry())
     c = res.check(7).controlling
     assert c.governs == "base metal"
     assert c.base_ratio > c.weld_ratio and c.ratio == c.base_ratio
@@ -316,14 +316,14 @@ def test_thin_baseplate_base_metal_governs_and_sets_demand_and_capacity():
 
 def test_every_weld_case_ratio_is_its_demand_over_its_capacity():
     for tp in ("1/2", "1/4"):
-        res = checks.run(project(tp=tp), Registry())
+        res = engine.run(project(tp=tp), Registry())
         for n in (3, 7):
             for c in res.check(n).checked:
                 assert c.ratio == pytest.approx((c.demand / c.capacity).m_as(""), rel=1e-12), (tp, n, c.label)
 
 
 def test_check_3_prints_the_rail_dead_load_with_the_loading_page_symbol():
-    res = checks.run(project(), Registry())
+    res = engine.run(project(), Registry())
     c3 = res.check(3).checked[0]
     symbols = [ln.symbol for ln in c3.lines if ln.kind == "value"]
     assert 'D_"rail"' in symbols and "P_D" not in symbols

@@ -13,13 +13,13 @@ from pathlib import Path
 import typst
 
 from handrail.calc import Line, fmt_quantity_plain, fmt_ratio, fmt_sig, typst_str
-from handrail.checks import Case, Check, Results
 from handrail.intermediate import ComponentCase
 from handrail.post import PostCase
 from handrail.project import OWN_SECTION, SAME_AS_TOP
 from handrail.directions import LATERAL
 from handrail.reactions import Reactions, ReactionSet
 from handrail.registry import Registry
+from handrail.results import Case, Check, Results
 from handrail.welds import WeldCase
 from handrail.version import Stamp
 

@@ -73,7 +73,7 @@ class Loads:
 class Welds:
     """Fillet welds, all around (docs/brief/inputs.md, W12). The sizes are
     required; the electrode defaults to E70XX, the only one v1 accepts
-    (checked in checks.validate)."""
+    (checked in validate.py)."""
 
     rail_to_post: Dimension       # fillet leg size, top rail to post
     post_to_baseplate: Dimension  # fillet leg size, post to baseplate

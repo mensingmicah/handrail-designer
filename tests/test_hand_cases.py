@@ -44,7 +44,7 @@ from pathlib import Path
 
 import pytest
 
-from handrail import checks, project
+from handrail import engine, project
 from handrail.directions import CONCENTRATED
 from handrail.post import E3_BRANCH
 from handrail.registry import Registry
@@ -77,8 +77,8 @@ def run_case(path):
     raw = _load(path)
     proj = project.from_dict(raw)
     if stops_at_validation(raw):
-        return raw, checks.compute(proj, Registry())
-    return raw, checks.run(proj, Registry())
+        return raw, engine.compute(proj, Registry())
+    return raw, engine.run(proj, Registry())
 
 
 def _case_key(c) -> str:
@@ -595,7 +595,7 @@ def _dev_run():
            "top_rail": {"section": "Pipe2STD"}, "post": {"section": "Pipe2STD"},
            "welds": {"rail_to_post": "1/8", "post_to_baseplate": "1/4"},
            "baseplate": {"B": 6, "N": 8}, "intermediate_rail": {"none": True}}
-    return checks.run(project.from_dict(raw), Registry())
+    return engine.run(project.from_dict(raw), Registry())
 
 
 def test_comparison_machinery_catches_a_mismatch():
@@ -762,7 +762,7 @@ def test_tool_values_without_net_upward_tension_have_no_pt():
            "welds": {"rail_to_post": "1/8", "post_to_baseplate": "1/4"},
            "baseplate": {"B": 14, "N": 14}, "intermediate_rail": {"none": True},
            "loads": {"concentrated_lb": 10, "uniform_plf": 1}}
-    res = checks.run(project.from_dict(raw), Registry())
+    res = engine.run(project.from_dict(raw), Registry())
     assert not [c for c in _check(res, 5).checked if c.direction == "Upward"]  # the premise
     assert "check5.Pt_lb" not in tool_values(res)
     assert "check5.Pt_lb" in tool_values(_dev_run())

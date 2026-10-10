@@ -7,8 +7,9 @@ from pathlib import Path
 
 import pytest
 
-from handrail import checks, cli, project, shapes
+from handrail import cli, project, shapes
 from handrail.registry import Registry
+from handrail.validate import validate
 
 EXAMPLE = Path(__file__).resolve().parents[1] / "examples" / "slice-1.toml"
 
@@ -166,7 +167,7 @@ def test_hand_and_verification_tables_are_allowed_in_a_case_file(name):
 
 
 def test_every_input_error_derives_from_the_one_class_the_cli_catches():
-    from handrail.checks import SectionStop
+    from handrail.errors import SectionStop
     from handrail.dimensions import DimensionError
     from handrail.errors import InputError
     from handrail.registry import MissingEntry, RegistryError
@@ -338,7 +339,7 @@ def test_post_wider_than_rail_stops_naming_both_ods(tmp_path, capsys):
 
 def test_equal_ods_are_allowed():
     proj = project.load(EXAMPLE)  # Pipe2STD rail and post
-    checks.validate(proj, Registry())
+    validate(proj, Registry())
 
 
 def _validate_with(monkeypatch, *, family=None, fu=None):
@@ -351,7 +352,7 @@ def _validate_with(monkeypatch, *, family=None, fu=None):
     if fu:
         e = reg.entries["material.A53_GrB.Fu"]
         reg.entries[e.id] = dataclasses.replace(e, value=fu)
-    checks.validate(project.load(EXAMPLE), reg)
+    validate(project.load(EXAMPLE), reg)
 
 
 def test_a_section_that_is_not_round_hollow_stops(monkeypatch):
@@ -479,7 +480,7 @@ def test_conflicting_or_missing_intermediate_and_baseplate_inputs_stop(raw, mess
 
 
 def _validate(raw):
-    checks.validate(project.from_dict(raw), Registry())
+    validate(project.from_dict(raw), Registry())
 
 
 def test_an_intermediate_rail_wider_than_the_post_stops_in_both_states():

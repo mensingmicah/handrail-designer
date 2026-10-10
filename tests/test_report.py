@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 import typst
 
-from handrail import checks, dimensions, report
+from handrail import dimensions, engine, report
 from handrail.calc import typst_str
 from handrail.project import (
     NO_INTERMEDIATE, SAME_AS_TOP, Baseplate, DeflectionLimit, IntermediateRail, Loads, Member, Project, ProjectInfo,
@@ -27,7 +27,7 @@ def run(**kw):
                 post=Member("Pipe2STD", "A53 Gr B"), post_height=dimensions.parse("42"),
                 baseplate_thickness=dimensions.parse("1/2"), **kw)
     reg = Registry()
-    return checks.run(p, reg), reg
+    return engine.run(p, reg), reg
 
 
 def mark_drafted(reg, *ids):
@@ -103,7 +103,7 @@ def test_closing_verdict_is_the_checks_own_and_never_reads_1_00_beside_NG():
 def test_closing_line_prints_the_checks_verdict_not_a_recomputed_one(monkeypatch):
     # A sentinel verdict proves the page prints Check.verdict rather than
     # recomputing OK/NG from the ratio.
-    from handrail.checks import Check
+    from handrail.results import Check
 
     res, reg = run()
     monkeypatch.setattr(Check, "verdict", property(lambda self: "SENTINEL"))
@@ -208,7 +208,7 @@ def test_printed_calc_never_cites_the_development_plan():
     base = run()[0].project
     for post in ("Pipe2STD", "Pipe1STD"):
         reg = Registry()
-        res = checks.run(dataclasses.replace(base, post=Member(post, "A53 Gr B")), reg)
+        res = engine.run(dataclasses.replace(base, post=Member(post, "A53 Gr B")), reg)
         src = report.build_source(res, reg, CLEAN)
         assert "plan D" not in src, post
     assert "A recommendation, not a requirement: flagged, and the calc continues." in src
@@ -261,7 +261,7 @@ def test_slenderness_flag_prints_in_the_check_5_summary_row():
                 baseplate=Baseplate(dimensions.parse("30"), dimensions.parse("30")),
                 intermediate_rail=IntermediateRail(NO_INTERMEDIATE))
     reg = Registry()
-    res = checks.run(p, reg)
+    res = engine.run(p, reg)
     src = report.build_source(res, reg, CLEAN)
     summary = src.split("= Summary")[1]
     assert "(Lc/r = 208.5 > 200, flagged)" in summary
@@ -342,7 +342,7 @@ def _slice4_source(**kw):
     """Case 5's guard (test_intermediate.project): its own Pipe1-1/4STD intermediate rail, B x N = 6 x 8 in."""
 
     reg = Registry()
-    res = checks.run(slice4_project(**kw), reg)
+    res = engine.run(slice4_project(**kw), reg)
     return res, report.build_source(res, reg, CLEAN)
 
 

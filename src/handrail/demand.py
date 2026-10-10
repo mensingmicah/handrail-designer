@@ -23,10 +23,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from handrail.calc import Line, Sheet, Sym, Term, compare
-from handrail.checks import COMBO, Loading, combo_text
 from handrail.directions import CONCENTRATED, DISTRIBUTED, LOAD_TYPES, Direction, Kind, LoadType, kind, unknown
+from handrail.loading import COMBO, combo_text
 from handrail.project import Project
 from handrail.registry import Registry
+from handrail.results import Loading
 
 TRIBUTARY = "Stated assumption: the tributary length is the span"
 

@@ -7,3 +7,7 @@ bug and keeps its full traceback.
 
 class InputError(ValueError):
     """The project file, a section, a dimension or the registry stops the calc."""
+
+
+class SectionStop(InputError):
+    """A hard stop: the tool will not check this section (slender, or out of range)."""

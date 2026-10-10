@@ -17,6 +17,10 @@ class ShapeNotFound(InputError):
     """The designation is not in the shapes database."""
 
 
+# The citation printed beside every value taken from the database.
+DB = "AISC Shapes Database v16.0"
+
+
 # Section families. Round hollow families are those the weld checks' round
 # decisions cover (docs/brief/welds.md, W2 and W7); round HSS joins in slice 5.
 PIPE = "AISC pipe"

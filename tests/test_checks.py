@@ -10,14 +10,16 @@ import re
 
 import pytest
 
-from handrail import checks, dimensions, shapes
+from handrail import dimensions, engine, flexure, materials, shapes
 from handrail.calc import fmt_sig
-from handrail.checks import SectionStop
+from handrail.errors import SectionStop
 from handrail.project import (
     NO_INTERMEDIATE, Baseplate, DeflectionLimit, IntermediateRail, Loads, Member, Project, ProjectError, ProjectInfo,
     Welds,
 )
 from handrail.registry import Registry
+from handrail.results import Case, Check
+from handrail.validate import validate
 from handrail.units import Q_
 
 E, FY, OMEGA = 29000.0, 35.0, 1.67  # ksi, ksi, - (registry values, restated for the plain calc)
@@ -66,7 +68,7 @@ def plain(section="Pipe2STD", L=72.0):
 
 @pytest.fixture
 def results():
-    return checks.run(project(), Registry())
+    return engine.run(project(), Registry())
 
 
 def test_every_case_matches_plain_calc(results):
@@ -97,8 +99,8 @@ def test_controlling_is_the_highest_ratio(results):
 
 
 def _check_with(*cases):
-    chk = checks.Check(1, "t", "M_a", "M_n")
-    chk.cases = [checks.Case(d, lt, "checked", ratio=r) for d, lt, r in cases]
+    chk = Check(1, "t", "M_a", "M_n")
+    chk.cases = [Case(d, lt, "checked", ratio=r) for d, lt, r in cases]
     return chk
 
 
@@ -139,7 +141,7 @@ def test_outward_and_inward_tie_exactly_for_a_round_section(results):
 
 def test_noncompact_section_uses_eq_F8_2_and_is_flagged():
     # A 103 lb/ft rail needs a post that keeps alpha Pr/Pe under the second-order limit.
-    res = checks.run(project(section="Pipe26STD", span="12'-0\"", post="Pipe12STD"), Registry())
+    res = engine.run(project(section="Pipe26STD", span="12'-0\"", post="Pipe12STD"), Registry())
     chk1 = res.checks[0]
     assert chk1.flags and "NONCOMPACT" in chk1.flags[0]
     expected = plain("Pipe26STD", L=144.0)
@@ -159,7 +161,7 @@ def test_slender_wall_is_a_hard_stop_naming_ratio_and_limit():
     expected = (rf"slender.*D/t = 300 > lambda_r = {re.escape(str(lr.value))}E/Fy = "
                 rf"{re.escape(fmt_sig(lr.value * E / Fy))} \({re.escape(lr.cite)}\)")
     with pytest.raises(SectionStop, match=expected):
-        checks.flexural_capacity(reg, _fake(300), "A53 Gr B")
+        flexure.flexural_capacity(reg, _fake(300), "A53 Gr B")
 
 
 def test_beyond_F8_limit_is_a_hard_stop():
@@ -169,11 +171,11 @@ def test_beyond_F8_limit_is_a_hard_stop():
     expected = (rf"D/t = 400 is not less than the {re.escape(app.cite)} limit "
                 rf"{re.escape(str(app.value))}E/Fy = {re.escape(fmt_sig(app.value * E / Fy))}")
     with pytest.raises(SectionStop, match=expected):
-        checks.flexural_capacity(reg, _fake(400), "A53 Gr B")
+        flexure.flexural_capacity(reg, _fake(400), "A53 Gr B")
 
 
 def test_exemption_removes_distributed_cases():
-    res = checks.run(project(loads=Loads(uniform_exempt=True, exemption_statement="Roof not occupied.")), Registry())
+    res = engine.run(project(loads=Loads(uniform_exempt=True, exemption_statement="Roof not occupied.")), Registry())
     for chk in res.checks[:2]:  # Checks 1 and 2 (the rail)
         dist = [c for c in chk.cases if c.load_type == "Distributed"]
         assert dist and all(c.status == "exempt" for c in dist)
@@ -181,7 +183,7 @@ def test_exemption_removes_distributed_cases():
 
 
 def test_deflection_bypass_computes_nothing():
-    res = checks.run(project(rail_deflection=DeflectionLimit(bypass=True)), Registry())
+    res = engine.run(project(rail_deflection=DeflectionLimit(bypass=True)), Registry())
     chk2 = res.checks[1]
     assert chk2.bypassed and chk2.cases == [] and chk2.verdict == "Bypassed by engineer"
 
@@ -189,22 +191,22 @@ def test_deflection_bypass_computes_nothing():
 def test_unsupported_grade_is_refused():
     p = dataclasses.replace(project(), top_rail=Member("Pipe2STD", "A500 Gr B"))
     with pytest.raises(ProjectError, match="A53 Gr B only"):
-        checks.run(p, Registry())
+        engine.run(p, Registry())
 
 
 def test_a_grade_with_fy_but_no_fu_entry_is_refused(monkeypatch):
     """Issue #4: a grade added to FY_ENTRY alone must stop at validation,
     not as a KeyError at Check 3's rail fusion face."""
 
-    monkeypatch.setitem(checks.FY_ENTRY, "A500 Gr C", "material.A53_GrB.Fy")
+    monkeypatch.setitem(materials.FY_ENTRY, "A500 Gr C", "material.A53_GrB.Fy")
     p = dataclasses.replace(project(), top_rail=Member("Pipe2STD", "A500 Gr C"))
     with pytest.raises(ProjectError, match="top rail grade 'A500 Gr C': this version supports A53 Gr B only"):
-        checks.validate(p, Registry())
+        validate(p, Registry())
 
 
 def test_entries_used_are_tracked():
     reg = Registry()
-    checks.run(project(), reg)
+    engine.run(project(), reg)
     used = {e.id for e in reg.used}
     for needed in ("asce7.guard.concentrated", "asce7.guard.uniform", "material.A53_GrB.Fy",
                    "aisc360.F1.omega_b", "aisc360.eq.F8-1", "aisc_manual.t3-23.case7.M",
@@ -240,7 +242,7 @@ def test_capacity_is_printed_once_at_the_head_of_every_bending_case(results):
 
 def test_combination_labels_are_generated_from_the_factors_used():
     reg = Registry()
-    res = checks.run(project(), reg)
+    res = engine.run(project(), reg)
     up = next(c for c in res.checks[0].checked if c.direction == "Upward")
     f = reg.get("ej.combo.bending.upward").value
     assert up.combination.startswith(f"{float(f['D'])!r}D + {float(f['L'])!r}L")
@@ -272,7 +274,7 @@ def test_eq_F8_2_is_listed_as_used_only_for_a_noncompact_section(section, span, 
     reg = Registry()
     # A compact post; under the Pipe2STD rail it fails W8 at validation, which
     # is not under test here, so compute past it.
-    res = checks.compute(project(section=section, span=span, post="Pipe12STD"), reg)
+    res = engine.compute(project(section=section, span=span, post="Pipe12STD"), reg)
     assert bool(res.checks[0].flags) is listed  # noncompact flag raised only for Pipe26STD
     used = {e.id for e in reg.used}
     assert ("aisc360.eq.F8-2" in used) is listed
@@ -282,7 +284,7 @@ def test_eq_F8_2_is_listed_as_used_only_for_a_noncompact_section(section, span, 
 def test_upward_margin_note_states_net_downward_when_dead_load_wins():
     # Heavy rail, small guard load: 0.6 M_D exceeds M_L, so the net moment acts down.
     loads = Loads(concentrated=Q_(10, "lbf"), uniform=Q_(1, "lbf/ft"))
-    res = checks.run(project(section="Pipe12STD", loads=loads), Registry())
+    res = engine.run(project(section="Pipe12STD", loads=loads), Registry())
     for c in res.checks[0].checked:
         if c.direction == "Upward":
             Ma = next(ln for ln in c.lines if ln.symbol == "M_a")
@@ -334,13 +336,13 @@ def test_post_block_adds_r_and_rail_block_is_unchanged(results):
 
 def test_run_validates_before_computing(monkeypatch):
     calls = []
-    monkeypatch.setattr(checks, "validate", lambda p, r: calls.append("validate"))
-    monkeypatch.setattr(checks, "compute", lambda p, r: calls.append("compute"))
-    checks.run(project(), Registry())
+    monkeypatch.setattr(engine, "validate", lambda p, r: calls.append("validate"))
+    monkeypatch.setattr(engine, "compute", lambda p, r: calls.append("compute"))
+    engine.run(project(), Registry())
     assert calls == ["validate", "compute"]
 
 
 def test_compute_alone_skips_only_the_validation():
-    a, b = checks.run(project(), Registry()), checks.compute(project(), Registry())
+    a, b = engine.run(project(), Registry()), engine.compute(project(), Registry())
     for x, y in zip(a.checks, b.checks):
         assert [c.ratio for c in x.checked] == [c.ratio for c in y.checked]
