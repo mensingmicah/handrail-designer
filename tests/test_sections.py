@@ -13,7 +13,7 @@ import dataclasses
 
 import pytest
 
-from handrail import engine, flexure, project, shapes
+from handrail import engine, flexure, project, report, shapes
 from handrail.project import ProjectError
 from handrail.registry import Registry
 from handrail.stops import Stop
@@ -282,3 +282,14 @@ def test_the_chord_limit_is_read_for_every_calc_and_the_decision_only_when_it_st
     _run(reg)
     used = [e.id for e in reg.used]
     assert CHORD_LIMIT in used and "ej.weld.chord_D_over_t_stop" not in used
+
+
+def test_the_stated_assumption_names_the_limit_the_stop_enforces():
+    """The W7 assumption says the chord's D/t is limited (S5-3). Its text is
+    the brief's, word for word (tests/test_report.py holds it to
+    output.md), so the number in it is typed there; this holds that number
+    to the registry entry the stop reads, so the two cannot drift apart."""
+    limit = Registry().entries[CHORD_LIMIT].value
+    w7 = [a for a in report.LOCKED_ASSUMPTIONS if "Chapter K chord limit states" in a]
+    assert len(w7) == 1
+    assert w7[0].endswith(f"is not checked; the chord's D/t is limited to {limit}, the Chapter K limit of applicability.")

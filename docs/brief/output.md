@@ -40,7 +40,8 @@ Manual, 16th Edition, and the AISC Shapes Database v16.0. (Slice 1.)
   of the saddle form a flare-bevel joint.
 - Local strength of the rail wall at the post, and of the post wall at the
   intermediate rail (AISC 360-22 Chapter K chord limit states), is not
-  checked.
+  checked; the chord's D/t is limited to 50, the Chapter K limit of
+  applicability.
 - The component load's effect on the post is not checked.
 - Guard loads are not combined with floor or roof live load; wind, snow and
   ice are not considered.
