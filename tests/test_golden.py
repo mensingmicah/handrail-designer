@@ -30,8 +30,8 @@ The first tier is the calcs Micah reviews, in tests/golden/:
 
 The second tier, in tests/golden/extra/, holds the branches the first tier
 never reaches: the uniform-load exemption, load overrides, each state of
-the intermediate rail with each of its guards, a noncompact rail, the
-slenderness flag, Eq. E3-3 and Eq. H1-1a, a weld below minimum size, the
+the intermediate rail with each of its guards, a noncompact rail (a custom
+tube, since slice 5), the slenderness flag, Eq. E3-3 and Eq. H1-1a, a weld below minimum size, the
 bypasses, each outcome of the reaction sets, an NG check, round HSS in
 each of its grades' kinds and custom round tubes (slice 5), and every stop.
 They are machinery scenarios, not test cases: nothing in them is a value
@@ -201,17 +201,20 @@ def test_every_golden_file_is_a_snapshot_the_test_compares():
 
 
 def test_the_second_tier_holds_the_scenarios_it_was_committed_with():
-    """104 scenarios: 41 whole calcs, 43 refused projects and 20 direct
+    """102 scenarios: 39 whole calcs, 43 refused projects and 20 direct
     scenarios. A scenario added or retired on purpose changes these counts
     in the same commit; one lost by accident (a renamed or deleted input)
     fails here. Retired so far: stop-unknown-post, a round HSS post that
-    stopped until slice 5 allowed round HSS at the joints. Added in slice
+    stopped until slice 5 allowed round HSS at the joints; and
+    full-noncompact and full-noncompact-same, whose Pipe26STD rail (D/t =
+    74.5) the chord D/t limit refuses (S5-3). full-tube-noncompact-rail
+    holds the noncompact branch and Eq. F8-2 in their place. Added in slice
     5: four round HSS calcs (full-hss-post, -all, -unusual and -a618),
     and for custom round tubes three calcs (full-tube-noncompact-rail,
     -post and -all) and six stops (stop-tube-*)."""
-    assert (len(EXTRA_CALCS), len(EXTRA_STOPS), len(DIRECT)) == (41, 43, 20)
+    assert (len(EXTRA_CALCS), len(EXTRA_STOPS), len(DIRECT)) == (39, 43, 20)
     assert all(name.startswith("direct-") for name in DIRECT)
-    assert sum(name.startswith("extra/") for name in SNAPSHOTS) == 104
+    assert sum(name.startswith("extra/") for name in SNAPSHOTS) == 102
 
 
 @pytest.mark.parametrize("path", [p for p in EXTRA_CALCS if _stops_at_validation(p)], ids=lambda p: p.stem)

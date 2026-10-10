@@ -40,7 +40,7 @@ another inside a function (tests/test_structure.py).
 
 - **A printed-text change shows in the golden snapshots**
   (tests/test_golden.py, tests/golden/). Two tiers: the calcs Micah
-  reviews (cases 1 to 5 and the example), and tests/golden/extra/, 104
+  reviews (cases 1 to 5 and the example), and tests/golden/extra/, 102
   machinery scenarios for the branches and stops those never reach. A
   refactor leaves both tiers
   byte-identical. A change made on purpose regenerates them in a commit of
