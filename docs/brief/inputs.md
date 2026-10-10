@@ -61,9 +61,9 @@ and how it is entered.
     the warning is not built yet.
 
   The grade list for solid bars and baseplate is not yet in the registry.
-  A500 (Gr B, Gr C) is offered
-  for round and rectangular HSS only, never for solid bars, and the defaults
-  are bars A36, pipe A53 Gr B, baseplate A36: these are my engineering
+  A500 (Gr B, Gr C) is never offered for solid bars, and the defaults
+  are bars A36, pipe A53 Gr B, round HSS and custom round tube A500 Gr B
+  (S5-5, below), baseplate A36: these are my engineering
   decisions, not registry entries. Every Fy and Fu is a registry entry
   citing the AISC Manual: Table 2-4 for shapes (pipe, HSS), Table 2-5 for
   plates and bars (for example, A36 Fy per Table 2-5).
@@ -89,3 +89,36 @@ and how it is entered.
   66.125 in, 3 ft 6 in, 42. A bare number is inches in every field. The
   normalized value is echoed in gray next to the box (42 → 3'-6") and again
   on the calc's dimensions page.
+
+## Grades for pipe, round HSS and custom round tubes (slice 5)
+
+Decided in planning slice 5 (docs/plans/slice-5.md); S5 numbers are that
+plan's decision numbers. (S5-5, Micah 2026-10-09.)
+
+- **Where this is going.** Every shape can use every grade the AISC
+  Manual lists for it: Table 2-4 for pipe and HSS. This replaces "A500
+  Gr B and Gr C only" as the limit for HSS.
+- **In the form (slice 8).** The grade dropdown shows the preferred and
+  common grades in a separate group at the top, and the rest of the
+  shape's Table 2-4 grades below. The TOML project file just takes the
+  grade name.
+- **Defaults.** Round HSS and custom round tube: A500 Gr B (conservative,
+  and commonly specified). Pipe: A53 Gr B, as before.
+- **Slice 5 splits the Table 2-4 grades for pipe and round HSS in two.**
+  A plain grade differs from the others only in Fy and Fu; slice 5 drafts
+  the Fy and Fu entries for every plain grade. A grade with a rule of its
+  own (A1085's design wall under §B4.2, for example) is decided one grade
+  at a time, each as its own numbered decision below. Until a grade has
+  its Fy and Fu entries it stops the calc, naming the grade and the
+  grades supported, as before.
+- **Custom round tube** accepts every grade round HSS does, plus A53
+  Gr B. None of them is an unusual pairing for a custom tube.
+- **Unusual pairings on database sections** (an HSS grade on a Pipe
+  designation, A53 Gr B on an HSS designation) are allowed, with the
+  printed warning this file already calls for. Slice 5 builds the
+  warning.
+- **Verify before the independent calcs.** I verify the A500 Gr B and
+  Gr C round Fy and Fu entries against Table 2-4 before slice 5's
+  independent calcs run: ASTM A500-21 changed the round values, and both
+  new test cases turn on them. This is my choice for these four values,
+  not a gate on the slice (ADR 0008 as amended).
