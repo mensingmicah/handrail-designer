@@ -1,0 +1,81 @@
+# Test case 7 (docs/plans/slice-5.md, T2): the post case for hollow round
+# sections. A round HSS post from the Shapes Database under a pipe rail.
+#
+# Top rail: Pipe2STD, A53 Gr B. Post: HSS2.375X0.125, its grade left out
+# of this file on purpose, so the round HSS default applies (A500 Gr B,
+# S5-5). No intermediate rail. L = 6'-0", h = 42 in, t_p = 1/2 in;
+# baseplate B = 6 in (parallel to the rail) x N = 8 in (perpendicular to
+# the rail), A36. Fillet welds all around, E70XX: rail to post 1/8 in, post
+# to baseplate 3/16 in. Default loads (P = 200 lb, w = 50 plf), no
+# exemption; default deflection limits.
+#
+# Branches it reaches: a round HSS read from the database, on a section no
+# pipe row matches; the published OD of 2.38 in in the weld rings of
+# Checks 3 and 7 (S5-4); the 0.01 in OD tolerance, a 2.38 in post under a
+# 2.375 in rail; an A500 Fy in Chapter E; the default grade.
+#
+# What it covers ([verification] covers): the post group and Checks 3, 5,
+# 6 and 7, and the reaction sets. Check 3 is covered because its weld ring
+# is the post's perimeter, a quantity the post's family changes (S5-2). The
+# top rail's section group and Checks 1 and 2 are not covered: they are a
+# Pipe2STD rail, verified in earlier cases.
+#
+# Values: an independent-calc case (docs/brief/verification.md). The
+# independent calc records every value the test compares in
+# tests/cases/independent/case-07.toml, written up beside it as case-07.md,
+# in a fresh session by the independent-calc skill (CLAUDE.md rule 6). Every
+# value there is "pending" until that session fills it.
+#
+# No [hand] values: recompute is empty (Micah, 2026-10-09; S5-2). Every
+# provision and branch this case uses is one Micah recomputes in cases 2 to
+# 5; only registry values and published properties differ.
+#
+# The A500 Gr B round Fy and Fu this case turns on are drafted registry
+# entries. Micah verifies them against AISC Manual Table 2-4 before the
+# independent calc runs (S5-5).
+#
+# A mismatch fails and, per CLAUDE.md rule 2, stops the work: neither side
+# is changed until we know which one is wrong.
+
+[project]
+name = "Test case 7"
+phase = "Verification"
+description = "Round HSS post: HSS2.375X0.125, default grade, under a Pipe2STD rail"
+
+[geometry]
+span = "6'-0\""
+post_height = 42
+baseplate_thickness = "1/2"
+
+[top_rail]
+section = "Pipe2STD"
+grade = "A53 Gr B"
+
+[post]
+section = "HSS2.375X0.125"   # grade left out: the round HSS default applies (S5-5)
+
+[intermediate_rail]
+none = true
+
+[baseplate]
+B = 6                        # parallel to the rail
+N = 8                        # perpendicular to the rail
+grade = "A36"
+
+[welds]
+rail_to_post = "1/8"
+post_to_baseplate = "3/16"
+electrode = "E70XX"
+
+[deflection.rail]
+limit_L_over = 120
+bypass = false
+
+[deflection.post]
+limit_L_over = 60
+bypass = false
+
+[verification]
+kind = "independent-calc"
+covers = ["post", "check3", "check5", "check6", "check7", "reactions"]
+recompute = []
