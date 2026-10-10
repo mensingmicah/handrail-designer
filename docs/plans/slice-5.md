@@ -191,13 +191,21 @@ wall of §B4.2. The binding tests became:
 
 As built (tests/test_tube.py): the round HSS rows pass in full, and the
 pipe rows pass on I, S, Z and r. Pipe area comes out above published on
-five rows under 12 in (Pipe3STD, Pipe6XS, Pipe5STD, Pipe3-1/2XS, Pipe4STD,
-0.37 to 0.64%) and pipe D/t misses on one (Pipe2XS, below); neither is
-asserted, and both wait on Micah.
+five rows under 12 in (Pipe3STD +0.64%, Pipe6XS +0.61%, Pipe5STD +0.48%,
+Pipe3-1/2XS +0.42%, Pipe4STD +0.37%) and pipe D/t misses on one (Pipe2XS:
+published 11.7, 2.375/0.204 = 11.64, below).
 
-Two more changes to the snapshot rule were ruled the same day: the chord
-D/t draft row is a third intended change to existing calcs, and
-stop-second-order's rail moved to Pipe20XS.
+Micah's second ruling (2026-10-10): both are accepted as database
+findings, listed in data/README.md with the others. The binding pipe test
+gains a guard in place of "reproduces or below" for the area: on pipe rows
+under 12 in, the formula's area is never more than 1% above published.
+Pipe D/t is not asserted.
+
+More changes to the snapshot rule were ruled the same day: the chord D/t
+draft row is a third intended change to existing calcs; stop-second-order's
+rail moved to Pipe20XS; and full-noncompact and full-noncompact-same, whose
+Pipe26STD rail the chord D/t limit refuses, were retired, with
+full-tube-noncompact-rail holding the noncompact branch and Eq. F8-2.
 
 **T4. Machinery tests** (same-author), for what cases 6 and 7 do not
 reach:

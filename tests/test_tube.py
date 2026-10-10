@@ -15,13 +15,14 @@ Binding (Micah, 2026-10-10):
 - The 67 round HSS rows whose OD column is the designation's OD and is 10 in
   or less: A, I, S, Z, r and D/t reproduce; the weight is within 0.5%.
 - The 36 pipe rows under 12 in OD: I, S, Z and r reproduce or come out
-  below published, never above.
+  below published, never above. The area is never more than 1% above
+  published: it comes out above on five rows, by 0.37 to 0.64%, which Micah
+  accepted as a database finding and bounded with this guard.
 
 Not asserted, and listed in data/README.md as findings:
 
-- Pipe area under 12 in OD. It comes out ABOVE published on five rows, which
-  Micah's ruling says to park and report: it waits on him (slice status
-  issue). Pipe D/t, which misses on one row (below published).
+- Pipe D/t under 12 in OD, which misses on one row (Pipe2XS, below
+  published).
 - The six XS pipe rows 14 to 26 in, whose published A, I, S and Z match a
   wall of 0.90 t_nom, not the listed design wall; the other pipe rows 12 in
   and over; round HSS rows over 10 in, and those whose OD column is rounded
@@ -145,6 +146,16 @@ def test_the_formulas_reproduce_or_come_out_below_every_pipe_row_under_12_in(col
                     or computed < published)
     assert not above, (f"{column} comes out ABOVE published on {len(above)} pipe rows under 12 in. Park it and report "
                        f"to Micah (T3):\n" + "\n".join(above))
+
+
+def test_the_area_formula_is_never_more_than_one_percent_above_a_pipe_row_under_12_in():
+    """The guard Micah set when he accepted the pipe-area finding
+    (2026-10-10). The formula's area is above published on five rows
+    (Pipe3STD, Pipe6XS, Pipe5STD, Pipe3-1/2XS, Pipe4STD; data/README.md),
+    the furthest by 0.64%. A row over 1% would be a new finding: report it
+    to Micah, do not raise the bound."""
+    over = _misses(PIPE_ROWS, "A", lambda published, computed: computed <= 1.01 * published)
+    assert not over, "pipe area more than 1% above published (T3):\n" + "\n".join(over)
 
 
 # ---------------------------------------------------------------------------

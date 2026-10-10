@@ -47,10 +47,12 @@ shape.
 round HSS rows whose OD column is the designation's OD and is 10 in or
 less: all seven properties reproduce on every row. The 36 pipe rows under
 12 in OD: I, S, Z and r reproduce or come out below published on every row,
-and the weight reproduces on every row.
+and the weight reproduces on every row. The area is never more than 1%
+above published (below).
 
-**Pipe area under 12 in OD: above published on five rows.** Waiting on
-Micah (slice status issue); not asserted by the test.
+**Pipe area under 12 in OD: above published on five rows.** Accepted as a
+database finding (Micah, 2026-10-10). The test guards it: on these 36 rows
+the formula's area is never more than 1% above published.
 
 | Row | Published A (in²) | Formula on the listed t_des (in²) | Difference |
 | --- | --- | --- | --- |
@@ -63,11 +65,14 @@ Micah (slice status issue); not asserted by the test.
 On the other 31 rows the area reproduces (19) or comes out below (12, the
 furthest Pipe10STD at −3.3% and Pipe2STD at −1.7%). The cause is not known.
 On Pipe3STD the published area equals 0.93 times the area on the nominal
-wall, but that does not hold for the other four.
+wall, but that does not hold for the other four. The effect: a custom tube
+in the pipe grade, entered with one of these five pipes' dimensions, is
+given up to 0.64% more area than the database pipe.
 
 **Pipe D/t under 12 in OD: one row misses.** Pipe2XS is published as 11.7;
 its listed OD over its listed t_des (2.375 / 0.204) is 11.64. The other 35
-reproduce. Not asserted by the test.
+reproduce. Accepted as a database finding (Micah, 2026-10-10); not asserted
+by the test.
 
 **Six XS pipe rows, 14 to 26 in: published A, I, S and Z are 2.9 to 3.4%
 below the formulas.** Pipe14XS, Pipe16XS, Pipe18XS, Pipe20XS, Pipe24XS and
