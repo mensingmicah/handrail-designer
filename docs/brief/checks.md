@@ -65,6 +65,7 @@ loads-and-envelope.md).
   design wall thickness; the output notes it. Custom rectangular tubes use
   the AISC corner-radius convention, a registry entry. Custom tubes convert
   nominal to design wall thickness per AISC 360-22 §B4.2, a registry entry.
+  A1085 is the first grade both rules meet: S5-6, inputs.md.
 - Custom tube thickness: dead weight uses the wall thickness as entered.
   Strength and section properties use the design thickness, reduced from
   nominal when the input is marked nominal. This matches AISC's convention

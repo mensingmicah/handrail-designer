@@ -122,3 +122,36 @@ plan's decision numbers. (S5-5, Micah 2026-10-09.)
   independent calcs run: ASTM A500-21 changed the round values, and both
   new test cases turn on them. This is my choice for these four values,
   not a gate on the slice (ADR 0008 as amended).
+
+### The plain grades and the grades with a rule of their own
+
+The split of S5-5, as drafted for slice 5 (Claude, 2026-10-09, from memory
+of AISC Manual Table 2-4 and one secondary article; every Fy and Fu is a
+drafted registry entry until I verify it).
+
+- **Plain** (only Fy and Fu differ): A53 Gr B (pipe); for round HSS, A500
+  Gr B, A500 Gr C, A501 Gr A, A501 Gr B and A847. A501 is plain only if
+  the §B4.2 wall rule is by ASTM standard (below).
+- **A1065** is not a round HSS grade. It moves to slice 6 with
+  rectangular HSS, and the registry's drafted round HSS list
+  (`material.grades.hss_round`) is corrected in slice 5. (Micah,
+  2026-10-09.)
+- **A1085 Gr A is offered in slice 5.** (S5-6, Micah 2026-10-09.) It
+  follows the two rules already in checks.md.
+  - A database section runs on its published properties, on
+    t_des = 0.93·t_nom, and prints a note that also says how to get the
+    credit. Roughly: "A1085: AISC 360-22 §B4.2 permits the nominal wall;
+    database properties are used as published, on t_des = 0.93·t_nom. To
+    use the nominal wall, enter the tube as a custom section." Claude
+    proposes the final wording on the slice 5 branch.
+  - A custom A1085 tube whose wall is marked nominal uses t_des = t_nom
+    (§B4.2).
+  - Accepted: the same tube gives two answers, about 7% apart on wall
+    thickness, by the route it is entered. The database route is the
+    conservative one.
+- **The §B4.2 wall rule is drafted from the 360-22 text, not from
+  memory.** (Micah, 2026-10-09.) His recollection is that since 360-16 it
+  reads: nominal wall for A1065 and A1085, 0.93·t_nom for HSS to other
+  approved standards, which makes A501 plain. If the 360-22 text still
+  keys on ERW against SAW, the work stops and Claude asks him, because
+  seamless A501 would then need a ruling.
