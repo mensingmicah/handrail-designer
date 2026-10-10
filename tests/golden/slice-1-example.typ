@@ -92,6 +92,8 @@ Every dimension as entered, and as the tool read it. A bare number is inches.
 
 #table(columns: (1fr, auto, auto, auto), table.header(strong("Dimension"), strong("As entered"), strong("Read as"), strong("Inches")), "Span, post to post (c/c)", "6'-0\"", "6'-0\"", "72.00 in", "Post height h, top of concrete to top rail centerline", "3'-6\"", "3'-6\"", "42.00 in", "Baseplate thickness t_p", "1/2", "1/2\"", "0.5000 in", "Baseplate B, parallel to the rail", "6", "6\"", "6.000 in", "Baseplate N, perpendicular to the rail", "8", "8\"", "8.000 in", "Fillet weld, top rail to post", "1/8", "1/8\"", "0.1250 in", "Fillet weld, post to baseplate", "1/4", "1/4\"", "0.2500 in")
 
+#text("Directional strength increase at the post to baseplate weld: elected by the engineer (directional_increase = true).")
+
 Derived lengths, each computed in the calc where it is used:
 
 #table(columns: (1fr, auto, auto, auto), table.header(strong("Derived length"), strong("Formula"), strong("Inches"), strong("Computed in")), "Post cantilever length, top of baseplate to top rail centerline", [$L_"post" = h - t_p$], "41.50 in", "Loading", "Eccentricity: rail centerline to the weld plane at the rail underside", [$e = frac(d_"rail", "2")$], "1.188 in", "Check 3", "Effective length, with the unbraced length taken as the post height h", [$L_c = K h$], "88.20 in", "Check 5")
@@ -428,6 +430,7 @@ Every direction case and load type is computed. The full calculation follows for
 #calcline([$f_parallel = "0 lb/in"$], "Force component along the weld axis: at the extreme fiber the weld axis is perpendicular to the plane of bending, and V acts in that plane", "Engineering judgement (EOR): elastic weld as a line")
 #calcline([$display(theta = arccos(frac(f_parallel, f_r)) = arccos(frac(("0 lb/in"), ("2,818 lb/in"))) = "90.00°")$], "Angle between the resultant and the weld axis", "AISC 360-22 Eq. J2-5; Engineering judgement (EOR): elastic weld as a line")
 #calcline([$display(k_"ds" = "1.0" + "0.5" sin(theta)^("1.5") = "1.0" + "0.5" dot sin("90.00°")^("1.5") = "1.500")$], "Directional strength increase", "AISC 360-22 Eq. J2-5; Engineering judgement (EOR), after STI: directional increase on round HSS")
+#calcline([$"Directional strength increase"$ #h(6pt) $arrow.r$ #h(6pt) *#"Applied at the engineer's election"*], "The directional strength increase of AISC 360-22 §J2.4(a) is applied at the post to baseplate weld at the engineer's election. The Specification gives no procedure for strain compatibility in a round weld under out-of-plane bending; the election rests on the Steel Tube Institute's testing of fillet welds to round HSS and on the elastic method being a first-failure check.", "AISC 360-22 Eq. J2-5; Engineering judgement (EOR), after STI: directional increase on round HSS")
 #calcline([$display(R_n = F_"nw" t_e k_"ds" = ("42.00 ksi") ("0.1767 in") dot "1.500" = "11,140 lb/in")$], "Nominal fillet weld strength per inch", "AISC 360-22 §J2.4")
 #calcline([$display(frac(R_n, Omega_w) = frac(("11,140 lb/in"), "2.000") = "5,568 lb/in")$], "Allowable weld metal strength per inch", "AISC 360-22 Eq. B3-2")
 #calcline([$display("Ratio"_w = frac(f_r, frac(R_n, Omega_w)) = frac(("2,818 lb/in"), ("5,568 lb/in")) = "0.51")$], "Weld metal: demand / capacity", "AISC 360-22 Eq. B3-2")

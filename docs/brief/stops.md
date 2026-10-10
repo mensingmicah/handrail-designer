@@ -74,8 +74,9 @@ A36 plate is the only baseplate (W12).
   rule: k_ds = 1.0 at a branch-to-chord weld. Both hold for every round
   hollow section (S5-12).
 - **Allowed, post on the baseplate.** Welded all around; W2's directional
-  strength increase applies, to every round hollow post whatever its grade
-  (S5-12).
+  strength increase may be elected by the engineer, for every round hollow
+  post whatever its grade (S5-12; an election, off by default, since W2's
+  revision of 2026-10-10).
 - **Stop.** The family is not supported until the slice named, by S5-1,
   which regrouped slices 5 to 7 by engineering: 5 hollow round, 6 hollow
   rectangular, 7 every solid bar. Until then W7 and W2 have been decided

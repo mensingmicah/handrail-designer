@@ -347,8 +347,48 @@ def test_dimensions_page_echoes_both_weld_sizes_and_lists_e():
             '[$e = frac(d_"rail", "2")$], "1.188 in", "Check 3"') in dims
 
 
-def test_weld_checks_print_in_check_number_order_with_their_envelopes():
+ELECTED = Welds(dimensions.parse("1/8"), dimensions.parse("1/4"), directional_increase=True)
+
+
+def _check_7(src):
+    return src.split("= Check 7: Post weld to baseplate")[1].split("\n= ")[0]
+
+
+def test_dimensions_page_echoes_the_election_of_the_directional_increase():
+    """W2 as revised 2026-10-10: the engineer's election prints with the
+    weld sizes, whichever way it is set."""
+    def dims(**kw):
+        res, reg = run(**kw)
+        return report.build_source(res, reg, CLEAN).split("= Dimensions")[1].split("\n= ")[0]
+
+    echo = "Directional strength increase at the post to baseplate weld: "
+    assert echo + "not elected (directional_increase = false)." in dims()
+    assert echo + "elected by the engineer (directional_increase = true)." in dims(welds=ELECTED)
+    assert dims().count(echo) == 1 and dims(welds=ELECTED).count(echo) == 1
+
+
+def test_the_election_line_prints_in_check_7_only_when_the_increase_is_elected():
+    line = '#calcline([$"Directional strength increase"$ #h(6pt) $arrow.r$ #h(6pt) *#"Applied at the engineer\'s election"*]'
+    res, reg = run(welds=ELECTED)
+    elected = report.build_source(res, reg, CLEAN)
+    assert _check_7(elected).count(line) == 1 and elected.count(line) == 1
+    printed = next(ln for ln in _check_7(elected).splitlines() if ln.startswith(line))
+    assert "AISC 360-22 Eq. J2-5; Engineering judgement (EOR), after STI" in printed
+    assert "at the engineer's election" in printed and "Steel Tube Institute" in printed
     res, reg = run()
+    default = report.build_source(res, reg, CLEAN)
+    assert "election" not in _check_7(default)
+    assert ('#calcline([$k_"ds" = "1.000"$], "No directional strength increase at the post to baseplate weld: '
+            'not elected by the engineer", "AISC 360-22 §J2.4(a)(3)")') in _check_7(default)
+
+
+def test_check_7_has_a_theta_column_only_when_the_increase_is_elected():
+    res, reg = run()
+    assert "[$theta$" not in _check_7(report.build_source(res, reg, CLEAN))
+
+
+def test_weld_checks_print_in_check_number_order_with_their_envelopes():
+    res, reg = run(welds=ELECTED)
     src = report.build_source(res, reg, CLEAN)
     heads = [ln for ln in src.splitlines() if ln.startswith("= Check ")]
     assert [h.split(":")[0] for h in heads] == ["= Check 1", "= Check 2", "= Check 3", "= Check 4a",

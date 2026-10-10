@@ -14,6 +14,8 @@ for inputs the engineer didn't intend:
 - the post is required (every v1 calc checks one post), and the baseplate
   thickness must be less than the post height;
 - both weld sizes are required, with no default (docs/brief/inputs.md);
+- the directional strength increase at the post to baseplate weld is the
+  engineer's election, off unless the file sets it (docs/brief/welds.md, W2);
 - the baseplate's plan dimensions B and N are required, with no default (S4-6);
 - a member is a standard section (section) or a custom round tube (shape,
   OD and wall_nominal), never both (S5-8);
@@ -98,6 +100,11 @@ class Welds:
     # Intermediate rail to post: its own section only, where it is required
     # (S4-8). Same as the top rail, the rail to post size applies.
     intermediate_rail_to_post: Dimension | None = None
+    # The directional strength increase at the post to baseplate weld (Check
+    # 7): the engineer's election, off unless the file sets it (welds.md, W2
+    # as revised 2026-10-10). The rail to post welds take k_ds = 1.0 whatever
+    # this says.
+    directional_increase: bool = False
 
 
 @dataclass(frozen=True)
@@ -175,7 +182,7 @@ SCHEMA = {
                           "shape": None, "OD": None, "wall_nominal": None},
     "baseplate": {"B": None, "N": None, "grade": None},
     "welds": {"rail_to_post": None, "post_to_baseplate": None, "electrode": None,
-              "intermediate_rail_to_post": None},
+              "intermediate_rail_to_post": None, "directional_increase": None},
     "loads": {"concentrated_lb": None, "uniform_plf": None, "component_lb": None,
               "uniform_exemption": {"applies": None, "statement": None}},
     "deflection": {"rail": {"limit_L_over": None, "bypass": None},
@@ -424,7 +431,8 @@ def from_dict(raw: dict) -> Project:
     welds = Welds(
         rail_to_post=_dimension(wt, "rail_to_post", "welds"),
         post_to_baseplate=_dimension(wt, "post_to_baseplate", "welds"),
-        **_given(wt, "welds", {"electrode": ("electrode", _str)}),
+        **_given(wt, "welds", {"electrode": ("electrode", _str),
+                               "directional_increase": ("directional_increase", _bool)}),
         **intermediate_weld,
     )
     bt = _need(raw, "baseplate", "top level")

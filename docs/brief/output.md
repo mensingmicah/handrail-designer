@@ -95,6 +95,12 @@ Manual, 16th Edition, and the AISC Shapes Database v16.0. (Slice 1.)
 - The dimensions page shows each dimension as entered and normalized
   (72 → 6'-0"). Each derived length (h − t_p, Lc) prints the note, formula
   and value of the calc line that computed it. (Slices 1 and 2.)
+- Under the dimensions table, one line echoes the engineer's election of
+  the directional strength increase at the post to baseplate weld:
+  "elected by the engineer" or "not elected", with the input's value.
+  Where it is elected, Check 7 prints a line under k_ds saying the
+  increase is applied at the engineer's election, with its basis.
+  (Micah, 2026-10-10; welds.md, W2 as revised.)
 - The Check 5 envelope table has an αPr/Pe column, with "—" for the
   downward and upward cases, so the value is visible for every case the
   second-order stop checks; the printed sentence goes in the calc lines.

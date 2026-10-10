@@ -89,20 +89,44 @@ def test_axial_only_is_uniform():
 def test_theta_90_gives_k_ds_1_5():
     reg, _ = _ring()
     sh = Sheet(reg)
-    theta, k = welds.directional_increase(sh, reg, Sym("f_r", Q_(100, "lbf/inch")), P15)
+    theta, k = welds.directional_increase(sh, reg, Sym("f_r", Q_(100, "lbf/inch")))
     assert theta.value.m_as("degree") == 90
     assert k.value == 1.5
     printed = next(ln for ln in sh.lines if ln.symbol == "theta")
     assert printed.result == '"90.00°"'
 
 
-def test_directional_increase_stops_on_a_section_that_is_not_round():
-    # W2, with a stand-in family: only pipe can be entered today.
+def test_the_elected_increase_prints_the_line_saying_it_is_the_engineers_election():
+    """W2 as revised 2026-10-10: after k_ds, a line says the increase is
+    applied at the engineer's election, citing Eq. J2-5 and the STI basis."""
     reg, _ = _ring()
-    rect = dataclasses.replace(P15, family="rectangular HSS", label="FakeTube")
-    with pytest.raises(SectionStop, match=r"FakeTube \(rectangular HSS\): the directional strength increase "
-                                          r"rule for this section family has not been drafted"):
-        welds.directional_increase(Sheet(reg), reg, Sym("f_r", Q_(100, "lbf/inch")), rect)
+    sh = Sheet(reg)
+    welds.directional_increase(sh, reg, Sym("f_r", Q_(100, "lbf/inch")))
+    assert [ln.kind for ln in sh.lines] == ["value", "value", "value", "decision"]
+    line = sh.lines[-1]
+    assert line.symbol == '"Directional strength increase"' and line.text == "Applied at the engineer's election"
+    assert line.note == reg.entries[welds.ELECTED].value
+    assert "at the engineer's election" in line.note and "Steel Tube Institute" in line.note
+    assert line.cite == f"AISC 360-22 Eq. J2-5; {reg.entries[welds.ELECTED].cite}" and "STI" in line.cite
+
+
+def test_k_ds_is_1_0_and_no_theta_where_the_increase_is_not_elected():
+    reg, _ = _ring()
+    head, k_ds = welds.baseplate_k_ds(reg, elected=False)
+    theta, k = k_ds(Sheet(reg), Sym("f_r", Q_(100, "lbf/inch")))
+    assert theta is None and k.value == 1.0
+    assert [(ln.key, ln.value, ln.cite) for ln in head] == [("k_ds", 1.0, "AISC 360-22 §J2.4(a)(3)")]
+    assert "not elected by the engineer" in head[0].note
+    used = {e.id for e in reg.used}
+    assert welds.NOT_ELECTED in used and welds.ELECTED not in used and "aisc360.eq.J2-5" not in used
+
+
+def test_the_elected_k_ds_prints_nothing_in_the_head():
+    reg, _ = _ring()
+    head, k_ds = welds.baseplate_k_ds(reg, elected=True)
+    theta, k = k_ds(Sheet(reg), Sym("f_r", Q_(100, "lbf/inch")))
+    assert head == [] and theta is not None and theta.value.m_as("degree") == 90 and k.value == 1.5
+    assert welds.NOT_ELECTED not in {e.id for e in reg.used}
 
 
 def test_strength_ratio_is_the_larger_of_weld_and_base_metal():
@@ -142,11 +166,13 @@ from handrail.project import (
 P_CONC, W_PLF = 200.0, 50.0  # lb, lb/ft (registry code values, restated for the plain calc)
 
 
-def project(rail="Pipe2STD", post="Pipe2STD", span="6'-0\"", r2p="1/8", p2b="1/4", tp="1/2", **kw):
+def project(rail="Pipe2STD", post="Pipe2STD", span="6'-0\"", r2p="1/8", p2b="1/4", tp="1/2", elected=False, **kw):
+    """``elected``: the engineer's election of the directional increase at
+    the post to baseplate weld, off by default as in a project file."""
     return Project(info=ProjectInfo(name="Test"), span=dimensions.parse(span),
                    top_rail=Member(rail, "A53 Gr B"), post=Member(post, "A53 Gr B"),
                    post_height=dimensions.parse("42"), baseplate_thickness=dimensions.parse(tp),
-                   welds=Welds(dimensions.parse(r2p), dimensions.parse(p2b)),
+                   welds=Welds(dimensions.parse(r2p), dimensions.parse(p2b), directional_increase=elected),
                    **{"baseplate": Baseplate(dimensions.parse("30"), dimensions.parse("30")),
                       "intermediate_rail": IntermediateRail(NO_INTERMEDIATE), **kw})
 
@@ -224,12 +250,15 @@ def test_check_3_exempt_distributed_cases():
 # ---------------------------------------------------------------------------
 
 
-def plain_check_7(rail="Pipe2STD", post="Pipe2STD", L_ft=6.0, h=42.0, tp=0.5, w=0.25, P=P_CONC, w_plf=W_PLF):
-    """Check 7 by hand in plain floats: {(direction, load type): (f_r, ratio)}."""
+def plain_check_7(rail="Pipe2STD", post="Pipe2STD", L_ft=6.0, h=42.0, tp=0.5, w=0.25, P=P_CONC, w_plf=W_PLF,
+                  k_ds=1.0):
+    """Check 7 by hand in plain floats: {(direction, load type): (f_r, ratio)}.
+    ``k_ds``: 1.0 as the default; 1.5 where the increase is elected, theta
+    being 90 deg at the governing fiber."""
     r, p = shapes.section(rail), shapes.section(post)
     D, arm = p.OD.m_as("inch"), h - tp
     Lw, Sw = math.pi * D, math.pi * D**2 / 4
-    weld = 0.60 * 70e3 * 0.707 * w * 1.5 / 2.00   # theta = 90 deg at the governing fiber: k_ds = 1.5
+    weld = 0.60 * 70e3 * 0.707 * w * k_ds / 2.00
     base = 0.60 * 58e3 * tp / 2.00
     PD = r.W.m_as("lbf/ft") * L_ft + p.W.m_as("lbf/inch") * arm
     out = {}
@@ -245,9 +274,24 @@ def plain_check_7(rail="Pipe2STD", post="Pipe2STD", L_ft=6.0, h=42.0, tp=0.5, w=
     return out
 
 
-def test_check_7_matches_plain_calc():
+def test_check_7_matches_plain_calc_with_no_increase_by_default():
+    """W2 as revised 2026-10-10: the increase is not automatic. A project
+    that does not elect it takes k_ds = 1.0 in every case, with no theta."""
     chk = engine.run(project(), Registry()).check(7)
-    expected = plain_check_7()
+    expected = plain_check_7(k_ds=1.0)
+    assert len(chk.checked) == 10
+    for c in chk.checked:
+        f_r, ratio = expected[(c.direction, c.load_type)]
+        assert c.f_r.m_as("lbf/inch") == pytest.approx(f_r, rel=1e-9), c.label
+        assert c.ratio == pytest.approx(ratio, rel=1e-9), c.label
+        assert c.theta is None and c.k_ds == 1.0, c.label
+    assert chk.controlling.label == "Outward, distributed"
+
+
+def test_check_7_matches_plain_calc_with_the_increase_elected():
+    """Elected, Check 7 is what it was while the increase was automatic."""
+    chk = engine.run(project(elected=True), Registry()).check(7)
+    expected = plain_check_7(k_ds=1.5)
     assert len(chk.checked) == 10
     for c in chk.checked:
         f_r, ratio = expected[(c.direction, c.load_type)]
@@ -257,19 +301,44 @@ def test_check_7_matches_plain_calc():
     assert chk.controlling.label == "Outward, distributed"
 
 
+def test_the_election_changes_check_7_only():
+    """The rail to post weld stays at k_ds = 1.0 whatever is elected, and no
+    other check reads the election."""
+    off, on = engine.run(project(), Registry()), engine.run(project(elected=True), Registry())
+    for number in (1, 2, 3, 5, 6):
+        assert [c.ratio for c in off.check(number).checked] == [c.ratio for c in on.check(number).checked], number
+    assert all(c.k_ds == 1.0 and c.theta is None for c in on.check(3).checked)
+    c_off, c_on = off.check(7).controlling, on.check(7).controlling
+    assert c_off.weld_ratio == pytest.approx(1.5 * c_on.weld_ratio, rel=1e-12)
+    assert c_off.base_ratio == c_on.base_ratio  # the baseplate's base metal line has no k_ds
+
+
+def test_the_election_line_prints_only_where_the_increase_is_elected():
+    def decisions(elected):
+        c = engine.run(project(elected=elected), Registry()).check(7).controlling
+        return [ln.text for ln in c.lines if ln.kind == "decision"]
+
+    assert "Applied at the engineer's election" in decisions(True)
+    assert "Applied at the engineer's election" not in decisions(False)
+
+
 def test_check_7_theta_is_computed_at_the_governing_point():
-    c = engine.run(project(), Registry()).check(7).controlling
+    c = engine.run(project(elected=True), Registry()).check(7).controlling
     printed = {ln.symbol: ln for ln in c.lines if ln.kind == "value"}
     assert printed["theta"].symbolic == "arccos(frac(f_parallel, f_r))"
     assert 'sin(theta)^("1.5")' in printed['k_"ds"'].symbolic
 
 
-def test_check_7_stops_on_a_post_that_is_not_round():
-    # W2 inside the weld code, past validation: Check 7 on a post of a stand-in family.
+@pytest.mark.parametrize("elected", [False, True])
+def test_check_7_stops_on_a_post_that_is_not_round(elected):
+    """The Check 7 joint's table inside the weld code, past validation:
+    Check 7 on a post of a stand-in family stops before the weld is
+    computed, whether or not the increase is elected."""
     reg = Registry()
-    res = engine.compute(project(), reg)
-    rectangular = dataclasses.replace(res.post, family="rectangular HSS")
-    with pytest.raises(SectionStop, match=r"directional strength increase rule for this section family"):
+    res = engine.compute(project(elected=elected), reg)
+    rectangular = dataclasses.replace(res.post, family="rectangular HSS", label="FakeTube")
+    with pytest.raises(SectionStop, match=r"FakeTube \(rectangular HSS\): the directional strength increase "
+                                          r"rule for this section family has not been drafted"):
         welds.check_7(reg, res.project, rectangular, res.loading)
 
 
@@ -296,13 +365,14 @@ def test_minimum_size_reads_the_nominal_wall_and_strength_the_design_wall():
 
 
 def test_thin_baseplate_base_metal_governs_and_sets_demand_and_capacity():
-    """t_p = 1/4 in: base metal 0.60(58 ksi)(0.25 in)/2.00 = 4,350 lb/in is below
-    the 1/4 in weld's 0.60(70)(0.707)(0.25)(1.5)/2.00 = 5,568 lb/in, so base
-    metal governs Check 7. Demand and capacity come from that line, as the
-    summary prints them."""
+    """t_p = 1/4 in, with the directional increase elected: base metal
+    0.60(58 ksi)(0.25 in)/2.00 = 4,350 lb/in is below the 1/4 in weld's
+    0.60(70)(0.707)(0.25)(1.5)/2.00 = 5,568 lb/in, so base metal governs Check
+    7. Demand and capacity come from that line, as the summary prints them.
+    (Not elected, the weld's 3,712 lb/in is the lower and weld metal governs.)"""
     from handrail import report
 
-    res = engine.run(project(tp="1/4"), Registry())
+    res = engine.run(project(tp="1/4", elected=True), Registry())
     c = res.check(7).controlling
     assert c.governs == "base metal"
     assert c.base_ratio > c.weld_ratio and c.ratio == c.base_ratio
@@ -318,10 +388,11 @@ def test_thin_baseplate_base_metal_governs_and_sets_demand_and_capacity():
 
 def test_every_weld_case_ratio_is_its_demand_over_its_capacity():
     for tp in ("1/2", "1/4"):
-        res = engine.run(project(tp=tp), Registry())
-        for n in (3, 7):
-            for c in res.check(n).checked:
-                assert c.ratio == pytest.approx((c.demand / c.capacity).m_as(""), rel=1e-12), (tp, n, c.label)
+        for elected in (False, True):
+            res = engine.run(project(tp=tp, elected=elected), Registry())
+            for n in (3, 7):
+                for c in res.check(n).checked:
+                    assert c.ratio == pytest.approx((c.demand / c.capacity).m_as(""), rel=1e-12), (tp, n, c.label)
 
 
 def test_check_3_prints_the_rail_dead_load_with_the_loading_page_symbol():

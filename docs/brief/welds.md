@@ -6,11 +6,12 @@ checks (Checks 3 and 7 in checks.md).
 ## Weld checks
 
 Weld checks (3 and 7) use the elastic method, treating the weld as a line.
-The AISC 360-22 §J2.4 directional strength increase is allowed for fillet
-welds, based on the angle between the weld force and the weld axis; its
-limits on weld groups loaded at varying angles, and any Chapter K
-restrictions for welds to HSS, are registry entries to verify, and the
-increase is not assumed to apply everywhere (decided below, W2). Base
+The AISC 360-22 §J2.4 directional strength increase, based on the angle
+between the weld force and the weld axis, is not applied unless the
+engineer elects it, and only at the post to baseplate weld (decided below,
+W2, as revised 2026-10-10); its limits on weld groups loaded at varying
+angles, and any Chapter K restrictions for welds to HSS, are registry
+entries to verify. Base
 metal: per inch of weld, weld shear strength on the throat is compared with
 the base metal at the fusion face of each connected part (post wall and
 rail, or post wall and baseplate), with the limit state following the
@@ -58,27 +59,81 @@ plan's decision numbers, kept for the record.
   Engineering judgement: Check 3 ratios are far below 1.0 for pipe on
   pipe. (Micah, 2026-10-08, ruling on the case 4 independent calc.) To
   revisit for rectangular rails (docs/ROADMAP.md, slices 5 and 6).
-- **Directional strength increase.** (W2, Micah 2026-10-04.)
-  - The AISC 360-22 §J2.4 increase, k_ds = 1.0 + 0.50 sin^1.5 θ, applies
+- **Directional strength increase: the engineer's election at the post to
+  baseplate weld, off by default.** (W2, Micah 2026-10-04; revised by
+  Micah 2026-10-10, which replaces the automatic rule.)
+  - ~~The AISC 360-22 §J2.4 increase, k_ds = 1.0 + 0.50 sin^1.5 θ, applies
     to fillet welds on round HSS (pipe included), including the post to
-    baseplate weld (Check 7). θ is computed at the governing point and
-    printed.
-  - The round-HSS applicability is its own entry, drafted, citing a
-    non-primary source: the Steel Tube Institute's "Directionality
-    Increase for Fillet Welds to HSS" (Packer et al. testing). Its note
-    says that applying the increase under base moment extends that
-    test basis, which was axial tension: engineering judgement.
-  - Exception: the rail to post weld (Check 3; the post end on the rail's
-    underside, a branch-to-chord joint) uses k_ds = 1.0, per the Chapter K
-    commentary on branch-to-chord connections, and because W1 already
-    simplifies the saddle to a flat ring. An ej.* entry, drafted.
-  - Rectangular and square HSS use k_ds = 1.0 (AISC 360-22 excludes the
-    increase for rectangular HSS ends in tension; the wording is confirmed
-    when that entry is drafted). Until a later slice drafts that rule, the
-    weld code applies the increase only to round sections and stops with
-    an error if any other section reaches it. The error names the
-    section and says why: the directional increase rule for that section
-    family has not been drafted.
+    baseplate weld (Check 7).~~ Superseded: the increase is no longer
+    automatic anywhere.
+  - The post to baseplate weld (Check 7) has an input,
+    `directional_increase` under `[welds]`: true or false, false when left
+    out (inputs.md).
+    - False, the default: k_ds = 1.0. The calc prints that as one line,
+      citing AISC 360-22 §J2.4(a)(3), the value for all conditions the
+      section does not name.
+    - True: k_ds per AISC 360-22 Eq. J2-5, as before the revision, with θ
+      computed at the governing point and printed. A line under it states
+      that the increase is applied at the engineer's election, and cites
+      the 360-22 equation and the Steel Tube Institute's round HSS testing
+      as its basis.
+    - Either way the input is echoed on the dimensions page, with the weld
+      sizes.
+  - Why it is an election (Micah, 2026-10-10). AISC 360-22 handles strain
+    compatibility explicitly only for in-plane eccentric weld groups (the
+    instantaneous center method) and for concentric groups mixing
+    longitudinal and transverse welds. A round base weld under
+    out-of-plane bending has no code procedure, and taking the increase
+    rests on HSS research and on the elastic method being a first-failure
+    check. That is engineering judgement, so the engineer elects it.
+  - Both provisions as read in the 360-22 text (Claude, 2026-10-10;
+    paraphrased, page numbers from the PDF):
+    - §J2.4(a), page 16.1-130. Fillet weld strength is Eq. J2-4, nominal
+      weld stress times effective area times k_ds. k_ds takes Eq. J2-5 for
+      fillet welds where strain compatibility of the various weld elements
+      is considered (condition 1), 1.0 for fillet welds to the ends of
+      rectangular HSS loaded in tension (condition 2), and 1.0 for all
+      other conditions (condition 3).
+    - The instantaneous center method: a User Note to §J2.4(a), page
+      16.1-130, names it as a valid way to find the strength of a weld
+      group with elements in various directions, one that considers strain
+      compatibility. The Specification's own text does not say "in-plane"
+      or "eccentric"; its Commentary (page 16.1-489) sends the reader to
+      the AISC Manual for the method, which was not read here.
+    - Concentric groups of longitudinal and transverse welds: §J2.4(b),
+      page 16.1-132, Eq. J2-6, for a concentrically loaded fillet weld
+      group of uniform leg size.
+    - One more place, not in the two above: a second User Note to
+      §J2.4(a), page 16.1-130, says strain compatibility is satisfied for
+      a linear weld group (every element in one line or parallel) of
+      uniform leg size, connecting elements of uniform stiffness and
+      loaded through its center of gravity, so the increase may be used
+      there. A ring is not a linear group, so this does not reach the base
+      weld, and the reasoning stands.
+    - The Commentary on §J2.4, pages 16.1-489 and 16.1-490, records the
+      research behind the round HSS basis: fillet welds joining the end of
+      an HSS in axial tension to a rigid plate. Numerical work gave round
+      HSS a reliability index of 3.6 against the target of 4.0, and on that
+      basis welds to the ends of tension-loaded round HSS were left out of
+      the rule that sets k_ds to 1.0 for rectangular HSS.
+  - The round-HSS basis is its own entry (`ej.weld.directional_round_hss`),
+    drafted, citing a non-primary source: the Steel Tube Institute's
+    "Directionality Increase for Fillet Welds to HSS" (Packer et al.
+    testing). Its value is the election line the calc prints. Its note
+    says that applying the increase under base moment extends that test
+    basis, which was axial tension: engineering judgement.
+  - The rail to post weld (Check 3; the post end on the rail's underside, a
+    branch-to-chord joint) uses k_ds = 1.0 whatever is elected, per the
+    Chapter K commentary on branch-to-chord connections, and because W1
+    already simplifies the saddle to a flat ring. An ej.* entry, drafted.
+    The same holds for the intermediate rail to post weld (Check 4b).
+  - Rectangular and square HSS use k_ds = 1.0 (AISC 360-22 §J2.4(a)
+    condition 2, for rectangular HSS ends in tension; the wording is
+    confirmed when that entry is drafted). Until a later slice drafts that
+    rule, the Check 7 weld stops with an error if a section that is not
+    round hollow reaches it, whether or not the increase is elected. The
+    error names the section and says why: the directional increase rule
+    for that section family has not been drafted.
 - **Weld force method.** (W3, Micah 2026-10-04.) Weld as a line, elastic.
   For the ring, S_w = πD²/4 (in², a line property, so forces come out per
   inch of weld), with D the post's outside diameter. The shear is V/(πD),
@@ -457,9 +512,11 @@ plan's decision numbers.
     V/(πD) only (planning arithmetic: about 0.04 for a 0.051 in wall).
     Both rulings stand for round HSS and custom round tubes. Slice 6
     redoes them for rectangular rails.
-  - W2's directional increase applies at Check 7 to every round hollow
-    post, whatever its grade, custom round tubes included. The entry's
-    test basis is cold-formed round HSS; a hot-formed grade (A501, A618)
-    extends it by the same engineering judgement the entry already
+  - W2's directional increase may be elected at Check 7 for every round
+    hollow post, whatever its grade, custom round tubes included. (As
+    confirmed on 2026-10-09 it applied automatically; since W2's revision
+    of 2026-10-10 it is the engineer's election, off by default.) The
+    entry's test basis is cold-formed round HSS; a hot-formed grade (A501,
+    A618) extends it by the same engineering judgement the entry already
     records for base moment, and its note says so. Checks 3 and 4b keep
     k_ds = 1.0.

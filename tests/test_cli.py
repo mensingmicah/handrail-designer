@@ -285,6 +285,20 @@ def test_weld_sizes_and_defaults_are_read():
     assert proj.welds.electrode == "E70XX" and proj.baseplate.grade == "A36"
 
 
+def test_the_directional_increase_is_off_unless_the_file_elects_it():
+    """W2 as revised 2026-10-10: an engineer's election, false by default,
+    and a real TOML boolean like every other true or false field."""
+    raw = tomllib.loads(EXAMPLE.read_text(encoding="utf-8"))
+    assert project.from_dict(raw).welds.directional_increase is True  # the example elects it
+    del raw["welds"]["directional_increase"]
+    assert project.from_dict(raw).welds.directional_increase is False
+    raw["welds"]["directional_increase"] = False
+    assert project.from_dict(raw).welds.directional_increase is False
+    raw["welds"]["directional_increase"] = "true"
+    with pytest.raises(project.ProjectError, match="'welds.directional_increase' must be true or false without quotes"):
+        project.from_dict(raw)
+
+
 def test_electrode_and_baseplate_grade_default_when_left_out(tmp_path):
     text = EXAMPLE.read_text(encoding="utf-8")
     for line in ('electrode = "E70XX"', 'grade = "A36"'):

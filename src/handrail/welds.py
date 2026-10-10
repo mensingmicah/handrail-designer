@@ -12,8 +12,10 @@ branch and the post wall the chord.
 - No bearing credit (W10): the weld carries everything, in compression as in
   tension. Both extreme fibers are evaluated and the larger resultant governs.
 - At an extreme fiber the weld axis is perpendicular to the plane of bending,
-  so theta = 90 deg there. The §J2.4 directional increase k_ds applies on
-  round hollow sections only (W2); Check 3 takes k_ds = 1.0.
+  so theta = 90 deg there. The §J2.4 directional increase k_ds is the
+  engineer's election at the post to baseplate weld (Check 7), off unless
+  the project file sets it (W2, as revised 2026-10-10); not elected, k_ds =
+  1.0. Checks 3 and 4b take k_ds = 1.0 whatever is elected.
 - Weld metal: F_nw t_e k_ds / Omega per inch. Base metal at a fusion face:
   shear rupture, 0.60 Fu t / Omega per inch (W5, W6). In Checks 3 and 7 the
   post wall is covered by Check 5 (W5; the Fu/Fy guard is in validate.py).
@@ -295,12 +297,15 @@ def shear_only(sh: Sheet, rg: Ring, V: Sym) -> RingForces:
     return RingForces(f_a=None, f_b=None, f_v=f_v, f_n=None, f_r=f_r, fiber="uniform")
 
 
-def directional_increase(sh: Sheet, registry: Registry, f_r: Sym, section: Section) -> tuple[Sym, Sym]:
-    """theta at the governing point and k_ds from it, for a post the Check 7
-    joint's table lists as allowed (W2; joints.py). Returns (theta, k_ds).
-    Raises SectionStop otherwise: validation makes the same test, and this
-    one holds when a calc is computed without it."""
-    joints.CHECK_7.require(JointMember("post", section), error=SectionStop)
+ELECTED = "ej.weld.directional_round_hss"
+NOT_ELECTED = "aisc360.J2.4.kds_other"
+
+
+def directional_increase(sh: Sheet, registry: Registry, f_r: Sym) -> tuple[Sym, Sym]:
+    """The directional strength increase where the engineer has elected it at
+    the post to baseplate weld (W2, as revised 2026-10-10): theta at the
+    governing point, k_ds from it, and the line saying the increase is
+    applied at the engineer's election, with its basis. Returns (theta, k_ds)."""
     line_method = registry.get(LINE_METHOD)
     f_par = sh.given("f_parallel", "f_parallel", Q_(0, PER_INCH), "Force component along the weld axis: at the extreme "
                      "fiber the weld axis is perpendicular to the plane of bending, and V acts in that plane",
@@ -309,8 +314,28 @@ def directional_increase(sh: Sheet, registry: Registry, f_r: Sym, section: Secti
                     cite_ids=("aisc360.eq.J2-5", LINE_METHOD), unit="degree")
     k_ds = sh.line("k_ds", 'k_"ds"', sh.coeff("aisc360.eq.J2-5.base")
                    + sh.coeff("aisc360.eq.J2-5.coeff") * sin(theta) ** sh.coeff("aisc360.eq.J2-5.exponent"),
-                   "Directional strength increase", cite_ids=("aisc360.eq.J2-5", "ej.weld.directional_round_hss"))
+                   "Directional strength increase", cite_ids=("aisc360.eq.J2-5", ELECTED))
+    election = registry.get(ELECTED)
+    sh.decision(mtext("Directional strength increase"), "Applied at the engineer's election", election.value,
+                cite_ids=("aisc360.eq.J2-5", election.id))
     return theta, k_ds
+
+
+def baseplate_k_ds(registry: Registry, elected: bool
+                   ) -> tuple[list[Line], Callable[[Sheet, Sym], tuple[Sym | None, Sym]]]:
+    """k_ds at the post to baseplate weld, by the engineer's election (W2, as
+    revised 2026-10-10). Returns the line the head of every case prints, and
+    how a case finds (theta or None, k_ds) at its governing point.
+
+    Not elected, the default: k_ds = 1.0, the value AISC 360-22 J2.4(a) gives
+    every condition but the two it names; one line, in the head. Elected:
+    nothing in the head, and each case computes theta and k_ds."""
+    if elected:
+        return [], lambda sh, f_r: directional_increase(sh, registry, f_r)
+    sh = Sheet(registry)
+    k_ds = sh.code_value("k_ds", 'k_"ds"', NOT_ELECTED,
+                         "No directional strength increase at the post to baseplate weld: not elected by the engineer")
+    return sh.lines, lambda _sh, _f_r: (None, k_ds)
 
 
 @dataclass
@@ -494,8 +519,15 @@ def check_3(registry: Registry, project: Project, rail: Section, post: Section, 
 
 def check_7(registry: Registry, project: Project, post: Section, loading: Loading) -> Check:
     """The post to baseplate weld: a ring of the post perimeter at the top of
-    the baseplate, moment arm h - t_p; k_ds from theta at the governing point
-    (W2); base metal on the baseplate side against the resultant (W5)."""
+    the baseplate, moment arm h - t_p; k_ds = 1.0, or from theta at the
+    governing point where the engineer elects the directional increase (W2,
+    as revised 2026-10-10); base metal on the baseplate side against the
+    resultant (W5).
+
+    Stops on a post the Check 7 joint's table does not list as allowed
+    (joints.py): validation makes the same test, and this one holds when a
+    calc is computed without it."""
+    joints.CHECK_7.require(JointMember("post", post), error=SectionStop)
     rg = ring(registry, post, project.welds.post_to_baseplate)
     arm = Sheet(registry)
     arm.heading("Moment arm")
@@ -506,15 +538,16 @@ def check_7(registry: Registry, project: Project, post: Section, loading: Loadin
     limits = size_limits(registry, rg.w, (nominal_wall("post", "Post", post), t_p))
     wm = weld_metal(registry, project.welds.electrode)
     grade = project.baseplate.grade
+    kd_lines, k_ds = baseplate_k_ds(registry, project.welds.directional_increase)
     base = base_metal(registry, "Base metal: baseplate fusion face", baseplate_tensile_strength(grade), t_p)
-    head = rg.lines + arm.lines + limits.lines + wm.lines + base.lines + post_wall_covered(registry)
+    head = rg.lines + arm.lines + limits.lines + wm.lines + kd_lines + base.lines + post_wall_covered(registry)
     ws = WeldSetup(
         rg=rg, wm=wm, base=base, head=head,
         wording=weld_wording("at the top of the post", "Moment at the top of the baseplate",
                              "aisc_manual.t3-23.case22.M"),
         dead=Given("P_D", "P_D", loading.P_D, "D at the post: axial dead load at the top of the baseplate", "Loading"),
         arm=L_post,
-        k_ds=lambda sh, f_r: directional_increase(sh, registry, f_r, post),
+        k_ds=k_ds,
         base_demand=lambda f: f.f_r,
         base_note="Baseplate fusion face: the resultant per inch",
     )

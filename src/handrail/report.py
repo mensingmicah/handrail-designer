@@ -494,6 +494,12 @@ def build_source(results: Results, registry: Registry, stamp: Stamp) -> str:
             dims.append((f"{name}, custom round tube: nominal wall", member.wall_nominal))
     rows = [[label, d.entered, d.normalized, fmt_quantity_plain(d.value)] for label, d in dims]
     src.append(_table(["Dimension", "As entered", "Read as", "Inches"], rows, "(1fr, auto, auto, auto)"))
+    # The engineer's election at the post to baseplate weld (W2, as revised
+    # 2026-10-10), echoed with the weld sizes it goes with.
+    elected = proj.welds.directional_increase
+    election = ("elected by the engineer (directional_increase = true)" if elected
+                else "not elected (directional_increase = false)")
+    src.append(f"#text({typst_str(f'Directional strength increase at the post to baseplate weld: {election}.')})")
     src.append("Derived lengths, each computed in the calc where it is used:")
     src.append(_derived_lengths(results))
 

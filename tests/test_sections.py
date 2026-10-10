@@ -168,13 +168,17 @@ def test_a_round_hss_post_under_a_pipe_rail_of_the_same_size_runs():
         assert ring.value == _od(2.38)
 
 
-def test_the_directional_increase_applies_to_a_round_hss_post_at_check_7_only():
-    """W2 as S5-12 confirms it: k_ds from theta at the post to baseplate
-    weld, k_ds = 1.0 at the branch-to-chord welds."""
-    res = _run(post={"section": "HSS2.375X0.125"}, top_rail={"section": "HSS2.375X0.154"},
-               intermediate_rail={"same_as_top_rail": False, "section": "HSS1.900X0.120"}, welds=OWN_WELD)
+def test_the_directional_increase_can_be_elected_for_a_round_hss_post_at_check_7_only():
+    """W2 as S5-12 confirms it and the ruling of 2026-10-10 revises it: where
+    the engineer elects the increase, k_ds comes from theta at the post to
+    baseplate weld of a round HSS post; k_ds = 1.0 at the branch-to-chord
+    welds either way, and at the post to baseplate weld by default."""
+    sections = {"post": {"section": "HSS2.375X0.125"}, "top_rail": {"section": "HSS2.375X0.154"},
+                "intermediate_rail": {"same_as_top_rail": False, "section": "HSS1.900X0.120"}}
+    res = _run(**sections, welds={**OWN_WELD, "directional_increase": True})
     assert res.check(7).controlling.k_ds > 1.0
     assert res.check(3).controlling.k_ds == 1.0 and res.check("4b").controlling.k_ds == 1.0
+    assert _run(**sections, welds=OWN_WELD).check(7).controlling.k_ds == 1.0
 
 
 @pytest.mark.parametrize("rail, post, inter", [

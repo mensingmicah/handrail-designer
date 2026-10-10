@@ -158,6 +158,8 @@ review = [
   "ej.section.custom_wall_nominal",
   "ej.grade.A1085_database_note",
   "ej.grade.unusual_pairing",
+  # Slice 5 rulings of 2026-10-10 (the directional increase by election), drafted 2026-10-10
+  "aisc360.J2.4.kds_other",
 ]
 
 # ---------------------------------------------------------------------------
@@ -1564,11 +1566,18 @@ drafted_on = 2026-10-08
 verified_by = ""
 verified_date = ""
 note = """
-From memory; equation number unconfirmed for 360-22 (Eq. J2-5 held the \
-increase in 360-16). Its round-HSS applicability is \
-ej.weld.directional_round_hss, and the rail to post weld uses \
-ej.weld.branch_kds instead (W2). Confirm the rectangular HSS wording when \
-the rectangular rule is drafted (W2)."""
+Drafted from memory on 2026-10-08. The equation number was then read in \
+the 360-22 text on 2026-10-10 (§J2.4(a), page 16.1-130): Eq. J2-5 is \
+k_ds for condition (1), fillet welds where strain compatibility of the \
+various weld elements is considered; condition (2), fillet welds to the \
+ends of rectangular HSS loaded in tension, and condition (3), all other \
+conditions, take k_ds = 1.0 (aisc360.J2.4.kds_other). The source field \
+stays "memory" because the value and coefficients were not re-drafted \
+from the text. At the post to baseplate weld the increase is the \
+engineer's election, off by default (ej.weld.directional_round_hss, W2 \
+as revised 2026-10-10), and the rail to post weld uses \
+ej.weld.branch_kds (W2). Confirm the rectangular HSS wording when the \
+rectangular rule is drafted (W2)."""
 
 [[entry]]
 id = "aisc360.eq.J2-5.base"
@@ -1753,29 +1762,49 @@ against R here). A stated assumption, printed in the front matter."""
 
 [[entry]]
 id = "ej.weld.directional_round_hss"
-value = "The directional strength increase applies to fillet welds on round HSS, pipe included, including the post to baseplate weld under base moment."
-unit = "provision"
+value = "The directional strength increase of AISC 360-22 §J2.4(a) is applied at the post to baseplate weld at the engineer's election. The Specification gives no procedure for strain compatibility in a round weld under out-of-plane bending; the election rests on the Steel Tube Institute's testing of fillet welds to round HSS and on the elastic method being a first-failure check."
+unit = "text"
 cite = "Engineering judgement (EOR), after STI: directional increase on round HSS"
 document = "Steel Tube Institute, Directionality Increase for Fillet Welds to HSS (after Packer et al. testing)"
-edition = "docs/brief/welds.md, W2"
-section = "Directional strength increase: round HSS applicability"
+edition = "docs/brief/welds.md, W2 as revised 2026-10-10"
+section = "Directional strength increase: an engineer's election at the post to baseplate weld, off by default; its basis on round HSS"
 source = "engineer"
 status = "drafted"
 drafted_on = 2026-10-08
 verified_by = ""
 verified_date = ""
 note = """
-Micah, 2026-10-04 (W2). A non-primary source; I did not open the STI \
-piece and have no URL for it. Applying the increase under base moment \
-extends that test basis, which was axial tension: engineering judgement. \
-The weld code applies the increase only to round hollow sections and \
-stops for any other (W2). \
-Slice 5 (S5-12; Claude's, confirmed by Micah 2026-10-09): the increase \
-applies at Check 7 to every round hollow post, whatever its grade, \
-custom round tubes included. The test basis is cold-formed round HSS; a \
-hot-formed grade (A501, A618) extends it by the same engineering \
-judgement this entry already records for base moment. Which posts the \
-weld code allows is now the Check 7 joint's table (docs/brief/stops.md)."""
+Micah, 2026-10-04 (W2), revised by his ruling of 2026-10-10: the \
+increase is no longer automatic at the post to baseplate weld. It is an \
+input, [welds] directional_increase, false unless the engineer sets it. \
+Not elected, k_ds is aisc360.J2.4.kds_other. Elected, k_ds is Eq. J2-5 \
+as before, and the value of this entry prints beside it as the line \
+saying the increase is applied at the engineer's election; the wording \
+is Claude's proposal for Micah to accept or reword in the slice 5 pull \
+request. The value changed on 2026-10-10 from a statement that the \
+increase applies to round HSS; the cite is unchanged. \
+His reasoning: 360-22 handles strain compatibility explicitly only for \
+weld groups analyzed by the instantaneous center method and for \
+concentric groups of longitudinal and transverse welds (Eq. J2-6); a \
+round base weld under out-of-plane bending has no code procedure, and \
+taking the increase rests on HSS research and on the elastic method \
+being a first-failure check. That is engineering judgement, so the \
+engineer elects it. \
+A non-primary source; I did not open the STI piece and have no URL for \
+it. Applying the increase under base moment extends that test basis, \
+which was axial tension. Read in the 360-22 text on 2026-10-10 \
+(Commentary on §J2.4, page 16.1-490, paraphrased): the tests were of \
+fillet welds joining the end of an HSS in axial tension to a rigid \
+plate; numerical work by Tousignant and Packer (2017a) gave round HSS a \
+reliability index of 3.6 against the target of 4.0, and on that basis \
+fillet welds to the ends of tension-loaded round HSS were left out of \
+the prohibition that sets the factor to 1.0 for rectangular HSS. \
+Slice 5 (S5-12; Claude's, confirmed by Micah 2026-10-09): the election \
+is open for every round hollow post, whatever its grade, custom round \
+tubes included. The test basis is cold-formed round HSS; a hot-formed \
+grade (A501, A618) extends it by the same engineering judgement this \
+entry already records for base moment. Which posts the weld code allows \
+is the Check 7 joint's table (docs/brief/stops.md)."""
 
 [[entry]]
 id = "ej.weld.branch_kds"
@@ -2971,3 +3000,40 @@ wording is Claude's proposal for Micah to accept or reword in the slice \
 A53 Gr B on an HSS designation. A custom tube takes every round HSS \
 grade and A53 Gr B, and none is unusual for it. The standard lists are \
 material.grades.pipe and material.grades.hss_round."""
+
+# ---------------------------------------------------------------------------
+# Slice 5, Micah's rulings of 2026-10-10 on the welds. docs/brief/welds.md:
+# W2 as revised (the directional strength increase is the engineer's
+# election at the post to baseplate weld, off by default).
+# ---------------------------------------------------------------------------
+
+[[entry]]
+id = "aisc360.J2.4.kds_other"
+value = 1.0
+unit = ""
+cite = "AISC 360-22 §J2.4(a)(3)"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§J2.4(a), Strength, fillet welds, directional strength increase factor k_ds: condition (3), all other conditions, page 16.1-130"
+source = "AISC 360-22 text, read 2026-10-10"
+status = "drafted"
+drafted_on = 2026-10-10
+verified_by = ""
+verified_date = ""
+note = """
+Read in the 360-22 text, §J2.4(a) on page 16.1-130. The fillet weld \
+strength is Eq. J2-4, with k_ds by three conditions: (1) Eq. J2-5 for \
+fillet welds where strain compatibility of the various weld elements is \
+considered; (2) 1.0 for fillet welds to the ends of rectangular HSS \
+loaded in tension; (3) 1.0 for all other conditions. This entry is \
+condition (3). The calc prints it at the post to baseplate weld (Check \
+7) when the engineer has not elected the directional increase, which is \
+the default (Micah, 2026-10-10; docs/brief/welds.md, W2 as revised; \
+ej.weld.directional_round_hss). Two User Notes on the same page say \
+where strain compatibility is satisfied or considered: the \
+instantaneous center method, for weld groups of elements in various \
+directions; and a linear weld group of uniform leg size, connecting \
+elements of uniform stiffness, loaded through its center of gravity. A \
+ring is not a linear group. §J2.4(b) on page 16.1-132 gives Eq. J2-6 \
+for concentrically loaded groups of longitudinal and transverse \
+elements."""

@@ -80,6 +80,13 @@ and how it is entered.
   stops with a message. More baseplate grades come with baseplate checks
   (after v1, docs/ROADMAP.md); more rail and post grades come with the
   section families. (Slice 3, W12.)
+  The directional strength increase at the post to baseplate weld is the
+  engineer's election: `directional_increase` under `[welds]`, true or
+  false without quotes, false when left out. False, Check 7 uses
+  k_ds = 1.0. True, it uses AISC 360-22 Eq. J2-5 and prints a line saying
+  the increase is applied at the engineer's election. The rail to post
+  welds use k_ds = 1.0 either way. The setting is echoed on the dimensions
+  page. (Micah, 2026-10-10; welds.md, W2 as revised.)
 - Guard loads (concentrated, distributed, component), defaulting to code
   values, editable
 - Deflection limits: L/120 for the rail span and L/60 for the post

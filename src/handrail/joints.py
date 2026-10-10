@@ -16,7 +16,8 @@ The joints:
 An allowed chord and branch pair rests on W7, kept for slice 5 by S5-3 (the
 chord wall's local strength is a stated assumption, not a check), and on
 W2's branch rule (k_ds = 1.0). An allowed post on the baseplate is welded
-all around, with W2's directional increase. A stop cell names the slice
+all around, and the engineer may elect W2's directional increase for it
+(off by default; W2 as revised 2026-10-10). A stop cell names the slice
 that brings its family (S5-1).
 
 Slice 5 allows every pair of the three round hollow families (AISC pipe,
