@@ -17,7 +17,6 @@ from __future__ import annotations
 
 import dataclasses
 from dataclasses import dataclass
-from typing import Any
 
 from handrail.calc import Sheet, Sym, fmt_quantity_plain
 from handrail.errors import SectionStop
@@ -25,6 +24,7 @@ from handrail.project import OWN_SECTION, Member, Project
 from handrail.registry import Registry
 from handrail.shapes import PIPE, ROUND_HSS, ROUND_TUBE, Section
 from handrail.stops import Stop
+from handrail.units import Q_
 
 
 @dataclass(frozen=True)
@@ -102,7 +102,7 @@ class Stress:
         """The value as its own calc line, cited to its entry."""
         return sh.code_value(key, typst, self.entry, self.note, select=self.range)
 
-    def quantity(self, registry: Registry) -> Any:
+    def quantity(self, registry: Registry) -> Q_:
         entry = registry.get(self.entry)
         return entry.in_range(self.range) if self.range else entry.quantity
 

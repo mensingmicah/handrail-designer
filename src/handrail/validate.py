@@ -14,6 +14,7 @@ from handrail.project import SAME_AS_TOP, Member, Project, ProjectError
 from handrail.registry import Registry
 from handrail.shapes import Section
 from handrail.stops import Stop
+from handrail.units import Q_
 
 
 def require_supported_grade(registry: Registry, member: Member, sec: Section, name: str) -> None:
@@ -36,7 +37,7 @@ def require_supported_grade(registry: Registry, member: Member, sec: Section, na
 OD_TOLERANCE = "ej.section.od_tolerance"
 
 
-def wider(registry: Registry, a, b) -> bool:
+def wider(registry: Registry, a: Q_, b: Q_) -> bool:
     """Whether outside diameter ``a`` is wider than ``b`` for the width
     comparisons W8 and S4-11: greater by more than the tolerance within
     which two outside diameters are equal (S5-4). The database rounds a
