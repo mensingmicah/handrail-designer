@@ -46,6 +46,7 @@ import pytest
 
 from handrail import checks, project
 from handrail.directions import CONCENTRATED
+from handrail.post import E3_BRANCH
 from handrail.registry import Registry
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -86,8 +87,37 @@ def _case_key(c) -> str:
     return f"{c.direction.lower()}_{second.lower()}"
 
 
-def _line_value(lines, symbol):
-    return next(ln.value for ln in lines if ln.symbol == symbol and ln.kind == "value")
+# Issue #21, item 4: the harness reads a calc line by its key (Line.key),
+# not by its printed Typst symbol. While both readers exist, BY_SYMBOL
+# switches every lookup back to the old one, so
+# test_reading_by_key_returns_what_reading_by_symbol_did can run the two
+# side by side. The next commit removes the symbol reader.
+BY_SYMBOL = False
+
+
+def _keyed(lines, key):
+    """The value of the calc line with this key. A key names one quantity
+    within a block; lines that share it (a value printed twice) must agree."""
+    values = [ln.value for ln in lines if ln.key == key and ln.kind == "value"]
+    assert values, f"no calc line with key {key!r}"
+    assert all(v == values[0] for v in values), f"calc lines with key {key!r} disagree: {values}"
+    return values[0]
+
+
+def _line_value(lines, key, symbol):
+    if BY_SYMBOL:
+        return next(ln.value for ln in lines if ln.symbol == symbol and ln.kind == "value")
+    return _keyed(lines, key)
+
+
+def _decision_text(lines, key, marker):
+    """The outcome a decision line states: the line with this key (or, read
+    the old way, the first decision whose outcome contains ``marker``)."""
+    if BY_SYMBOL:
+        return next(ln.text for ln in lines if ln.kind == "decision" and marker in (ln.text or ""))
+    texts = [ln.text for ln in lines if ln.key == key and ln.kind == "decision"]
+    assert len(texts) == 1, f"expected one decision line with key {key!r}, found {len(texts)}"
+    return texts[0]
 
 
 def _check(res, number):
@@ -109,7 +139,7 @@ def _post_values(res):
     c5, c6 = _check(res, 5), _check(res, 6)
     # Capacities, read from the printed lines of the case that prints them.
     down, out = _case(c5, "Downward").lines, _case(c5, "Outward").lines
-    branch = next(ln.text for ln in down if ln.kind == "decision" and "buckling: Eq." in (ln.text or ""))
+    branch = _decision_text(down, E3_BRANCH, "buckling: Eq.")
     v = {
         "post.D_in": p.OD.m_as("inch"),
         "post.tdes_in": p.tdes.m_as("inch"),
@@ -120,17 +150,17 @@ def _post_values(res):
         "post.Z_in3": p.Z.m_as("in^3"),
         "post.r_in": p.r.m_as("inch"),
         "post.D_t": p.D_t,
-        "post.D_post_lb": _line_value(ld.lines, 'D_"post"').m_as("lbf"),
+        "post.D_post_lb": _line_value(ld.lines, "D_post", 'D_"post"').m_as("lbf"),
         "post.P_D_lb": ld.P_D.m_as("lbf"),
-        "check5.Lc_in": _line_value(down, "L_c").m_as("inch"),
-        "check5.Lc_over_r": _line_value(down, "frac(L_c, r)"),
-        "check5.Fe_ksi": _line_value(down, "F_e").m_as("ksi"),
-        "check5.Fcr_ksi": _line_value(down, 'F_"cr"').m_as("ksi"),
+        "check5.Lc_in": _line_value(down, "L_c", "L_c").m_as("inch"),
+        "check5.Lc_over_r": _line_value(down, "L_c_over_r", "frac(L_c, r)"),
+        "check5.Fe_ksi": _line_value(down, "F_e", "F_e").m_as("ksi"),
+        "check5.Fcr_ksi": _line_value(down, "F_cr", 'F_"cr"').m_as("ksi"),
         "check5.Fcr_equation": branch.split("Eq. ")[1],
-        "check5.Pn_lb": _line_value(down, "P_n").m_as("lbf"),
-        "check5.Pc_lb": _line_value(down, "P_c").m_as("lbf"),
-        "check5.Mn_lbin": _line_value(out, "M_n").m_as("lbf*inch"),
-        "check5.Mc_lbin": _line_value(out, "M_c").m_as("lbf*inch"),
+        "check5.Pn_lb": _line_value(down, "P_n", "P_n").m_as("lbf"),
+        "check5.Pc_lb": _line_value(down, "P_c", "P_c").m_as("lbf"),
+        "check5.Mn_lbin": _line_value(out, "M_n", "M_n").m_as("lbf*inch"),
+        "check5.Mc_lbin": _line_value(out, "M_c", "M_c").m_as("lbf*inch"),
     }
     # Pt is computed only when an upward case has net tension (0.6D < L).
     upward = [c for c in c5.checked if c.direction == "Upward"]
@@ -165,8 +195,8 @@ def tool_values(res):
         "section.D_t": r.D_t,
         "section.w_D_plf": res.loading.w_D.m_as("lbf/ft"),
         # Read from the controlling case's printed lines: compare what the PDF shows.
-        "check1.Mn_lbin": _line_value(c1.controlling.lines, "M_n").m_as("lbf*inch"),
-        "check1.Mn_over_Omega_lbin": _line_value(c1.controlling.lines, "frac(M_n, Omega_b)").m_as("lbf*inch"),
+        "check1.Mn_lbin": _line_value(c1.controlling.lines, "M_n", "M_n").m_as("lbf*inch"),
+        "check1.Mn_over_Omega_lbin": _line_value(c1.controlling.lines, "M_n_over_Omega_b", "frac(M_n, Omega_b)").m_as("lbf*inch"),
     }
     for c in c1.checked:
         v[f"check1.moment_lbin.{_case_key(c)}"] = c.demand.m_as("lbf*inch")
@@ -205,8 +235,8 @@ def _intermediate_values(res):
     c4a = _check(res, "4a")
     if c4a.computed:
         bending = next(c for c in c4a.checked if c.limit_state == "Bending")
-        v["check4a.Mn_lbin"] = _line_value(bending.lines, "M_n").m_as("lbf*inch")
-        v["check4a.Mn_over_Omega_lbin"] = _line_value(bending.lines, "frac(M_n, Omega_b)").m_as("lbf*inch")
+        v["check4a.Mn_lbin"] = _line_value(bending.lines, "M_n", "M_n").m_as("lbf*inch")
+        v["check4a.Mn_over_Omega_lbin"] = _line_value(bending.lines, "M_n_over_Omega_b", "frac(M_n, Omega_b)").m_as("lbf*inch")
         for c in c4a.checked:
             d = c.direction.lower()
             if c.limit_state == "Bending":
@@ -219,22 +249,22 @@ def _intermediate_values(res):
     if c4b.computed:
         head = c4b.checked[0].lines
         v.update({
-            "check4b.R_D_lb": _line_value(head, "R_D").m_as("lbf"),
-            "check4b.L_w_in": _line_value(head, "L_w").m_as("inch"),
-            "check4b.throat_in": _line_value(head, "t_e").m_as("inch"),
-            "check4b.t_min_in": _line_value(head, 't_"min"').m_as("inch"),
-            "check4b.w_min_in": _line_value(head, 'w_"min"').m_as("inch"),
+            "check4b.R_D_lb": _line_value(head, "R_D", "R_D").m_as("lbf"),
+            "check4b.L_w_in": _line_value(head, "L_w", "L_w").m_as("inch"),
+            "check4b.throat_in": _line_value(head, "t_e", "t_e").m_as("inch"),
+            "check4b.t_min_in": _line_value(head, "t_min", 't_"min"').m_as("inch"),
+            "check4b.w_min_in": _line_value(head, "w_min", 'w_"min"').m_as("inch"),
             "check4b.min_size": "OK" if c4b.min_size_ok else "NG",
-            "check4b.Fnw_ksi": _line_value(head, 'F_"nw"').m_as("ksi"),
+            "check4b.Fnw_ksi": _line_value(head, "F_nw", 'F_"nw"').m_as("ksi"),
             "check4b.weld_allow_lbpin": c4b.checked[0].weld_allow.m_as("lbf/inch"),
             # Base metal on both walls, the lower governing (Micah, 2026-10-09).
-            "check4b.base_allow_post_lbpin": _line_value(head, 'frac(R_(n,"BM,post"), Omega_"BM")').m_as("lbf/inch"),
-            "check4b.base_allow_int_lbpin": _line_value(head, 'frac(R_(n,"BM,int"), Omega_"BM")').m_as("lbf/inch"),
+            "check4b.base_allow_post_lbpin": _line_value(head, "R_n_BM_post_over_Omega", 'frac(R_(n,"BM,post"), Omega_"BM")').m_as("lbf/inch"),
+            "check4b.base_allow_int_lbpin": _line_value(head, "R_n_BM_int_over_Omega", 'frac(R_(n,"BM,int"), Omega_"BM")').m_as("lbf/inch"),
             "check4b.base_governs": c4b.base_governs,
         })
         for c in c4b.checked:
             k = _case_key(c)
-            v[f"check4b.R_lb.{k}"] = _line_value(c.lines, "R").m_as("lbf")
+            v[f"check4b.R_lb.{k}"] = _line_value(c.lines, "R", "R").m_as("lbf")
             v[f"check4b.f_v_lbpin.{k}"] = c.f_v.m_as("lbf/inch")
             v[f"check4b.f_r_lbpin.{k}"] = c.f_r.m_as("lbf/inch")
             v[f"check4b.ratio_weld.{k}"] = c.weld_ratio
@@ -269,20 +299,20 @@ def _weld_values(res, number):
     g = f"check{number}"
     head = chk.checked[0].lines  # every case prints the same head: ring, size limits, capacities
     v = {
-        f"{g}.L_w_in": _line_value(head, "L_w").m_as("inch"),
-        f"{g}.S_w_in2": _line_value(head, "S_w").m_as("in^2"),
-        f"{g}.throat_in": _line_value(head, "t_e").m_as("inch"),
-        f"{g}.t_min_in": _line_value(head, 't_"min"').m_as("inch"),
-        f"{g}.w_min_in": _line_value(head, 'w_"min"').m_as("inch"),
+        f"{g}.L_w_in": _line_value(head, "L_w", "L_w").m_as("inch"),
+        f"{g}.S_w_in2": _line_value(head, "S_w", "S_w").m_as("in^2"),
+        f"{g}.throat_in": _line_value(head, "t_e", "t_e").m_as("inch"),
+        f"{g}.t_min_in": _line_value(head, "t_min", 't_"min"').m_as("inch"),
+        f"{g}.w_min_in": _line_value(head, "w_min", 'w_"min"').m_as("inch"),
         f"{g}.min_size": "OK" if chk.min_size_ok else "NG",
-        f"{g}.Fnw_ksi": _line_value(head, 'F_"nw"').m_as("ksi"),
+        f"{g}.Fnw_ksi": _line_value(head, "F_nw", 'F_"nw"').m_as("ksi"),
         f"{g}.base_allow_lbpin": chk.checked[0].base_allow.m_as("lbf/inch"),
     }
     if number == 3:
-        v[f"{g}.e_in"] = _line_value(head, "e").m_as("inch")
+        v[f"{g}.e_in"] = _line_value(head, "e", "e").m_as("inch")
         v[f"{g}.weld_allow_lbpin"] = chk.checked[0].weld_allow.m_as("lbf/inch")
     else:
-        v[f"{g}.arm_in"] = _line_value(head, 'L_"post"').m_as("inch")
+        v[f"{g}.arm_in"] = _line_value(head, "L_post", 'L_"post"').m_as("inch")
     for c in chk.checked:
         k = _case_key(c)
         v[f"{g}.f_a_lbpin.{k}"] = c.f_a.m_as("lbf/inch")
@@ -572,6 +602,30 @@ def render_template(case: Path, keys) -> str:
 # ---------------------------------------------------------------------------
 # Self-tests of the machinery above
 # ---------------------------------------------------------------------------
+
+def test_reading_by_key_returns_what_reading_by_symbol_did(runs, monkeypatch, capsys):
+    """Issue #21, item 4: before the symbol reader is removed, every tool
+    value of test cases 1 to 5 is extracted both ways and must be
+    identical (the same object or an equal value, no tolerance)."""
+    import sys
+
+    module = sys.modules[__name__]
+    compared = 0
+    for path in CASES:
+        _, res = runs(path)
+        by_key = tool_values(res)
+        monkeypatch.setattr(module, "BY_SYMBOL", True)
+        by_symbol = tool_values(res)
+        monkeypatch.setattr(module, "BY_SYMBOL", False)
+        assert list(by_key) == list(by_symbol), path.name
+        for k in by_key:
+            assert by_key[k] == by_symbol[k], f"{path.name} {k}: by key {by_key[k]!r}, by symbol {by_symbol[k]!r}"
+        compared += len(by_key)
+    with capsys.disabled():
+        print(f"\nextraction cross-check: {compared} tool values in {len(CASES)} cases identical by key "
+              f"and by symbol")
+    assert len(CASES) == 5 and compared > 0
+
 
 def _dev_run():
     """The dev section (Pipe2STD rail and post, 6'-0"), not a test case."""

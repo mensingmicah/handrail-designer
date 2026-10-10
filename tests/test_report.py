@@ -146,7 +146,7 @@ def test_a_slash_symbol_is_refused():
     sh = Sheet(Registry())
     a, b = Sym("M_n", Q_(1, "lbf*inch")), Sym("Omega_b", 1.67)
     with pytest.raises(ValueError, match="frac"):
-        sh.line("M_n / Omega_b", a / b, note="", cite="")
+        sh.line("M_n_over_Omega_b", "M_n / Omega_b", a / b, note="", cite="")
 
 
 def test_front_matter_states_the_design_method_from_the_registry():

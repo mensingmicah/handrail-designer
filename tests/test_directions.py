@@ -50,8 +50,8 @@ def test_a_direction_that_is_no_direction_case_has_no_kind(direction):
 @pytest.mark.parametrize("direction", ["Outwrd", "Sideways", Direction.HORIZONTAL])
 def test_the_shared_demand_stops_on_an_unknown_direction(res, direction):
     """It used to compute anything not downward or upward as a horizontal case."""
-    dead = Given("P_D", res.loading.P_D, "D at the post", "Loading")
-    arm = Given('L_"post"', res.loading.L_post, "Cantilever length", "Loading")
+    dead = Given("P_D", "P_D", res.loading.P_D, "D at the post", "Loading")
+    arm = Given("L_post", 'L_"post"', res.loading.L_post, "Cantilever length", "Loading")
     with pytest.raises(ValueError, match="no direction case"):
         demand(Registry(), res.project, res.loading, direction, LoadType.CONCENTRATED, ASD, post.WORDING, dead, arm)
 
@@ -95,7 +95,7 @@ def test_an_unknown_guard_load_type_stops(res, load_type):
     """A load type that was not "Concentrated" used to compute as distributed."""
     reg = Registry()
     with pytest.raises(ValueError, match="no guard load type"):
-        live_at_post(Sheet(reg), "V_L", load_type, res.loading, res.project, "at the top of the post")
+        live_at_post(Sheet(reg), "V_L", "V_L", load_type, res.loading, res.project, "at the top of the post")
     cap = checks.flexural_capacity(reg, res.rail, "A53 Gr B")
     with pytest.raises(ValueError, match="Check 1: no guard load type"):
         checks._bending_case(reg, res.project, res.rail, res.loading, cap, Direction.DOWNWARD, load_type)

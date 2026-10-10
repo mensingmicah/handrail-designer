@@ -54,7 +54,7 @@ def test_one_definition_gives_value_formula_and_substitution():
     sheet = Sheet(Registry())
     P = Sym("P", Q_(200, "lbf"))
     L = Sym("L", Q_(84, "inch"))
-    M = sheet.line("M", P * L / 4, note="midspan moment", cite="test")
+    M = sheet.line("M", "M", P * L / 4, note="midspan moment", cite="test")
     line = sheet.lines[-1]
     assert M.value.m_as("lbf*inch") == pytest.approx(4200)
     assert line.symbolic == 'frac(P L, "4")'
@@ -66,20 +66,20 @@ def test_srss_and_min_render_and_evaluate():
     sheet = Sheet(Registry())
     a = Sym("M_D", Q_(3, "lbf*inch"))
     b = Sym("M_L", Q_(4, "lbf*inch"))
-    M = sheet.line("M", sqrt(a**2 + b**2), note="", cite="")
+    M = sheet.line("M", "M", sqrt(a**2 + b**2), note="", cite="")
     assert M.value.m_as("lbf*inch") == pytest.approx(5)
     assert sheet.lines[-1].symbolic == "sqrt(M_D^(\"2\") + M_L^(\"2\"))"
-    m = sheet.line("M_n", minimum(a, b), note="", cite="")
+    m = sheet.line("M_n", "M_n", minimum(a, b), note="", cite="")
     assert m.value.m_as("lbf*inch") == pytest.approx(3)
 
 
 def test_registry_coefficients_are_cited_and_tracked():
     reg = Registry()
     sheet = Sheet(reg)
-    E = sheet.code_value("E", "material.steel.E", note="")
+    E = sheet.code_value("E", "E", "material.steel.E", note="")
     Fy = Sym("F_y", Q_(35, "ksi"))
     # any registry coefficient works for the mechanism; use E as a stand-in cite
-    sheet.line("x", E / Fy, note="", cite_ids=("material.steel.E",))
+    sheet.line("x", "x", E / Fy, note="", cite_ids=("material.steel.E",))
     assert sheet.lines[-1].cite == "AISC 360-22, Symbols"
     assert sheet.lines[-1].value == pytest.approx(29000 / 35)  # dimensionless -> float
     assert "material.steel.E" in [e.id for e in reg.used]
@@ -90,7 +90,7 @@ def test_mixing_incompatible_units_raises():
     P = Sym("P", Q_(200, "lbf"))
     L = Sym("L", Q_(84, "inch"))
     with pytest.raises(pint.DimensionalityError):
-        sheet.line("bad", P + L, note="", cite="")
+        sheet.line("bad", "bad", P + L, note="", cite="")
 
 
 def test_feet_and_inches_combine_correctly():
@@ -98,7 +98,7 @@ def test_feet_and_inches_combine_correctly():
     sheet = Sheet(Registry())
     w = Sym("w", Q_(50, "lbf/ft"))
     L = Sym("L", Q_(7, "ft"))
-    M = sheet.line("M", w * L**2 / 8, note="", cite="")
+    M = sheet.line("M", "M", w * L**2 / 8, note="", cite="")
     assert M.value.m_as("lbf*inch") == pytest.approx(50 / 12 * 84**2 / 8)
 
 
@@ -112,9 +112,9 @@ def test_rendered_lines_compile_in_typst(tmp_path):
     E = Sym("E", Q_(29000, "ksi"))
     I = Sym("I", Q_(0.293, "in^4"))
     t = Sym('t_"des"', Q_(0.135, "inch"))
-    sheet.line("M", P * L / 4, note="", cite="")
-    sheet.line("Delta", 5 * w * L**4 / (384 * E * I), note="", cite="")
-    sheet.line("M_x", sqrt(P**2 + (w * L) ** 2) * t - P * t, note="", cite="")
+    sheet.line("M", "M", P * L / 4, note="", cite="")
+    sheet.line("Delta", "Delta", 5 * w * L**4 / (384 * E * I), note="", cite="")
+    sheet.line("M_x", "M_x", sqrt(P**2 + (w * L) ** 2) * t - P * t, note="", cite="")
     body = "\n".join(
         f"$ {ln.symbol} = {ln.symbolic} = {ln.substituted} = {ln.result} $" for ln in sheet.lines
     )

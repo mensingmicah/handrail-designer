@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import math
 import operator
+import re
 from dataclasses import dataclass, field
 from typing import Callable
 
@@ -475,10 +476,23 @@ class Line:
     ratio: bool = False         # display to 2 decimals
     text: str | None = None     # for decision lines: the stated result
     kind: str = "value"         # "value", "decision", "heading"
+    key: str = ""               # stable identifier, never printed (see Sheet)
 
     @property
     def result(self) -> str:
         return fmt_quantity(self.value, ratio=self.ratio)
+
+
+_KEY = re.compile(r"[A-Za-z][A-Za-z0-9_]*")
+
+
+def _key(key: str) -> str:
+    """A line key is a plain name: letters, digits and underscores. Refusing
+    anything else catches a key and a Typst symbol passed in the wrong order."""
+    if not isinstance(key, str) or not _KEY.fullmatch(key):
+        raise ValueError(f"calc-line key {key!r}: a key is a plain name (letters, digits, underscores), "
+                         f"given before the Typst symbol")
+    return key
 
 
 @dataclass
@@ -487,26 +501,33 @@ class Sheet:
 
     Every registry read goes through the Sheet's Registry, which records it
     for the DRAFT list.
+
+    Every value line takes a key as its first argument: a plain name for
+    the quantity ("M_n", "L_c_over_r"), separate from the Typst symbol it
+    prints as. The key is never printed. Tests and tools find a line by its
+    key, so rewording a printed symbol cannot break or silently redirect a
+    lookup (issues #8 and #21). A key names one line within the block it is
+    printed in (a case, the loading, a section's properties).
     """
 
     registry: Registry
     lines: list[Line] = field(default_factory=list)
 
     # -- values that enter the calc -------------------------------------
-    def input(self, typst: str, value, note: str, cite: str = "Input") -> Sym:
-        self.lines.append(Line(typst, value, note, cite))
+    def input(self, key: str, typst: str, value, note: str, cite: str = "Input") -> Sym:
+        self.lines.append(Line(typst, value, note, cite, key=_key(key)))
         return Sym(typst, value)
 
-    def given(self, typst: str, value, note: str, cite: str) -> Sym:
+    def given(self, key: str, typst: str, value, note: str, cite: str) -> Sym:
         """A value taken from a non-registry source that is printed with its source
         (a database property, or an engineering decision recorded in the brief)."""
-        return self.input(typst, value, note, cite)
+        return self.input(key, typst, value, note, cite)
 
-    def code_value(self, typst: str, entry_id: str, note: str) -> Sym:
+    def code_value(self, key: str, typst: str, entry_id: str, note: str) -> Sym:
         """A registry value printed as its own line."""
         e = self.registry.get(entry_id)
         value = e.quantity
-        self.lines.append(Line(typst, value, note, e.cite))
+        self.lines.append(Line(typst, value, note, e.cite, key=_key(key)))
         return Sym(typst, value)
 
     def coeff(self, entry_id: str) -> Const:
@@ -527,6 +548,7 @@ class Sheet:
     # -- computed lines ---------------------------------------------------
     def line(
         self,
+        key: str,
         typst: str,
         expr: Expr,
         note: str,
@@ -558,22 +580,24 @@ class Sheet:
         self.lines.append(
             Line(
                 symbol=typst, value=value, note=note, cite="; ".join(dict.fromkeys(cites)),
-                symbolic=expr.symbolic(), substituted=expr.substituted(), ratio=ratio,
+                symbolic=expr.symbolic(), substituted=expr.substituted(), ratio=ratio, key=_key(key),
             )
         )
         return Sym(typst, value)
 
     def decision(self, statement: str | Comparison, result: str, note: str, cite: str = "",
-                 cite_ids: tuple[str, ...] = ()) -> None:
+                 cite_ids: tuple[str, ...] = (), key: str = "") -> None:
         """A statement with a stated outcome, e.g. λ ≤ λp → compact. A
         relation between values is passed as the Comparison that was
         evaluated (compare, order), so the line prints the relation the code
-        acted on; plain text is for statements that compare nothing."""
+        acted on; plain text is for statements that compare nothing. A
+        decision takes a key only where something reads its outcome."""
         if isinstance(statement, Comparison):
             statement = statement.text
         cites = [self.registry.get(i).cite for i in cite_ids] + ([cite] if cite else [])
         self.lines.append(
-            Line(symbol=statement, value=None, note=note, cite="; ".join(cites), text=result, kind="decision")
+            Line(symbol=statement, value=None, note=note, cite="; ".join(cites), text=result, kind="decision",
+                 key=_key(key) if key else "")
         )
 
     def heading(self, text: str) -> None:

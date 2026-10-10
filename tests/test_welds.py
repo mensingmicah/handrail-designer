@@ -33,7 +33,7 @@ def test_ring_properties_match_plain_calc():
 
 
 def _parts(t1, t2):
-    return (welds.Part('t_1', Q_(t1, "inch"), "Part 1", "Input"), welds.Part('t_2', Q_(t2, "inch"), "Part 2", "Input"))
+    return (welds.Part("t_1", 't_1', Q_(t1, "inch"), "Part 1", "Input"), welds.Part("t_2", 't_2', Q_(t2, "inch"), "Part 2", "Input"))
 
 
 @pytest.mark.parametrize("t1, t2, w, ok", [
@@ -108,7 +108,7 @@ def test_strength_ratio_is_the_larger_of_weld_and_base_metal():
     reg, rg = _ring("1/4")
     wm = welds.weld_metal(reg, "E70XX")
     bm = welds.base_metal(reg, "Base metal", "material.A36.Fu", "A36",
-                          welds.Part("t_p", Q_(0.5, "inch"), "Baseplate", "Input"))
+                          welds.Part("t_p", "t_p", Q_(0.5, "inch"), "Baseplate", "Input"))
     sh = Sheet(reg)
     f_r = Sym("f_r", Q_(5000, "lbf/inch"))
     s = welds.strength(sh, rg, wm, Sym("k_ds", 1.5), f_r, bm, f_r, "Baseplate fusion face")
@@ -124,7 +124,7 @@ def test_strength_without_base_metal_demand_is_the_weld_metal_ratio():
     reg, rg = _ring()
     wm = welds.weld_metal(reg, "E70XX")
     bm = welds.base_metal(reg, "Base metal", "material.A53_GrB.Fu", "A53 Gr B",
-                          welds.Part('t_"des"', Q_(0.135, "inch"), "Rail wall", "DB"))
+                          welds.Part("t_des", 't_"des"', Q_(0.135, "inch"), "Rail wall", "DB"))
     s = welds.strength(Sheet(reg), rg, wm, Sym("k_ds", 1.0), Sym("f_r", Q_(100, "lbf/inch")), bm, None, "")
     assert s.base_ratio is None and s.ratio.value == s.weld_ratio.value
 

@@ -77,14 +77,14 @@ def _governing_load_type(sh: Sheet, project: Project, loading: Loading) -> tuple
     """The larger guard load type at the top of the post (S4-5): (the type the
     demand runs, the type the set names)."""
     sh.heading("Governing guard load type")
-    P = sh.given("P", loading.P, "Concentrated guard load P, at the top of the post", "Loading")
+    P = sh.given("P", "P", loading.P, "Concentrated guard load P, at the top of the post", "Loading")
     if loading.exempt:
         sh.decision(mtext("Uniform load exempt"), "Concentrated load P governs",
                     "With the exemption, P is the only guard load type", cite_ids=(LOCATION,))
         return CONCENTRATED, CONCENTRATED
-    w = sh.given("w_L", loading.w_L, "Uniform guard load", "Loading")
-    L = sh.given("L", project.span.value, "Span: the tributary length for the post", "Input")
-    wL = sh.line("w_L L", w * L, "Uniform guard load collected over the span, at the top of the post",
+    w = sh.given("w_L", "w_L", loading.w_L, "Uniform guard load", "Loading")
+    L = sh.given("L", "L", project.span.value, "Span: the tributary length for the post", "Input")
+    wL = sh.line("w_L_L", "w_L L", w * L, "Uniform guard load collected over the span, at the top of the post",
                  cite_ids=(LOCATION,), unit="lbf")
     # One comparison gives both the printed statement and the choice (ADR 0002).
     # Equal to within rounding of the inputs is a tie: one set names both.
@@ -105,29 +105,29 @@ def _governing_load_type(sh: Sheet, project: Project, loading: Loading) -> tuple
 def reaction_sets(registry: Registry, project: Project, loading: Loading) -> Reactions:
     head = Sheet(registry)
     head.heading("Dead load at the base")
-    parts = [head.given('D_"rail"', loading.D_rail, "Top rail", "Loading")]
+    parts = [head.given("D_rail", 'D_"rail"', loading.D_rail, "Top rail", "Loading")]
     names = ["Top rail"]
     if loading.D_int is not None:
-        parts.append(head.given('D_"int"', loading.D_int, "Intermediate rail", "Loading"))
+        parts.append(head.given("D_int", 'D_"int"', loading.D_int, "Intermediate rail", "Loading"))
         names.append("Intermediate rail")
-    parts.append(head.given('D_"post"', loading.D_post, "Post, over h - t_p", "Loading"))
+    parts.append(head.given("D_post", 'D_"post"', loading.D_post, "Post, over h - t_p", "Loading"))
     names.append("Post")
-    rho = head.code_value("rho", "material.steel.density", "Steel unit weight")
-    B = head.given("B", project.baseplate.B.value, "Baseplate, parallel to the rail", "Input")
-    N = head.given("N", project.baseplate.N.value, "Baseplate, perpendicular to the rail", "Input")
-    tp = head.given("t_p", project.baseplate_thickness.value, "Baseplate thickness", "Input")
-    W_bp = head.line('W_"bp"', rho * B * N * tp, "Baseplate weight: in the reaction sets only, below the critical "
+    rho = head.code_value("rho", "rho", "material.steel.density", "Steel unit weight")
+    B = head.given("B", "B", project.baseplate.B.value, "Baseplate, parallel to the rail", "Input")
+    N = head.given("N", "N", project.baseplate.N.value, "Baseplate, perpendicular to the rail", "Input")
+    tp = head.given("t_p", "t_p", project.baseplate_thickness.value, "Baseplate thickness", "Input")
+    W_bp = head.line("W_bp", 'W_"bp"', rho * B * N * tp, "Baseplate weight: in the reaction sets only, below the critical "
                      "section of Checks 5 and 7", cite_ids=(LOCATION,), unit="lbf")
     parts.append(W_bp)
     names.append("Baseplate")
     total = parts[0]
     for p in parts[1:]:
         total = total + p
-    D = head.line("D", total, "Dead load at the base", cite_ids=(LOCATION,), unit="lbf")
+    D = head.line("D", "D", total, "Dead load at the base", cite_ids=(LOCATION,), unit="lbf")
     run_type, named = _governing_load_type(head, project, loading)
 
-    dead = Given("D", D.value, "Dead load at the base", "Reactions")
-    arm = Given("h", project.post_height.value, "Moment arm: top rail centerline to top of concrete", "Input")
+    dead = Given("D", "D", D.value, "Dead load at the base", "Reactions")
+    arm = Given("h", "h", project.post_height.value, "Moment arm: top rail centerline to top of concrete", "Input")
     sets = []
     for name in (LATERAL, UPWARD):
         d = demand(registry, project, loading, name, run_type, COMBINATIONS, WORDING, dead, arm)

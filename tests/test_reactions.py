@@ -59,9 +59,9 @@ def test_the_moment_arm_is_h_for_the_reactions_and_h_minus_tp_for_check_5():
     two arms: the lateral set's M with h and Check 5's with h - t_p."""
     res = run()
     project, loading, reg = res.project, res.loading, Registry()
-    h = Given("h", project.post_height.value, "arm", "Input")
-    hp = Given('L_"post"', loading.L_post, "arm", "Loading")
-    dead = Given("P_D", loading.P_D, "dead", "Loading")
+    h = Given("h", "h", project.post_height.value, "arm", "Input")
+    hp = Given("L_post", 'L_"post"', loading.L_post, "arm", "Loading")
+    dead = Given("P_D", "P_D", loading.P_D, "dead", "Loading")
     m_reaction = demand(reg, project, loading, "Lateral", CONCENTRATED, COMBINATIONS, WORDING, dead, h).M
     m_check5 = demand(reg, project, loading, "Outward", CONCENTRATED, ASD, CHECK_5_WORDING, dead, hp).M
     assert m_reaction.value.m_as("lbf*inch") == pytest.approx(1.6 * 200 * H, rel=1e-12)

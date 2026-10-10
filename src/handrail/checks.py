@@ -209,10 +209,10 @@ def build_loading(project: Project, registry: Registry, rail: PipeSection, post:
 
     code_P = registry.get("asce7.guard.concentrated")
     if ld.concentrated is None:
-        P = sh.code_value("P", code_P.id, "Concentrated guard load, any direction, any point on the top rail")
+        P = sh.code_value("P", "P", code_P.id, "Concentrated guard load, any direction, any point on the top rail")
     else:
         P = sh.input(
-            "P", ld.concentrated,
+            "P", "P", ld.concentrated,
             f"Concentrated guard load, engineer override (code value {fmt_quantity_plain(code_P.quantity)})",
             cite=f"Input; {code_P.cite}",
         )
@@ -226,11 +226,11 @@ def build_loading(project: Project, registry: Registry, rail: PipeSection, post:
         )
         w_L = None
     elif ld.uniform is None:
-        w_L = sh.code_value("w_L", code_w.id, f"Uniform guard load, {code_w.value} lb/ft, any direction; "
+        w_L = sh.code_value("w_L", "w_L", code_w.id, f"Uniform guard load, {code_w.value} lb/ft, any direction; "
                             "not concurrent with P").value
     else:
         w_L = sh.input(
-            "w_L", ld.uniform,
+            "w_L", "w_L", ld.uniform,
             f"Uniform guard load, engineer override: {ld.uniform.m_as('lbf/ft'):g} lb/ft "
             f"(code value {code_w.quantity.m_as('lbf/ft'):g} lb/ft)",
             cite=f"Input; {code_w.cite}",
@@ -240,36 +240,36 @@ def build_loading(project: Project, registry: Registry, rail: PipeSection, post:
     if inter is not None:
         code_Pc = registry.get("asce7.guard.component")
         if ld.component is None:
-            P_c = sh.code_value("P_c", code_Pc.id, "Component load on the intermediate rail, horizontal; also "
+            P_c = sh.code_value("P_c", "P_c", code_Pc.id, "Component load on the intermediate rail, horizontal; also "
                                 "applied downward (engineering judgement)").value
         else:
             P_c = sh.input(
-                "P_c", ld.component,
+                "P_c", "P_c", ld.component,
                 f"Component load on the intermediate rail, engineer override "
                 f"(code value {fmt_quantity_plain(code_Pc.quantity)})",
                 cite=f"Input; {code_Pc.cite}",
             ).value
 
-    w_D = sh.given("w_D", rail.W, f"Top rail self-weight: tabulated W = {rail.W.m_as('lbf/ft'):g} lb/ft", DB)
+    w_D = sh.given("w_D", "w_D", rail.W, f"Top rail self-weight: tabulated W = {rail.W.m_as('lbf/ft'):g} lb/ft", DB)
 
     # Dead load reaching the post (docs/plans/slice-2.md, D2). The critical
     # section is the top of the baseplate (D4), so the post weight is taken
     # over h - t_p, the same cantilever length Checks 5 and 6 use.
     sh.heading("Dead load at the post")
     dl = "ej.post.axial_dead_load"
-    h = sh.given("h", project.post_height.value, "Post height, top of concrete to top rail centerline", "Input")
-    tp = sh.given("t_p", project.baseplate_thickness.value, "Baseplate thickness", "Input")
-    L_post = sh.line('L_"post"', h - tp, "Post cantilever length, top of baseplate to top rail centerline",
+    h = sh.given("h", "h", project.post_height.value, "Post height, top of concrete to top rail centerline", "Input")
+    tp = sh.given("t_p", "t_p", project.baseplate_thickness.value, "Baseplate thickness", "Input")
+    L_post = sh.line("L_post", 'L_"post"', h - tp, "Post cantilever length, top of baseplate to top rail centerline",
                      cite="Stated assumption: post fixed at the top of the baseplate", unit="inch")
     L_post_line = sh.lines[-1]
-    W_post = sh.given('W_"post"', post.W,
+    W_post = sh.given("W_post", 'W_"post"', post.W,
                       f"Post self-weight: {post.label}, tabulated W = {post.W.m_as('lbf/ft'):g} lb/ft", DB)
-    D_post = sh.line('D_"post"', W_post * L_post, "Post dead load, full weight at the base",
+    D_post = sh.line("D_post", 'D_"post"', W_post * L_post, "Post dead load, full weight at the base",
                      cite_ids=(dl,), unit="lbf")
-    s = sh.given("L", project.span.value, "Span: the tributary length for the post (stated assumption)", "Input")
-    D_rail = sh.line('D_"rail"', w_D * s, "Top rail dead load delivered to the post", cite_ids=(dl,), unit="lbf")
+    s = sh.given("L", "L", project.span.value, "Span: the tributary length for the post (stated assumption)", "Input")
+    D_rail = sh.line("D_rail", 'D_"rail"', w_D * s, "Top rail dead load delivered to the post", cite_ids=(dl,), unit="lbf")
     if inter is None:
-        P_D = sh.line("P_D", D_rail + D_post, "D at the post: axial dead load at the top of the baseplate",
+        P_D = sh.line("P_D", "P_D", D_rail + D_post, "D at the post: axial dead load at the top of the baseplate",
                       cite_ids=(dl,), unit="lbf")
         w_D_int = D_int = None
     else:
@@ -277,11 +277,11 @@ def build_loading(project: Project, registry: Registry, rail: PipeSection, post:
         # rail to post weld, so its dead load reaches D at the post but not
         # Check 3's D (docs/plans/slice-4.md, where the dead load goes).
         same = " (same section as the top rail)" if inter is rail else ""
-        w_D_int = sh.given('w_(D,"int")', inter.W, f"Intermediate rail self-weight: {inter.label}{same}, "
+        w_D_int = sh.given("w_D_int", 'w_(D,"int")', inter.W, f"Intermediate rail self-weight: {inter.label}{same}, "
                            f"tabulated W = {inter.W.m_as('lbf/ft'):g} lb/ft", DB)
-        D_int = sh.line('D_"int"', w_D_int * s, "Intermediate rail dead load delivered to the post",
+        D_int = sh.line("D_int", 'D_"int"', w_D_int * s, "Intermediate rail dead load delivered to the post",
                         cite_ids=(dl,), unit="lbf")
-        P_D = sh.line("P_D", D_rail + D_int + D_post, "D at the post: axial dead load at the top of the baseplate",
+        P_D = sh.line("P_D", "P_D", D_rail + D_int + D_post, "D at the post: axial dead load at the top of the baseplate",
                       cite_ids=(dl,), unit="lbf")
         w_D_int, D_int = w_D_int.value, D_int.value
     return Loading(P=P.value, w_L=w_L, w_D=w_D.value, L_post=L_post.value, D_rail=D_rail.value, P_D=P_D.value,
@@ -293,17 +293,17 @@ def section_lines(registry: Registry, sec: PipeSection, with_r: bool = False) ->
     """Section properties as published. The post block adds r, which only
     the compression check uses; the rail block prints as it did in slice 1."""
     sh = Sheet(registry)
-    sh.given("D", sec.OD, f"{sec.label}: outside diameter", DB)
-    sh.given('t_"nom"', sec.tnom, "Nominal wall thickness", DB)
-    sh.given('t_"des"', sec.tdes, "Design wall thickness", DB)
-    sh.given("A", sec.A, "Area (design wall)", DB)
-    sh.given("W", sec.W, f"Nominal weight: tabulated {sec.W.m_as('lbf/ft'):g} lb/ft (nominal wall)", DB)
-    sh.given("I", sec.I, "Moment of inertia", DB)
-    sh.given("S", sec.S, "Elastic section modulus", DB)
-    sh.given("Z", sec.Z, "Plastic section modulus", DB)
+    sh.given("D", "D", sec.OD, f"{sec.label}: outside diameter", DB)
+    sh.given("t_nom", 't_"nom"', sec.tnom, "Nominal wall thickness", DB)
+    sh.given("t_des", 't_"des"', sec.tdes, "Design wall thickness", DB)
+    sh.given("A", "A", sec.A, "Area (design wall)", DB)
+    sh.given("W", "W", sec.W, f"Nominal weight: tabulated {sec.W.m_as('lbf/ft'):g} lb/ft (nominal wall)", DB)
+    sh.given("I", "I", sec.I, "Moment of inertia", DB)
+    sh.given("S", "S", sec.S, "Elastic section modulus", DB)
+    sh.given("Z", "Z", sec.Z, "Plastic section modulus", DB)
     if with_r:
-        sh.given("r", sec.r, "Radius of gyration", DB)
-    sh.given("D slash t", sec.D_t, "Diameter-to-thickness ratio, tabulated", DB)
+        sh.given("r", "r", sec.r, "Radius of gyration", DB)
+    sh.given("D_over_t", "D slash t", sec.D_t, "Diameter-to-thickness ratio, tabulated", DB)
     return sh.lines
 
 
@@ -337,12 +337,12 @@ def flexural_capacity(registry: Registry, rail: PipeSection, grade: str) -> Capa
         "Pipe is designed under the round HSS provisions",
         cite_ids=("aisc360.pipe_as_round_hss",),
     )
-    Fy = sh.code_value("F_y", FY_ENTRY[grade], f"Yield stress, {grade}")
-    E = sh.code_value("E", "material.steel.E", "Modulus of elasticity")
-    lam = sh.given("lambda", rail.D_t, "lambda = D/t, tabulated (design wall)", DB)
-    lim = sh.line("lambda_\"lim\"", sh.coeff(app.id) * E / Fy, "Applicability limit on D/t")
-    lp = sh.line("lambda_p", sh.coeff(lp_e.id) * E / Fy, "Compact limit, round HSS in flexure")
-    lr = sh.line("lambda_r", sh.coeff(lr_e.id) * E / Fy, "Noncompact limit, round HSS in flexure")
+    Fy = sh.code_value("F_y", "F_y", FY_ENTRY[grade], f"Yield stress, {grade}")
+    E = sh.code_value("E", "E", "material.steel.E", "Modulus of elasticity")
+    lam = sh.given("lambda", "lambda", rail.D_t, "lambda = D/t, tabulated (design wall)", DB)
+    lim = sh.line("lambda_lim", "lambda_\"lim\"", sh.coeff(app.id) * E / Fy, "Applicability limit on D/t")
+    lp = sh.line("lambda_p", "lambda_p", sh.coeff(lp_e.id) * E / Fy, "Compact limit, round HSS in flexure")
+    lr = sh.line("lambda_r", "lambda_r", sh.coeff(lr_e.id) * E / Fy, "Noncompact limit, round HSS in flexure")
 
     # Each comparison is evaluated once; its stop, its branch and its printed
     # decision line all come from that evaluation (ADR 0002).
@@ -367,8 +367,8 @@ def flexural_capacity(registry: Registry, rail: PipeSection, grade: str) -> Capa
         cite_ids=("aisc360.F8.no_ltb",),
     )
 
-    Z = sh.given("Z", rail.Z, "Plastic section modulus", DB)
-    Mp = sh.line("M_p", Fy * Z, "Plastic moment (yielding)", cite_ids=("aisc360.eq.F8-1",),
+    Z = sh.given("Z", "Z", rail.Z, "Plastic section modulus", DB)
+    Mp = sh.line("M_p", "M_p", Fy * Z, "Plastic moment (yielding)", cite_ids=("aisc360.eq.F8-1",),
                  unit="lbf*inch")
     flags = []
     compact = compare(lam_t, "<=", lp.stated(fmt_sig))
@@ -376,7 +376,7 @@ def flexural_capacity(registry: Registry, rail: PipeSection, grade: str) -> Capa
         sh.decision(compact, "Compact", "Section classification", cite_ids=("aisc360.B4.1b.classification",))
         sh.decision(mtext("Compact wall"), "Local buckling does not apply",
                     "", cite_ids=("aisc360.F8.nominal_strength",))
-        Mn = sh.line("M_n", Mp, "Nominal flexural strength", cite_ids=("aisc360.F8.nominal_strength",),
+        Mn = sh.line("M_n", "M_n", Mp, "Nominal flexural strength", cite_ids=("aisc360.F8.nominal_strength",),
                      unit="lbf*inch")
     else:
         # Fetched only here: Registry.get records every lookup for the DRAFT list,
@@ -389,24 +389,24 @@ def flexural_capacity(registry: Registry, rail: PipeSection, grade: str) -> Capa
             f"NONCOMPACT: {name} D/t = {D_t:g} exceeds lambda_p = {fmt_sig(lp.value)} "
             f"(lambda_r = {fmt_sig(lr.value)}); Mn reduced by local buckling, {f82.cite}."
         )
-        S = sh.given("S", rail.S, "Elastic section modulus", DB)
-        Mlb = sh.line("M_(n,\"LB\")", (sh.coeff("aisc360.eq.F8-2.coeff") * E / lam + Fy) * S,
+        S = sh.given("S", "S", rail.S, "Elastic section modulus", DB)
+        Mlb = sh.line("M_n_LB", "M_(n,\"LB\")", (sh.coeff("aisc360.eq.F8-2.coeff") * E / lam + Fy) * S,
                       "Local buckling, noncompact wall", cite_ids=(f82.id,), unit="lbf*inch")
-        Mn = sh.line("M_n", minimum(Mp, Mlb), "Lower of yielding and local buckling",
+        Mn = sh.line("M_n", "M_n", minimum(Mp, Mlb), "Lower of yielding and local buckling",
                      cite_ids=("aisc360.F8.nominal_strength",), unit="lbf*inch")
-    Om = sh.code_value("Omega_b", "aisc360.F1.omega_b", "Safety factor for flexure (ASD)")
-    Ma = sh.line("frac(M_n, Omega_b)", Mn / Om, "Allowable flexural strength",
+    Om = sh.code_value("Omega_b", "Omega_b", "aisc360.F1.omega_b", "Safety factor for flexure (ASD)")
+    Ma = sh.line("M_n_over_Omega_b", "frac(M_n, Omega_b)", Mn / Om, "Allowable flexural strength",
                  cite_ids=("aisc360.eq.B3-2",), unit="lbf*inch")
     return Capacity(allow=Ma, lines=sh.lines, flags=flags)
 
 
 def _live_moment(sh: Sheet, load_type: LoadType, L: Sym, loading: Loading) -> Sym:
     if load_type == CONCENTRATED:
-        P = sh.given("P", loading.P, "Concentrated guard load at midspan", "Loading")
-        return beams.point_moment(sh, "M_L", P, L, "Live-load moment, midspan")
+        P = sh.given("P", "P", loading.P, "Concentrated guard load at midspan", "Loading")
+        return beams.point_moment(sh, "M_L", "M_L", P, L, "Live-load moment, midspan")
     if load_type == DISTRIBUTED:
-        w = sh.given("w_L", loading.w_L, "Uniform guard load", "Loading")
-        return beams.uniform_moment(sh, "M_L", w, L, "Live-load moment, midspan")
+        w = sh.given("w_L", "w_L", loading.w_L, "Uniform guard load", "Loading")
+        return beams.uniform_moment(sh, "M_L", "M_L", w, L, "Live-load moment, midspan")
     unknown("Check 1", "guard load type", load_type, LOAD_TYPES)
 
 
@@ -428,22 +428,22 @@ def _bending_case(registry, project, rail, loading, cap: Capacity, direction, lo
     sh.lines.extend(cap.lines)
     Ma_allow = cap.allow
     sh.heading(f"Demand: {direction.lower()}, {load_type.lower()} load")
-    L = sh.given("L", project.span.value, "Span, simple beam", "Input")
-    wD = sh.given("w_D", loading.w_D, "Top rail self-weight", "Loading")
-    MD = beams.uniform_moment(sh, "M_D", wD, L, "Dead-load moment, midspan")
+    L = sh.given("L", "L", project.span.value, "Span, simple beam", "Input")
+    wD = sh.given("w_D", "w_D", loading.w_D, "Top rail self-weight", "Loading")
+    MD = beams.uniform_moment(sh, "M_D", "M_D", wD, L, "Dead-load moment, midspan")
     ML = _live_moment(sh, load_type, L, loading)
 
     if direction == Direction.DOWNWARD:
         combo = registry.get(COMBO)
-        M = sh.line("M_a", sh.factor(combo.id, "D") * MD + sh.factor(combo.id, "L") * ML,
+        M = sh.line("M_a", "M_a", sh.factor(combo.id, "D") * MD + sh.factor(combo.id, "L") * ML,
                     "Required flexural strength: D and L on the same axis", unit="lbf*inch")
         label = f"{combo_text(combo)}, vertical\n{combo.cite}"
     elif direction in (Direction.OUTWARD, Direction.INWARD):
         combo, srss = registry.get(COMBO), registry.get("ej.bending.srss_round")
-        Mv = sh.line("M_(a,v)", sh.factor(combo.id, "D") * MD, "Vertical axis: dead load", unit="lbf*inch")
-        Mh = sh.line("M_(a,h)", sh.factor(combo.id, "L") * ML, f"Horizontal axis: guard load {direction.lower()}",
+        Mv = sh.line("M_a_v", "M_(a,v)", sh.factor(combo.id, "D") * MD, "Vertical axis: dead load", unit="lbf*inch")
+        Mh = sh.line("M_a_h", "M_(a,h)", sh.factor(combo.id, "L") * ML, f"Horizontal axis: guard load {direction.lower()}",
                      unit="lbf*inch")
-        M = sh.line("M_a", sqrt(Mv**2 + Mh**2),
+        M = sh.line("M_a", "M_a", sqrt(Mv**2 + Mh**2),
                     "Resultant moment: exact for a round section, one capacity",
                     cite_ids=(srss.id,), unit="lbf*inch")
         label = (f"{combo_text(combo, {'D': 'vertical', 'L': 'horizontal'}, ', ')}, SRSS\n"
@@ -454,13 +454,13 @@ def _bending_case(registry, project, rail, loading, cap: Capacity, direction, lo
         # Dead load acts down (+), the guard load up (-).
         net = sh.factor(combo.id, "D") * MD - sh.factor(combo.id, "L") * ML
         sense = "net upward" if net.eval() < Q_(0, "lbf*inch") else "net downward"
-        M = sh.line("M_a", absolute(net),
+        M = sh.line("M_a", "M_a", absolute(net),
                     f"Net vertical moment, guard load opposing dead load: {sense}", unit="lbf*inch")
         label = f"{combo_text(combo)}, net vertical\n{combo.cite}"
     else:
         unknown("Check 1", "direction case", direction, DIRECTIONS)
 
-    ratio = sh.line('"Ratio"', M / Ma_allow, "Demand / capacity", cite_ids=("aisc360.eq.B3-2",), ratio=True)
+    ratio = sh.line("Ratio", '"Ratio"', M / Ma_allow, "Demand / capacity", cite_ids=("aisc360.eq.B3-2",), ratio=True)
     return Case(direction, load_type, "checked", label,
                 demand=M.value, capacity=Ma_allow.value, ratio=ratio.value, lines=sh.lines)
 
@@ -472,29 +472,29 @@ def _bending_case(registry, project, rail, loading, cap: Capacity, direction, lo
 
 def _deflection_case(registry, project, rail, loading, direction, load_type) -> Case:
     sh = Sheet(registry)
-    L = sh.given("L", project.span.value, "Span, simple beam", "Input")
-    E = sh.code_value("E", "material.steel.E", "Modulus of elasticity")
-    I = sh.given("I", rail.I, "Moment of inertia", DB)
+    L = sh.given("L", "L", project.span.value, "Span, simple beam", "Input")
+    E = sh.code_value("E", "E", "material.steel.E", "Modulus of elasticity")
+    I = sh.given("I", "I", rail.I, "Moment of inertia", DB)
     if load_type == CONCENTRATED:
-        P = sh.given("P", loading.P, "Concentrated guard load at midspan", "Loading")
-        DL = beams.point_deflection(sh, "Delta_L", P, L, E, I, "Live-load deflection, midspan")
+        P = sh.given("P", "P", loading.P, "Concentrated guard load at midspan", "Loading")
+        DL = beams.point_deflection(sh, "Delta_L", "Delta_L", P, L, E, I, "Live-load deflection, midspan")
     elif load_type == DISTRIBUTED:
-        w = sh.given("w_L", loading.w_L, "Uniform guard load", "Loading")
-        DL = beams.uniform_deflection(sh, "Delta_L", w, L, E, I, "Live-load deflection, midspan")
+        w = sh.given("w_L", "w_L", loading.w_L, "Uniform guard load", "Loading")
+        DL = beams.uniform_deflection(sh, "Delta_L", "Delta_L", w, L, E, I, "Live-load deflection, midspan")
     else:
         unknown("Check 2", "guard load type", load_type, LOAD_TYPES)
     if direction == Direction.DOWNWARD:
         combo = registry.get("ej.combo.deflection.D_plus_L")
-        wD = sh.given("w_D", loading.w_D, "Top rail self-weight", "Loading")
-        DD = beams.uniform_deflection(sh, "Delta_D", wD, L, E, I, "Dead-load deflection, midspan")
-        D = sh.line("Delta", sh.factor(combo.id, "D") * DD + sh.factor(combo.id, "L") * DL,
+        wD = sh.given("w_D", "w_D", loading.w_D, "Top rail self-weight", "Loading")
+        DD = beams.uniform_deflection(sh, "Delta_D", "Delta_D", wD, L, E, I, "Dead-load deflection, midspan")
+        D = sh.line("Delta", "Delta", sh.factor(combo.id, "D") * DD + sh.factor(combo.id, "L") * DL,
                     "D and L on the same (vertical) axis", unit="inch")
         axis = "vertical"
     elif direction in (Direction.OUTWARD, Direction.INWARD, Direction.UPWARD):
         upward = direction == Direction.UPWARD
         combo = registry.get("ej.combo.deflection.L_only")
         note = "Live load only" + (": opposes dead load, dead load not credited" if upward else "")
-        D = sh.line("Delta", sh.factor(combo.id, "L") * DL, note, unit="inch")
+        D = sh.line("Delta", "Delta", sh.factor(combo.id, "L") * DL, note, unit="inch")
         axis = "vertical" if upward else "horizontal"
     else:
         unknown("Check 2", "direction case", direction, DIRECTIONS)
@@ -502,9 +502,9 @@ def _deflection_case(registry, project, rail, loading, direction, load_type) -> 
 
     r = project.rail_deflection.ratio
     lim = Const(int(r) if float(r).is_integer() else r)
-    Dallow = sh.line('Delta_"allow"', L / lim, f"Limit L/{lim.value}",
+    Dallow = sh.line("Delta_allow", 'Delta_"allow"', L / lim, f"Limit L/{lim.value}",
                      cite_ids=("ej.deflection.limit",), unit="inch")
-    ratio = sh.line('"Ratio"', D / Dallow, "Deflection / limit", cite_ids=("ej.deflection.limit",), ratio=True)
+    ratio = sh.line("Ratio", '"Ratio"', D / Dallow, "Deflection / limit", cite_ids=("ej.deflection.limit",), ratio=True)
     return Case(direction, load_type, "checked", label,
                 demand=D.value, capacity=Dallow.value, ratio=ratio.value, lines=sh.lines)
 
