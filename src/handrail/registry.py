@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Any
 
 from handrail.errors import InputError
+from handrail.stops import Stop
 from handrail.units import Q_
 
 REGISTRY_PATH = Path(__file__).resolve().parents[2] / "registry" / "code-values.toml"
@@ -58,7 +59,8 @@ class Entry:
     def quantity(self):
         """The value as a pint quantity (or a plain float if dimensionless)."""
         if self.unit in NON_QUANTITY_UNITS:
-            raise RegistryError(f"{self.id} is a {self.unit} entry, not a quantity")
+            raise RegistryError(f"{self.id} is a {self.unit} entry, not a quantity",
+                                stop=Stop.REGISTRY_NOT_A_QUANTITY)
         if self.unit == "":
             return self.value  # int or float, kept as written so it prints as written
         return Q_(self.value, self.unit)
@@ -69,7 +71,8 @@ class Entry:
         'AISC 360-22 Eq. H1-1b' gives 'Eq. H1-1b'."""
         marker = "Eq. "
         if marker not in self.cite:
-            raise RegistryError(f"{self.id}: cite {self.cite!r} names no equation")
+            raise RegistryError(f"{self.id}: cite {self.cite!r} names no equation",
+                                stop=Stop.REGISTRY_CITE_NAMES_NO_EQUATION)
         return self.cite[self.cite.index(marker):]
 
 
@@ -80,9 +83,10 @@ class Registry:
             with open(self.path, "rb") as f:
                 raw = tomllib.load(f)
         except FileNotFoundError:
-            raise RegistryError(f"registry file not found: {self.path}") from None
+            raise RegistryError(f"registry file not found: {self.path}", stop=Stop.REGISTRY_FILE_NOT_FOUND) from None
         except tomllib.TOMLDecodeError as e:
-            raise RegistryError(f"registry file {self.path} is not valid TOML: {e}") from None
+            raise RegistryError(f"registry file {self.path} is not valid TOML: {e}",
+                                stop=Stop.REGISTRY_INVALID_TOML) from None
         self.entries: dict[str, Entry] = {}
         self._load(raw)
         self._used: dict[str, None] = {}  # insertion-ordered set
@@ -92,15 +96,19 @@ class Registry:
             where = e.get("id", f"entry #{i + 1}")
             missing = [k for k in REQUIRED if k not in e]
             if missing:
-                raise RegistryError(f"{where}: missing field(s) {', '.join(missing)}")
+                raise RegistryError(f"{where}: missing field(s) {', '.join(missing)}",
+                                    stop=Stop.REGISTRY_MISSING_FIELD)
             if e["status"] not in STATUSES:
-                raise RegistryError(f"{where}: status must be one of {STATUSES}, not {e['status']!r}")
+                raise RegistryError(f"{where}: status must be one of {STATUSES}, not {e['status']!r}",
+                                    stop=Stop.REGISTRY_BAD_STATUS)
             if e["status"] == "verified" and not (e["verified_by"] and e["verified_date"]):
-                raise RegistryError(f"{where}: marked verified without verified_by and verified_date")
+                raise RegistryError(f"{where}: marked verified without verified_by and verified_date",
+                                    stop=Stop.REGISTRY_VERIFIED_WITHOUT_SIGNOFF)
             if e["status"] == "drafted" and (e["verified_by"] or e["verified_date"]):
-                raise RegistryError(f"{where}: drafted entry has verified_by or verified_date filled in")
+                raise RegistryError(f"{where}: drafted entry has verified_by or verified_date filled in",
+                                    stop=Stop.REGISTRY_DRAFTED_WITH_SIGNOFF)
             if e["id"] in self.entries:
-                raise RegistryError(f"{where}: duplicate id")
+                raise RegistryError(f"{where}: duplicate id", stop=Stop.REGISTRY_DUPLICATE_ID)
             self.entries[e["id"]] = Entry(
                 id=e["id"], value=e["value"], unit=e["unit"], cite=e["cite"],
                 document=e["document"], edition=e["edition"], section=e["section"],
@@ -109,9 +117,9 @@ class Registry:
 
         review = raw.get("review")
         if review is None:
-            raise RegistryError("registry has no review list")
+            raise RegistryError("registry has no review list", stop=Stop.REGISTRY_NO_REVIEW_LIST)
         if len(review) != len(set(review)):
-            raise RegistryError("review list has duplicate ids")
+            raise RegistryError("review list has duplicate ids", stop=Stop.REGISTRY_DUPLICATE_REVIEW_ID)
         drafted = {k for k, v in self.entries.items() if v.drafted}
         if set(review) != drafted:
             not_listed = sorted(drafted - set(review))
@@ -121,7 +129,7 @@ class Registry:
                 msg.append(f"Drafted but not in review list: {', '.join(not_listed)}.")
             if not_drafted:
                 msg.append(f"In review list but not a drafted entry: {', '.join(not_drafted)}.")
-            raise RegistryError(" ".join(msg))
+            raise RegistryError(" ".join(msg), stop=Stop.REGISTRY_REVIEW_LIST_MISMATCH)
         self.review = list(review)
 
     def get(self, entry_id: str) -> Entry:
@@ -131,7 +139,8 @@ class Registry:
         except KeyError:
             raise MissingEntry(
                 f"The calc needs registry entry {entry_id!r}, which does not exist "
-                f"in {self.path.name}. Add it as a drafted entry (CLAUDE.md rule 1)."
+                f"in {self.path.name}. Add it as a drafted entry (CLAUDE.md rule 1).",
+                stop=Stop.REGISTRY_MISSING_ENTRY
             ) from None
         self._used[entry_id] = None
         return entry

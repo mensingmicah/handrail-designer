@@ -12,6 +12,7 @@ from handrail.errors import SectionStop
 from handrail.materials import FY_ENTRY
 from handrail.registry import Registry
 from handrail.shapes import DB, PipeSection
+from handrail.stops import Stop
 
 
 @dataclass
@@ -54,13 +55,15 @@ def flexural_capacity(registry: Registry, rail: PipeSection, grade: str) -> Capa
     if not applies:
         raise SectionStop(
             f"{name}: D/t = {D_t:g} is not less than the {app.cite} limit "
-            f"{app.value}E/Fy = {fmt_sig(lim.value)}. The tool does not check this section."
+            f"{app.value}E/Fy = {fmt_sig(lim.value)}. The tool does not check this section.",
+            stop=Stop.SECTION_BEYOND_F8_LIMIT
         )
     slender = compare(lam_t, ">", lr.stated(fmt_sig))
     if slender:
         raise SectionStop(
             f"{name}: wall is slender in flexure, D/t = {D_t:g} {slender.op} lambda_r = {lr_e.value}E/Fy = "
-            f"{fmt_sig(lr.value)} ({lr_e.cite}). The tool does not check slender sections."
+            f"{fmt_sig(lr.value)} ({lr_e.cite}). The tool does not check slender sections.",
+            stop=Stop.SECTION_SLENDER_IN_FLEXURE
         )
     sh.decision(applies, "Applies", "Applicability", cite_ids=(app.id,))
     sh.decision(

@@ -10,6 +10,7 @@ from functools import cache
 
 from handrail.errors import InputError
 from handrail.shapes_extract import PIPE_TOML
+from handrail.stops import Stop
 from handrail.units import Q_
 
 
@@ -21,10 +22,17 @@ class ShapeNotFound(InputError):
 DB = "AISC Shapes Database v16.0"
 
 
-# Section families. Round hollow families are those the weld checks' round
-# decisions cover (docs/brief/welds.md, W2 and W7); round HSS joins in slice 5.
+# Section families, as the per-joint tables name them (joints.py; S5-9).
+# AISC pipe is the only one a project can enter so far; the others are
+# named here so each has its row in those tables, which say which slice
+# brings it (S5-1).
 PIPE = "AISC pipe"
-ROUND_HOLLOW = (PIPE,)
+ROUND_HSS = "round HSS"
+ROUND_TUBE = "custom round tube"
+RECT_HSS = "rectangular HSS"
+RECT_TUBE = "custom rectangular tube"
+ROUND_BAR = "solid round bar"
+RECT_BAR = "solid rectangular bar"
 
 
 @dataclass(frozen=True)
@@ -64,5 +72,5 @@ def pipe(designation: str) -> PipeSection:
                 I=q("Ix"), S=q("Sx"), Z=q("Zx"), r=q("rx"),
             )
     raise ShapeNotFound(
-        f"{designation!r} is not an AISC pipe in {table['source_file']}"
+        f"{designation!r} is not an AISC pipe in {table['source_file']}", stop=Stop.SECTION_NOT_FOUND
     )

@@ -26,6 +26,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Callable
 
+from handrail import joints
 from handrail.calc import (PI, Line, Sheet, Sym, absolute, arccos, compare, fmt_quantity_plain, maximum, minimum,
                            mtext, order, sin, sqrt, term)
 from handrail.demand import ASD, Given, Wording, demand
@@ -36,12 +37,13 @@ from handrail.directions import (
 from handrail.dimensions import Dimension
 from handrail.errors import SectionStop
 from handrail.intermediate import NONE_TEXT
+from handrail.joints import JointMember
 from handrail.loading import COMBO, combo_text, exempt_case
 from handrail.materials import FEXX_ENTRY, FU_ENTRY
 from handrail.project import NO_INTERMEDIATE, SAME_AS_TOP, Project
 from handrail.registry import Registry
 from handrail.results import Case, Check, Loading
-from handrail.shapes import DB, ROUND_HOLLOW, PipeSection
+from handrail.shapes import DB, PipeSection
 from handrail.units import Q_
 
 LINE_METHOD = "ej.weld.line_method"
@@ -291,13 +293,11 @@ def shear_only(sh: Sheet, rg: Ring, V: Sym) -> RingForces:
 
 
 def directional_increase(sh: Sheet, registry: Registry, f_r: Sym, section: PipeSection) -> tuple[Sym, Sym]:
-    """theta at the governing point and k_ds from it, on a round hollow
-    section only (W2). Returns (theta, k_ds). Raises SectionStop otherwise."""
-    if section.family not in ROUND_HOLLOW:
-        raise SectionStop(
-            f"{section.label} ({section.family}): the directional strength increase rule for this section "
-            f"family has not been drafted. The tool applies the increase only to round hollow sections."
-        )
+    """theta at the governing point and k_ds from it, for a post the Check 7
+    joint's table lists as allowed (W2; joints.py). Returns (theta, k_ds).
+    Raises SectionStop otherwise: validation makes the same test, and this
+    one holds when a calc is computed without it."""
+    joints.CHECK_7.require(JointMember("post", section), error=SectionStop)
     line_method = registry.get(LINE_METHOD)
     f_par = sh.given("f_parallel", "f_parallel", Q_(0, PER_INCH), "Force component along the weld axis: at the extreme "
                      "fiber the weld axis is perpendicular to the plane of bending, and V acts in that plane",

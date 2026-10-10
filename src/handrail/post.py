@@ -36,6 +36,7 @@ from handrail.project import Project
 from handrail.registry import Entry, Registry
 from handrail.results import Case, Check, Loading
 from handrail.shapes import DB, PipeSection
+from handrail.stops import Stop
 
 
 @dataclass
@@ -93,7 +94,8 @@ def compression_capacity(registry: Registry, project: Project, post: PipeSection
     if slender:
         raise SectionStop(
             f"{post.label}: wall is slender in compression, D/t = {D_t:g} {slender.op} lambda_r = "
-            f"{lr_e.value}E/Fy = {fmt_sig(lr.value)} ({lr_e.cite}). The tool does not check slender sections."
+            f"{lr_e.value}E/Fy = {fmt_sig(lr.value)} ({lr_e.cite}). The tool does not check slender sections.",
+            stop=Stop.SECTION_SLENDER_IN_COMPRESSION
         )
     sh.decision(slender, "Nonslender", "Section classification, compression: no noncompact category",
                 cite_ids=("aisc360.B4.1a.classification",))
@@ -267,7 +269,7 @@ def _moment_case(registry, project, post, loading, cap: Capacity5, direction: Di
         raise SectionStop(
             f"Second-order effects are not negligible in the {label.lower()} case of Check 5: "
             f"alpha Pr/Pe = {fmt_sig(a_ratio.value)} {exceeds.op} {lim.value} ({lim.cite}). "
-            f"The tool does not amplify for second-order effects."
+            f"The tool does not amplify for second-order effects.", stop=Stop.CHECK5_SECOND_ORDER_NOT_NEGLIGIBLE
         )
     sentence = registry.get("ej.second_order.negligible")
     sh.decision(exceeds, sentence.value.format(ratio=fmt_sig(a_ratio.value)), "", cite_ids=(lim.id,))

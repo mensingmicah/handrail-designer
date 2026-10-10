@@ -38,6 +38,7 @@ from pathlib import Path
 from handrail import dimensions
 from handrail.dimensions import Dimension
 from handrail.errors import InputError
+from handrail.stops import Stop
 from handrail.units import Q_
 
 
@@ -176,30 +177,31 @@ def _check_keys(table: dict, schema: dict, where: str) -> None:
             what = "table" if isinstance(value, dict) else "key"
             raise ProjectError(
                 f"project file: unknown {what} '{name}'. "
-                f"Allowed {'here' if where else 'at top level'}: {allowed}"
+                f"Allowed {'here' if where else 'at top level'}: {allowed}", stop=Stop.FILE_UNKNOWN_KEY
             )
         sub = schema[key]
         if isinstance(sub, dict):
             if not isinstance(value, dict):
-                raise ProjectError(f"project file: '{name}' must be a table [{name}]")
+                raise ProjectError(f"project file: '{name}' must be a table [{name}]", stop=Stop.FILE_NOT_A_TABLE)
             _check_keys(value, sub, name)
 
 
 def _need(table: dict, key: str, where: str):
     if key not in table:
-        raise ProjectError(f"project file: [{where}] is missing '{key}'")
+        raise ProjectError(f"project file: [{where}] is missing '{key}'", stop=Stop.FILE_MISSING_KEY)
     return table[key]
 
 
 def _str(value, name: str) -> str:
     if not isinstance(value, str):
-        raise ProjectError(f"project file: '{name}' must be text in quotes, not {value!r}")
+        raise ProjectError(f"project file: '{name}' must be text in quotes, not {value!r}", stop=Stop.FILE_NOT_TEXT)
     return value
 
 
 def _str_list(value, name: str) -> tuple[str, ...]:
     if not isinstance(value, list) or not all(isinstance(v, str) for v in value):
-        raise ProjectError(f"project file: '{name}' must be a list of quoted text, e.g. [\"...\"]")
+        raise ProjectError(f"project file: '{name}' must be a list of quoted text, e.g. [\"...\"]",
+                           stop=Stop.FILE_NOT_A_TEXT_LIST)
     return tuple(value)
 
 
@@ -207,7 +209,8 @@ def _bool(value, name: str) -> bool:
     # bool("false") is True in Python, so text must never be read as a boolean.
     if not isinstance(value, bool):
         raise ProjectError(
-            f"project file: '{name}' must be true or false without quotes, not {value!r}"
+            f"project file: '{name}' must be true or false without quotes, not {value!r}",
+            stop=Stop.FILE_NOT_A_BOOLEAN
         )
     return value
 
@@ -215,9 +218,11 @@ def _bool(value, name: str) -> bool:
 def _positive(value, name: str) -> float:
     # bool is a subclass of int in Python; exclude it explicitly.
     if isinstance(value, bool) or not isinstance(value, (int, float)):
-        raise ProjectError(f"project file: '{name}' must be a number without quotes, not {value!r}")
+        raise ProjectError(f"project file: '{name}' must be a number without quotes, not {value!r}",
+                           stop=Stop.FILE_NOT_A_NUMBER)
     if not value > 0:
-        raise ProjectError(f"project file: '{name}' must be greater than zero, not {value!r}")
+        raise ProjectError(f"project file: '{name}' must be greater than zero, not {value!r}",
+                           stop=Stop.FILE_NOT_POSITIVE)
     return value
 
 
@@ -225,13 +230,14 @@ def _dimension(table: dict, key: str, where: str) -> Dimension:
     """A required, positive dimension in the forms docs/brief/inputs.md accepts."""
     raw = _need(table, key, where)
     if isinstance(raw, bool) or not isinstance(raw, (str, int, float)):
-        raise ProjectError(f"project file: '{where}.{key}' must be a dimension, not {raw!r}")
+        raise ProjectError(f"project file: '{where}.{key}' must be a dimension, not {raw!r}",
+                           stop=Stop.FILE_NOT_A_DIMENSION)
     try:
         dim = dimensions.parse(str(raw))
     except dimensions.DimensionError as e:
-        raise ProjectError(f"[{where}] {key}: {e}") from None
+        raise ProjectError(f"[{where}] {key}: {e}", stop=e.stop) from None  # the dimension's own stop
     if dim.value.m_as("inch") <= 0:
-        raise ProjectError(f"[{where}] {key} must be greater than zero")
+        raise ProjectError(f"[{where}] {key} must be greater than zero", stop=Stop.FILE_DIMENSION_NOT_POSITIVE)
     return dim
 
 
@@ -288,10 +294,11 @@ def _intermediate_rail(raw: dict, top_rail: Member, welds: Welds) -> Intermediat
     if none:
         if same_given and same:
             raise ProjectError("[intermediate_rail] none = true and same_as_top_rail = true contradict each "
-                               "other: choose one")
+                               "other: choose one", stop=Stop.INTERMEDIATE_NONE_AND_SAME)
         if own_inputs:
             raise ProjectError(f"[intermediate_rail] none = true, but {', '.join(own_inputs)} is given: there is "
-                               f"no intermediate rail to apply it to. Remove it, or set none = false.")
+                               f"no intermediate rail to apply it to. Remove it, or set none = false.",
+                               stop=Stop.INTERMEDIATE_NONE_WITH_INPUTS)
         return IntermediateRail(state=NO_INTERMEDIATE)
     if same:
         if own_inputs:
@@ -299,15 +306,17 @@ def _intermediate_rail(raw: dict, top_rail: Member, welds: Welds) -> Intermediat
                 f"[intermediate_rail] same_as_top_rail = true{'' if same_given else ' (the default)'}, but "
                 f"{', '.join(own_inputs)} is given. Same as the top rail, the intermediate rail takes the top "
                 f"rail's section, grade and rail to post weld size, and follows the top rail's deflection limit. "
-                f"Set same_as_top_rail = false to give it its own, or remove the input."
+                f"Set same_as_top_rail = false to give it its own, or remove the input.",
+                stop=Stop.INTERMEDIATE_SAME_WITH_INPUTS
             )
         return IntermediateRail(state=SAME_AS_TOP)
     if section is None:
         raise ProjectError("[intermediate_rail] same_as_top_rail = false needs a section "
-                           "(or none = true for no intermediate rail)")
+                           "(or none = true for no intermediate rail)", stop=Stop.INTERMEDIATE_OWN_NEEDS_SECTION)
     if welds.intermediate_rail_to_post is None:
         raise ProjectError("[welds] is missing 'intermediate_rail_to_post', required when the intermediate rail "
-                           "has its own section (same_as_top_rail = false)")
+                           "has its own section (same_as_top_rail = false)",
+                           stop=Stop.INTERMEDIATE_OWN_NEEDS_WELD_SIZE)
     return IntermediateRail(
         state=OWN_SECTION,
         member=Member(section=section, grade=grade if grade is not None else top_rail.grade),  # S4-1
@@ -321,9 +330,9 @@ def load(path: str | Path) -> Project:
         with open(path, "rb") as f:
             raw = tomllib.load(f)
     except FileNotFoundError:
-        raise ProjectError(f"project file not found: {path}") from None
+        raise ProjectError(f"project file not found: {path}", stop=Stop.FILE_NOT_FOUND) from None
     except tomllib.TOMLDecodeError as e:
-        raise ProjectError(f"project file {path} is not valid TOML: {e}") from None
+        raise ProjectError(f"project file {path} is not valid TOML: {e}", stop=Stop.FILE_INVALID_TOML) from None
     return from_dict(raw)
 
 
@@ -345,7 +354,7 @@ def from_dict(raw: dict) -> Project:
     if not tp.value < h.value:
         raise ProjectError(
             f"[geometry] baseplate_thickness ({tp.entered}) must be less than "
-            f"post_height ({h.entered})"
+            f"post_height ({h.entered})", stop=Stop.GEOMETRY_BASEPLATE_NOT_BELOW_POST_HEIGHT
         )
 
     top_rail = _member(raw, "top_rail")
@@ -376,7 +385,7 @@ def from_dict(raw: dict) -> Project:
     if loads.uniform_exempt and not loads.exemption_statement.strip():
         raise ProjectError(
             "[loads.uniform_exemption] applies = true needs a statement of why the "
-            "guard is exempt from the uniform load"
+            "guard is exempt from the uniform load", stop=Stop.LOADS_EXEMPTION_NEEDS_STATEMENT
         )
 
     return Project(
