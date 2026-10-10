@@ -311,3 +311,37 @@ def test_same_as_the_top_rail_prints_the_top_rails_notes_once():
 def test_an_all_pipe_calc_with_its_grades_entered_prints_no_grade_note():
     src = _source(top_rail={"grade": "A53 Gr B"}, post={"grade": "A53 Gr B"})
     assert "UNUSUAL PAIRING" not in src and "A1085" not in src
+
+
+# -- a defaulted grade prints as defaulted (S5-10) --------------------------------------
+
+def test_a_defaulted_grade_prints_default_on_the_section_page_and_an_entered_one_does_not():
+    src = _source(post={"section": "HSS2.375X0.125"},
+                  intermediate_rail=_own("HSS1.900X0.120", grade="A500 Gr C"), welds=OWN_WELD)
+    assert '#text("Top rail: Pipe2STD, A53 Gr B (default).")' in src
+    assert '#text("Post: HSS2.375X0.125, A500 Gr B (default).")' in src
+    assert '#text("Intermediate rail: HSS1.900X0.120, A500 Gr C.")' in src
+
+
+def test_the_default_grade_entered_by_hand_is_not_marked():
+    src = _source(top_rail={"grade": "A53 Gr B"}, post={"grade": "A53 Gr B"})
+    assert "(default)" not in src
+
+
+def test_an_intermediate_rail_grade_left_out_is_marked_whichever_grade_it_takes():
+    """S5-10: its own shape's default, or the top rail's grade. Either way
+    the engineer did not enter it."""
+    own_default = _source(intermediate_rail=_own("HSS1.900X0.120"), welds=OWN_WELD)
+    assert '#text("Intermediate rail: HSS1.900X0.120, A500 Gr B (default).")' in own_default
+    top_rails = _source(top_rail={"section": "HSS2.375X0.154", "grade": "A500 Gr C"},
+                        intermediate_rail=_own("HSS1.900X0.120"), welds=OWN_WELD)
+    assert '#text("Intermediate rail: HSS1.900X0.120, A500 Gr C (default).")' in top_rails
+
+
+def test_the_mark_prints_on_the_section_page_only():
+    """Where the grade already prints (Micah, 2026-10-09): not on the calc
+    lines that name the grade, and not for the baseplate or the electrode."""
+    src = _source()
+    assert src.count("(default)") == 2  # the top rail and the post
+    assert '#text("Baseplate: A36. Welds: fillet, all around, electrode E70XX.")' in src
+    assert '"Yield stress, A53 Gr B"' in src

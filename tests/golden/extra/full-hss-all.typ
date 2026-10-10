@@ -110,7 +110,7 @@ Derived lengths, each computed in the calc where it is used:
 #calcline([$Z = "0.7130 in"^3$], "Plastic section modulus", "AISC Shapes Database v16.0")
 #calcline([$D slash t = "16.60"$], "Diameter-to-thickness ratio, tabulated", "AISC Shapes Database v16.0")
 
-#text("Post: HSS2.375X0.125, A500 Gr B.")
+#text("Post: HSS2.375X0.125, A500 Gr B (default).")
 
 #calcline([$D = "2.380 in"$], "HSS2.375X0.125: outside diameter", "AISC Shapes Database v16.0")
 #calcline([$t_"nom" = "0.1250 in"$], "Nominal wall thickness", "AISC Shapes Database v16.0")
@@ -123,7 +123,7 @@ Derived lengths, each computed in the calc where it is used:
 #calcline([$r = "0.8000 in"$], "Radius of gyration", "AISC Shapes Database v16.0")
 #calcline([$D slash t = "20.50"$], "Diameter-to-thickness ratio, tabulated", "AISC Shapes Database v16.0")
 
-#text("Intermediate rail: HSS1.900X0.120, A500 Gr C.")
+#text("Intermediate rail: HSS1.900X0.120, A500 Gr C (default).")
 
 #calcline([$D = "1.900 in"$], "HSS1.900X0.120: outside diameter", "AISC Shapes Database v16.0")
 #calcline([$t_"nom" = "0.1200 in"$], "Nominal wall thickness", "AISC Shapes Database v16.0")

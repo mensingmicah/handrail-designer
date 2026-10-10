@@ -102,7 +102,7 @@ Derived lengths, each computed in the calc where it is used:
 
 = Section properties
 
-#text("Top rail: Pipe2STD, A53 Gr B.") Properties are used exactly as published in the AISC Shapes Database v16.0.
+#text("Top rail: Pipe2STD, A53 Gr B (default).") Properties are used exactly as published in the AISC Shapes Database v16.0.
 
 #calcline([$D = "2.375 in"$], "Pipe2STD: outside diameter", "AISC Shapes Database v16.0")
 #calcline([$t_"nom" = "0.1540 in"$], "Nominal wall thickness", "AISC Shapes Database v16.0")
@@ -114,7 +114,7 @@ Derived lengths, each computed in the calc where it is used:
 #calcline([$Z = "0.7130 in"^3$], "Plastic section modulus", "AISC Shapes Database v16.0")
 #calcline([$D slash t = "16.60"$], "Diameter-to-thickness ratio, tabulated", "AISC Shapes Database v16.0")
 
-#text("Post: Pipe2STD, A53 Gr B.")
+#text("Post: Pipe2STD, A53 Gr B (default).")
 
 #calcline([$D = "2.375 in"$], "Pipe2STD: outside diameter", "AISC Shapes Database v16.0")
 #calcline([$t_"nom" = "0.1540 in"$], "Nominal wall thickness", "AISC Shapes Database v16.0")
