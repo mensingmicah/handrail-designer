@@ -28,3 +28,68 @@ exactly as stored in the workbook, the outside diameter included: the
 database rounds a round HSS's OD to three significant figures (2.38 in for
 HSS2.375X0.125), and the tool uses that value as published
 (docs/brief/checks.md, S5-4).
+
+## Database findings: published properties against exact geometry
+
+Found by the property-formula test (docs/plans/slice-5.md, T3;
+tests/test_tube.py), which runs the custom round tube's formulas on each
+row's listed outside diameter, nominal wall and design wall and compares
+the results with the published values. The formulas are exact geometry: a
+hollow circle on the design wall for A, I, S, Z, r and D/t, and the steel
+unit weight times the area on the nominal wall for the weight. "Reproduces"
+means the formula's value, rounded as the database prints it, is the
+published value. Recorded 2026-10-10; the tool uses every database value
+exactly as published, so none of this changes a calc of a database section.
+It matters for a custom tube entered with the same dimensions as a database
+shape.
+
+**Where the formulas reproduce the database (binding in the test).** The 67
+round HSS rows whose OD column is the designation's OD and is 10 in or
+less: all seven properties reproduce on every row. The 36 pipe rows under
+12 in OD: I, S, Z and r reproduce or come out below published on every row,
+and the weight reproduces on every row.
+
+**Pipe area under 12 in OD: above published on five rows.** Waiting on
+Micah (slice status issue); not asserted by the test.
+
+| Row | Published A (in²) | Formula on the listed t_des (in²) | Difference |
+| --- | --- | --- | --- |
+| Pipe3STD | 2.07 | 2.083 | +0.64% |
+| Pipe6XS | 7.83 | 7.877 | +0.61% |
+| Pipe5STD | 4.01 | 4.029 | +0.48% |
+| Pipe3-1/2XS | 3.43 | 3.444 | +0.42% |
+| Pipe4STD | 2.96 | 2.971 | +0.37% |
+
+On the other 31 rows the area reproduces (19) or comes out below (12, the
+furthest Pipe10STD at −3.3% and Pipe2STD at −1.7%). The cause is not known.
+On Pipe3STD the published area equals 0.93 times the area on the nominal
+wall, but that does not hold for the other four.
+
+**Pipe D/t under 12 in OD: one row misses.** Pipe2XS is published as 11.7;
+its listed OD over its listed t_des (2.375 / 0.204) is 11.64. The other 35
+reproduce. Not asserted by the test.
+
+**Six XS pipe rows, 14 to 26 in: published A, I, S and Z are 2.9 to 3.4%
+below the formulas.** Pipe14XS, Pipe16XS, Pipe18XS, Pipe20XS, Pipe24XS and
+Pipe26XS list t_nom = 0.500 in and t_des = 0.465 in (0.93 × t_nom), but
+their published A, I, S and Z are those of a wall of 0.450 in, which is
+0.90 × t_nom: all four properties reproduce on that wall, on all six rows.
+r, D/t and the weight are consistent with the listed walls. Not asserted.
+No guard member is this size.
+
+**The other pipe rows 12 in and over** (nine rows) miss in both directions
+by smaller amounts (Pipe12XS area +2.6%, Pipe12XXS −2.5 to −2.9% on A, I, S
+and Z; the STD rows within −0.6%). Not asserted.
+
+**Round HSS over 10 in OD** (84 rows; 34 reproduce every property). The
+misses run mostly above published, because the OD column is rounded and the
+published properties are not computed from the rounded value: A above on 23
+rows (worst +0.71%) and below on 5; I above on 27 (worst +1.9%,
+HSS10.750X0.250); S above on 29 (+1.2%) and below on 2; Z above on 30
+(+1.3%) and below on 2; r above on 21 (+0.56%); D/t above on 22 and below
+on 11; weight above on 29 (+0.74%). Not asserted.
+
+**Round HSS of 10 in or less whose OD column is rounded away from the
+designation** (38 rows, such as HSS2.375 listed as 2.38 in): none
+reproduces every property, for the same reason; the worst misses are under
+0.8%. Not asserted. The tool uses these rows as published (S5-4).
