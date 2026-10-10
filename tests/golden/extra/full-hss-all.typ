@@ -1,0 +1,603 @@
+
+#let draft = true
+#let footer-code = "Tool 0.1.0 (abc1234)"
+#let footer-reg = "Registry def5678"
+
+#set document(title: "char: guard calculation")
+#set text(font: ("Libertinus Serif", "New Computer Modern"), size: 10pt)
+#set par(justify: false)
+#set page(
+  paper: "us-letter",
+  margin: (top: 1.1in, bottom: 1.0in, x: 0.75in),
+  // Reserved header area: kept empty in v1.
+  header: block(width: 100%, height: 0.45in, stroke: (bottom: 0.4pt + luma(180)))[],
+  header-ascent: 0.15in,
+  footer: context [
+    #set text(size: 8pt)
+    #if draft [
+      #align(center, text(fill: rgb("#b00000"), weight: "bold")[DRAFT: contains unverified code values (see Draft code values list)])
+      #v(-4pt)
+    ]
+    #line(length: 100%, stroke: 0.4pt + luma(180))
+    #v(-4pt)
+    #grid(columns: (1fr, 1fr, auto), footer-code, align(center, footer-reg),
+      [Page #counter(page).display() of #counter(page).final().first()])
+  ],
+  background: rotate(-40deg, text(size: 44pt, fill: rgb(200, 0, 0, 28), weight: "bold")[
+    #align(center)[DEVELOPMENT \ NOT FOR CONSTRUCTION]
+  ]),
+)
+#set heading(numbering: none)
+#show heading.where(level: 1): it => { pagebreak(weak: true); text(size: 14pt, it) ; v(4pt) }
+#show heading.where(level: 2): it => { v(6pt); text(size: 11.5pt, it); v(2pt) }
+#set table(stroke: 0.4pt + luma(160), inset: 4pt)
+
+#let calcline(eq, note, cite) = block(above: 8pt, below: 8pt, grid(
+  columns: (1fr, 2.3in), column-gutter: 10pt,
+  eq,
+  text(size: 8pt)[#note #if cite != "" [\ #text(fill: luma(90), style: "italic", cite)]],
+))
+#let subhead(t) = block(above: 14pt, below: 8pt, text(weight: "bold", t))
+#let flag(t) = block(width: 100%, inset: 6pt, fill: rgb("#fff2cc"), stroke: 0.6pt + rgb("#c09000"), text(weight: "bold", t))
+
+
+#align(center, text(size: 16pt, weight: "bold")[Guard Calculation])
+
+#align(center)[Top rail bending and deflection; top rail weld to post; intermediate rail and its weld to the post; post combined axial and flexure, and deflection; post weld to baseplate; anchor reactions]
+
+== Project
+
+#table(columns: (auto, 1fr), stroke: none, "Project", "char", "Phase", "", "Description", "")
+
+Loading is per ASCE 7-22.
+
+#text(weight: "bold", "Design method: ASD per AISC 360-22 §B3.2")
+
+== Assumptions
+
++ #"No shear checks in any member."
++ #"Interior post; the tributary length is the span. End posts and rail overhangs are not checked."
++ #"Post loads use tributary length = span; rail continuity effects on post reactions are neglected (engineering judgement)."
++ #"The top rail runs continuously over the post; the post is coped and welded to its underside. The rail is designed as a simple span."
++ #"The rail to post weld is modeled as a flat ring of the post's perimeter at the underside of the rail, with eccentricity e = half the rail depth from the rail centerline; this is conservative against the saddle centroid (2R/π for equal round diameters). It is modeled as a fillet of the entered size all around, although at equal diameters the sides of the saddle form a flare-bevel joint."
++ #"The intermediate rail to post weld is modeled as a flat ring of the intermediate rail's perimeter at the post face, a simple shear connection consistent with the simple-span intermediate rail: the end reaction acts at the weld with no end moment. It is modeled as a fillet of the entered size all around, although at equal diameters the sides of the saddle form a flare-bevel joint."
++ #"Local strength of the rail wall at the post, and of the post wall at the intermediate rail (AISC 360-22 Chapter K chord limit states), is not checked."
++ #"The component load's effect on the post is not checked."
++ #"Guard loads are not combined with floor or roof live load; wind, snow and ice are not considered."
++ #"Base reactions can reverse; direction is set in the anchor software."
++ #"The baseplate is rigid; the post is fixed at the top of the baseplate."
++ #"Baseplate thickness and bending are not checked; baseplate and anchorage design by others (e.g., PROFIS)."
++ #"Notional loads (AISC 360-22 App. 7) are neglected. In gravity-only combinations they produce a negligible moment, and the reported axial-only ratio bounds the H1-1b result."
+
+== References
+
+- #"AISC 360-22, Specification for Structural Steel Buildings"
+- #"ASCE/SEI 7-22, Minimum Design Loads and Associated Criteria for Buildings and Other Structures"
+- #"AISC Steel Construction Manual, 16th Edition"
+- #"AISC Shapes Database v16.0"
+
+== Sketch
+
+#block(width: 100%, height: 2.2in, stroke: (dash: "dashed", paint: luma(150)), align(center + horizon, text(fill: luma(120))[Image area (image upload is a later slice)]))
+
+== Draft code values
+
+This calc uses the following registry entries, which the engineer of record has not yet verified against the standard:
+
+#table(columns: (auto, 1fr, auto), table.header(strong("Entry"), strong("Citation"), strong("Source")), "material.grades.hss_round", "AISC Manual Table 2-4", "memory", "material.A500_GrB.hss_round.Fy", "AISC Manual Table 2-4", "memory", "material.A500_GrB.hss_round.Fu", "AISC Manual Table 2-4", "memory", "ej.weld.post_wall.fu_fy_min", "Engineering judgement (EOR): post wall at the weld covered by Check 5 while Fu/Fy >= 1.20", "engineer", "asce7.guard.component", "ASCE 7-22 §4.5.1.2", "memory", "ej.post.axial_dead_load", "Engineering judgement (EOR): post dead load", "engineer", "material.A500_GrC.hss_round.Fy", "AISC Manual Table 2-4", "memory", "ej.weld.line_method", "Engineering judgement (EOR): elastic weld as a line", "engineer", "aisc360.J2.2a.throat.coeff", "AISC 360-22 §J2.2a", "memory", "aisc360.J2.2a.throat", "AISC 360-22 §J2.2a", "memory", "ej.weld.ring_model", "Engineering judgement (EOR): weld ring at the rail underside, e = D_rail/2", "engineer", "aisc360.J2.4.min_size", "AISC 360-22 Table J2.4", "memory", "ej.weld.max_size_not_applicable", "Engineering judgement (EOR): no maximum fillet size at a T-joint", "engineer", "aisc360.J2.2b.max_size_edges", "AISC 360-22 §J2.2b(b)", "memory", "material.E70XX.FEXX", "AISC 360-22 §J2.6; AWS A5.1", "memory", "aisc360.J2.5.fnw.coeff", "AISC 360-22 Table J2.5", "memory", "aisc360.J2.5.fnw", "AISC 360-22 Table J2.5", "memory", "aisc360.J2.5.omega_w", "AISC 360-22 Table J2.5", "memory", "ej.weld.branch_kds", "Engineering judgement (EOR): k_ds = 1.0 at the rail to post weld", "engineer", "material.A500_GrC.hss_round.Fu", "AISC Manual Table 2-4", "memory", "aisc360.eq.J4-4.coeff", "AISC 360-22 Eq. J4-4", "memory", "aisc360.eq.J4-4", "AISC 360-22 Eq. J4-4", "memory", "aisc_manual.part9.base_metal", "AISC Manual Part 9, base metal at welds", "memory", "aisc360.J4.2.omega_rupture", "AISC 360-22 §J4.2(b)", "memory", "ej.weld.rail_wall_normal", "Engineering judgement (EOR): rail wall chord limit states not checked", "engineer", "ej.weld.post_wall_covered", "Engineering judgement (EOR): post wall at the weld covered by Check 5", "engineer", "ej.weld.no_bearing", "Engineering judgement (EOR): no bearing credit at the weld", "engineer", "aisc360.J2.4.fillet_strength", "AISC 360-22 §J2.4", "memory", "ej.component.downward", "Engineering judgement (EOR): downward component load, after OSHA 1910.29(b)(5)", "engineer", "ej.component.midspan", "Engineering judgement (EOR): component load as a point load at midspan", "engineer", "ej.weld.intermediate_simple_shear", "Engineering judgement (EOR): intermediate rail to post weld as a simple shear connection", "engineer", "ej.weld.intermediate_ring_model", "Engineering judgement (EOR): weld ring at the post face, simple shear, P_c at the post", "engineer", "ej.weld.intermediate_base_metal", "Engineering judgement (EOR): Check 4b base metal on both walls, lower governs", "engineer", "ej.weld.post_wall_chord_intermediate", "Engineering judgement (EOR): post wall chord limit states at the intermediate rail not checked", "engineer", "aisc_manual.t3-23.case1.R", "AISC Manual Table 3-23, Case 1", "memory", "aisc360.B4.1a.round_hss.lambda_r", "AISC 360-22 Table B4.1a, Case 9", "memory", "aisc360.B4.1a.classification", "AISC 360-22 §B4.1a", "memory", "aisc360.CA7.K_fixed_free", "AISC 360-22 Comm. Table C-A-7.1, case (e)", "memory", "aisc360.E2.effective_length", "AISC 360-22 §E2", "memory", "ej.post.unbraced_length", "Engineering judgement (EOR): unbraced length is the post height", "engineer", "aisc360.eq.E3-4", "AISC 360-22 Eq. E3-4", "memory", "aisc360.E2.user_note.slenderness", "AISC 360-22 §E2, User Note", "memory", "aisc360.E2.user_note.slenderness.limit", "AISC 360-22 §E2, User Note", "memory", "aisc360.E3.branch_limit", "AISC 360-22 §E3(a), (b)", "memory", "aisc360.eq.E3-2", "AISC 360-22 Eq. E3-2", "memory", "aisc360.eq.E3-2.base", "AISC 360-22 Eq. E3-2", "memory", "aisc360.eq.E3-1", "AISC 360-22 Eq. E3-1", "memory", "aisc360.E1.omega_c", "AISC 360-22 §E1", "memory", "aisc_manual.t3-23.case22.M", "AISC Manual Table 3-23, Case 22", "memory", "aisc360.eq.A-8-5", "AISC 360-22 Eq. A-8-5", "memory", "ej.second_order.pe_length", "Engineering judgement (EOR): Pe at Lc = 2.1h", "engineer", "aisc360.app8.alpha_asd", "AISC 360-22 App. 8", "memory", "ej.second_order.limit", "Engineering judgement (EOR): second-order limit", "engineer", "ej.second_order.negligible", "Engineering judgement (EOR): second-order limit", "engineer", "aisc360.H1.1.threshold", "AISC 360-22 §H1.1", "memory", "aisc360.eq.H1-1b", "AISC 360-22 Eq. H1-1b", "memory", "aisc360.eq.H1-1b.coeff", "AISC 360-22 Eq. H1-1b", "memory", "aisc360.eq.D2-1", "AISC 360-22 Eq. D2-1", "memory", "aisc360.D2.omega_t", "AISC 360-22 §D2(a)", "memory", "aisc_manual.t3-23.case22.delta", "AISC Manual Table 3-23, Case 22", "memory", "ej.deflection.limit.post", "Engineering judgement (EOR): post deflection limit, not code", "engineer", "material.A36.Fu", "AISC Manual Table 2-5", "memory", "aisc360.eq.J2-5", "AISC 360-22 Eq. J2-5", "memory", "aisc360.eq.J2-5.base", "AISC 360-22 Eq. J2-5", "memory", "aisc360.eq.J2-5.coeff", "AISC 360-22 Eq. J2-5", "memory", "aisc360.eq.J2-5.exponent", "AISC 360-22 Eq. J2-5", "memory", "ej.weld.directional_round_hss", "Engineering judgement (EOR), after STI: directional increase on round HSS", "engineer", "material.steel.density", "AISC Manual 16th Ed., Part 17", "memory", "ej.reaction.location", "Engineering judgement (EOR): reactions at the top of concrete, arm h", "engineer", "ej.combo.reaction", "Engineering judgement (EOR): anchor reactions, LRFD, not an ASCE combination", "engineer", "ej.reaction.lateral_note", "Engineering judgement (EOR): one lateral set, any horizontal direction", "engineer")
+
+= Dimensions
+
+Every dimension as entered, and as the tool read it. A bare number is inches.
+
+#table(columns: (1fr, auto, auto, auto), table.header(strong("Dimension"), strong("As entered"), strong("Read as"), strong("Inches")), "Span, post to post (c/c)", "5'-0\"", "5'-0\"", "60.00 in", "Post height h, top of concrete to top rail centerline", "42", "3'-6\"", "42.00 in", "Baseplate thickness t_p", "1/2", "1/2\"", "0.5000 in", "Baseplate B, parallel to the rail", "6", "6\"", "6.000 in", "Baseplate N, perpendicular to the rail", "8", "8\"", "8.000 in", "Fillet weld, top rail to post", "1/8", "1/8\"", "0.1250 in", "Fillet weld, post to baseplate", "3/16", "3/16\"", "0.1875 in", "Fillet weld, intermediate rail to post", "1/8", "1/8\"", "0.1250 in")
+
+Derived lengths, each computed in the calc where it is used:
+
+#table(columns: (1fr, auto, auto, auto), table.header(strong("Derived length"), strong("Formula"), strong("Inches"), strong("Computed in")), "Post cantilever length, top of baseplate to top rail centerline", [$L_"post" = h - t_p$], "41.50 in", "Loading", "Eccentricity: rail centerline to the weld plane at the rail underside", [$e = frac(d_"rail", "2")$], "1.190 in", "Check 3", "Effective length, with the unbraced length taken as the post height h", [$L_c = K h$], "88.20 in", "Check 5")
+
+= Section properties
+
+#text("Top rail: HSS2.375X0.154, A500 Gr C.") Properties are used exactly as published in the AISC Shapes Database v16.0.
+
+#calcline([$D = "2.380 in"$], "HSS2.375X0.154: outside diameter", "AISC Shapes Database v16.0")
+#calcline([$t_"nom" = "0.1540 in"$], "Nominal wall thickness", "AISC Shapes Database v16.0")
+#calcline([$t_"des" = "0.1430 in"$], "Design wall thickness", "AISC Shapes Database v16.0")
+#calcline([$A = "1.000 in"^2$], "Area (design wall)", "AISC Shapes Database v16.0")
+#calcline([$W = "0.3050 lb/in"$], "Nominal weight: tabulated 3.66 lb/ft (nominal wall)", "AISC Shapes Database v16.0")
+#calcline([$I = "0.6270 in"^4$], "Moment of inertia", "AISC Shapes Database v16.0")
+#calcline([$S = "0.5280 in"^3$], "Elastic section modulus", "AISC Shapes Database v16.0")
+#calcline([$Z = "0.7130 in"^3$], "Plastic section modulus", "AISC Shapes Database v16.0")
+#calcline([$D slash t = "16.60"$], "Diameter-to-thickness ratio, tabulated", "AISC Shapes Database v16.0")
+
+#text("Post: HSS2.375X0.125, A500 Gr B.")
+
+#calcline([$D = "2.380 in"$], "HSS2.375X0.125: outside diameter", "AISC Shapes Database v16.0")
+#calcline([$t_"nom" = "0.1250 in"$], "Nominal wall thickness", "AISC Shapes Database v16.0")
+#calcline([$t_"des" = "0.1160 in"$], "Design wall thickness", "AISC Shapes Database v16.0")
+#calcline([$A = "0.8230 in"^2$], "Area (design wall)", "AISC Shapes Database v16.0")
+#calcline([$W = "0.2508 lb/in"$], "Nominal weight: tabulated 3.01 lb/ft (nominal wall)", "AISC Shapes Database v16.0")
+#calcline([$I = "0.5270 in"^4$], "Moment of inertia", "AISC Shapes Database v16.0")
+#calcline([$S = "0.4430 in"^3$], "Elastic section modulus", "AISC Shapes Database v16.0")
+#calcline([$Z = "0.5920 in"^3$], "Plastic section modulus", "AISC Shapes Database v16.0")
+#calcline([$r = "0.8000 in"$], "Radius of gyration", "AISC Shapes Database v16.0")
+#calcline([$D slash t = "20.50"$], "Diameter-to-thickness ratio, tabulated", "AISC Shapes Database v16.0")
+
+#text("Intermediate rail: HSS1.900X0.120, A500 Gr C.")
+
+#calcline([$D = "1.900 in"$], "HSS1.900X0.120: outside diameter", "AISC Shapes Database v16.0")
+#calcline([$t_"nom" = "0.1200 in"$], "Nominal wall thickness", "AISC Shapes Database v16.0")
+#calcline([$t_"des" = "0.1110 in"$], "Design wall thickness", "AISC Shapes Database v16.0")
+#calcline([$A = "0.6240 in"^2$], "Area (design wall)", "AISC Shapes Database v16.0")
+#calcline([$W = "0.1900 lb/in"$], "Nominal weight: tabulated 2.28 lb/ft (nominal wall)", "AISC Shapes Database v16.0")
+#calcline([$I = "0.2510 in"^4$], "Moment of inertia", "AISC Shapes Database v16.0")
+#calcline([$S = "0.2640 in"^3$], "Elastic section modulus", "AISC Shapes Database v16.0")
+#calcline([$Z = "0.3560 in"^3$], "Plastic section modulus", "AISC Shapes Database v16.0")
+#calcline([$D slash t = "17.10"$], "Diameter-to-thickness ratio, tabulated", "AISC Shapes Database v16.0")
+
+#text("Baseplate: A36. Welds: fillet, all around, electrode E70XX.")
+
+= Loading
+
+Guard loads per ASCE 7-22. The concentrated and uniform loads are separate load types and do not act concurrently. Each check applies them in every direction case and reports the controlling one.
+
+#calcline([$P = "200.0 lb"$], "Concentrated guard load, any direction, any point on the top rail", "ASCE 7-22 §4.5.1")
+#calcline([$w_L = "4.167 lb/in"$], "Uniform guard load, 50 lb/ft, any direction; not concurrent with P", "ASCE 7-22 §4.5.1.1")
+#calcline([$P_c = "50.00 lb"$], "Component load on the intermediate rail, horizontal; also applied downward (engineering judgement)", "ASCE 7-22 §4.5.1.2")
+#calcline([$w_D = "0.3050 lb/in"$], "Top rail self-weight: tabulated W = 3.66 lb/ft", "AISC Shapes Database v16.0")
+#subhead("Dead load at the post")
+#calcline([$h = "42.00 in"$], "Post height, top of concrete to top rail centerline", "Input")
+#calcline([$t_p = "0.5000 in"$], "Baseplate thickness", "Input")
+#calcline([$display(L_"post" = h - t_p = ("42.00 in") - ("0.5000 in") = "41.50 in")$], "Post cantilever length, top of baseplate to top rail centerline", "Stated assumption: post fixed at the top of the baseplate")
+#calcline([$W_"post" = "0.2508 lb/in"$], "Post self-weight: HSS2.375X0.125, tabulated W = 3.01 lb/ft", "AISC Shapes Database v16.0")
+#calcline([$display(D_"post" = W_"post" L_"post" = ("0.2508 lb/in") ("41.50 in") = "10.41 lb")$], "Post dead load, full weight at the base", "Engineering judgement (EOR): post dead load")
+#calcline([$L = "60.00 in"$], "Span: the tributary length for the post (stated assumption)", "Input")
+#calcline([$display(D_"rail" = w_D L = ("0.3050 lb/in") ("60.00 in") = "18.30 lb")$], "Top rail dead load delivered to the post", "Engineering judgement (EOR): post dead load")
+#calcline([$w_(D,"int") = "0.1900 lb/in"$], "Intermediate rail self-weight: HSS1.900X0.120, tabulated W = 2.28 lb/ft", "AISC Shapes Database v16.0")
+#calcline([$display(D_"int" = w_(D,"int") L = ("0.1900 lb/in") ("60.00 in") = "11.40 lb")$], "Intermediate rail dead load delivered to the post", "Engineering judgement (EOR): post dead load")
+#calcline([$display(P_D = D_"rail" + D_"int" + D_"post" = ("18.30 lb") + ("11.40 lb") + ("10.41 lb") = "40.11 lb")$], "D at the post: axial dead load at the top of the baseplate", "Engineering judgement (EOR): post dead load")
+
+= Check 1: Top rail bending
+
+== Envelope summary
+
+Every direction case and load type is computed. The full calculation follows for the controlling case only.
+
+#table(columns: (auto, auto, 1fr, auto, auto, auto, auto), table.header([*Direction*], [*Load*], [*Combination*], [*Demand* $M_a$], [*Capacity* $M_n / Omega_b$], [*Ratio*], []), strong("Downward"), strong("Concentrated"), strong("1.0D + 1.0L, vertical\nASCE 7-22 §2.4.1, Comb. 2"), strong("3,137 lb-in"), strong("21,350 lb-in"), strong("0.15"), strong("Controls"), "Downward", "Distributed", "1.0D + 1.0L, vertical\nASCE 7-22 §2.4.1, Comb. 2", "2,012 lb-in", "21,350 lb-in", "0.09", "", "Outward", "Concentrated", "1.0D vertical, 1.0L horizontal, SRSS\nASCE 7-22 §2.4.1, Comb. 2; Engineering judgement (EOR): SRSS, round section", "3,003 lb-in", "21,350 lb-in", "0.14", "", "Outward", "Distributed", "1.0D vertical, 1.0L horizontal, SRSS\nASCE 7-22 §2.4.1, Comb. 2; Engineering judgement (EOR): SRSS, round section", "1,880 lb-in", "21,350 lb-in", "0.09", "", "Inward", "Concentrated", "1.0D vertical, 1.0L horizontal, SRSS\nASCE 7-22 §2.4.1, Comb. 2; Engineering judgement (EOR): SRSS, round section", "3,003 lb-in", "21,350 lb-in", "0.14", "", "Inward", "Distributed", "1.0D vertical, 1.0L horizontal, SRSS\nASCE 7-22 §2.4.1, Comb. 2; Engineering judgement (EOR): SRSS, round section", "1,880 lb-in", "21,350 lb-in", "0.09", "", "Upward", "Concentrated", "0.6D + 1.0L, net vertical\nEngineering judgement (EOR): upward case, not an ASCE combination", "2,918 lb-in", "21,350 lb-in", "0.14", "", "Upward", "Distributed", "0.6D + 1.0L, net vertical\nEngineering judgement (EOR): upward case, not an ASCE combination", "1,793 lb-in", "21,350 lb-in", "0.08", "", "Longitudinal", "", "Rail carries the longitudinal load axially; not checked", "", "", "", "")
+
+#heading(level: 2, "Controlling case: Downward, concentrated (1.0D + 1.0L, vertical; ASCE 7-22 §2.4.1, Comb. 2)")
+
+#subhead("Capacity")
+#calcline([$F_y = "50.00 ksi"$], "Yield stress, A500 Gr C", "AISC Manual Table 2-4")
+#calcline([$E = "29,000 ksi"$], "Modulus of elasticity", "AISC 360-22, Symbols")
+#calcline([$lambda = "16.60"$], "lambda = D/t, tabulated (design wall)", "AISC Shapes Database v16.0")
+#calcline([$display(lambda_"lim" = frac("0.45" E, F_y) = frac("0.45" ("29,000 ksi"), ("50.00 ksi")) = "261.0")$], "Applicability limit on D/t", "AISC 360-22 §F8")
+#calcline([$display(lambda_p = frac("0.07" E, F_y) = frac("0.07" ("29,000 ksi"), ("50.00 ksi")) = "40.60")$], "Compact limit, round HSS in flexure", "AISC 360-22 Table B4.1b, Case 20")
+#calcline([$display(lambda_r = frac("0.31" E, F_y) = frac("0.31" ("29,000 ksi"), ("50.00 ksi")) = "179.8")$], "Noncompact limit, round HSS in flexure", "AISC 360-22 Table B4.1b, Case 20")
+#calcline([$lambda = 16.6 < lambda_"lim" = 261.0$ #h(6pt) $arrow.r$ #h(6pt) *#"Applies"*], "Applicability", "AISC 360-22 §F8")
+#calcline([$"Round HSS"$ #h(6pt) $arrow.r$ #h(6pt) *#"Lateral-torsional buckling does not apply"*], "Limit states: yielding and local buckling only; Lb and Cb do not enter", "AISC 360-22 §F8")
+#calcline([$Z = "0.7130 in"^3$], "Plastic section modulus", "AISC Shapes Database v16.0")
+#calcline([$display(M_p = F_y Z = ("50.00 ksi") ("0.7130 in"^3) = "35,650 lb-in")$], "Plastic moment (yielding)", "AISC 360-22 Eq. F8-1")
+#calcline([$lambda = 16.6 <= lambda_p = 40.60$ #h(6pt) $arrow.r$ #h(6pt) *#"Compact"*], "Section classification", "AISC 360-22 §B4.1b")
+#calcline([$"Compact wall"$ #h(6pt) $arrow.r$ #h(6pt) *#"Local buckling does not apply"*], "", "AISC 360-22 §F8")
+#calcline([$display(M_n = M_p = "35,650 lb-in")$], "Nominal flexural strength", "AISC 360-22 §F8")
+#calcline([$Omega_b = "1.670"$], "Safety factor for flexure (ASD)", "AISC 360-22 §F1(a)")
+#calcline([$display(frac(M_n, Omega_b) = frac(("35,650 lb-in"), "1.670") = "21,350 lb-in")$], "Allowable flexural strength", "AISC 360-22 Eq. B3-2")
+#subhead("Demand: downward, concentrated load")
+#calcline([$L = "60.00 in"$], "Span, simple beam", "Input")
+#calcline([$w_D = "0.3050 lb/in"$], "Top rail self-weight", "Loading")
+#calcline([$display(M_D = frac(w_D L^("2"), "8") = frac(("0.3050 lb/in") ("60.00 in")^("2"), "8") = "137.2 lb-in")$], "Dead-load moment, midspan", "AISC Manual Table 3-23, Case 1")
+#calcline([$P = "200.0 lb"$], "Concentrated guard load at midspan", "Loading")
+#calcline([$display(M_L = frac(P L, "4") = frac(("200.0 lb") ("60.00 in"), "4") = "3,000 lb-in")$], "Live-load moment, midspan", "AISC Manual Table 3-23, Case 7")
+#calcline([$display(M_a = "1.0" M_D + "1.0" M_L = "1.0" ("137.2 lb-in") + "1.0" ("3,000 lb-in") = "3,137 lb-in")$], "Required flexural strength: D and L on the same axis", "ASCE 7-22 §2.4.1, Comb. 2")
+#calcline([$display("Ratio" = frac(M_a, frac(M_n, Omega_b)) = frac(("3,137 lb-in"), ("21,350 lb-in")) = "0.15")$], "Demand / capacity", "AISC 360-22 Eq. B3-2")
+
+#align(right, text(size: 12pt, weight: "bold")[$"Ratio" = 0.15 <= 1.00$ #h(10pt) #"OK"])
+
+= Check 2: Top rail deflection
+
+== Envelope summary
+
+Every direction case and load type is computed. The full calculation follows for the controlling case only.
+
+#table(columns: (auto, auto, 1fr, auto, auto, auto, auto), table.header([*Direction*], [*Load*], [*Combination*], [*Demand* $Delta$], [*Capacity* $Delta_"allow"$], [*Ratio*], []), strong("Downward"), strong("Concentrated"), strong("1.0D + 1.0L, vertical\nEngineering judgement (EOR): serviceability"), strong("0.05233 in"), strong("0.5000 in"), strong("0.10"), strong("Controls"), "Downward", "Distributed", "1.0D + 1.0L, vertical\nEngineering judgement (EOR): serviceability", "0.04150 in", "0.5000 in", "0.08", "", "Outward", "Concentrated", "1.0L, horizontal\nEngineering judgement (EOR): serviceability, live load only", "0.04950 in", "0.5000 in", "0.10", "", "Outward", "Distributed", "1.0L, horizontal\nEngineering judgement (EOR): serviceability, live load only", "0.03867 in", "0.5000 in", "0.08", "", "Inward", "Concentrated", "1.0L, horizontal\nEngineering judgement (EOR): serviceability, live load only", "0.04950 in", "0.5000 in", "0.10", "", "Inward", "Distributed", "1.0L, horizontal\nEngineering judgement (EOR): serviceability, live load only", "0.03867 in", "0.5000 in", "0.08", "", "Upward", "Concentrated", "1.0L, vertical\nEngineering judgement (EOR): serviceability, live load only", "0.04950 in", "0.5000 in", "0.10", "", "Upward", "Distributed", "1.0L, vertical\nEngineering judgement (EOR): serviceability, live load only", "0.03867 in", "0.5000 in", "0.08", "", "Longitudinal", "", "Rail carries the longitudinal load axially; not checked", "", "", "", "")
+
+#heading(level: 2, "Controlling case: Downward, concentrated (1.0D + 1.0L, vertical; Engineering judgement (EOR): serviceability)")
+
+#calcline([$L = "60.00 in"$], "Span, simple beam", "Input")
+#calcline([$E = "29,000 ksi"$], "Modulus of elasticity", "AISC 360-22, Symbols")
+#calcline([$I = "0.6270 in"^4$], "Moment of inertia", "AISC Shapes Database v16.0")
+#calcline([$P = "200.0 lb"$], "Concentrated guard load at midspan", "Loading")
+#calcline([$display(Delta_L = frac(P L^("3"), "48" E I) = frac(("200.0 lb") ("60.00 in")^("3"), "48" ("29,000 ksi") ("0.6270 in"^4)) = "0.04950 in")$], "Live-load deflection, midspan", "AISC Manual Table 3-23, Case 7")
+#calcline([$w_D = "0.3050 lb/in"$], "Top rail self-weight", "Loading")
+#calcline([$display(Delta_D = frac("5" w_D L^("4"), "384" E I) = frac("5" ("0.3050 lb/in") ("60.00 in")^("4"), "384" ("29,000 ksi") ("0.6270 in"^4)) = "0.002831 in")$], "Dead-load deflection, midspan", "AISC Manual Table 3-23, Case 1")
+#calcline([$display(Delta = "1.0" Delta_D + "1.0" Delta_L = "1.0" ("0.002831 in") + "1.0" ("0.04950 in") = "0.05233 in")$], "D and L on the same (vertical) axis", "Engineering judgement (EOR): serviceability")
+#calcline([$display(Delta_"allow" = frac(L, "120") = frac(("60.00 in"), "120") = "0.5000 in")$], "Limit L/120", "Engineering judgement (EOR): deflection limit, not code")
+#calcline([$display("Ratio" = frac(Delta, Delta_"allow") = frac(("0.05233 in"), ("0.5000 in")) = "0.10")$], "Deflection / limit", "Engineering judgement (EOR): deflection limit, not code")
+
+#align(right, text(size: 12pt, weight: "bold")[$"Ratio" = 0.10 <= 1.00$ #h(10pt) #"OK"])
+
+= Check 3: Top rail weld to post
+
+== Envelope summary
+
+Every direction case and load type is computed. The full calculation follows for the controlling case only.
+
+#text(size: 8pt)[#table(columns: (auto, auto, 1fr, auto, auto, auto, auto, auto, auto), table.header([*Direction*], [*Load*], [*Combination*], [$f_n$ \ fiber], [$f_v$], [$f_r$], [*Capacity* per inch], [*Ratio*], []), "Downward", "Concentrated", "1.0D + 1.0L, axial\nASCE 7-22 §2.4.1, Comb. 2", "29.20 lb/in\nuniform", "—", "29.20 lb/in", "Weld 1,856 lb/in\nBase —", "0.02", "", "Downward", "Distributed", "1.0D + 1.0L, axial\nASCE 7-22 §2.4.1, Comb. 2", "35.88 lb/in\nuniform", "—", "35.88 lb/in", "Weld 1,856 lb/in\nBase —", "0.02", "", "Outward", "Concentrated", "1.0D axial, 1.0L horizontal\nASCE 7-22 §2.4.1, Comb. 2", "55.94 lb/in\ncompression side", "26.75 lb/in", "62.01 lb/in", "Weld 1,856 lb/in\nBase 2,660 lb/in", "0.03", "", strong("Outward"), strong("Distributed"), strong("1.0D axial, 1.0L horizontal\nASCE 7-22 §2.4.1, Comb. 2"), strong("69.32 lb/in\ncompression side"), strong("33.44 lb/in"), strong("76.96 lb/in"), strong("Weld 1,856 lb/in\nBase 2,660 lb/in"), strong("0.04"), strong("Controls"), "Inward", "Concentrated", "1.0D axial, 1.0L horizontal\nASCE 7-22 §2.4.1, Comb. 2", "55.94 lb/in\ncompression side", "26.75 lb/in", "62.01 lb/in", "Weld 1,856 lb/in\nBase 2,660 lb/in", "0.03", "", "Inward", "Distributed", "1.0D axial, 1.0L horizontal\nASCE 7-22 §2.4.1, Comb. 2", "69.32 lb/in\ncompression side", "33.44 lb/in", "76.96 lb/in", "Weld 1,856 lb/in\nBase 2,660 lb/in", "0.04", "", "Upward", "Concentrated", "0.6D + 1.0L, net axial\nEngineering judgement (EOR): upward case, not an ASCE combination", "25.28 lb/in\nuniform", "—", "25.28 lb/in", "Weld 1,856 lb/in\nBase —", "0.01", "", "Upward", "Distributed", "0.6D + 1.0L, net axial\nEngineering judgement (EOR): upward case, not an ASCE combination", "31.97 lb/in\nuniform", "—", "31.97 lb/in", "Weld 1,856 lb/in\nBase —", "0.02", "", "Longitudinal", "Concentrated", "1.0D axial, 1.0L horizontal\nASCE 7-22 §2.4.1, Comb. 2", "55.94 lb/in\ncompression side", "26.75 lb/in", "62.01 lb/in", "Weld 1,856 lb/in\nBase 2,660 lb/in", "0.03", "", "Longitudinal", "Distributed", "1.0D axial, 1.0L horizontal\nASCE 7-22 §2.4.1, Comb. 2", "69.32 lb/in\ncompression side", "33.44 lb/in", "76.96 lb/in", "Weld 1,856 lb/in\nBase 2,660 lb/in", "0.04", "")]
+
+#heading(level: 2, "Controlling case: Outward, distributed (1.0D axial, 1.0L horizontal; ASCE 7-22 §2.4.1, Comb. 2)")
+
+#subhead("Weld properties")
+#calcline([$D = "2.380 in"$], "HSS2.375X0.125: outside diameter; the weld ring is the post perimeter", "AISC Shapes Database v16.0")
+#calcline([$w = "0.1250 in"$], "Fillet weld leg size, all around (1/8 as entered)", "Input")
+#calcline([$display(L_w = pi D = pi ("2.380 in") = "7.477 in")$], "Weld length: the post perimeter", "Engineering judgement (EOR): elastic weld as a line")
+#calcline([$display(S_w = frac(pi D^("2"), "4") = frac(pi ("2.380 in")^("2"), "4") = "4.449 in"^2)$], "Section modulus of the ring as a line", "Engineering judgement (EOR): elastic weld as a line")
+#calcline([$display(t_e = "0.707" w = "0.707" ("0.1250 in") = "0.08837 in")$], "Effective throat, equal-leg fillet", "AISC 360-22 §J2.2a")
+#subhead("Eccentricity")
+#calcline([$d_"rail" = "2.380 in"$], "HSS2.375X0.154: outside diameter, the rail depth", "AISC Shapes Database v16.0")
+#calcline([$display(e = frac(d_"rail", "2") = frac(("2.380 in"), "2") = "1.190 in")$], "Eccentricity: rail centerline to the weld plane at the rail underside", "Engineering judgement (EOR): weld ring at the rail underside, e = D_rail/2")
+#subhead("Fillet size limits")
+#calcline([$t_"rail,nom" = "0.1540 in"$], "Top rail nominal wall thickness, HSS2.375X0.154", "AISC Shapes Database v16.0")
+#calcline([$t_"post,nom" = "0.1250 in"$], "Post nominal wall thickness, HSS2.375X0.125", "AISC Shapes Database v16.0")
+#calcline([$display(t_"min" = "min"(t_"rail,nom", t_"post,nom") = "min"(("0.1540 in"), ("0.1250 in")) = "0.1250 in")$], "Thinner part joined", "AISC 360-22 Table J2.4")
+#calcline([$w_"min" = "0.1250 in"$], "Minimum fillet size for the thinner part joined", "AISC 360-22 Table J2.4")
+#calcline([$w = "0.1250 in" >= w_"min" = "0.1250 in"$ #h(6pt) $arrow.r$ #h(6pt) *#"OK"*], "Minimum size", "AISC 360-22 Table J2.4")
+#calcline([$"Maximum fillet size"$ #h(6pt) $arrow.r$ #h(6pt) *#"Not applicable"*], "Maximum fillet size along edges of material does not apply: this weld is a T-joint, not a weld along an edge. No maximum size is checked.", "AISC 360-22 §J2.2b(b); Engineering judgement (EOR): no maximum fillet size at a T-joint")
+#subhead("Weld metal")
+#calcline([$F_"EXX" = "70.00 ksi"$], "Electrode classification strength, E70XX", "AISC 360-22 §J2.6; AWS A5.1")
+#calcline([$display(F_"nw" = "0.6" F_"EXX" = "0.6" ("70.00 ksi") = "42.00 ksi")$], "Nominal stress of the weld metal", "AISC 360-22 Table J2.5")
+#calcline([$Omega_w = "2.000"$], "Safety factor, fillet weld (ASD)", "AISC 360-22 Table J2.5")
+#calcline([$k_"ds" = "1.000"$], "No directional increase at the rail to post weld (a branch-to-chord joint)", "Engineering judgement (EOR): k_ds = 1.0 at the rail to post weld")
+#subhead("Base metal: rail fusion face")
+#calcline([$F_u = "62.00 ksi"$], "Tensile strength, A500 Gr C", "AISC Manual Table 2-4")
+#calcline([$t_"rail" = "0.1430 in"$], "Top rail design wall thickness, HSS2.375X0.154", "AISC Shapes Database v16.0")
+#calcline([$display(R_(n,"BM") = "0.6" F_u t_"rail" = "0.6" ("62.00 ksi") ("0.1430 in") = "5,320 lb/in")$], "Shear rupture at the fusion face, per inch of weld", "AISC 360-22 Eq. J4-4; AISC Manual Part 9, base metal at welds")
+#calcline([$Omega_"BM" = "2.000"$], "Safety factor, shear rupture (ASD)", "AISC 360-22 §J4.2(b)")
+#calcline([$display(frac(R_(n,"BM"), Omega_"BM") = frac(("5,320 lb/in"), "2.000") = "2,660 lb/in")$], "Allowable base metal strength per inch", "AISC 360-22 Eq. B3-2")
+#calcline([$"Rail wall, normal force"$ #h(6pt) $arrow.r$ #h(6pt) *#"Not checked"*], "Rail wall, force normal to the wall: a chord-wall limit state of the round T-connection (AISC 360-22 Chapter K), not weld base metal; not checked (stated assumption).", "Engineering judgement (EOR): rail wall chord limit states not checked")
+#calcline([$"Post wall at the weld"$ #h(6pt) $arrow.r$ #h(6pt) *#"Covered by Check 5"*], "Post wall at the weld: covered by Check 5. The wall carries the weld force as stress along the post axis, the same demand as Check 5 at its critical section; member shear is not checked (stated assumption).", "Engineering judgement (EOR): post wall at the weld covered by Check 5")
+#subhead("Demand: outward, distributed load")
+#calcline([$D_"rail" = "18.30 lb"$], "Top rail dead load at the weld: w_D over the span (the tributary length)", "Loading")
+#calcline([$display(P = "1.0" D_"rail" = "1.0" ("18.30 lb") = "18.30 lb")$], "Axial force on the weld: dead load, compression", "ASCE 7-22 §2.4.1, Comb. 2")
+#calcline([$w_L = "4.167 lb/in"$], "Uniform guard load", "Loading")
+#calcline([$L = "60.00 in"$], "Span: the tributary length for the post", "Input")
+#calcline([$display(V_L = w_L L = ("4.167 lb/in") ("60.00 in") = "250.0 lb")$], "Uniform guard load collected over the span, horizontal (outward), on the rail at the post", "Stated assumption: the tributary length is the span")
+#calcline([$display(V = "1.0" V_L = "1.0" ("250.0 lb") = "250.0 lb")$], "Horizontal force on the weld", "ASCE 7-22 §2.4.1, Comb. 2")
+#calcline([$display(M = V e = ("250.0 lb") ("1.190 in") = "297.5 lb-in")$], "Moment at the weld plane: V at the rail centerline, arm e", "Engineering judgement (EOR): weld ring at the rail underside, e = D_rail/2")
+#calcline([$display(f_a = frac(P, L_w) = frac(("18.30 lb"), ("7.477 in")) = "2.448 lb/in")$], "Axial force per inch of weld, compression, uniform around the ring", "Engineering judgement (EOR): elastic weld as a line")
+#calcline([$display(f_b = frac(M, S_w) = frac(("297.5 lb-in"), ("4.449 in"^2)) = "66.87 lb/in")$], "Bending force per inch at the extreme fiber", "Engineering judgement (EOR): elastic weld as a line")
+#calcline([$display(f_(n,"c") = f_a + f_b = ("2.448 lb/in") + ("66.87 lb/in") = "69.32 lb/in")$], "Normal force per inch, compression side of bending: axial and bending add", "Engineering judgement (EOR): no bearing credit at the weld")
+#calcline([$display(f_(n,"t") = abs(f_a - f_b) = abs(("2.448 lb/in") - ("66.87 lb/in")) = "64.42 lb/in")$], "Normal force per inch, tension side of bending", "Engineering judgement (EOR): no bearing credit at the weld")
+#calcline([$f_(n,"c") = "69.32 lb/in" >= f_(n,"t") = "64.42 lb/in"$ #h(6pt) $arrow.r$ #h(6pt) *#"Compression side governs"*], "No bearing credit: both extreme fibers checked", "Engineering judgement (EOR): no bearing credit at the weld")
+#calcline([$display(f_n = f_(n,"c") = "69.32 lb/in")$], "Normal force per inch at the governing fiber, compression side", "Engineering judgement (EOR): no bearing credit at the weld")
+#calcline([$display(f_v = frac(V, L_w) = frac(("250.0 lb"), ("7.477 in")) = "33.44 lb/in")$], "Shear per inch of weld, taken as uniform around the ring", "Engineering judgement (EOR): elastic weld as a line")
+#calcline([$display(f_r = sqrt(f_n^("2") + f_v^("2")) = sqrt(("69.32 lb/in")^("2") + ("33.44 lb/in")^("2")) = "76.96 lb/in")$], "Resultant per inch at the governing fiber: vector sum", "Engineering judgement (EOR): elastic weld as a line")
+#calcline([$display(R_n = F_"nw" t_e k_"ds" = ("42.00 ksi") ("0.08837 in") dot "1.000" = "3,712 lb/in")$], "Nominal fillet weld strength per inch", "AISC 360-22 §J2.4")
+#calcline([$display(frac(R_n, Omega_w) = frac(("3,712 lb/in"), "2.000") = "1,856 lb/in")$], "Allowable weld metal strength per inch", "AISC 360-22 Eq. B3-2")
+#calcline([$display("Ratio"_w = frac(f_r, frac(R_n, Omega_w)) = frac(("76.96 lb/in"), ("1,856 lb/in")) = "0.04")$], "Weld metal: demand / capacity", "AISC 360-22 Eq. B3-2")
+#calcline([$display("Ratio"_"BM" = frac(f_v, frac(R_(n,"BM"), Omega_"BM")) = frac(("33.44 lb/in"), ("2,660 lb/in")) = "0.01")$], "Rail fusion face: in-plane shear only", "AISC 360-22 Eq. B3-2")
+#calcline([$display("Ratio" = "max"("Ratio"_w, "Ratio"_"BM") = "max"("0.04147", "0.01257") = "0.04")$], "The larger of weld metal and base metal", "AISC 360-22 Eq. B3-2")
+
+#align(right, text(size: 12pt, weight: "bold")[$"Ratio" = 0.04 <= 1.00$ #h(10pt) #"OK"])
+
+= Check 4a: Intermediate rail
+
+== Envelope summary
+
+Each limit state is computed in both directions of the component load. The full calculation follows for the governing case of each limit state.
+
+#table(columns: (auto, auto, 1fr, auto, auto, auto, auto), table.header([*Limit state*], [*Direction*], [*Combination*], [*Demand* $M_a$ or $Delta$], [*Capacity* $M_n / Omega_b$ or $Delta_"allow"$], [*Ratio*], []), strong("Bending"), strong("Downward"), strong("1.0D + 1.0L, vertical\nASCE 7-22 §2.4.1, Comb. 2; Engineering judgement (EOR): downward component load, after OSHA 1910.29(b)(5)"), strong("835.5 lb-in"), strong("10,660 lb-in"), strong("0.08"), strong("Controls"), "Bending", "Horizontal", "1.0L horizontal, alone\nASCE 7-22 §2.4.1, Comb. 2; Engineering judgement (EOR): downward component load, after OSHA 1910.29(b)(5)", "750.0 lb-in", "10,660 lb-in", "0.07", "", "Deflection", "Downward", "1.0D + 1.0L, vertical\nEngineering judgement (EOR): serviceability", "0.03532 in", "0.5000 in", "0.07", "", "Deflection", "Horizontal", "1.0L, horizontal\nEngineering judgement (EOR): serviceability, live load only", "0.03091 in", "0.5000 in", "0.06", "")
+
+#heading(level: 2, "Controlling case: Downward, bending (1.0D + 1.0L, vertical; ASCE 7-22 §2.4.1, Comb. 2; Engineering judgement (EOR): downward component load, after OSHA 1910.29(b)(5))")
+
+#subhead("Capacity")
+#calcline([$F_y = "50.00 ksi"$], "Yield stress, A500 Gr C", "AISC Manual Table 2-4")
+#calcline([$E = "29,000 ksi"$], "Modulus of elasticity", "AISC 360-22, Symbols")
+#calcline([$lambda = "17.10"$], "lambda = D/t, tabulated (design wall)", "AISC Shapes Database v16.0")
+#calcline([$display(lambda_"lim" = frac("0.45" E, F_y) = frac("0.45" ("29,000 ksi"), ("50.00 ksi")) = "261.0")$], "Applicability limit on D/t", "AISC 360-22 §F8")
+#calcline([$display(lambda_p = frac("0.07" E, F_y) = frac("0.07" ("29,000 ksi"), ("50.00 ksi")) = "40.60")$], "Compact limit, round HSS in flexure", "AISC 360-22 Table B4.1b, Case 20")
+#calcline([$display(lambda_r = frac("0.31" E, F_y) = frac("0.31" ("29,000 ksi"), ("50.00 ksi")) = "179.8")$], "Noncompact limit, round HSS in flexure", "AISC 360-22 Table B4.1b, Case 20")
+#calcline([$lambda = 17.1 < lambda_"lim" = 261.0$ #h(6pt) $arrow.r$ #h(6pt) *#"Applies"*], "Applicability", "AISC 360-22 §F8")
+#calcline([$"Round HSS"$ #h(6pt) $arrow.r$ #h(6pt) *#"Lateral-torsional buckling does not apply"*], "Limit states: yielding and local buckling only; Lb and Cb do not enter", "AISC 360-22 §F8")
+#calcline([$Z = "0.3560 in"^3$], "Plastic section modulus", "AISC Shapes Database v16.0")
+#calcline([$display(M_p = F_y Z = ("50.00 ksi") ("0.3560 in"^3) = "17,800 lb-in")$], "Plastic moment (yielding)", "AISC 360-22 Eq. F8-1")
+#calcline([$lambda = 17.1 <= lambda_p = 40.60$ #h(6pt) $arrow.r$ #h(6pt) *#"Compact"*], "Section classification", "AISC 360-22 §B4.1b")
+#calcline([$"Compact wall"$ #h(6pt) $arrow.r$ #h(6pt) *#"Local buckling does not apply"*], "", "AISC 360-22 §F8")
+#calcline([$display(M_n = M_p = "17,800 lb-in")$], "Nominal flexural strength", "AISC 360-22 §F8")
+#calcline([$Omega_b = "1.670"$], "Safety factor for flexure (ASD)", "AISC 360-22 §F1(a)")
+#calcline([$display(frac(M_n, Omega_b) = frac(("17,800 lb-in"), "1.670") = "10,660 lb-in")$], "Allowable flexural strength", "AISC 360-22 Eq. B3-2")
+#subhead("Demand: downward, component load")
+#calcline([$L = "60.00 in"$], "Span, simple beam", "Input")
+#calcline([$P_c = "50.00 lb"$], "Component load, a point load at midspan", "Loading")
+#calcline([$display(M_L = frac(P_c L, "4") = frac(("50.00 lb") ("60.00 in"), "4") = "750.0 lb-in")$], "Component load moment, midspan", "AISC Manual Table 3-23, Case 7; Engineering judgement (EOR): component load as a point load at midspan")
+#calcline([$w_(D,"int") = "0.1900 lb/in"$], "Intermediate rail self-weight", "Loading")
+#calcline([$display(M_D = frac(w_(D,"int") L^("2"), "8") = frac(("0.1900 lb/in") ("60.00 in")^("2"), "8") = "85.50 lb-in")$], "Dead-load moment, midspan", "AISC Manual Table 3-23, Case 1")
+#calcline([$display(M_a = "1.0" M_D + "1.0" M_L = "1.0" ("85.50 lb-in") + "1.0" ("750.0 lb-in") = "835.5 lb-in")$], "Required flexural strength: D and L on the same axis", "Engineering judgement (EOR): downward component load, after OSHA 1910.29(b)(5); ASCE 7-22 §2.4.1, Comb. 2")
+#calcline([$display("Ratio" = frac(M_a, frac(M_n, Omega_b)) = frac(("835.5 lb-in"), ("10,660 lb-in")) = "0.08")$], "Demand / capacity", "AISC 360-22 Eq. B3-2")
+
+#heading(level: 2, "Governing deflection case: Downward, deflection (1.0D + 1.0L, vertical; Engineering judgement (EOR): serviceability)")
+
+#calcline([$L = "60.00 in"$], "Span, simple beam", "Input")
+#calcline([$E = "29,000 ksi"$], "Modulus of elasticity", "AISC 360-22, Symbols")
+#calcline([$I_"int" = "0.2510 in"^4$], "Moment of inertia, HSS1.900X0.120", "AISC Shapes Database v16.0")
+#calcline([$P_c = "50.00 lb"$], "Component load, a point load at midspan", "Loading")
+#calcline([$display(Delta_L = frac(P_c L^("3"), "48" E I_"int") = frac(("50.00 lb") ("60.00 in")^("3"), "48" ("29,000 ksi") ("0.2510 in"^4)) = "0.03091 in")$], "Component load deflection, midspan", "AISC Manual Table 3-23, Case 7; Engineering judgement (EOR): component load as a point load at midspan")
+#calcline([$w_(D,"int") = "0.1900 lb/in"$], "Intermediate rail self-weight", "Loading")
+#calcline([$display(Delta_D = frac("5" w_(D,"int") L^("4"), "384" E I_"int") = frac("5" ("0.1900 lb/in") ("60.00 in")^("4"), "384" ("29,000 ksi") ("0.2510 in"^4)) = "0.004405 in")$], "Dead-load deflection, midspan", "AISC Manual Table 3-23, Case 1")
+#calcline([$display(Delta = "1.0" Delta_D + "1.0" Delta_L = "1.0" ("0.004405 in") + "1.0" ("0.03091 in") = "0.03532 in")$], "D and L on the same (vertical) axis", "Engineering judgement (EOR): downward component load, after OSHA 1910.29(b)(5); Engineering judgement (EOR): serviceability")
+#calcline([$display(Delta_"allow" = frac(L, "120") = frac(("60.00 in"), "120") = "0.5000 in")$], "Limit L/120", "Engineering judgement (EOR): deflection limit, not code")
+#calcline([$display("Ratio" = frac(Delta, Delta_"allow") = frac(("0.03532 in"), ("0.5000 in")) = "0.07")$], "Deflection / limit", "Engineering judgement (EOR): deflection limit, not code")
+
+#align(right, text(size: 12pt, weight: "bold")[$"Ratio" = 0.08 <= 1.00$ #h(10pt) #"OK"])
+
+= Check 4b: Intermediate rail weld to post
+
+== Envelope summary
+
+Both directions of the component load are computed. The full calculation follows for the controlling case only.
+
+#text(size: 8pt)[#table(columns: (auto, auto, 1fr, auto, auto, auto, auto, auto, auto), table.header([*Direction*], [*Load*], [*Combination*], [$f_n$ \ fiber], [$f_v$], [$f_r$], [*Capacity* per inch], [*Ratio*], []), strong("Downward"), strong("Component"), strong("1.0D + 1.0L, vertical\nASCE 7-22 §2.4.1, Comb. 2; Engineering judgement (EOR): downward component load, after OSHA 1910.29(b)(5)"), strong("—\nshear only"), strong("9.332 lb/in"), strong("9.332 lb/in"), strong("Weld 1,856 lb/in\nBase 2,018 lb/in"), strong("0.01"), strong("Controls"), "Horizontal", "Component", "1.0D vertical, 1.0L horizontal, vector sum\nASCE 7-22 §2.4.1, Comb. 2", "—\nshear only", "8.431 lb/in", "8.431 lb/in", "Weld 1,856 lb/in\nBase 2,018 lb/in", "0.00", "")]
+
+#heading(level: 2, "Controlling case: Downward, component (1.0D + 1.0L, vertical; ASCE 7-22 §2.4.1, Comb. 2; Engineering judgement (EOR): downward component load, after OSHA 1910.29(b)(5))")
+
+#subhead("Weld properties")
+#calcline([$D_"int" = "1.900 in"$], "HSS1.900X0.120: outside diameter; the weld ring is the intermediate rail perimeter", "AISC Shapes Database v16.0")
+#calcline([$w = "0.1250 in"$], "Fillet weld leg size, all around (1/8 as entered)", "Input")
+#calcline([$display(L_w = pi D_"int" = pi ("1.900 in") = "5.969 in")$], "Weld length: the intermediate rail perimeter", "Engineering judgement (EOR): elastic weld as a line")
+#calcline([$display(t_e = "0.707" w = "0.707" ("0.1250 in") = "0.08837 in")$], "Effective throat, equal-leg fillet", "AISC 360-22 §J2.2a")
+#subhead("Connection model")
+#calcline([$"Intermediate rail to post weld"$ #h(6pt) $arrow.r$ #h(6pt) *#"Simple shear connection"*], "Simple shear connection consistent with the simple-span member assumption; no end moment at the weld.", "Engineering judgement (EOR): intermediate rail to post weld as a simple shear connection; Engineering judgement (EOR): weld ring at the post face, simple shear, P_c at the post")
+#subhead("Fillet size limits")
+#calcline([$t_"int,nom" = "0.1200 in"$], "Intermediate rail nominal wall thickness, HSS1.900X0.120", "AISC Shapes Database v16.0")
+#calcline([$t_"post,nom" = "0.1250 in"$], "Post nominal wall thickness, HSS2.375X0.125", "AISC Shapes Database v16.0")
+#calcline([$display(t_"min" = "min"(t_"int,nom", t_"post,nom") = "min"(("0.1200 in"), ("0.1250 in")) = "0.1200 in")$], "Thinner part joined", "AISC 360-22 Table J2.4")
+#calcline([$w_"min" = "0.1250 in"$], "Minimum fillet size for the thinner part joined", "AISC 360-22 Table J2.4")
+#calcline([$w = "0.1250 in" >= w_"min" = "0.1250 in"$ #h(6pt) $arrow.r$ #h(6pt) *#"OK"*], "Minimum size", "AISC 360-22 Table J2.4")
+#calcline([$"Maximum fillet size"$ #h(6pt) $arrow.r$ #h(6pt) *#"Not applicable"*], "Maximum fillet size along edges of material does not apply: this weld is a T-joint, not a weld along an edge. No maximum size is checked.", "AISC 360-22 §J2.2b(b); Engineering judgement (EOR): no maximum fillet size at a T-joint")
+#subhead("Weld metal")
+#calcline([$F_"EXX" = "70.00 ksi"$], "Electrode classification strength, E70XX", "AISC 360-22 §J2.6; AWS A5.1")
+#calcline([$display(F_"nw" = "0.6" F_"EXX" = "0.6" ("70.00 ksi") = "42.00 ksi")$], "Nominal stress of the weld metal", "AISC 360-22 Table J2.5")
+#calcline([$Omega_w = "2.000"$], "Safety factor, fillet weld (ASD)", "AISC 360-22 Table J2.5")
+#calcline([$k_"ds" = "1.000"$], "No directional increase at the intermediate rail to post weld (a branch-to-chord joint)", "Engineering judgement (EOR): k_ds = 1.0 at the rail to post weld")
+#subhead("Base metal: post wall fusion face (chord)")
+#calcline([$F_u = "58.00 ksi"$], "Tensile strength, A500 Gr B", "AISC Manual Table 2-4")
+#calcline([$t_"post" = "0.1160 in"$], "Post design wall thickness, HSS2.375X0.125", "AISC Shapes Database v16.0")
+#calcline([$display(R_(n,"BM,post") = "0.6" F_u t_"post" = "0.6" ("58.00 ksi") ("0.1160 in") = "4,037 lb/in")$], "Shear rupture at the fusion face, per inch of weld", "AISC 360-22 Eq. J4-4; AISC Manual Part 9, base metal at welds")
+#calcline([$Omega_"BM" = "2.000"$], "Safety factor, shear rupture (ASD)", "AISC 360-22 §J4.2(b)")
+#calcline([$display(frac(R_(n,"BM,post"), Omega_"BM") = frac(("4,037 lb/in"), "2.000") = "2,018 lb/in")$], "Allowable base metal strength per inch", "AISC 360-22 Eq. B3-2")
+#subhead("Base metal: intermediate rail wall fusion face (branch)")
+#calcline([$F_u = "62.00 ksi"$], "Tensile strength, A500 Gr C", "AISC Manual Table 2-4")
+#calcline([$t_"int" = "0.1110 in"$], "Intermediate rail design wall thickness, HSS1.900X0.120", "AISC Shapes Database v16.0")
+#calcline([$display(R_(n,"BM,int") = "0.6" F_u t_"int" = "0.6" ("62.00 ksi") ("0.1110 in") = "4,129 lb/in")$], "Shear rupture at the fusion face, per inch of weld", "AISC 360-22 Eq. J4-4; AISC Manual Part 9, base metal at welds")
+#calcline([$Omega_"BM" = "2.000"$], "Safety factor, shear rupture (ASD)", "AISC 360-22 §J4.2(b)")
+#calcline([$display(frac(R_(n,"BM,int"), Omega_"BM") = frac(("4,129 lb/in"), "2.000") = "2,065 lb/in")$], "Allowable base metal strength per inch", "AISC 360-22 Eq. B3-2")
+#calcline([$frac(R_(n,"BM,int"), Omega_"BM") = "2,065 lb/in" > frac(R_(n,"BM,post"), Omega_"BM") = "2,018 lb/in"$ #h(6pt) $arrow.r$ #h(6pt) *#"Post wall governs"*], "Base metal is checked at the fusion face of both connected parts, the post wall (the chord) and the intermediate rail wall (the branch), each in shear rupture against the in-plane shear per inch; the lower allowable governs.", "Engineering judgement (EOR): Check 4b base metal on both walls, lower governs")
+#calcline([$"Post wall, chord limit states"$ #h(6pt) $arrow.r$ #h(6pt) *#"Not checked"*], "Post wall at the intermediate rail: chord-wall limit states of the round T-connection (AISC 360-22 Chapter K) not checked (stated assumption).", "Engineering judgement (EOR): post wall chord limit states at the intermediate rail not checked")
+#subhead("Demand: downward, component load")
+#calcline([$w_(D,"int") = "0.1900 lb/in"$], "Intermediate rail self-weight", "Loading")
+#calcline([$L = "60.00 in"$], "Span, simple beam", "Input")
+#calcline([$display(R_D = frac(w_(D,"int") L, "2") = frac(("0.1900 lb/in") ("60.00 in"), "2") = "5.700 lb")$], "Dead-load end reaction at the post", "AISC Manual Table 3-23, Case 1")
+#calcline([$P_c = "50.00 lb"$], "Component load adjacent to the post: the full P_c to this end", "Engineering judgement (EOR): weld ring at the post face, simple shear, P_c at the post")
+#calcline([$display(R = "1.0" R_D + "1.0" P_c = "1.0" ("5.700 lb") + "1.0" ("50.00 lb") = "55.70 lb")$], "Weld reaction: dead and component loads in the same (vertical) direction, in the ring's plane", "Engineering judgement (EOR): weld ring at the post face, simple shear, P_c at the post; Engineering judgement (EOR): downward component load, after OSHA 1910.29(b)(5); ASCE 7-22 §2.4.1, Comb. 2")
+#calcline([$display(f_v = frac(R, L_w) = frac(("55.70 lb"), ("5.969 in")) = "9.332 lb/in")$], "Shear per inch of weld, taken as uniform around the ring", "Engineering judgement (EOR): elastic weld as a line")
+#calcline([$display(f_r = f_v = "9.332 lb/in")$], "Resultant per inch: shear only, no axial force and no moment", "Engineering judgement (EOR): elastic weld as a line")
+#calcline([$display(R_n = F_"nw" t_e k_"ds" = ("42.00 ksi") ("0.08837 in") dot "1.000" = "3,712 lb/in")$], "Nominal fillet weld strength per inch", "AISC 360-22 §J2.4")
+#calcline([$display(frac(R_n, Omega_w) = frac(("3,712 lb/in"), "2.000") = "1,856 lb/in")$], "Allowable weld metal strength per inch", "AISC 360-22 Eq. B3-2")
+#calcline([$display("Ratio"_w = frac(f_r, frac(R_n, Omega_w)) = frac(("9.332 lb/in"), ("1,856 lb/in")) = "0.01")$], "Weld metal: demand / capacity", "AISC 360-22 Eq. B3-2")
+#calcline([$display("Ratio"_"BM" = frac(f_v, frac(R_(n,"BM,post"), Omega_"BM")) = frac(("9.332 lb/in"), ("2,018 lb/in")) = "0.00")$], "Base metal, post wall fusion face (governs): in-plane shear only", "AISC 360-22 Eq. B3-2")
+#calcline([$display("Ratio" = "max"("Ratio"_w, "Ratio"_"BM") = "max"("0.005028", "0.004623") = "0.01")$], "The larger of weld metal and base metal", "AISC 360-22 Eq. B3-2")
+
+#align(right, text(size: 12pt, weight: "bold")[$"Ratio" = 0.01 <= 1.00$ #h(10pt) #"OK"])
+
+= Check 5: Post combined axial and flexure
+
+== Envelope summary
+
+Every direction case and load type is computed. The full calculation follows for the controlling case only.
+
+#text(size: 8pt)[#table(columns: (auto, auto, 1fr, auto, auto, auto, auto, auto, auto), table.header([*Direction*], [*Load*], [*Combination*], [*Axial* $P_r$ \ capacity $P_c$ or $P_t$], [*Moment* $M_r$ \ capacity $M_c$], [*Equation*], [$frac(alpha P_r, P_e)$], [*Ratio*], []), "Downward", "Concentrated", "1.0D + 1.0L, axial\nASCE 7-22 §2.4.1, Comb. 2", "240.1 lb comp.\nPc = 10,010 lb", "—", "Pr/Pc\n(Eq. E3-1)", "—", "0.02", "", "Downward", "Distributed", "1.0D + 1.0L, axial\nASCE 7-22 §2.4.1, Comb. 2", "290.1 lb comp.\nPc = 10,010 lb", "—", "Pr/Pc\n(Eq. E3-1)", "—", "0.03", "", "Outward", "Concentrated", "1.0D axial, 1.0L horizontal\nASCE 7-22 §2.4.1, Comb. 2", "40.11 lb comp.\nPc = 10,010 lb", "8,300 lb-in\nMc = 16,310 lb-in", "Eq. H1-1b", "0.003310", "0.51", "", strong("Outward"), strong("Distributed"), strong("1.0D axial, 1.0L horizontal\nASCE 7-22 §2.4.1, Comb. 2"), strong("40.11 lb comp.\nPc = 10,010 lb"), strong("10,380 lb-in\nMc = 16,310 lb-in"), strong("Eq. H1-1b"), strong("0.003310"), strong("0.64"), strong("Controls"), "Inward", "Concentrated", "1.0D axial, 1.0L horizontal\nASCE 7-22 §2.4.1, Comb. 2", "40.11 lb comp.\nPc = 10,010 lb", "8,300 lb-in\nMc = 16,310 lb-in", "Eq. H1-1b", "0.003310", "0.51", "", "Inward", "Distributed", "1.0D axial, 1.0L horizontal\nASCE 7-22 §2.4.1, Comb. 2", "40.11 lb comp.\nPc = 10,010 lb", "10,380 lb-in\nMc = 16,310 lb-in", "Eq. H1-1b", "0.003310", "0.64", "", "Upward", "Concentrated", "0.6D + 1.0L, net axial\nEngineering judgement (EOR): upward case, not an ASCE combination", "175.9 lb tension\nPt = 22,670 lb", "—", "Pr/Pt\n(Eq. D2-1)", "—", "0.01", "", "Upward", "Distributed", "0.6D + 1.0L, net axial\nEngineering judgement (EOR): upward case, not an ASCE combination", "225.9 lb tension\nPt = 22,670 lb", "—", "Pr/Pt\n(Eq. D2-1)", "—", "0.01", "", "Longitudinal", "Concentrated", "1.0D axial, 1.0L horizontal\nASCE 7-22 §2.4.1, Comb. 2", "40.11 lb comp.\nPc = 10,010 lb", "8,300 lb-in\nMc = 16,310 lb-in", "Eq. H1-1b", "0.003310", "0.51", "", "Longitudinal", "Distributed", "1.0D axial, 1.0L horizontal\nASCE 7-22 §2.4.1, Comb. 2", "40.11 lb comp.\nPc = 10,010 lb", "10,380 lb-in\nMc = 16,310 lb-in", "Eq. H1-1b", "0.003310", "0.64", "")]
+
+#heading(level: 2, "Controlling case: Outward, distributed (1.0D axial, 1.0L horizontal; ASCE 7-22 §2.4.1, Comb. 2)")
+
+#subhead("Capacity")
+#calcline([$F_y = "46.00 ksi"$], "Yield stress, A500 Gr B", "AISC Manual Table 2-4")
+#calcline([$E = "29,000 ksi"$], "Modulus of elasticity", "AISC 360-22, Symbols")
+#calcline([$lambda = "20.50"$], "lambda = D/t, tabulated (design wall)", "AISC Shapes Database v16.0")
+#calcline([$display(lambda_"lim" = frac("0.45" E, F_y) = frac("0.45" ("29,000 ksi"), ("46.00 ksi")) = "283.7")$], "Applicability limit on D/t", "AISC 360-22 §F8")
+#calcline([$display(lambda_p = frac("0.07" E, F_y) = frac("0.07" ("29,000 ksi"), ("46.00 ksi")) = "44.13")$], "Compact limit, round HSS in flexure", "AISC 360-22 Table B4.1b, Case 20")
+#calcline([$display(lambda_r = frac("0.31" E, F_y) = frac("0.31" ("29,000 ksi"), ("46.00 ksi")) = "195.4")$], "Noncompact limit, round HSS in flexure", "AISC 360-22 Table B4.1b, Case 20")
+#calcline([$lambda = 20.5 < lambda_"lim" = 283.7$ #h(6pt) $arrow.r$ #h(6pt) *#"Applies"*], "Applicability", "AISC 360-22 §F8")
+#calcline([$"Round HSS"$ #h(6pt) $arrow.r$ #h(6pt) *#"Lateral-torsional buckling does not apply"*], "Limit states: yielding and local buckling only; Lb and Cb do not enter", "AISC 360-22 §F8")
+#calcline([$Z = "0.5920 in"^3$], "Plastic section modulus", "AISC Shapes Database v16.0")
+#calcline([$display(M_p = F_y Z = ("46.00 ksi") ("0.5920 in"^3) = "27,230 lb-in")$], "Plastic moment (yielding)", "AISC 360-22 Eq. F8-1")
+#calcline([$lambda = 20.5 <= lambda_p = 44.13$ #h(6pt) $arrow.r$ #h(6pt) *#"Compact"*], "Section classification", "AISC 360-22 §B4.1b")
+#calcline([$"Compact wall"$ #h(6pt) $arrow.r$ #h(6pt) *#"Local buckling does not apply"*], "", "AISC 360-22 §F8")
+#calcline([$display(M_n = M_p = "27,230 lb-in")$], "Nominal flexural strength", "AISC 360-22 §F8")
+#calcline([$Omega_b = "1.670"$], "Safety factor for flexure (ASD)", "AISC 360-22 §F1(a)")
+#calcline([$display(frac(M_n, Omega_b) = frac(("27,230 lb-in"), "1.670") = "16,310 lb-in")$], "Allowable flexural strength", "AISC 360-22 Eq. B3-2")
+#calcline([$display(M_c = frac(M_n, Omega_b) = "16,310 lb-in")$], "Allowable flexural strength, as used in Chapter H", "AISC 360-22 Eq. B3-2")
+#calcline([$display(lambda_(r,c) = frac("0.11" E, F_y) = frac("0.11" ("29,000 ksi"), ("46.00 ksi")) = "69.35")$], "Slender limit, round HSS in compression", "AISC 360-22 Table B4.1a, Case 9")
+#calcline([$lambda = 20.5 <= lambda_(r,c) = 69.35$ #h(6pt) $arrow.r$ #h(6pt) *#"Nonslender"*], "Section classification, compression: no noncompact category", "AISC 360-22 §B4.1a")
+#calcline([$K = "2.100"$], "Effective length factor, fixed-free (recommended design value)", "AISC 360-22 Comm. Table C-A-7.1, case (e)")
+#calcline([$h = "42.00 in"$], "Post height, top of concrete to top rail centerline", "Input")
+#calcline([$display(L_c = K h = "2.100" ("42.00 in") = "88.20 in")$], "Effective length, with the unbraced length taken as the post height h", "AISC 360-22 §E2; Engineering judgement (EOR): unbraced length is the post height")
+#calcline([$r = "0.8000 in"$], "Radius of gyration", "AISC Shapes Database v16.0")
+#calcline([$display(frac(L_c, r) = frac(("88.20 in"), ("0.8000 in")) = "110.2")$], "Effective slenderness ratio", "AISC 360-22 Eq. E3-4")
+#calcline([$frac(L_c, r) = 110.2 <= 200$ #h(6pt) $arrow.r$ #h(6pt) *#"Within the recommended limit"*], "For members designed on the basis of compression, the effective slenderness ratio Lc/r preferably should not exceed 200.", "AISC 360-22 §E2, User Note")
+#calcline([$display("4.71" sqrt(frac(E, F_y)) = "4.71" dot sqrt(frac(("29,000 ksi"), ("46.00 ksi"))) = "118.3")$], "Limit between inelastic and elastic buckling", "AISC 360-22 §E3(a), (b)")
+#calcline([$display(F_e = frac(pi^("2") E, (frac(L_c, r))^("2")) = frac(pi^("2") ("29,000 ksi"), "110.2"^("2")) = "23.55 ksi")$], "Elastic buckling stress", "AISC 360-22 Eq. E3-4")
+#calcline([$frac(L_c, r) = 110.2 <= 118.3$ #h(6pt) $arrow.r$ #h(6pt) *#"Inelastic buckling: Eq. E3-2"*], "", "AISC 360-22 §E3(a), (b)")
+#calcline([$display(frac(F_y, F_e) = frac(("46.00 ksi"), ("23.55 ksi")) = "1.954")$], "Exponent in Eq. E3-2", "AISC 360-22 Eq. E3-2")
+#calcline([$display(F_"cr" = "0.658"^(frac(F_y, F_e)) F_y = "0.658"^("1.954") ("46.00 ksi") = "20.31 ksi")$], "Critical stress", "AISC 360-22 Eq. E3-2")
+#calcline([$A_g = "0.8230 in"^2$], "Gross area", "AISC Shapes Database v16.0")
+#calcline([$display(P_n = F_"cr" A_g = ("20.31 ksi") ("0.8230 in"^2) = "16,710 lb")$], "Nominal compressive strength", "AISC 360-22 Eq. E3-1")
+#calcline([$Omega_c = "1.670"$], "Safety factor for compression (ASD)", "AISC 360-22 §E1")
+#calcline([$display(P_c = frac(P_n, Omega_c) = frac(("16,710 lb"), "1.670") = "10,010 lb")$], "Allowable compressive strength", "AISC 360-22 Eq. B3-2")
+#subhead("Demand: outward, distributed load")
+#calcline([$P_D = "40.11 lb"$], "D at the post: axial dead load", "Loading")
+#calcline([$display(P_r = "1.0" P_D = "1.0" ("40.11 lb") = "40.11 lb")$], "Required axial strength: dead load, compression", "ASCE 7-22 §2.4.1, Comb. 2")
+#calcline([$w_L = "4.167 lb/in"$], "Uniform guard load", "Loading")
+#calcline([$L = "60.00 in"$], "Span: the tributary length for the post", "Input")
+#calcline([$display(V_L = w_L L = ("4.167 lb/in") ("60.00 in") = "250.0 lb")$], "Uniform guard load collected over the span, horizontal (outward) at the top of the post", "Stated assumption: the tributary length is the span")
+#calcline([$L_"post" = "41.50 in"$], "Cantilever length, h - t_p (critical section at the top of the baseplate)", "Loading")
+#calcline([$display(M_L = V_L L_"post" = ("250.0 lb") ("41.50 in") = "10,380 lb-in")$], "Live-load moment at the top of the baseplate", "AISC Manual Table 3-23, Case 22")
+#calcline([$display(M_r = "1.0" M_L = "1.0" ("10,380 lb-in") = "10,380 lb-in")$], "Required flexural strength", "ASCE 7-22 §2.4.1, Comb. 2")
+#calcline([$I = "0.5270 in"^4$], "Moment of inertia", "AISC Shapes Database v16.0")
+#calcline([$display(P_e = frac(pi^("2") E I, L_c^("2")) = frac(pi^("2") ("29,000 ksi") ("0.5270 in"^4), ("88.20 in")^("2")) = "19,390 lb")$], "Elastic critical buckling load, at the compression Lc", "AISC 360-22 Eq. A-8-5; Engineering judgement (EOR): Pe at Lc = 2.1h")
+#calcline([$display(frac(alpha P_r, P_e) = frac("1.6" P_r, P_e) = frac("1.6" ("40.11 lb"), ("19,390 lb")) = "0.003310")$], "Second-order ratio", "AISC 360-22 App. 8")
+#calcline([$frac(alpha P_r, P_e) <= 0.05$ #h(6pt) $arrow.r$ #h(6pt) *#"Second-order effects negligible: αPr/Pe = 0.003310; amplification taken as 1.0."*], "", "Engineering judgement (EOR): second-order limit")
+#calcline([$display(frac(P_r, P_c) = frac(("40.11 lb"), ("10,010 lb")) = "0.004008")$], "Axial ratio, selects the interaction equation", "AISC 360-22 §H1.1")
+#calcline([$frac(P_r, P_c) = 0.004008 < 0.2$ #h(6pt) $arrow.r$ #h(6pt) *#"Eq. H1-1b"*], "", "AISC 360-22 §H1.1")
+#calcline([$display("Ratio" = frac(P_r, "2" P_c) + frac(M_r, M_c) = frac(("40.11 lb"), "2" ("10,010 lb")) + frac(("10,380 lb-in"), ("16,310 lb-in")) = "0.64")$], "Combined axial and flexure", "AISC 360-22 Eq. H1-1b")
+
+#align(right, text(size: 12pt, weight: "bold")[$"Ratio" = 0.64 <= 1.00$ #h(10pt) #"OK"])
+
+= Check 6: Post deflection
+
+== Envelope summary
+
+Every direction case and load type is computed. The full calculation follows for the controlling case only.
+
+#table(columns: (auto, auto, 1fr, auto, auto, auto, auto), table.header([*Direction*], [*Load*], [*Combination*], [*Demand* $Delta$], [*Capacity* $Delta_"allow"$], [*Ratio*], []), "Downward", "", "Vertical load: no lateral deflection of the post", "", "", "", "", "Outward", "Concentrated", "1.0L, horizontal\nEngineering judgement (EOR): serviceability, live load only", "0.3118 in", "0.6917 in", "0.45", "", strong("Outward"), strong("Distributed"), strong("1.0L, horizontal\nEngineering judgement (EOR): serviceability, live load only"), strong("0.3897 in"), strong("0.6917 in"), strong("0.56"), strong("Controls"), "Inward", "Concentrated", "1.0L, horizontal\nEngineering judgement (EOR): serviceability, live load only", "0.3118 in", "0.6917 in", "0.45", "", "Inward", "Distributed", "1.0L, horizontal\nEngineering judgement (EOR): serviceability, live load only", "0.3897 in", "0.6917 in", "0.56", "", "Upward", "", "Vertical load: no lateral deflection of the post", "", "", "", "", "Longitudinal", "Concentrated", "1.0L, horizontal\nEngineering judgement (EOR): serviceability, live load only", "0.3118 in", "0.6917 in", "0.45", "", "Longitudinal", "Distributed", "1.0L, horizontal\nEngineering judgement (EOR): serviceability, live load only", "0.3897 in", "0.6917 in", "0.56", "")
+
+#heading(level: 2, "Controlling case: Outward, distributed (1.0L, horizontal; Engineering judgement (EOR): serviceability, live load only)")
+
+#calcline([$L_"post" = "41.50 in"$], "Cantilever length, h - t_p", "Loading")
+#calcline([$E = "29,000 ksi"$], "Modulus of elasticity", "AISC 360-22, Symbols")
+#calcline([$I = "0.5270 in"^4$], "Moment of inertia", "AISC Shapes Database v16.0")
+#calcline([$w_L = "4.167 lb/in"$], "Uniform guard load", "Loading")
+#calcline([$L = "60.00 in"$], "Span: the tributary length for the post", "Input")
+#calcline([$display(V_L = w_L L = ("4.167 lb/in") ("60.00 in") = "250.0 lb")$], "Uniform guard load collected over the span, horizontal (outward) at the top of the post", "Stated assumption: the tributary length is the span")
+#calcline([$display(Delta_L = frac(V_L L_"post"^("3"), "3" E I) = frac(("250.0 lb") ("41.50 in")^("3"), "3" ("29,000 ksi") ("0.5270 in"^4)) = "0.3897 in")$], "Live-load deflection at the top of the post", "AISC Manual Table 3-23, Case 22")
+#calcline([$display(Delta = "1.0" Delta_L = "1.0" ("0.3897 in") = "0.3897 in")$], "Live load only; dead load acts axially", "Engineering judgement (EOR): serviceability, live load only")
+#calcline([$display(Delta_"allow" = frac(L_"post", "60") = frac(("41.50 in"), "60") = "0.6917 in")$], "Limit (h - t_p)/60", "Engineering judgement (EOR): post deflection limit, not code")
+#calcline([$display("Ratio" = frac(Delta, Delta_"allow") = frac(("0.3897 in"), ("0.6917 in")) = "0.56")$], "Deflection / limit", "Engineering judgement (EOR): post deflection limit, not code")
+
+#align(right, text(size: 12pt, weight: "bold")[$"Ratio" = 0.56 <= 1.00$ #h(10pt) #"OK"])
+
+= Check 7: Post weld to baseplate
+
+== Envelope summary
+
+Every direction case and load type is computed. The full calculation follows for the controlling case only.
+
+#text(size: 8pt)[#table(columns: (auto, auto, 1fr, auto, auto, auto, auto, auto, auto, auto), table.header([*Direction*], [*Load*], [*Combination*], [$f_n$ \ fiber], [$f_v$], [$f_r$], [$theta$ \ $k_"ds"$], [*Capacity* per inch], [*Ratio*], []), "Downward", "Concentrated", "1.0D + 1.0L, axial\nASCE 7-22 §2.4.1, Comb. 2", "32.11 lb/in\nuniform", "—", "32.11 lb/in", "90.00°\n1.500", "Weld 4,176 lb/in\nBase 8,700 lb/in", "0.01", "", "Downward", "Distributed", "1.0D + 1.0L, axial\nASCE 7-22 §2.4.1, Comb. 2", "38.80 lb/in\nuniform", "—", "38.80 lb/in", "90.00°\n1.500", "Weld 4,176 lb/in\nBase 8,700 lb/in", "0.01", "", "Outward", "Concentrated", "1.0D axial, 1.0L horizontal\nASCE 7-22 §2.4.1, Comb. 2", "1,871 lb/in\ncompression side", "26.75 lb/in", "1,871 lb/in", "90.00°\n1.500", "Weld 4,176 lb/in\nBase 8,700 lb/in", "0.45", "", strong("Outward"), strong("Distributed"), strong("1.0D axial, 1.0L horizontal\nASCE 7-22 §2.4.1, Comb. 2"), strong("2,337 lb/in\ncompression side"), strong("33.44 lb/in"), strong("2,338 lb/in"), strong("90.00°\n1.500"), strong("Weld 4,176 lb/in\nBase 8,700 lb/in"), strong("0.56"), strong("Controls"), "Inward", "Concentrated", "1.0D axial, 1.0L horizontal\nASCE 7-22 §2.4.1, Comb. 2", "1,871 lb/in\ncompression side", "26.75 lb/in", "1,871 lb/in", "90.00°\n1.500", "Weld 4,176 lb/in\nBase 8,700 lb/in", "0.45", "", "Inward", "Distributed", "1.0D axial, 1.0L horizontal\nASCE 7-22 §2.4.1, Comb. 2", "2,337 lb/in\ncompression side", "33.44 lb/in", "2,338 lb/in", "90.00°\n1.500", "Weld 4,176 lb/in\nBase 8,700 lb/in", "0.56", "", "Upward", "Concentrated", "0.6D + 1.0L, net axial\nEngineering judgement (EOR): upward case, not an ASCE combination", "23.53 lb/in\nuniform", "—", "23.53 lb/in", "90.00°\n1.500", "Weld 4,176 lb/in\nBase 8,700 lb/in", "0.01", "", "Upward", "Distributed", "0.6D + 1.0L, net axial\nEngineering judgement (EOR): upward case, not an ASCE combination", "30.22 lb/in\nuniform", "—", "30.22 lb/in", "90.00°\n1.500", "Weld 4,176 lb/in\nBase 8,700 lb/in", "0.01", "", "Longitudinal", "Concentrated", "1.0D axial, 1.0L horizontal\nASCE 7-22 §2.4.1, Comb. 2", "1,871 lb/in\ncompression side", "26.75 lb/in", "1,871 lb/in", "90.00°\n1.500", "Weld 4,176 lb/in\nBase 8,700 lb/in", "0.45", "", "Longitudinal", "Distributed", "1.0D axial, 1.0L horizontal\nASCE 7-22 §2.4.1, Comb. 2", "2,337 lb/in\ncompression side", "33.44 lb/in", "2,338 lb/in", "90.00°\n1.500", "Weld 4,176 lb/in\nBase 8,700 lb/in", "0.56", "")]
+
+#heading(level: 2, "Controlling case: Outward, distributed (1.0D axial, 1.0L horizontal; ASCE 7-22 §2.4.1, Comb. 2)")
+
+#subhead("Weld properties")
+#calcline([$D = "2.380 in"$], "HSS2.375X0.125: outside diameter; the weld ring is the post perimeter", "AISC Shapes Database v16.0")
+#calcline([$w = "0.1875 in"$], "Fillet weld leg size, all around (3/16 as entered)", "Input")
+#calcline([$display(L_w = pi D = pi ("2.380 in") = "7.477 in")$], "Weld length: the post perimeter", "Engineering judgement (EOR): elastic weld as a line")
+#calcline([$display(S_w = frac(pi D^("2"), "4") = frac(pi ("2.380 in")^("2"), "4") = "4.449 in"^2)$], "Section modulus of the ring as a line", "Engineering judgement (EOR): elastic weld as a line")
+#calcline([$display(t_e = "0.707" w = "0.707" ("0.1875 in") = "0.1326 in")$], "Effective throat, equal-leg fillet", "AISC 360-22 §J2.2a")
+#subhead("Moment arm")
+#calcline([$L_"post" = "41.50 in"$], "Moment arm, h - t_p: guard load at the top rail centerline, weld at the top of the baseplate", "Loading")
+#subhead("Fillet size limits")
+#calcline([$t_"post,nom" = "0.1250 in"$], "Post nominal wall thickness, HSS2.375X0.125", "AISC Shapes Database v16.0")
+#calcline([$t_p = "0.5000 in"$], "Baseplate thickness", "Input")
+#calcline([$display(t_"min" = "min"(t_"post,nom", t_p) = "min"(("0.1250 in"), ("0.5000 in")) = "0.1250 in")$], "Thinner part joined", "AISC 360-22 Table J2.4")
+#calcline([$w_"min" = "0.1250 in"$], "Minimum fillet size for the thinner part joined", "AISC 360-22 Table J2.4")
+#calcline([$w = "0.1875 in" >= w_"min" = "0.1250 in"$ #h(6pt) $arrow.r$ #h(6pt) *#"OK"*], "Minimum size", "AISC 360-22 Table J2.4")
+#calcline([$"Maximum fillet size"$ #h(6pt) $arrow.r$ #h(6pt) *#"Not applicable"*], "Maximum fillet size along edges of material does not apply: this weld is a T-joint, not a weld along an edge. No maximum size is checked.", "AISC 360-22 §J2.2b(b); Engineering judgement (EOR): no maximum fillet size at a T-joint")
+#subhead("Weld metal")
+#calcline([$F_"EXX" = "70.00 ksi"$], "Electrode classification strength, E70XX", "AISC 360-22 §J2.6; AWS A5.1")
+#calcline([$display(F_"nw" = "0.6" F_"EXX" = "0.6" ("70.00 ksi") = "42.00 ksi")$], "Nominal stress of the weld metal", "AISC 360-22 Table J2.5")
+#calcline([$Omega_w = "2.000"$], "Safety factor, fillet weld (ASD)", "AISC 360-22 Table J2.5")
+#subhead("Base metal: baseplate fusion face")
+#calcline([$F_u = "58.00 ksi"$], "Tensile strength, baseplate A36", "AISC Manual Table 2-5")
+#calcline([$t_p = "0.5000 in"$], "Baseplate thickness", "Input")
+#calcline([$display(R_(n,"BM") = "0.6" F_u t_p = "0.6" ("58.00 ksi") ("0.5000 in") = "17,400 lb/in")$], "Shear rupture at the fusion face, per inch of weld", "AISC 360-22 Eq. J4-4; AISC Manual Part 9, base metal at welds")
+#calcline([$Omega_"BM" = "2.000"$], "Safety factor, shear rupture (ASD)", "AISC 360-22 §J4.2(b)")
+#calcline([$display(frac(R_(n,"BM"), Omega_"BM") = frac(("17,400 lb/in"), "2.000") = "8,700 lb/in")$], "Allowable base metal strength per inch", "AISC 360-22 Eq. B3-2")
+#calcline([$"Post wall at the weld"$ #h(6pt) $arrow.r$ #h(6pt) *#"Covered by Check 5"*], "Post wall at the weld: covered by Check 5. The wall carries the weld force as stress along the post axis, the same demand as Check 5 at its critical section; member shear is not checked (stated assumption).", "Engineering judgement (EOR): post wall at the weld covered by Check 5")
+#subhead("Demand: outward, distributed load")
+#calcline([$P_D = "40.11 lb"$], "D at the post: axial dead load at the top of the baseplate", "Loading")
+#calcline([$display(P = "1.0" P_D = "1.0" ("40.11 lb") = "40.11 lb")$], "Axial force on the weld: dead load, compression", "ASCE 7-22 §2.4.1, Comb. 2")
+#calcline([$w_L = "4.167 lb/in"$], "Uniform guard load", "Loading")
+#calcline([$L = "60.00 in"$], "Span: the tributary length for the post", "Input")
+#calcline([$display(V_L = w_L L = ("4.167 lb/in") ("60.00 in") = "250.0 lb")$], "Uniform guard load collected over the span, horizontal (outward), at the top of the post", "Stated assumption: the tributary length is the span")
+#calcline([$display(V = "1.0" V_L = "1.0" ("250.0 lb") = "250.0 lb")$], "Horizontal force on the weld", "ASCE 7-22 §2.4.1, Comb. 2")
+#calcline([$display(M = V L_"post" = ("250.0 lb") ("41.50 in") = "10,380 lb-in")$], "Moment at the top of the baseplate", "AISC Manual Table 3-23, Case 22")
+#calcline([$display(f_a = frac(P, L_w) = frac(("40.11 lb"), ("7.477 in")) = "5.364 lb/in")$], "Axial force per inch of weld, compression, uniform around the ring", "Engineering judgement (EOR): elastic weld as a line")
+#calcline([$display(f_b = frac(M, S_w) = frac(("10,380 lb-in"), ("4.449 in"^2)) = "2,332 lb/in")$], "Bending force per inch at the extreme fiber", "Engineering judgement (EOR): elastic weld as a line")
+#calcline([$display(f_(n,"c") = f_a + f_b = ("5.364 lb/in") + ("2,332 lb/in") = "2,337 lb/in")$], "Normal force per inch, compression side of bending: axial and bending add", "Engineering judgement (EOR): no bearing credit at the weld")
+#calcline([$display(f_(n,"t") = abs(f_a - f_b) = abs(("5.364 lb/in") - ("2,332 lb/in")) = "2,327 lb/in")$], "Normal force per inch, tension side of bending", "Engineering judgement (EOR): no bearing credit at the weld")
+#calcline([$f_(n,"c") = "2,337 lb/in" >= f_(n,"t") = "2,327 lb/in"$ #h(6pt) $arrow.r$ #h(6pt) *#"Compression side governs"*], "No bearing credit: both extreme fibers checked", "Engineering judgement (EOR): no bearing credit at the weld")
+#calcline([$display(f_n = f_(n,"c") = "2,337 lb/in")$], "Normal force per inch at the governing fiber, compression side", "Engineering judgement (EOR): no bearing credit at the weld")
+#calcline([$display(f_v = frac(V, L_w) = frac(("250.0 lb"), ("7.477 in")) = "33.44 lb/in")$], "Shear per inch of weld, taken as uniform around the ring", "Engineering judgement (EOR): elastic weld as a line")
+#calcline([$display(f_r = sqrt(f_n^("2") + f_v^("2")) = sqrt(("2,337 lb/in")^("2") + ("33.44 lb/in")^("2")) = "2,338 lb/in")$], "Resultant per inch at the governing fiber: vector sum", "Engineering judgement (EOR): elastic weld as a line")
+#calcline([$f_parallel = "0 lb/in"$], "Force component along the weld axis: at the extreme fiber the weld axis is perpendicular to the plane of bending, and V acts in that plane", "Engineering judgement (EOR): elastic weld as a line")
+#calcline([$display(theta = arccos(frac(f_parallel, f_r)) = arccos(frac(("0 lb/in"), ("2,338 lb/in"))) = "90.00°")$], "Angle between the resultant and the weld axis", "AISC 360-22 Eq. J2-5; Engineering judgement (EOR): elastic weld as a line")
+#calcline([$display(k_"ds" = "1.0" + "0.5" sin(theta)^("1.5") = "1.0" + "0.5" dot sin("90.00°")^("1.5") = "1.500")$], "Directional strength increase", "AISC 360-22 Eq. J2-5; Engineering judgement (EOR), after STI: directional increase on round HSS")
+#calcline([$display(R_n = F_"nw" t_e k_"ds" = ("42.00 ksi") ("0.1326 in") dot "1.500" = "8,351 lb/in")$], "Nominal fillet weld strength per inch", "AISC 360-22 §J2.4")
+#calcline([$display(frac(R_n, Omega_w) = frac(("8,351 lb/in"), "2.000") = "4,176 lb/in")$], "Allowable weld metal strength per inch", "AISC 360-22 Eq. B3-2")
+#calcline([$display("Ratio"_w = frac(f_r, frac(R_n, Omega_w)) = frac(("2,338 lb/in"), ("4,176 lb/in")) = "0.56")$], "Weld metal: demand / capacity", "AISC 360-22 Eq. B3-2")
+#calcline([$display("Ratio"_"BM" = frac(f_r, frac(R_(n,"BM"), Omega_"BM")) = frac(("2,338 lb/in"), ("8,700 lb/in")) = "0.27")$], "Baseplate fusion face: the resultant per inch", "AISC 360-22 Eq. B3-2")
+#calcline([$display("Ratio" = "max"("Ratio"_w, "Ratio"_"BM") = "max"("0.5598", "0.2687") = "0.56")$], "The larger of weld metal and base metal", "AISC 360-22 Eq. B3-2")
+
+#align(right, text(size: 12pt, weight: "bold")[$"Ratio" = 0.56 <= 1.00$ #h(10pt) #"OK"])
+
+= Summary
+
+#table(columns: (1fr, auto, auto, auto, auto, auto), table.header(strong("Check"), strong("Demand"), strong("Capacity"), strong("Ratio"), strong("Controlling direction"), strong("Result")), "1. Top rail bending", "3,137 lb-in", "21,350 lb-in", "0.15", "Downward, concentrated", "OK", "2. Top rail deflection", "0.05233 in", "0.5000 in", "0.10", "Downward, concentrated", "OK", "3. Top rail weld to post", "76.96 lb/in", "1,856 lb/in (weld metal)", "0.04", "Outward, distributed", "OK", "4a. Intermediate rail", "835.5 lb-in", "10,660 lb-in", "0.08", "Downward, bending", "OK", "4b. Intermediate rail weld to post", "9.332 lb/in", "1,856 lb/in (weld metal)", "0.01", "Downward, component", "OK", "5. Post combined axial and flexure", "Pr = 40.11 lb; Mr = 10,380 lb-in", "Pc = 10,010 lb; Mc = 16,310 lb-in", "0.64", "Outward, distributed", "OK", "6. Post deflection", "0.3897 in", "0.6917 in", "0.56", "Outward, distributed", "OK", "7. Post weld to baseplate", "2,338 lb/in", "4,176 lb/in (weld metal)", "0.56", "Outward, distributed", "OK")
+
+= Anchor reactions
+
+LRFD reactions at the top of concrete, for direct input into anchor software: reporting, not a pass/fail check. Each set is simultaneous: the shear, axial force and moment that occur together.
+
+#text(weight: "bold", "Baseplate: B = 6.000 in (parallel to rail) × N = 8.000 in (perpendicular to rail)")
+
+#subhead("Dead load at the base")
+#calcline([$D_"rail" = "18.30 lb"$], "Top rail", "Loading")
+#calcline([$D_"int" = "11.40 lb"$], "Intermediate rail", "Loading")
+#calcline([$D_"post" = "10.41 lb"$], "Post, over h - t_p", "Loading")
+#calcline([$rho = "0.2836 lb/in"^3$], "Steel unit weight", "AISC Manual 16th Ed., Part 17")
+#calcline([$B = "6.000 in"$], "Baseplate, parallel to the rail", "Input")
+#calcline([$N = "8.000 in"$], "Baseplate, perpendicular to the rail", "Input")
+#calcline([$t_p = "0.5000 in"$], "Baseplate thickness", "Input")
+#calcline([$display(W_"bp" = rho B N t_p = ("0.2836 lb/in"^3) ("6.000 in") ("8.000 in") ("0.5000 in") = "6.806 lb")$], "Baseplate weight: in the reaction sets only, below the critical section of Checks 5 and 7", "Engineering judgement (EOR): reactions at the top of concrete, arm h")
+#calcline([$display(D = D_"rail" + D_"int" + D_"post" + W_"bp" = ("18.30 lb") + ("11.40 lb") + ("10.41 lb") + ("6.806 lb") = "46.92 lb")$], "Dead load at the base", "Engineering judgement (EOR): reactions at the top of concrete, arm h")
+#subhead("Governing guard load type")
+#calcline([$P = "200.0 lb"$], "Concentrated guard load P, at the top of the post", "Loading")
+#calcline([$w_L = "4.167 lb/in"$], "Uniform guard load", "Loading")
+#calcline([$L = "60.00 in"$], "Span: the tributary length for the post", "Input")
+#calcline([$display(w_L L = ("4.167 lb/in") ("60.00 in") = "250.0 lb")$], "Uniform guard load collected over the span, at the top of the post", "Engineering judgement (EOR): reactions at the top of concrete, arm h")
+#calcline([$w_L L = "250.0 lb" > P = "200.0 lb"$ #h(6pt) $arrow.r$ #h(6pt) *#"Distributed load governs"*], "The larger at the top of the post", "Engineering judgement (EOR): reactions at the top of concrete, arm h")
+
+== Lateral set
+
+#table(columns: (1fr, 1fr, 1fr), table.header(strong("V"), strong("N"), strong("M")), "400.0 lb", "−42.22 lb (compression)", "16,800 lb-in")
+
+#text(size: 8.5pt, "N positive = tension (uplift), matching common anchor-software convention. V and M are reversible; apply them in the governing direction.")
+
+#table(columns: (auto, 1fr), "Combination", "0.9D axial, 1.6L horizontal; Engineering judgement (EOR): anchor reactions, LRFD, not an ASCE combination", "Governing load type", "Distributed", "D, top rail", "18.30 lb", "D, intermediate rail", "11.40 lb", "D, post", "10.41 lb", "D, baseplate", "6.806 lb", strong("D, total"), strong("46.92 lb"))
+
+#"V and M act in the same vertical plane; M = V·h."
+
+#"Lateral set applies in any horizontal direction; enter it in the anchor software in the orientation that governs the anchor pattern. Loads can reverse."
+
+#subhead("Demand: lateral, distributed load")
+#calcline([$D = "46.92 lb"$], "Dead load at the base", "Reactions")
+#calcline([$display(abs(N_u) = "0.9" D = "0.9" ("46.92 lb") = "42.22 lb")$], "Axial force at the base: dead load, compression", "Engineering judgement (EOR): anchor reactions, LRFD, not an ASCE combination")
+#calcline([$w_L = "4.167 lb/in"$], "Uniform guard load", "Loading")
+#calcline([$L = "60.00 in"$], "Span: the tributary length for the post", "Input")
+#calcline([$display(V_L = w_L L = ("4.167 lb/in") ("60.00 in") = "250.0 lb")$], "Uniform guard load collected over the span, horizontal at the top of the post, in any horizontal direction", "Stated assumption: the tributary length is the span")
+#calcline([$display(V_u = "1.6" V_L = "1.6" ("250.0 lb") = "400.0 lb")$], "Base shear", "Engineering judgement (EOR): anchor reactions, LRFD, not an ASCE combination")
+#calcline([$h = "42.00 in"$], "Moment arm: top rail centerline to top of concrete", "Input")
+#calcline([$display(M_u = V_u h = ("400.0 lb") ("42.00 in") = "16,800 lb-in")$], "Base moment at the top of concrete: V_u at the top rail centerline, arm h", "Engineering judgement (EOR): reactions at the top of concrete, arm h")
+
+== Upward set
+
+#table(columns: (1fr, 1fr, 1fr), table.header(strong("V"), strong("N"), strong("M")), "0 lb", "+357.8 lb (tension)", "0 lb-in")
+
+#text(size: 8.5pt, "N positive = tension (uplift), matching common anchor-software convention. V and M are reversible; apply them in the governing direction.")
+
+#table(columns: (auto, 1fr), "Combination", "0.9D + 1.6L, net axial; Engineering judgement (EOR): anchor reactions, LRFD, not an ASCE combination", "Governing load type", "Distributed", "D, top rail", "18.30 lb", "D, intermediate rail", "11.40 lb", "D, post", "10.41 lb", "D, baseplate", "6.806 lb", strong("D, total"), strong("46.92 lb"))
+
+#subhead("Demand: upward, distributed load")
+#calcline([$D = "46.92 lb"$], "Dead load at the base", "Reactions")
+#calcline([$w_L = "4.167 lb/in"$], "Uniform guard load", "Loading")
+#calcline([$L = "60.00 in"$], "Span: the tributary length for the post", "Input")
+#calcline([$display(P_L = w_L L = ("4.167 lb/in") ("60.00 in") = "250.0 lb")$], "Uniform guard load collected over the span, upward at the top of the post", "Stated assumption: the tributary length is the span")
+#calcline([$display(abs(N_u) = "1.6" P_L - "0.9" D = "1.6" ("250.0 lb") - "0.9" ("46.92 lb") = "357.8 lb")$], "Axial force at the base: net tension (uplift), guard load opposing dead load", "Engineering judgement (EOR): anchor reactions, LRFD, not an ASCE combination")

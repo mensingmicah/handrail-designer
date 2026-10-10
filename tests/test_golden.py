@@ -32,7 +32,8 @@ The second tier, in tests/golden/extra/, holds the branches the first tier
 never reaches: the uniform-load exemption, load overrides, each state of
 the intermediate rail with each of its guards, a noncompact rail, the
 slenderness flag, Eq. E3-3 and Eq. H1-1a, a weld below minimum size, the
-bypasses, each outcome of the reaction sets, an NG check, and every stop.
+bypasses, each outcome of the reaction sets, an NG check, round HSS in
+each of its grades' kinds (slice 5), and every stop.
 They are machinery scenarios, not test cases: nothing in them is a value
 from a hand or independent calc, and nothing from them is ever copied into
 tests/cases/ (CLAUDE.md rule 5). Three kinds, told apart by name:
@@ -200,14 +201,15 @@ def test_every_golden_file_is_a_snapshot_the_test_compares():
 
 
 def test_the_second_tier_holds_the_scenarios_it_was_committed_with():
-    """91 scenarios: 34 whole calcs, 37 refused projects and 20 direct
+    """95 scenarios: 38 whole calcs, 37 refused projects and 20 direct
     scenarios. A scenario added or retired on purpose changes these counts
     in the same commit; one lost by accident (a renamed or deleted input)
     fails here. Retired so far: stop-unknown-post, a round HSS post that
-    stopped until slice 5 allowed round HSS at the joints."""
-    assert (len(EXTRA_CALCS), len(EXTRA_STOPS), len(DIRECT)) == (34, 37, 20)
+    stopped until slice 5 allowed round HSS at the joints. Added in slice
+    5: four round HSS calcs (full-hss-post, -all, -unusual and -a618)."""
+    assert (len(EXTRA_CALCS), len(EXTRA_STOPS), len(DIRECT)) == (38, 37, 20)
     assert all(name.startswith("direct-") for name in DIRECT)
-    assert sum(name.startswith("extra/") for name in SNAPSHOTS) == 91
+    assert sum(name.startswith("extra/") for name in SNAPSHOTS) == 95
 
 
 @pytest.mark.parametrize("path", [p for p in EXTRA_CALCS if _stops_at_validation(p)], ids=lambda p: p.stem)

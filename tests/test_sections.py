@@ -13,7 +13,7 @@ import dataclasses
 
 import pytest
 
-from handrail import engine, project, shapes
+from handrail import engine, flexure, project, shapes
 from handrail.project import ProjectError
 from handrail.registry import Registry
 from handrail.stops import Stop
@@ -188,3 +188,45 @@ def test_pipe_and_round_hss_meet_at_every_joint(rail, post, inter):
                intermediate_rail={"same_as_top_rail": False, "section": inter}, welds=OWN_WELD)
     assert [c.number for c in res.checks] == [1, 2, 3, "4a", "4b", 5, 6, 7]
     assert all(c.computed and c.controlling is not None for c in res.checks)
+
+
+# -- which sections print "designed as round HSS" (S5-14) -----------------------------
+
+PIPE_AS_HSS = "aisc360.pipe_as_round_hss"
+
+
+def _says_designed_as_round_hss(res, check) -> bool:
+    case = next(c for c in res.check(check).cases if c.lines)
+    return any(ln.kind == "decision" and ln.text == "Designed as round HSS" for ln in case.lines)
+
+
+def test_an_aisc_pipe_prints_designed_as_round_hss_and_a_round_hss_does_not():
+    reg = Registry()
+    res = _run(reg, post={"section": "HSS2.375X0.125"})
+    assert _says_designed_as_round_hss(res, 1)       # the Pipe2STD rail
+    assert not _says_designed_as_round_hss(res, 5)   # the HSS2.375X0.125 post
+    assert PIPE_AS_HSS in [e.id for e in reg.used]
+
+
+def test_an_all_round_hss_calc_never_reads_the_pipe_provision():
+    reg = Registry()
+    res = _run(reg, top_rail={"section": "HSS2.375X0.154"}, post={"section": "HSS2.375X0.125"},
+               intermediate_rail={"same_as_top_rail": False, "section": "HSS1.900X0.120"}, welds=OWN_WELD)
+    assert not any(_says_designed_as_round_hss(res, check) for check in (1, "4a", 5))
+    assert PIPE_AS_HSS not in [e.id for e in reg.used]
+
+
+def test_an_hss_grade_on_a_pipe_designation_is_still_pipe():
+    """The line turns on what the section is, not on its grade: an AISC pipe
+    in an unusual grade is still a pipe designed as round HSS."""
+    assert _says_designed_as_round_hss(_run(top_rail={"grade": "A500 Gr C"}), 1)
+
+
+def test_a_custom_round_tube_is_pipe_only_in_the_pipe_grade():
+    """S5-14, for the custom round tube: A53 Gr B prints the line, an HSS
+    grade does not. No custom tube can be entered yet; a stand-in family."""
+    tube = dataclasses.replace(shapes.section("Pipe2STD"), family=shapes.ROUND_TUBE)
+    assert flexure.designed_as_round_hss(tube, "A53 Gr B")
+    assert not flexure.designed_as_round_hss(tube, "A500 Gr B")
+    assert flexure.designed_as_round_hss(shapes.section("Pipe2STD"), "A500 Gr B")
+    assert not flexure.designed_as_round_hss(shapes.section("HSS2.375X0.125"), "A53 Gr B")

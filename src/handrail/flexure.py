@@ -11,7 +11,7 @@ from handrail.calc import Line, Sheet, Sym, chain, compare, fmt_g, fmt_sig, mini
 from handrail.errors import SectionStop
 from handrail.materials import yield_stress
 from handrail.registry import Registry
-from handrail.shapes import Section
+from handrail.shapes import PIPE, ROUND_TUBE, Section
 from handrail.stops import Stop
 
 
@@ -22,6 +22,18 @@ class Capacity:
     allow: Sym          # M_n/Omega_b, as a symbol the demand lines divide by
     lines: list[Line]   # printed at the head of the controlling case
     flags: list[str]
+
+
+# The grade of pipe: a custom round tube in it is pipe too (S5-14).
+PIPE_GRADE = "A53 Gr B"
+
+
+def designed_as_round_hss(sec: Section, grade: str) -> bool:
+    """Whether the section is pipe designed under the round HSS provisions,
+    which the calc says on a line of its own: an AISC pipe, or a custom
+    round tube in the pipe grade. A round HSS, or a custom tube in an HSS
+    grade, is round HSS and prints no such line (S5-14)."""
+    return sec.family == PIPE or (sec.family == ROUND_TUBE and grade == PIPE_GRADE)
 
 
 def flexural_capacity(registry: Registry, rail: Section, grade: str) -> Capacity:
@@ -35,11 +47,12 @@ def flexural_capacity(registry: Registry, rail: Section, grade: str) -> Capacity
     lp_e = registry.get("aisc360.B4.1b.round_hss.lambda_p")
     lr_e = registry.get("aisc360.B4.1b.round_hss.lambda_r")
 
-    sh.decision(
-        mtext(f"{rail.label}, {grade}"), "Designed as round HSS",
-        "Pipe is designed under the round HSS provisions",
-        cite_ids=("aisc360.pipe_as_round_hss",),
-    )
+    if designed_as_round_hss(rail, grade):
+        sh.decision(
+            mtext(f"{rail.label}, {grade}"), "Designed as round HSS",
+            "Pipe is designed under the round HSS provisions",
+            cite_ids=("aisc360.pipe_as_round_hss",),
+        )
     Fy = yield_stress(registry, grade, rail).line(sh, "F_y", "F_y")
     E = sh.code_value("E", "E", "material.steel.E", "Modulus of elasticity")
     lam = sh.given("lambda", "lambda", rail.D_t, "lambda = D/t, tabulated (design wall)", rail.source)
