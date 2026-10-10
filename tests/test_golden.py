@@ -200,12 +200,14 @@ def test_every_golden_file_is_a_snapshot_the_test_compares():
 
 
 def test_the_second_tier_holds_the_scenarios_it_was_committed_with():
-    """92 scenarios: 34 whole calcs, 38 refused projects and 20 direct
-    scenarios. A scenario added on purpose changes these counts in the same
-    commit; one lost by accident (a renamed or deleted input) fails here."""
-    assert (len(EXTRA_CALCS), len(EXTRA_STOPS), len(DIRECT)) == (34, 38, 20)
+    """91 scenarios: 34 whole calcs, 37 refused projects and 20 direct
+    scenarios. A scenario added or retired on purpose changes these counts
+    in the same commit; one lost by accident (a renamed or deleted input)
+    fails here. Retired so far: stop-unknown-post, a round HSS post that
+    stopped until slice 5 allowed round HSS at the joints."""
+    assert (len(EXTRA_CALCS), len(EXTRA_STOPS), len(DIRECT)) == (34, 37, 20)
     assert all(name.startswith("direct-") for name in DIRECT)
-    assert sum(name.startswith("extra/") for name in SNAPSHOTS) == 92
+    assert sum(name.startswith("extra/") for name in SNAPSHOTS) == 91
 
 
 @pytest.mark.parametrize("path", [p for p in EXTRA_CALCS if _stops_at_validation(p)], ids=lambda p: p.stem)

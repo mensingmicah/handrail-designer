@@ -150,3 +150,41 @@ def test_a_rail_wider_than_the_post_within_the_tolerance_keeps_the_observation(m
     chk = _run(reg, post={"section": "Pipe2XS"}, intermediate_rail={"same_as_top_rail": True}).check("4b")
     assert chk.result == "Controlled by Check 3"
     assert OD_TOLERANCE in [e.id for e in reg.used]  # S4-11: the intermediate rail is 0.005 in wider than the post
+
+
+# -- round HSS at the joints (S5-9, S5-12), by real inputs ----------------------------
+
+def test_a_round_hss_post_under_a_pipe_rail_of_the_same_size_runs():
+    """HSS2.375 reads 2.38 in and Pipe2STD 2.375 in: the same physical
+    diameter, equal within the tolerance (S5-4). The post takes the round
+    HSS default grade, and each weld ring uses the post's own published OD."""
+    reg = Registry()
+    res = _run(reg, post={"section": "HSS2.375X0.125"})
+    assert (res.post.family, res.post.OD, res.rail.OD) == (shapes.ROUND_HSS, _od(2.38), _od(2.375))
+    assert res.project.post == project.Member("HSS2.375X0.125", "A500 Gr B", grade_defaulted=True)
+    assert OD_TOLERANCE in [e.id for e in reg.used]
+    for check in (3, 7):
+        ring = next(ln for ln in res.check(check).controlling.lines if ln.key == "D")
+        assert ring.value == _od(2.38)
+
+
+def test_the_directional_increase_applies_to_a_round_hss_post_at_check_7_only():
+    """W2 as S5-12 confirms it: k_ds from theta at the post to baseplate
+    weld, k_ds = 1.0 at the branch-to-chord welds."""
+    res = _run(post={"section": "HSS2.375X0.125"}, top_rail={"section": "HSS2.375X0.154"},
+               intermediate_rail={"same_as_top_rail": False, "section": "HSS1.900X0.120"}, welds=OWN_WELD)
+    assert res.check(7).controlling.k_ds > 1.0
+    assert res.check(3).controlling.k_ds == 1.0 and res.check("4b").controlling.k_ds == 1.0
+
+
+@pytest.mark.parametrize("rail, post, inter", [
+    ("HSS2.375X0.154", "HSS2.375X0.125", "HSS1.900X0.120"),
+    ("HSS2.375X0.154", "Pipe2STD", "Pipe1-1/4STD"),
+    ("Pipe2STD", "Pipe2STD", "HSS1.900X0.120"),
+    ("Pipe2STD", "HSS1.900X0.120", "Pipe1-1/4STD"),
+])
+def test_pipe_and_round_hss_meet_at_every_joint(rail, post, inter):
+    res = _run(top_rail={"section": rail}, post={"section": post},
+               intermediate_rail={"same_as_top_rail": False, "section": inter}, welds=OWN_WELD)
+    assert [c.number for c in res.checks] == [1, 2, 3, "4a", "4b", 5, 6, 7]
+    assert all(c.computed and c.controlling is not None for c in res.checks)

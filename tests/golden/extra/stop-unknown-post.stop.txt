@@ -1,1 +1,0 @@
-ProjectError: post HSS2.375X0.125 (round HSS): this version does not have this section family yet. Check 3 joint (top rail as chord, post as branch): AISC pipe as the chord with round HSS as the branch is not supported until slice 5 (S5-1).

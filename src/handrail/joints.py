@@ -19,9 +19,11 @@ W2's branch rule (k_ds = 1.0). An allowed post on the baseplate is welded
 all around, with W2's directional increase. A stop cell names the slice
 that brings its family (S5-1).
 
-As built in step 1 of slice 5, the only allowed pair is AISC pipe on AISC
-pipe, which is what the tool computed before the tables existed. Step 5
-sets the round HSS and custom round tube cells to allowed.
+Slice 5 allows every pair of the three round hollow families (AISC pipe,
+round HSS, custom round tube) at the chord and branch joints, and each of
+them as a post on the baseplate (S5-3, S5-12). Rules about dimensions, not
+families, are ordinary stops in validate.py: the width comparisons and the
+chord D/t limit.
 """
 
 from __future__ import annotations
@@ -64,8 +66,6 @@ _NOT_ROUND_HOLLOW = ("{member} {label} ({family}) is not a round hollow section.
 # W2 at the post to baseplate weld: the wording the stop has had since slice 3.
 _NO_DIRECTIONAL_RULE = ("{label} ({family}): the directional strength increase rule for this section family has not "
                         "been drafted. The tool applies the increase only to round hollow sections.")
-# A round hollow family the tool does not have yet (until step 5 of slice 5).
-_NOT_BUILT = "{member} {label} ({family}): this version does not have this section family yet."
 
 
 def _stop(slice: int, message: str) -> Cell:
@@ -83,23 +83,23 @@ def _by_family(rows: dict[str, list[Cell]]) -> dict[tuple[str, str], Cell]:
     return table
 
 
-_S5, _S6, _S7 = _stop(5, _NOT_BUILT), _stop(6, _NOT_ROUND_HOLLOW), _stop(7, _NOT_ROUND_HOLLOW)
+_S6, _S7 = _stop(6, _NOT_ROUND_HOLLOW), _stop(7, _NOT_ROUND_HOLLOW)
 
 # Chord (row) and branch (column), in GROUPS order: AISC pipe; round HSS;
 # custom round tube; rectangular HSS and custom rectangular tube; solid
 # round bar and solid rectangular bar.
 CHORD_AND_BRANCH = _by_family({
-    "AISC pipe":         [ALLOWED, _S5, _S5, _S6, _S7],
-    "round HSS":         [_S5,     _S5, _S5, _S6, _S7],
-    "custom round tube": [_S5,     _S5, _S5, _S6, _S7],
-    "rectangular":       [_S6,     _S6, _S6, _S6, _S7],
-    "solid bar":         [_S7,     _S7, _S7, _S7, _S7],
+    "AISC pipe":         [ALLOWED, ALLOWED, ALLOWED, _S6, _S7],
+    "round HSS":         [ALLOWED, ALLOWED, ALLOWED, _S6, _S7],
+    "custom round tube": [ALLOWED, ALLOWED, ALLOWED, _S6, _S7],
+    "rectangular":       [_S6,     _S6,     _S6,     _S6, _S7],
+    "solid bar":         [_S7,     _S7,     _S7,     _S7, _S7],
 })
 
 POST_ON_BASEPLATE: dict[str, Cell] = {
     PIPE: ALLOWED,
-    ROUND_HSS: _stop(5, _NOT_BUILT),
-    ROUND_TUBE: _stop(5, _NOT_BUILT),
+    ROUND_HSS: ALLOWED,
+    ROUND_TUBE: ALLOWED,
     RECT_HSS: _stop(6, _NO_DIRECTIONAL_RULE),
     RECT_TUBE: _stop(6, _NO_DIRECTIONAL_RULE),
     ROUND_BAR: _stop(7, _NO_DIRECTIONAL_RULE),

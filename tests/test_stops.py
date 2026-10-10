@@ -28,7 +28,7 @@ from handrail.errors import InputError, SectionStop
 from handrail.joints import ALLOWED, CHECK_3, CHECK_4B, CHECK_7, GROUPS, JOINTS
 from handrail.project import ProjectError
 from handrail.registry import Registry
-from handrail.shapes import PIPE, RECT_HSS
+from handrail.shapes import PIPE, RECT_HSS, ROUND_HSS, ROUND_TUBE
 from handrail.stops import Stop
 from handrail.units import Q_
 from handrail.validate import validate
@@ -541,14 +541,16 @@ def test_families_printed_in_one_group_share_every_cell():
     assert set(CHECK_7.table) == set(families)
 
 
-def test_the_only_allowed_pair_is_pipe_on_pipe():
-    """Step 1 of slice 5: the tables allow what the tool computed before
-    they existed, and nothing else. Step 5 sets the round HSS and custom
-    round tube cells to allowed, here and in stops.md, in the same commit."""
+def test_the_allowed_pairs_are_the_round_hollow_families_and_nothing_else():
+    """Slice 5: every pair of AISC pipe, round HSS and custom round tube is
+    allowed at the chord and branch joints, and each as a post on the
+    baseplate (S5-3, S5-12). Every other cell is a stop."""
+    round_hollow = {PIPE, ROUND_HSS, ROUND_TUBE}
     for joint in (CHECK_3, CHECK_4B):
-        assert {pair for pair, cell in joint.table.items() if cell.allowed} == {(PIPE, PIPE)}
-        assert joint.cell(PIPE, PIPE) is ALLOWED
-    assert {family for family, cell in CHECK_7.table.items() if cell.allowed} == {PIPE}
+        assert {pair for pair, cell in joint.table.items() if cell.allowed} == {
+            (chord, branch) for chord in round_hollow for branch in round_hollow}
+        assert all(joint.cell(chord, branch) is ALLOWED for chord in round_hollow for branch in round_hollow)
+    assert {family for family, cell in CHECK_7.table.items() if cell.allowed} == round_hollow
 
 
 def test_a_stop_cell_names_the_member_whose_family_brings_the_stop(monkeypatch):
@@ -650,13 +652,8 @@ def test_a_dimension_stop_keeps_its_own_id_through_the_project_file():
     assert str(through_file.value) == f"[geometry] span: {direct.value}"
 
 
-def test_a_round_hss_is_found_in_the_database_but_not_yet_allowed_at_a_joint():
-    """Step 3 of slice 5 added the round HSS rows; step 5 sets their cells to
-    allowed. Until then a round HSS reaches a stop cell, by a real input."""
-    with pytest.raises(ProjectError) as stopped:
-        _run(post={"section": "HSS2.375X0.125"})
-    assert stopped.value.stop is Stop.JOINT_CHECK3_NOT_SUPPORTED
-    assert str(stopped.value) == (
-        "post HSS2.375X0.125 (round HSS): this version does not have this section family yet. Check 3 joint "
-        "(top rail as chord, post as branch): AISC pipe as the chord with round HSS as the branch is not "
-        "supported until slice 5 (S5-1).")
+def test_no_cell_names_slice_5_any_more():
+    """Step 5 of slice 5 set the last "stop: slice 5" cells to allowed."""
+    assert "stop: slice 5" not in _stops_md()
+    cells = [*CHECK_3.table.values(), *CHECK_7.table.values()]
+    assert {cell.slice for cell in cells if not cell.allowed} == {6, 7}

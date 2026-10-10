@@ -28,18 +28,18 @@ either "allowed" or a stop naming the slice that brings the family.
 joint's table stops the calc, with a message naming the joint and both
 families. Nothing unlisted is ever computed. (Binding; Micah, 2026-10-09.)
 
-As built in step 1 of slice 5, the only allowed pair is AISC pipe on AISC
-pipe, which is what the tool computed before the tables existed. Step 5 of
-slice 5 sets the round HSS and custom round tube cells to allowed
-(docs/plans/slice-5.md, "Supported combinations").
+Slice 5 allows every pair of the three round hollow families: AISC pipe,
+round HSS and custom round tube (docs/plans/slice-5.md, "Supported
+combinations"). "Allowed" is subject to the dimension stops listed under
+"Sections, grades and the baseplate".
 
 ### Check 3 joint (top rail as chord, post as branch)
 
 | Chord \ Branch | AISC pipe | round HSS | custom round tube | rectangular HSS, custom rectangular tube | solid round bar, solid rectangular bar |
 | --- | --- | --- | --- | --- | --- |
-| AISC pipe | allowed | stop: slice 5 | stop: slice 5 | stop: slice 6 | stop: slice 7 |
-| round HSS | stop: slice 5 | stop: slice 5 | stop: slice 5 | stop: slice 6 | stop: slice 7 |
-| custom round tube | stop: slice 5 | stop: slice 5 | stop: slice 5 | stop: slice 6 | stop: slice 7 |
+| AISC pipe | allowed | allowed | allowed | stop: slice 6 | stop: slice 7 |
+| round HSS | allowed | allowed | allowed | stop: slice 6 | stop: slice 7 |
+| custom round tube | allowed | allowed | allowed | stop: slice 6 | stop: slice 7 |
 | rectangular HSS, custom rectangular tube | stop: slice 6 | stop: slice 6 | stop: slice 6 | stop: slice 6 | stop: slice 7 |
 | solid round bar, solid rectangular bar | stop: slice 7 | stop: slice 7 | stop: slice 7 | stop: slice 7 | stop: slice 7 |
 
@@ -49,9 +49,9 @@ The same table as the Check 3 joint.
 
 | Chord \ Branch | AISC pipe | round HSS | custom round tube | rectangular HSS, custom rectangular tube | solid round bar, solid rectangular bar |
 | --- | --- | --- | --- | --- | --- |
-| AISC pipe | allowed | stop: slice 5 | stop: slice 5 | stop: slice 6 | stop: slice 7 |
-| round HSS | stop: slice 5 | stop: slice 5 | stop: slice 5 | stop: slice 6 | stop: slice 7 |
-| custom round tube | stop: slice 5 | stop: slice 5 | stop: slice 5 | stop: slice 6 | stop: slice 7 |
+| AISC pipe | allowed | allowed | allowed | stop: slice 6 | stop: slice 7 |
+| round HSS | allowed | allowed | allowed | stop: slice 6 | stop: slice 7 |
+| custom round tube | allowed | allowed | allowed | stop: slice 6 | stop: slice 7 |
 | rectangular HSS, custom rectangular tube | stop: slice 6 | stop: slice 6 | stop: slice 6 | stop: slice 6 | stop: slice 7 |
 | solid round bar, solid rectangular bar | stop: slice 7 | stop: slice 7 | stop: slice 7 | stop: slice 7 | stop: slice 7 |
 
@@ -62,8 +62,8 @@ A36 plate is the only baseplate (W12).
 | Post | Cell |
 | --- | --- |
 | AISC pipe | allowed |
-| round HSS | stop: slice 5 |
-| custom round tube | stop: slice 5 |
+| round HSS | allowed |
+| custom round tube | allowed |
 | rectangular HSS, custom rectangular tube | stop: slice 6 |
 | solid round bar, solid rectangular bar | stop: slice 7 |
 
@@ -71,9 +71,11 @@ A36 plate is the only baseplate (W12).
 
 - **Allowed, chord and branch.** W7 as kept for slice 5 by S5-3: the chord
   wall's local strength is a stated assumption, not a check. W2's branch
-  rule: k_ds = 1.0 at a branch-to-chord weld.
+  rule: k_ds = 1.0 at a branch-to-chord weld. Both hold for every round
+  hollow section (S5-12).
 - **Allowed, post on the baseplate.** Welded all around; W2's directional
-  strength increase applies.
+  strength increase applies, to every round hollow post whatever its grade
+  (S5-12).
 - **Stop.** The family is not supported until the slice named, by S5-1,
   which regrouped slices 5 to 7 by engineering: 5 hollow round, 6 hollow
   rectangular, 7 every solid bar. Until then W7 and W2 have been decided
