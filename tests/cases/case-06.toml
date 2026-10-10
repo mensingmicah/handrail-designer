@@ -1,0 +1,118 @@
+# Test case 6 (docs/plans/slice-5.md, T1; issue #3): the rail case for
+# hollow round sections. A custom noncompact tube rail on a pipe post.
+#
+# Top rail: a custom round tube, OD 2.375 in, nominal wall 0.055 in, A500
+# Gr C. Post: Pipe2STD, A53 Gr B. No intermediate rail. L = 6'-0", h = 42
+# in, t_p = 1/2 in; baseplate B = 6 in (parallel to the rail) x N = 8 in
+# (perpendicular to the rail), A36. Fillet welds all around, E70XX: rail to
+# post 1/8 in, post to baseplate 1/4 in. Default loads (P = 200 lb, w = 50
+# plf), no exemption; default deflection limits.
+#
+# Not a stocked A500 size: noncompact A500 tube does not exist at guard
+# diameters. The case exists to reach AISC 360-22 Eq. F8-2 with a wall
+# inside the chord D/t limit of 50 (S5-3).
+#
+# Branches it reaches: the custom tube path (the design wall of AISC 360-22
+# B4.2 from the nominal wall entered, properties computed from the
+# dimensions, weight on the nominal wall); Eq. F8-2 governing over the
+# plastic moment; the noncompact flag; Check 3's rail-wall base metal line
+# on a computed design wall and an A500 Fu.
+#
+# What it covers ([verification] covers): the rail's section group, Checks
+# 1, 2 and 3, and the post group, which holds D at the post. The rail's
+# computed weight flows into the post's dead load, a quantity the rail's
+# family changes (S5-2). Checks 5 to 7 and the reactions are not covered.
+#
+# Values: an independent-calc case (docs/brief/verification.md). The
+# independent calc records every value the test compares in
+# tests/cases/independent/case-06.toml, written up beside it as case-06.md,
+# in a fresh session by the independent-calc skill (CLAUDE.md rule 6). Every
+# value there is "pending" until that session fills it.
+#
+# [hand] below holds Micah's governing-case values for what is new to his
+# arithmetic ([verification] recompute; S5-2): the custom tube's section
+# properties and Check 1. He follows the tool's printed controlling case and
+# recomputes it line by line; each value is his own result, never copied
+# from the PDF (CLAUDE.md rule 5).
+#
+# Each [hand] value is "deferred" to the release review (ADR 0006; issue
+# #18). At that review, replace each "deferred" with the recomputed value,
+# in the unit named by the key's suffix, to 4 significant figures.
+#
+# Text values, in quotes:
+#   check1.controlling     direction, comma, load type, e.g. "downward, concentrated"
+#
+# The ratio key names the downward concentrated case, which the planning
+# arithmetic expects to govern. If your recompute finds another case
+# governs, rename the key to that case (e.g. outward_concentrated).
+#
+# The A500 Gr C round Fy and Fu this case turns on are drafted registry
+# entries, which Micah verifies at the release review.
+#
+# A mismatch fails and, per CLAUDE.md rule 2, stops the work: neither side
+# is changed until we know which one is wrong.
+
+[project]
+name = "Test case 6"
+phase = "Verification"
+description = "Custom noncompact tube rail: 2.375 x 0.055, A500 Gr C, on a Pipe2STD post"
+
+[geometry]
+span = "6'-0\""
+post_height = 42
+baseplate_thickness = "1/2"
+
+[top_rail]
+shape = "round tube"
+OD = 2.375
+wall_nominal = 0.055         # always the nominal wall (S5-8)
+grade = "A500 Gr C"
+
+[post]
+section = "Pipe2STD"
+grade = "A53 Gr B"
+
+[intermediate_rail]
+none = true
+
+[baseplate]
+B = 6                        # parallel to the rail
+N = 8                        # perpendicular to the rail
+grade = "A36"
+
+[welds]
+rail_to_post = "1/8"
+post_to_baseplate = "1/4"
+electrode = "E70XX"
+
+[deflection.rail]
+limit_L_over = 120
+bypass = false
+
+[deflection.post]
+limit_L_over = 60
+bypass = false
+
+[verification]
+kind = "independent-calc"
+covers = ["section", "check1", "check2", "check3", "post"]
+recompute = ["section", "check1"]
+
+# ---------------------------------------------------------------------------
+# Hand values: Micah's recompute of the custom tube's section properties and
+# Check 1's governing case (deferred to the release review)
+# ---------------------------------------------------------------------------
+
+[hand.section]
+tdes_in = "deferred"
+A_in2 = "deferred"
+I_in4 = "deferred"
+S_in3 = "deferred"
+Z_in3 = "deferred"
+r_in = "deferred"
+
+[hand.check1]
+controlling = "deferred"      # e.g. "downward, concentrated"
+
+[hand.check1.ratio]
+downward_concentrated = "deferred"

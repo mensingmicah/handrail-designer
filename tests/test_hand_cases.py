@@ -183,6 +183,13 @@ def tool_values(res):
         "check1.Mn_lbin": _line_value(c1.controlling.lines, "M_n").m_as("lbf*inch"),
         "check1.Mn_over_Omega_lbin": _line_value(c1.controlling.lines, "M_n_over_Omega_b").m_as("lbf*inch"),
     }
+    if r.custom:
+        # A custom rail's area and radius of gyration are computed on its
+        # section page, not read from the database, so they are compared too
+        # (docs/plans/slice-5.md, T1: test case 6). A database rail's are not
+        # values of any rail check, and stay out of the section group.
+        v["section.A_in2"] = r.A.m_as("in^2")
+        v["section.r_in"] = r.r.m_as("inch")
     for c in c1.checked:
         v[f"check1.moment_lbin.{_case_key(c)}"] = c.demand.m_as("lbf*inch")
         v[f"check1.ratio.{_case_key(c)}"] = c.ratio
