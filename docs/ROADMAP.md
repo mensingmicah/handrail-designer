@@ -41,9 +41,10 @@ independent-calc case (docs/brief/verification.md): an agent writes the
 full calc, and Micah reviews it and the PDF against the checklist. His
 recompute of each new check's governing case (and, from slice 4, each new
 reaction set; ADR 0007) waits for one release review in slice 9 (below).
-His registry verification happens at each slice close, before the next
-slice's build starts (ADR 0008), so Micah's time per slice is the
-checklist review plus that slice's drafted entries.
+His registry verification waits for the same review (ADR 0005, back in
+force under ADR 0008 as amended); a review workbook at each slice close
+lets him verify entries earlier when he chooses, and nothing waits on it.
+So Micah's required time per slice is the checklist review.
 
 After slice 4 the tool produces the full v1 package for one guard type:
 all seven checks, the summary table and the reaction sets, for an all-pipe
@@ -267,9 +268,7 @@ section type is generalized across Checks 1–7. Issue #3 lands here: a
 custom thin-wall round tube, or a large round HSS, gives a realistic
 noncompact case for Eq. F8-2.
 
-**Depends on.** Slice 4 (all checks exist to be generalized). Its build
-starts only after Micah has verified the top 20 entries of the
-catch-up (ADR 0008, Notes; gate 1).
+**Depends on.** Slice 4 (all checks exist to be generalized).
 
 **Size.** M. About 12–15 new registry entries. Two test cases: the
 noncompact rail (#3) and a solid round bar or custom tube post.
@@ -311,9 +310,7 @@ on the post's other axis. Rectangular post welds: all around, or on one
 pair of faces picked by width or depth, with the elastic line properties of
 each pattern.
 
-**Depends on.** Slice 5 (the generic section interface). Its build starts
-only after Micah has verified every other entry drafted by 2026-10-09
-and slice 5's own drafted entries (ADR 0008; gate 2).
+**Depends on.** Slice 5 (the generic section interface).
 
 **Size.** L, the largest after slice 1. About 20 new registry entries.
 Two test cases: a rectangular HSS post where longitudinal governs on the
@@ -387,9 +384,9 @@ Micah on 2026-10-04. It goes before the release review because that
 review recomputes from the printed calc. Then the release review, tracked
 as a checklist in issue #18
 (label `release-blocker`): the release can't ship while any box is open.
-First the registry residual: Micah verifies whatever is still drafted,
-which after ADR 0008 is only entries drafted or revised since the last
-slice close, so the DRAFT stamp disappears from a normal calc. Then Micah's governing-case recompute of every deferred test case
+First the registry review: Micah verifies every entry still drafted (all
+of them, less any he verified early from a slice-close workbook; ADRs 0005
+and 0008), so the DRAFT stamp disappears from a normal calc. Then Micah's governing-case recompute of every deferred test case
 (cases 2 and 3 so far, and each later slice's cases): he recomputes the
 printed controlling case line by line, and each new reaction set, and
 replaces each "deferred" [hand] value with his own (ADRs 0006, 0007). Afterwards the full test suite reruns. Any
@@ -405,31 +402,31 @@ against what shipped. CHANGELOG v1.0.0.
 
 **Size.** Little code, but most of the time is Micah's. The registry
 held 109 entries after slice 4 (77 drafted); at the overrun seen so far it
-would reach roughly 140–165 entries by this slice. Under ADR 0008 those are
-verified at each slice close, so the release review carries only the
-residual plus a recompute of each deferred test case (25 deferred [hand]
-values in cases 2–5 as of v0.4.0). The architecture review of 2026-10-09
-estimated 20–35 hours of Micah's time with all registry verification at
-the end, plus any independent calcs redone after a correction; the registry
-share of that (8–13 hours) moves to the slice closes, and I'm not sure the
-total falls.
+would reach roughly 140–165 drafted entries by this slice. The release
+review carries all of them, less any Micah verified early, plus a recompute
+of each deferred test case (25 deferred [hand] values in cases 2–5 as of
+v0.4.0). The architecture review of 2026-10-09 estimated 20–35 hours of
+Micah's time with all registry verification at the end (8–13 of them on the
+registry), plus any independent calcs redone after a correction.
 
-## Registry verification at slice close
+## Registry verification: at release, with a workbook at each slice close
 
-Decided (Micah, 2026-10-09; ADR 0008), replacing the release-review decision
-below: each slice's drafted entries are verified when the slice closes,
-before the next slice's build starts, and the 77 entries drafted by then are
-caught up in batches, highest fan-out first, under two gates (Micah,
-2026-10-09): the 20 entries named in ADR 0008's notes before slice 5's
-build starts, and every other entry drafted by 2026-10-09 (57) before
-slice 6's build starts. Slice 5's own entries are due before slice 6's build
-too. Micah records his verdicts in the registry review workbook; an agent
-applies them to the registry on a branch with a pull request
+Decided (Micah, 2026-10-09; ADR 0008 as amended). Registry verification is
+in the v1 release review, as decided on 2026-10-03 (below). Earlier the same
+day ADR 0008 had moved it to each slice close, with two catch-up gates
+ahead of slices 5 and 6; Micah withdrew that. No slice's build waits on
+registry verification. His reason: he wants a full working v1 to present,
+and will verify at the end. The accepted risk: a late correction to a
+widely read entry sends several independent calcs back to fresh sessions.
+
+Two things remain from ADR 0008. A registry review workbook is produced at
+each slice close, so Micah can verify entries early when he chooses, in its
+fan-out order. And he records his verdicts in the workbook; an agent applies
+them to the registry on a branch with a pull request
 (docs/brief/verification.md, "Applying the verdicts"). The governing-case
-recompute stays at slice 9. The rest of this section records the 2026-10-03 decision
-it replaced.
+recompute stays at slice 9.
 
-### Registry verification at release (replaced)
+### Registry verification at release (2026-10-03; in force)
 
 Decided (Micah, 2026-10-03), replacing the 2026-09-30 decision to verify
 each slice's entries within the slice. No slice's "done when" includes

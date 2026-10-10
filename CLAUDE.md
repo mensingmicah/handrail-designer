@@ -26,10 +26,9 @@ When you finish a task, update the pinned 'Slice status' GitHub issue: done,
 now, next, waiting on Micah. When a slice closes, add its new deferred test
 cases to the checklist of the release-review issue (#18, label
 `release-blocker`; ADR 0006), and produce the registry review workbook for
-that slice's drafted entries. I verify them before the next slice's build
-starts (ADR 0008). Move the
-slice plan's binding engineering decisions into the brief before marking
-the plan completed.
+that slice's drafted entries; verification is optional before release
+(ADR 0008, as amended). Move the slice plan's binding engineering decisions
+into the brief before marking the plan completed.
 
 The repo documents are the only source of truth for this project. Don't rely
 on, or write, auto-memory for it.
@@ -39,8 +38,10 @@ on, or write, auto-memory for it.
 1. Code values, provision text and formula citations live only in
    registry/code-values.toml, never typed into code. You may draft entries
    from memory or the web; each records its citation, source and status.
-   Only I mark an entry verified. Any calc using a drafted entry prints the
-   DRAFT stamp. Full rule: .claude/rules/code-values.md.
+   Only I mark an entry verified. My verdict in the registry review
+   workbook counts as me marking it; an agent records it in the registry.
+   Any calc using a drafted entry prints the DRAFT stamp. Full rule:
+   .claude/rules/code-values.md.
 2. If the tool's result disagrees with my hand calc or the independent calc,
    stop and tell me. Don't change either side to match until we know which
    one is wrong.

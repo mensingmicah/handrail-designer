@@ -1,6 +1,26 @@
 # Registry verification at each slice close; the recompute stays at release
 
-**Status: accepted (Micah, 2026-10-09), with one change to the proposed CLAUDE.md wording: the engineer verifies a slice's entries before the next slice's build starts, not before the slice is marked done.**
+**Status: accepted (Micah, 2026-10-09), then amended by him the same day: the verification gates are withdrawn and registry verification is back at the v1 release review. What stays is the registry review workbook at each slice close and the "Applying the verdicts" workflow. The amendment below governs; the text after it records the decision as first accepted.**
+
+## Amendment: gates withdrawn, verification back at the release review (Micah, 2026-10-09)
+
+Registry verification returns to the v1 release review, as in ADR 0005. Nothing in this ADR blocks a slice's build any more: not the rule that a slice's drafted entries are verified before the next slice's build starts, and not the two catch-up gates in the Notes (the top 20 before slice 5, the rest before slice 6). Both are withdrawn.
+
+Three things from this ADR stay:
+
+- **The workbook at each slice close.** Claude still produces the registry review workbook for the slice's drafted entries when the slice closes. The engineer may verify entries from it at any time before the release; doing so early is optional. The "By fan-out" tab, and the 20 ids listed in the Notes, remain the suggested order for anyone verifying early, because those are the entries a late correction would reach furthest.
+- **"Applying the verdicts"** (docs/brief/verification.md). The engineer records each verdict in the workbook, and an agent applies the verdicts to the registry on a branch with a pull request he approves. His verdict in the workbook counts as him marking the entry verified; the agent records it (CLAUDE.md rule 1 and .claude/rules/code-values.md say so from this date).
+- **#18 carries no per-slice batches.** The release-review checklist has one registry item, "no entry still drafted", instead of a batch per slice.
+
+Unchanged by either the original decision or this amendment: the per-slice calc checks (the independent calc of every new test case, the 0.5% comparison with rule 2 stops, the engineer's checklist review), and the governing-case recompute at the release review (ADRs 0006, 0007).
+
+The reason is the engineer's: he wants a full working v1 to present, and will verify the registry at the end. Gating slices 5 and 6 on registry review put that review ahead of the remaining section families.
+
+The accepted risk is the one this ADR was written about, and it is unchanged: a correction at the release review to a widely read entry invalidates every test case value that depended on it and sends each affected independent calc back to a fresh session ("Registry corrections", docs/brief/verification.md). Of the 77 entries drafted by 2026-10-09, 56 are read by all five test cases, and slices 5 to 7 add cases that read them too. The projected size of the final sitting (140 to 165 entries, 8 to 13 hours) also stands, less whatever he verifies early. Until an entry is verified the independent calc still works it from its own reading of the code, so agreement between the tool and the independent calc on a drafted value verifies nothing.
+
+The sections below ("Decision", "CLAUDE.md addition", "Cost", the catch-up ruling in "Notes" and "Considered Options") record the decision as it was accepted earlier on 2026-10-09. Where they say verification happens before the next slice's build starts, or name a gate, the amendment replaces them. docs/brief/verification.md describes the current process.
+
+## The decision as first accepted
 
 Changes ADR 0005, under the freeze exception of ADR 0006 (a real problem, named below). Each slice's drafted registry entries are verified by the engineer of record at the slice close, not in the v1 release review, and the 77 entries already drafted are caught up in batches, highest fan-out first. The governing-case recompute of ADRs 0006 and 0007 stays at the release review. The rest of ADRs 0004 to 0007 is unchanged.
 
@@ -40,7 +60,9 @@ The fan-out figures come from the five test cases only. A zero means no case exe
 
 ## Notes
 
-**Catch-up ruling (Micah, 2026-10-09).** The catch-up of the 77 entries drafted before this decision has two gates. The top 20 entries of the "By fan-out" tab of the registry review workbook are verified before slice 5's build starts. Every other entry drafted by 2026-10-09 is verified before slice 6's build starts. Slice 5's own drafted entries follow the ordinary rule above: verified before slice 6's build starts as well.
+**Catch-up ruling (Micah, 2026-10-09), withdrawn the same day by the amendment above.** The two gates below no longer block any slice. The list of 20 is kept as the suggested order for early verification.
+
+The catch-up of the 77 entries drafted before this decision has two gates. The top 20 entries of the "By fan-out" tab of the registry review workbook are verified before slice 5's build starts. Every other entry drafted by 2026-10-09 is verified before slice 6's build starts. Slice 5's own drafted entries follow the ordinary rule above: verified before slice 6's build starts as well.
 
 The workbook is not committed and its order depends on the measurement that produced it, so the top 20 are fixed here, in tab order (all read by all five test cases; weld entries first). There is no tie at the cut: the 20th reads in 6 case x check pairs and the 21st, `aisc360.eq.A-8-5`, in 5.
 
@@ -70,5 +92,5 @@ Micah records each verdict in the workbook; an agent applies the verdicts to reg
 ## Considered Options
 
 - Keep ADR 0005: one review at release. Not chosen, because the late-correction exposure grows with every slice and the final sitting is projected at 8 to 13 hours.
-- Verify each slice's entries at its close, and catch up the 77 by fan-out: chosen.
+- Verify each slice's entries at its close, and catch up the 77 by fan-out: chosen, then withdrawn by the amendment above in favour of one review at release with an optional workbook at each slice close.
 - Verify only the high-fan-out entries early and leave the rest to release. Not chosen: it needs a threshold the engineer would have to set and defend, and the entries read by one case are cheap to verify at the close that drafted them.

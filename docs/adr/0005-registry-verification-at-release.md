@@ -1,6 +1,6 @@
 # Registry verification in one review before the v1 release
 
-> Replaced by ADR 0008 (Micah, 2026-10-09): each slice's drafted entries are verified at the slice close, before the next slice's build starts, and the entries already drafted are caught up in batches, highest fan-out first. The release review verifies only what is still drafted. The governing-case recompute stays at release (ADRs 0006, 0007). The text below records the decision as it was made.
+> Back in force (Micah, 2026-10-09). ADR 0008 replaced this decision with verification at each slice close, and was amended the same day: registry verification is in the v1 release review again, as decided below, and nothing blocks a slice's build. Two additions come from ADR 0008: a registry review workbook is produced at each slice close, so entries can be verified early when the engineer chooses, and his verdicts are applied to the registry by an agent ("Applying the verdicts", docs/brief/verification.md). The governing-case recompute stays at release (ADRs 0006, 0007).
 
 > "The rest of ADR 0004 is unchanged" below no longer holds for the governing-case calc: from slice 2 on it is not blind and is deferred to this same release review (ADR 0006, 2026-10-04). The section cited below as "The release registry review" is now "The release review" in docs/brief/verification.md, which describes the current process.
 

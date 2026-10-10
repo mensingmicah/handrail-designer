@@ -6,9 +6,10 @@ review, the release review, and the shapes database extraction test.
 
 This file describes the current process only. How it got here is in
 docs/adr/: 0004 (verification by independent calc), 0005 (registry
-verification at release, replaced by 0008), 0006 (governing-case recompute
-at release), 0007 (reaction sets join that recompute) and 0008 (registry
-verification at each slice close).
+verification at release), 0006 (governing-case recompute at release), 0007
+(reaction sets join that recompute) and 0008 (registry verification at each
+slice close, amended the same day: verification is back at release, with a
+review workbook at each slice close and the verdict workflow below).
 The process is frozen until v1. It changes only when a real problem forces
 it, such as a defect it let through or a step that can't be carried out as
 written, and that change gets its own ADR naming the problem (ADR 0006).
@@ -30,13 +31,16 @@ the guard fits the tool's assumptions) is separate and unchanged.
   independent calc line by line, the way I review a junior engineer's
   calc, and read the tool's printed calc for the controlling case, using
   the checklist below.
-- **Code values: me, at each slice close.** I verify the slice's drafted
-  registry entries against the standard (CLAUDE.md rule 1) from the registry
-  review workbook, before the next slice's build starts (ADR 0008). The
-  entries drafted before that decision are caught up in batches, highest
-  fan-out first (the number of test cases that read the entry): the 20
-  entries named in ADR 0008's notes before slice 5's build starts, every
-  other one before slice 6's build starts (Micah, 2026-10-09). Until an
+- **Code values: me, in the release review.** I verify every drafted
+  registry entry against the standard (CLAUDE.md rule 1) before v1, in the
+  release review. Verifying earlier is optional and blocks nothing: no
+  slice's build waits on registry verification (ADR 0008 as amended, Micah
+  2026-10-09). A registry review workbook is produced at each slice close
+  so I can verify entries early when I choose; its "By fan-out" tab (the
+  number of test cases that read each entry) is the suggested order,
+  because a late correction to a widely read entry sends the most
+  independent calcs back to fresh sessions ("Registry corrections", below).
+  I accepted that risk. Until an
   entry is verified, the check code runs on it and every calc that uses it
   prints the DRAFT stamp. The independent calc reads verified entries only,
   so it works every still-drafted value from its own reading of the code.
@@ -69,17 +73,16 @@ the guard fits the tool's assumptions) is separate and unchanged.
    workbook for the slice's drafted entries (an xlsx in out/, not
    committed: id, value and unit, cite, source, fan-out, a verdict
    dropdown and a notes column, one tab by fan-out and one by document and
-   section). I verify those entries before the next slice's build starts
-   (ADR 0008).
+   section). Verifying those entries before the release review is
+   optional; nothing waits on it (ADR 0008 as amended).
 
 ## The release review
 
 Before v1, in one review (issue #18, label `release-blocker`; docs/ROADMAP.md,
 slice 9), in this order:
 
-1. I verify any drafted registry entry still open: entries drafted or
-   revised since the last slice close, and the catch-up batches if any
-   remain (ADR 0008).
+1. I verify every registry entry still drafted: all of them, less any I
+   verified early from a slice-close workbook (ADRs 0005 and 0008).
 2. I recompute the printed controlling case of each new check and each
    new reaction set in every deferred test case, and replace each "deferred" [hand] value with my
    own result. The test then compares those too.
@@ -113,8 +116,10 @@ separate agent session applies the workbook to the registry:
    in a later change; it stays drafted until I verify the corrected entry
    (CLAUDE.md rule 1), and "Registry corrections" below applies.
 
-The verdict is mine; the agent only transcribes it, so CLAUDE.md rule 1
-(only I mark an entry verified) holds. The workbook is regenerated at each
+The verdict is mine, and my "verified" in the workbook counts as me
+marking the entry verified; the agent only records it (CLAUDE.md rule 1,
+.claude/rules/code-values.md). This workflow is the same whether I verify
+early or in the release review. The workbook is regenerated at each
 slice close under a new dated name, so a workbook holding verdicts is never
 overwritten.
 
