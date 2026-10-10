@@ -397,12 +397,12 @@ def _(tmp_path, monkeypatch):
 
 @trigger(Stop.REGISTRY_NOT_A_QUANTITY)
 def _(tmp_path, monkeypatch):
-    Registry().get("material.grades.pipe").quantity  # a list of grade names, not a number
+    _ = Registry().get("material.grades.pipe").quantity  # a list of grade names, not a number
 
 
 @trigger(Stop.REGISTRY_CITE_NAMES_NO_EQUATION)
 def _(tmp_path, monkeypatch):
-    Registry().get("material.steel.E").equation_number  # its cite names a section, not an equation
+    _ = Registry().get("material.steel.E").equation_number  # its cite names a section, not an equation
 
 
 @pytest.mark.parametrize("stop", list(Stop), ids=lambda s: s.value)
@@ -546,15 +546,15 @@ def test_a_stop_cell_names_the_member_whose_family_brings_the_stop(monkeypatch):
           "section.")
     cases = [  # (the section given the stand-in family, the project, the message)
         ("Pipe2STD", {"post": {"section": "Pipe1-1/2STD"}},
-         f"top rail Pipe2STD (rectangular HSS) {w7} Check 3 joint (top rail as chord, post as branch): rectangular "
-         f"HSS as the chord with AISC pipe as the branch is not supported until slice 6 (S5-1)."),
+         (f"top rail Pipe2STD (rectangular HSS) {w7} Check 3 joint (top rail as chord, post as branch): rectangular "
+          f"HSS as the chord with AISC pipe as the branch is not supported until slice 6 (S5-1).")),
         ("Pipe1-1/2STD", {"post": {"section": "Pipe1-1/2STD"}},
-         f"post Pipe1-1/2STD (rectangular HSS) {w7} Check 3 joint (top rail as chord, post as branch): AISC pipe as "
-         f"the chord with rectangular HSS as the branch is not supported until slice 6 (S5-1)."),
+         (f"post Pipe1-1/2STD (rectangular HSS) {w7} Check 3 joint (top rail as chord, post as branch): AISC pipe "
+          f"as the chord with rectangular HSS as the branch is not supported until slice 6 (S5-1).")),
         ("Pipe1-1/4STD", {"intermediate_rail": OWN, "welds": OWN_WELD},
-         f"intermediate rail Pipe1-1/4STD (rectangular HSS) {w7} Check 4b joint (post as chord, intermediate rail "
-         f"as branch): AISC pipe as the chord with rectangular HSS as the branch is not supported until slice 6 "
-         f"(S5-1)."),
+         (f"intermediate rail Pipe1-1/4STD (rectangular HSS) {w7} Check 4b joint (post as chord, intermediate rail "
+          f"as branch): AISC pipe as the chord with rectangular HSS as the branch is not supported until slice 6 "
+          f"(S5-1).")),
     ]
     for label, tables, message in cases:
         with monkeypatch.context() as m:

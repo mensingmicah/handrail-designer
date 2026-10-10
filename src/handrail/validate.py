@@ -4,12 +4,15 @@ field, or a lookup. It runs before anything is computed (engine.run).
 
 from __future__ import annotations
 
+from typing import cast
+
 from handrail import joints, shapes
 from handrail.calc import fmt_quantity_plain, fmt_sig
 from handrail.joints import JointMember
 from handrail.materials import BASEPLATE_GRADES, FEXX_ENTRY, FU_ENTRY, FY_ENTRY
 from handrail.project import SAME_AS_TOP, Member, Project, ProjectError
 from handrail.registry import Registry
+from handrail.shapes import PipeSection
 from handrail.stops import Stop
 
 
@@ -68,8 +71,9 @@ def validate(project: Project, registry: Registry) -> None:
     joints.CHECK_3.require(chord=JointMember("top rail", rail), branch=at_post, error=ProjectError)
     if project.intermediate_member is not None:
         same = project.intermediate_rail.state == SAME_AS_TOP
-        joints.CHECK_4B.require(chord=at_post, branch=JointMember("intermediate rail", rail if same else inter),
-                                error=ProjectError)
+        # Its own section was looked up above when it is not the top rail's.
+        branch = rail if same else cast(PipeSection, inter)
+        joints.CHECK_4B.require(chord=at_post, branch=JointMember("intermediate rail", branch), error=ProjectError)
     joints.CHECK_7.require(at_post, error=ProjectError)
 
     D_rail, D_post = rail.OD, post.OD
@@ -94,7 +98,7 @@ def validate(project: Project, registry: Registry) -> None:
     member = project.intermediate_member
     if member is not None:
         same = project.intermediate_rail.state == SAME_AS_TOP
-        sec = rail if same else inter
+        sec = rail if same else cast(PipeSection, inter)
         if sec.OD > D_post:
             how = ("With same_as_top_rail = true it takes the top rail's section: uncheck same_as_top_rail and "
                    "enter a section no wider than the post." if same else

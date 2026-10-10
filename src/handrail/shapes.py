@@ -64,7 +64,7 @@ def pipe(designation: str) -> PipeSection:
     for label, row in table["shape"].items():
         if label.upper() == key:
             u = table["units"]
-            q = lambda name: Q_(row[name], u[name])  # noqa: E731
+            q = lambda name, row=row, u=u: Q_(row[name], u[name])
             return PipeSection(
                 label=label,
                 W=q("W"), A=q("A"), OD=q("OD"),

@@ -48,7 +48,7 @@ def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def read_rows(shape_type: str) -> tuple[list[str], list[tuple]]:
+def read_rows(shape_type: str) -> tuple[list, list[tuple]]:
     """Return the imperial header and every row of one shape type, in file order."""
     wb = openpyxl.load_workbook(XLSX, read_only=True, data_only=True)
     try:

@@ -21,6 +21,7 @@ each check prints exactly what it printed before the function was shared.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Any
 
 from handrail.calc import Line, Sheet, Sym, Term, compare
 from handrail.directions import CONCENTRATED, DISTRIBUTED, LOAD_TYPES, Direction, Kind, LoadType, kind, unknown
@@ -67,7 +68,7 @@ class Given:
 
     key: str
     symbol: str
-    value: object
+    value: Any
     note: str
     source: str
 

@@ -34,6 +34,7 @@ import dataclasses
 import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 
 from handrail import dimensions
 from handrail.dimensions import Dimension
@@ -361,12 +362,14 @@ def from_dict(raw: dict) -> Project:
     post = _member(raw, "post")
 
     wt = _need(raw, "welds", "top level")
+    intermediate_weld: dict[str, Any] = (
+        {"intermediate_rail_to_post": _dimension(wt, "intermediate_rail_to_post", "welds")}
+        if "intermediate_rail_to_post" in wt else {})
     welds = Welds(
         rail_to_post=_dimension(wt, "rail_to_post", "welds"),
         post_to_baseplate=_dimension(wt, "post_to_baseplate", "welds"),
         **_given(wt, "welds", {"electrode": ("electrode", _str)}),
-        **({"intermediate_rail_to_post": _dimension(wt, "intermediate_rail_to_post", "welds")}
-           if "intermediate_rail_to_post" in wt else {}),
+        **intermediate_weld,
     )
     bt = _need(raw, "baseplate", "top level")
     baseplate = Baseplate(B=_dimension(bt, "B", "baseplate"), N=_dimension(bt, "N", "baseplate"),

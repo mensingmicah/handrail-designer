@@ -21,7 +21,8 @@ upward are listed as vertical, with no lateral deflection.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Callable
+from typing import Any, cast
+from collections.abc import Callable
 
 from handrail.calc import PI, Const, Line, Sheet, Sym, Term, compare, fmt_g, fmt_sig, number, sqrt
 from handrail.demand import ASD, Demand, Given, Wording, demand, live_at_post
@@ -43,11 +44,11 @@ from handrail.stops import Stop
 class PostCase(Case):
     """A Check 5 case, with the values its envelope row prints."""
 
-    Pr: object = None                 # required axial strength (sense gives its direction)
+    Pr: Any = None                 # required axial strength (sense gives its direction)
     sense: str = ""                   # "compression" or "tension"
-    Mr: object = None                 # required flexural strength; None in the axial-only cases
-    P_allow: object = None            # Pc (compression) or Pt (tension)
-    M_allow: object = None            # Mc; None in the axial-only cases
+    Mr: Any = None                 # required flexural strength; None in the axial-only cases
+    P_allow: Any = None            # Pc (compression) or Pt (tension)
+    M_allow: Any = None            # Mc; None in the axial-only cases
     equation: str = ""                # the equation the ratio comes from, as printed
     second_order: float | None = None  # alpha Pr/Pe, moment cases only
 
@@ -233,7 +234,7 @@ def _downward(registry, project, loading, cap: Capacity5, load_type) -> PostCase
     sh.lines.extend(cap.compression.head + cap.compression.body)
     d = _demand(registry, project, loading, DOWNWARD, load_type)
     sh.lines.extend(d.lines)
-    Pr, Pc = d.P, cap.compression.Pc
+    Pr, Pc = cast(Sym, d.P), cap.compression.Pc  # a downward demand always has its axial force
     ratio = sh.line("Ratio", '"Ratio"', Pr / Pc, "Axial only; Chapter E ratio reported", cite_ids=("aisc360.eq.B3-2",),
                     ratio=True)
     return PostCase(DOWNWARD, load_type, "checked", d.label,
@@ -253,7 +254,7 @@ def _moment_case(registry, project, post, loading, cap: Capacity5, direction: Di
     sh.lines.extend(cap.flexure + comp.body)
     d = _demand(registry, project, loading, direction, load_type)
     sh.lines.extend(d.lines)
-    Pr, Mr = d.P, d.M
+    Pr, Mr = cast(Sym, d.P), cast(Sym, d.M)  # a horizontal demand always has both
 
     # Second-order effects: a ratio and a stop, not an amplifier (plan D1).
     I = sh.given("I", "I", post.I, "Moment of inertia", DB)

@@ -18,7 +18,8 @@ import math
 import operator
 import re
 from dataclasses import dataclass, field
-from typing import Callable
+from typing import Any
+from collections.abc import Callable
 
 from handrail.registry import Entry, Registry
 from handrail.units import ureg
@@ -58,7 +59,7 @@ def fmt_sig(x: float, sig: int = 4) -> str:
         decimals -= 1
         r = round(x, decimals)
     if decimals <= 0:
-        return f"{int(round(r)):,}"
+        return f"{round(r):,}"
     return f"{r:,.{decimals}f}"
 
 
@@ -128,7 +129,8 @@ def fmt_quantity_plain(q, ratio: bool = False) -> str:
     """Plain text (not math) for tables: '4,200 lb-in', '0.293 in^4'."""
     mag, unit, exp = display(q)
     num = fmt_ratio(mag) if ratio else fmt_sig(mag)
-    sup = {2: "²", 3: "³", 4: "⁴"}.get(exp, "")
+    superscripts: dict[int | None, str] = {2: "²", 3: "³", 4: "⁴"}
+    sup = superscripts.get(exp, "")
     return f"{num}{_unit_gap(unit)}{unit}{sup}"
 
 
@@ -154,16 +156,16 @@ class Term:
     line, plain text in a message) and the value compared."""
 
     text: str
-    value: object
+    value: Any
 
 
-def term(symbol: str, value, fmt: Callable[[object], str] | None = None) -> Term:
+def term(symbol: str, value, fmt: Callable[[Any], str] | None = None) -> Term:
     """A side printed as 'symbol = value'. The value is given once, so the
     number printed is the number compared."""
     return Term(f"{symbol} = {(fmt or fmt_quantity)(value)}", value)
 
 
-def number(value, fmt: Callable[[object], str] = str) -> Term:
+def number(value, fmt: Callable[[Any], str] = str) -> Term:
     """A side printed as the bare number, as written unless ``fmt`` is given."""
     return Term(fmt(value), value)
 
@@ -233,7 +235,7 @@ _ADD, _MUL, _POW, _ATOM = 1, 2, 3, 4
 class Expr:
     prec = _ATOM
 
-    def eval(self): ...
+    def eval(self) -> Any: ...
     def symbolic(self) -> str: ...
     def substituted(self) -> str: ...
 
@@ -269,7 +271,7 @@ class Sym(Expr):
     """A named quantity: an input, a registry value or a computed line."""
 
     typst: str       # Typst math for the symbol, e.g. 'M_n', 'Omega_b', 't_"des"'
-    value: object    # pint quantity or float
+    value: Any    # pint quantity or float
 
     def eval(self):
         return self.value
@@ -284,7 +286,7 @@ class Sym(Expr):
         needs = (hasattr(self.value, "units") and not self.value.dimensionless) or mag < 0
         return f"({text})" if needs else text
 
-    def stated(self, fmt: Callable[[object], str] | None = None) -> Term:
+    def stated(self, fmt: Callable[[Any], str] | None = None) -> Term:
         """This line as one side of a comparison: 'symbol = value'."""
         return term(self.typst, self.value, fmt)
 
@@ -468,7 +470,7 @@ class Line:
     """One printed calc line: the record the PDF prints (ADR 0002)."""
 
     symbol: str                 # Typst math
-    value: object               # full-precision pint quantity or float
+    value: Any               # full-precision pint quantity or float
     note: str                   # margin note
     cite: str                   # printed citation(s)
     symbolic: str | None = None     # Typst math of the formula, if computed

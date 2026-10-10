@@ -212,7 +212,7 @@ def test_eq_H1_1a_arithmetic_with_an_artificial_dead_load():
     loading = dataclasses.replace(base.loading, P_D=Q_(40000, "lbf"))
     cap = post._capacity(reg, proj, p8)
     c = post._moment_case(reg, proj, p8, loading, cap, "Outward", "Concentrated")
-    A, I, Z, r = p8.A.m_as("in^2"), p8.I.m_as("in^4"), p8.Z.m_as("in^3"), p8.r.m_as("inch")
+    A, Z, r = p8.A.m_as("in^2"), p8.Z.m_as("in^3"), p8.r.m_as("inch")
     lam = 88.2 / r
     Fe = math.pi**2 * E / lam**2
     Pc = 0.658 ** (FY / Fe) * FY * A * 1000 / 1.67

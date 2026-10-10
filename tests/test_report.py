@@ -1,6 +1,7 @@
 """PDF rendering: stamps, footer, and a real compile (dev section, not test case 1)."""
 
 import dataclasses
+import itertools
 from pathlib import Path
 
 import pytest
@@ -170,20 +171,20 @@ def _printed_equations(lines):
 
 
 def test_mn_over_omega_prints_its_symbol_once():
-    res, reg = run()
+    res, _ = run()
     eqs = _printed_equations(res.checks[0].controlling.lines)
     mn_om = [eq for eq in eqs if eq[0] == "frac(M_n,Omega_b)"]
     assert len(mn_om) == 1
-    symbol, *rest = mn_om[0]
+    _, *rest = mn_om[0]
     assert "frac(M_n,Omega_b)" not in rest  # printed once: symbol, then substitution, then result
     assert rest[0].startswith("frac((")    # the substituted values come straight after the symbol
 
 
 def test_no_printed_line_repeats_a_part_side_by_side():
-    res, reg = run()
+    res, _ = run()
     for chk in (c for c in res.checks if c.computed):
         for eq in _printed_equations(chk.controlling.lines):
-            for a, b in zip(eq, eq[1:]):
+            for a, b in itertools.pairwise(eq):
                 assert a != b, f"repeated part in printed line: {' = '.join(eq)}"
 
 
@@ -270,7 +271,7 @@ def test_section_properties_page_has_a_post_block_with_r():
 
 
 def test_check_5_envelope_prints_alpha_ratio_only_for_moment_cases():
-    res, reg = run()
+    res, _ = run()
     chk5 = res.check(5)
     table = report._envelope_5(chk5)
     for c in chk5.checked:
@@ -316,7 +317,7 @@ def test_slenderness_flag_prints_in_the_check_5_summary_row():
 
 
 def test_second_order_sentence_is_printed_in_the_controlling_moment_case():
-    res, reg = run()
+    res, _ = run()
     src = report._lines(res.check(5).controlling.lines)
     assert "Second-order effects negligible: αPr/Pe = " in src
     assert "amplification taken as 1.0." in src

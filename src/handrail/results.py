@@ -9,7 +9,7 @@ and loading.py; engine.py runs them in order.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, cast
 
 from handrail.calc import Comparison, Line, Term, compare, fmt_ratio, term
 from handrail.directions import Direction, LoadType
@@ -27,8 +27,8 @@ class Case:
     load_type: LoadType | None
     status: str  # "checked", "exempt", "not checked"
     combination: str = ""
-    demand: object = None
-    capacity: object = None
+    demand: Any = None
+    capacity: Any = None
     ratio: float | None = None
     lines: list[Line] = field(default_factory=list)
     remark: str = ""
@@ -66,7 +66,8 @@ class Check:
         # Highest ratio; ties go to the first case in envelope order.
         best = None
         for c in self.checked:
-            if best is None or c.ratio > best.ratio:
+            # A checked case always has its ratio.
+            if best is None or cast(float, c.ratio) > cast(float, best.ratio):
                 best = c
         return best
 
@@ -78,7 +79,8 @@ class Check:
     def within_unity(self) -> Comparison:
         """The controlling ratio against 1.00: one comparison gives both the
         verdict and the sign the closing line prints (ADR 0002)."""
-        return compare(term('"Ratio"', self.controlling.ratio, fmt_ratio), "<=", Term("1.00", 1.0))
+        ratio = cast(Case, self.controlling).ratio  # asked only of a computed check, which has one
+        return compare(term('"Ratio"', ratio, fmt_ratio), "<=", Term("1.00", 1.0))
 
     @property
     def ok(self) -> bool:
@@ -96,12 +98,12 @@ class Check:
 
 @dataclass
 class Loading:
-    P: object          # concentrated guard load
-    w_L: object        # uniform guard load, or None when exempt
-    w_D: object        # top rail self-weight
-    L_post: object     # post cantilever length, h - t_p
-    D_rail: object     # top rail dead load delivered to the post, w_D times the span
-    P_D: object        # axial dead load at the top of the baseplate (D at the post)
+    P: Any          # concentrated guard load
+    w_L: Any        # uniform guard load, or None when exempt
+    w_D: Any        # top rail self-weight
+    L_post: Any     # post cantilever length, h - t_p
+    D_rail: Any     # top rail dead load delivered to the post, w_D times the span
+    P_D: Any        # axial dead load at the top of the baseplate (D at the post)
     exempt: bool
     exemption_statement: str
     lines: list[Line]

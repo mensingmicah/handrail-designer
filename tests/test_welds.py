@@ -86,7 +86,7 @@ def test_axial_only_is_uniform():
 
 
 def test_theta_90_gives_k_ds_1_5():
-    reg, rg = _ring()
+    reg, _ = _ring()
     sh = Sheet(reg)
     theta, k = welds.directional_increase(sh, reg, Sym("f_r", Q_(100, "lbf/inch")), P15)
     assert theta.value.m_as("degree") == 90
@@ -97,7 +97,7 @@ def test_theta_90_gives_k_ds_1_5():
 
 def test_directional_increase_stops_on_a_section_that_is_not_round():
     # W2, with a stand-in family: only pipe can be entered today.
-    reg, rg = _ring()
+    reg, _ = _ring()
     rect = dataclasses.replace(P15, family="rectangular HSS", label="FakeTube")
     with pytest.raises(SectionStop, match=r"FakeTube \(rectangular HSS\): the directional strength increase "
                                           r"rule for this section family has not been drafted"):
@@ -133,8 +133,8 @@ def test_strength_without_base_metal_demand_is_the_weld_metal_ratio():
 # Check 3: top rail weld to post (dev section, not a test case)
 # ---------------------------------------------------------------------------
 
-from handrail import engine  # noqa: E402
-from handrail.project import (  # noqa: E402
+from handrail import engine
+from handrail.project import (
     NO_INTERMEDIATE, Baseplate, IntermediateRail, Loads, Member, Project, ProjectInfo, Welds,
 )
 

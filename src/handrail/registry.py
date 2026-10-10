@@ -56,7 +56,7 @@ class Entry:
         return self.status == "drafted"
 
     @property
-    def quantity(self):
+    def quantity(self) -> Any:
         """The value as a pint quantity (or a plain float if dimensionless)."""
         if self.unit in NON_QUANTITY_UNITS:
             raise RegistryError(f"{self.id} is a {self.unit} entry, not a quantity",

@@ -20,8 +20,9 @@ and the baseplate, W_bp = rho B N t_p, which enters the reactions only
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import Any, cast
 
-from handrail.calc import Line, Sheet, mtext, order
+from handrail.calc import Line, Sheet, Sym, mtext, order
 from handrail.demand import Combinations, Given, Wording, demand
 from handrail.directions import CONCENTRATED, DISTRIBUTED, LATERAL, UPWARD, Direction, Kind, LoadType, unknown
 from handrail.project import Project
@@ -58,9 +59,9 @@ class ReactionSet:
     load_type: str             # the governing guard load type, as named (S4-5)
     combination: str           # the label, as printed
     present: bool              # False: no upward set (no net uplift)
-    V: object = None           # factored base shear (lbf)
-    N: object = None           # factored axial force, signed, tension positive (lbf)
-    M: object = None           # factored base moment (lbf*inch)
+    V: Any = None           # factored base shear (lbf)
+    N: Any = None           # factored axial force, signed, tension positive (lbf)
+    M: Any = None           # factored base moment (lbf*inch)
     lines: list[Line] = field(default_factory=list)
     remark: str = ""           # why the set is absent
 
@@ -68,7 +69,7 @@ class ReactionSet:
 @dataclass
 class Reactions:
     head: list[Line]                     # the dead load at the base and the governing load type
-    dead: list[tuple[str, object]]       # the D breakdown as the table prints it, then the total
+    dead: list[tuple[str, Any]]       # the D breakdown as the table prints it, then the total
     sets: list[ReactionSet]
     lateral_note: str                    # printed with the lateral set (S4-4)
 
@@ -137,7 +138,8 @@ def reaction_sets(registry: Registry, project: Project, loading: Loading) -> Rea
                                     remark=f"No net uplift ({d.no_net}): no upward set"))
             continue
         if name == LATERAL:
-            sets.append(ReactionSet(name, named, d.label, True, V=d.V.value, N=-d.P.value, M=d.M.value,
+            V, M = cast(Sym, d.V), cast(Sym, d.M)  # the lateral demand always has its shear and moment
+            sets.append(ReactionSet(name, named, d.label, True, V=V.value, N=-d.P.value, M=M.value,
                                     lines=d.lines))
         elif name == UPWARD:
             zero_V, zero_M = 0 * d.P.value, 0 * d.P.value * project.post_height.value

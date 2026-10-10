@@ -24,7 +24,8 @@ branch and the post wall the chord.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Callable
+from typing import Any, cast
+from collections.abc import Callable
 
 from handrail import joints
 from handrail.calc import (PI, Line, Sheet, Sym, absolute, arccos, compare, fmt_quantity_plain, maximum, minimum,
@@ -40,7 +41,7 @@ from handrail.intermediate import NONE_TEXT
 from handrail.joints import JointMember
 from handrail.loading import COMBO, combo_text, exempt_case
 from handrail.materials import FEXX_ENTRY, FU_ENTRY
-from handrail.project import NO_INTERMEDIATE, SAME_AS_TOP, Project
+from handrail.project import NO_INTERMEDIATE, SAME_AS_TOP, Member, Project
 from handrail.registry import Registry
 from handrail.results import Case, Check, Loading
 from handrail.shapes import DB, PipeSection
@@ -56,17 +57,17 @@ class WeldCase(Case):
     """A weld check case, with the values its envelope row prints."""
 
     sense: str = ""            # axial force on the ring: "compression" or "tension"
-    f_a: object = None         # axial force per inch
-    f_b: object = None         # bending force per inch at the extreme fiber; None without moment
-    f_v: object = None         # shear per inch; None without horizontal load
-    f_n: object = None         # normal force per inch at the governing fiber; None with shear only (Check 4b)
-    f_r: object = None         # resultant per inch at the governing fiber
+    f_a: Any = None         # axial force per inch
+    f_b: Any = None         # bending force per inch at the extreme fiber; None without moment
+    f_v: Any = None         # shear per inch; None without horizontal load
+    f_n: Any = None         # normal force per inch at the governing fiber; None with shear only (Check 4b)
+    f_r: Any = None         # resultant per inch at the governing fiber
     fiber: str = ""            # "compression side", "tension side" or "uniform"
-    theta: object = None       # angle of f_r to the weld axis; None where k_ds is not computed from it
+    theta: Any = None       # angle of f_r to the weld axis; None where k_ds is not computed from it
     k_ds: float | None = None
-    weld_allow: object = None  # weld metal R_n/Omega per inch
-    base_allow: object = None  # base metal R_n/Omega per inch at the checked fusion face
-    base_demand: object = None  # force per inch on the base metal line; None when the face sees none
+    weld_allow: Any = None  # weld metal R_n/Omega per inch
+    base_allow: Any = None  # base metal R_n/Omega per inch at the checked fusion face
+    base_demand: Any = None  # force per inch on the base metal line; None when the face sees none
     weld_ratio: float | None = None
     base_ratio: float | None = None  # None when the fusion face sees no force in this case
     governs: str = ""          # the line demand, capacity and ratio come from: "weld metal" or "base metal"
@@ -119,7 +120,7 @@ class Part:
 
     key: str
     symbol: str
-    t: object
+    t: Any
     note: str
     source: str
 
@@ -403,7 +404,8 @@ def _weld_result(sh: Sheet, ws: WeldLines, f: RingForces, direction: Direction, 
     bd = ws.base_demand(f)
     s = strength(sh, ws.rg, ws.wm, k_ds, f.f_r, ws.base, bd, ws.base_note)
     if s.base_ratio is not None and s.base_ratio.value > s.weld_ratio.value:
-        governs, demand_value, capacity_value = "base metal", bd.value, ws.base.allow.value
+        # A base metal ratio means the face has a demand.
+        governs, demand_value, capacity_value = "base metal", cast(Sym, bd).value, ws.base.allow.value
     else:
         governs, demand_value, capacity_value = "weld metal", f.f_r.value, s.weld_allow.value
     return WeldCase(direction, load_type, "checked", label,
@@ -577,6 +579,9 @@ def check_4b(registry: Registry, project: Project, post: PipeSection, inter: Pip
         chk.observation, chk.result = NONE_TEXT, "None"
         return chk
 
+    # Past the "none" return above there is an intermediate rail: its section and its member.
+    inter = cast(PipeSection, inter)
+    int_member = cast(Member, project.intermediate_member)
     same = state == SAME_AS_TOP
     head_guard: list[Line] = []
     if same:
@@ -617,7 +622,8 @@ def check_4b(registry: Registry, project: Project, post: PipeSection, inter: Pip
     simple = registry.get("ej.weld.intermediate_simple_shear")
     model.decision(mtext("Intermediate rail to post weld"), "Simple shear connection", simple.value,
                    cite_ids=(simple.id, INT_RING))
-    size = project.welds.rail_to_post if same else project.welds.intermediate_rail_to_post
+    # Its own section always has its own weld size (project.py requires it).
+    size = project.welds.rail_to_post if same else cast(Dimension, project.welds.intermediate_rail_to_post)
     rg = ring(registry, inter, size, member="intermediate rail", symbol='D_"int"', bending=False)
     limits = size_limits(registry, rg.w, (nominal_wall("int", "Intermediate rail", inter),
                                           nominal_wall("post", "Post", post)))
@@ -627,7 +633,7 @@ def check_4b(registry: Registry, project: Project, post: PipeSection, inter: Pip
                          "No directional increase at the intermediate rail to post weld (a branch-to-chord joint)")
     # Base metal at both fusion faces, each in shear rupture against the
     # in-plane shear; the lower allowable governs (Micah, 2026-10-09). W4: t_des.
-    post_grade, int_grade = project.post.grade, project.intermediate_member.grade
+    post_grade, int_grade = project.post.grade, int_member.grade
     t_post = Part("t_post", 't_"post"', post.tdes, f"Post design wall thickness, {post.label}", DB)
     t_int = Part("t_int", 't_"int"', inter.tdes, f"Intermediate rail design wall thickness, {inter.label}", DB)
     base_post = base_metal(registry, "Base metal: post wall fusion face (chord)", FU_ENTRY[post_grade],

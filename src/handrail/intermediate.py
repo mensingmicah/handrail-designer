@@ -22,13 +22,14 @@ intermediate rail it prints "none".
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import cast
 
 from handrail import beams
 from handrail.calc import Const, Line, Sheet, compare, fmt_quantity_plain, term
 from handrail.flexure import flexural_capacity
 from handrail.loading import COMBO, combo_text
 from handrail.directions import COMPONENT, COMPONENT_DIRECTIONS, DOWNWARD, HORIZONTAL, Direction, unknown
-from handrail.project import NO_INTERMEDIATE, SAME_AS_TOP, DeflectionLimit, Project
+from handrail.project import NO_INTERMEDIATE, SAME_AS_TOP, DeflectionLimit, Member, Project
 from handrail.registry import Registry
 from handrail.results import Case, Check, Loading
 from handrail.shapes import DB, PipeSection
@@ -141,7 +142,9 @@ def check_4a(registry: Registry, project: Project, inter: PipeSection | None, lo
                     "so Checks 1 and 2 do not cover it", cite_ids=("ej.intermediate.same_as_top",))
         head = sh.lines
 
-    grade = project.intermediate_member.grade
+    # Past the "none" return above there is an intermediate rail: its section and its member.
+    inter = cast(PipeSection, inter)
+    grade = cast(Member, project.intermediate_member).grade
     cap = flexural_capacity(registry, inter, grade)
     chk.flags = cap.flags
     for direction in COMPONENT_DIRECTIONS:

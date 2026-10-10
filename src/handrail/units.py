@@ -10,4 +10,7 @@ is ``lbf`` internally; the PDF prints it as "lb" per the brief's fixed units.
 import pint
 
 ureg = pint.UnitRegistry()
-Q_ = ureg.Quantity
+# pint's Quantity is generic in its magnitude type, and pyright will not take
+# a registry's bound Quantity class as an annotation. The tool annotates with
+# Q_ everywhere, so the report is silenced on this one line (issue #7).
+Q_ = ureg.Quantity  # pyright: ignore[reportInvalidTypeForm]
