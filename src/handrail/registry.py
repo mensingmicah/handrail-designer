@@ -65,6 +65,11 @@ class Entry:
             return self.value  # int or float, kept as written so it prints as written
         return Q_(self.value, self.unit)
 
+    def in_range(self, wall_range: str) -> Any:
+        """One value out of a by-wall-range entry, as a pint quantity: the
+        unit is the text before " by " ("ksi by wall range")."""
+        return Q_(self.value[wall_range], self.unit.split(" by ")[0])
+
     @property
     def equation_number(self) -> str:
         """The equation as printed text names it, read from the cite:

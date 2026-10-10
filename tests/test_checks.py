@@ -19,7 +19,6 @@ from handrail.project import (
 )
 from handrail.registry import Registry
 from handrail.results import Case, Check
-from handrail.validate import validate
 from handrail.units import Q_
 
 E, FY, OMEGA = 29000.0, 35.0, 1.67  # ksi, ksi, - (registry values, restated for the plain calc)
@@ -189,19 +188,21 @@ def test_deflection_bypass_computes_nothing():
 
 
 def test_unsupported_grade_is_refused():
-    p = dataclasses.replace(project(), top_rail=Member("Pipe2STD", "A500 Gr B"))
-    with pytest.raises(ProjectError, match="A53 Gr B only"):
+    p = dataclasses.replace(project(), top_rail=Member("Pipe2STD", "A992"))
+    with pytest.raises(ProjectError, match="top rail grade 'A992': for AISC pipe this version supports A53 Gr B, "):
         engine.run(p, Registry())
 
 
-def test_a_grade_with_fy_but_no_fu_entry_is_refused(monkeypatch):
-    """Issue #4: a grade added to FY_ENTRY alone must stop at validation,
-    not as a KeyError at Check 3's rail fusion face."""
-
-    monkeypatch.setitem(materials.FY_ENTRY, "A500 Gr C", "material.A53_GrB.Fy")
-    p = dataclasses.replace(project(), top_rail=Member("Pipe2STD", "A500 Gr C"))
-    with pytest.raises(ProjectError, match="top rail grade 'A500 Gr C': this version supports A53 Gr B only"):
-        validate(p, Registry())
+def test_every_supported_grade_has_both_its_fy_and_its_fu_entry():
+    """Issue #4: a grade with Fy and no Fu must never get as far as Check
+    3's rail fusion face. A grade is one record holding both entries
+    (materials.Grade), and each entry exists in the registry."""
+    reg = Registry()
+    for family, grades in materials.GRADES.items():
+        for name, grade in grades.items():
+            for entry_id in (grade.Fy, grade.Fu):
+                entry = reg.get(entry_id)
+                assert entry.unit == ("ksi by wall range" if grade.by_wall else "ksi"), f"{family}, {name}: {entry_id}"
 
 
 def test_entries_used_are_tracked():

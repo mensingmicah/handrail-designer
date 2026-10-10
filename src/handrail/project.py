@@ -58,8 +58,13 @@ class ProjectInfo:
 
 @dataclass(frozen=True)
 class Member:
+    """A rail or the post as entered. A grade the file leaves out is blank
+    here with ``grade_defaulted`` set; the engine fills it in by shape
+    before anything reads it (materials.with_default_grades; S5-5, S5-10)."""
+
     section: str  # AISC designation, e.g. "Pipe1-1/2STD"
-    grade: str
+    grade: str = ""
+    grade_defaulted: bool = False
 
 
 @dataclass(frozen=True)
@@ -242,12 +247,19 @@ def _dimension(table: dict, key: str, where: str) -> Dimension:
     return dim
 
 
+def _grade(table: dict, where: str) -> tuple[str, bool]:
+    """The member's grade as entered, and whether it is to be defaulted by
+    shape because the file leaves it out (S5-5)."""
+    if "grade" in table:
+        return _str(table["grade"], f"{where}.grade"), False
+    return "", True
+
+
 def _member(raw: dict, where: str) -> Member:
     t = _need(raw, where, "top level")
-    return Member(
-        section=_str(_need(t, "section", where), f"{where}.section"),
-        grade=_str(t.get("grade", "A53 Gr B"), f"{where}.grade"),  # brief: pipe defaults to A53 Gr B
-    )
+    grade, defaulted = _grade(t, where)
+    return Member(section=_str(_need(t, "section", where), f"{where}.section"), grade=grade,
+                  grade_defaulted=defaulted)
 
 
 def _given(table: dict, where: str, fields: dict) -> dict:
@@ -276,7 +288,7 @@ def _deflection_limit(raw: dict, member: str, default: DeflectionLimit) -> Defle
     return dataclasses.replace(default, **given)
 
 
-def _intermediate_rail(raw: dict, top_rail: Member, welds: Welds) -> IntermediateRail:
+def _intermediate_rail(raw: dict, welds: Welds) -> IntermediateRail:
     """The intermediate rail's state, refusing inputs that conflict with it."""
     t = raw.get("intermediate_rail", {})
     w = "intermediate_rail"
@@ -284,10 +296,10 @@ def _intermediate_rail(raw: dict, top_rail: Member, welds: Welds) -> Intermediat
     same_given = "same_as_top_rail" in t
     same = _bool(t["same_as_top_rail"], f"{w}.same_as_top_rail") if same_given else True  # the default (S4-1)
     section = _str(t["section"], f"{w}.section") if "section" in t else None
-    grade = _str(t["grade"], f"{w}.grade") if "grade" in t else None
+    grade_given = "grade" in t
     own_inputs = [name for name, given in (
         ("[intermediate_rail] section", section is not None),
-        ("[intermediate_rail] grade", grade is not None),
+        ("[intermediate_rail] grade", grade_given),
         ("[welds] intermediate_rail_to_post", welds.intermediate_rail_to_post is not None),
         ("[deflection.intermediate_rail]", "intermediate_rail" in raw.get("deflection", {})),
     ) if given]
@@ -318,9 +330,10 @@ def _intermediate_rail(raw: dict, top_rail: Member, welds: Welds) -> Intermediat
         raise ProjectError("[welds] is missing 'intermediate_rail_to_post', required when the intermediate rail "
                            "has its own section (same_as_top_rail = false)",
                            stop=Stop.INTERMEDIATE_OWN_NEEDS_WELD_SIZE)
+    grade, defaulted = _grade(t, w)  # a grade left out: S5-10, refining S4-1
     return IntermediateRail(
         state=OWN_SECTION,
-        member=Member(section=section, grade=grade if grade is not None else top_rail.grade),  # S4-1
+        member=Member(section=section, grade=grade, grade_defaulted=defaulted),
         deflection=_deflection_limit(raw, "intermediate_rail", RAIL_DEFLECTION),
     )
 
@@ -374,7 +387,7 @@ def from_dict(raw: dict) -> Project:
     bt = _need(raw, "baseplate", "top level")
     baseplate = Baseplate(B=_dimension(bt, "B", "baseplate"), N=_dimension(bt, "N", "baseplate"),
                           **_given(bt, "baseplate", {"grade": ("grade", _str)}))
-    intermediate = _intermediate_rail(raw, top_rail, welds)
+    intermediate = _intermediate_rail(raw, welds)
 
     ld = raw.get("loads", {})
     ex = ld.get("uniform_exemption", {})

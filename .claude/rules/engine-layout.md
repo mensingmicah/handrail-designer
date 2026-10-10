@@ -18,6 +18,8 @@ convention below is held by a test, named beside it.
 | stops.py, errors.py | The id of every stop; the error classes that carry one |
 | shapes.py | Section, the one type for every section (family, source, both axes); the family names; the database lookup |
 | joints.py | Which section families may meet at each joint, as data |
+| materials.py | Which registry entry holds Fy and Fu for a grade, shape and wall; the default grade by shape |
+| members.py | Each member as the checks read it: its section, and the project with every default grade filled in |
 | results.py | Case, Check, Loading, Results |
 | loading.py | The guard loads and the dead load at the post |
 | properties.py | The section properties block |

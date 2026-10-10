@@ -140,7 +140,8 @@ Input validation: these run before anything is computed
 | Id | Stops when | Decision | Test |
 | --- | --- | --- | --- |
 | `section.not_found` | A section's designation is not in the shapes database file. | Standard sections (checks.md) | `test_stop_is_triggered[section.not_found]` |
-| `grade.unsupported` | A rail or post grade has no Fy or no Fu registry entry. The message names the grade and the grades supported. | W12; grades (inputs.md) | `test_stop_is_triggered[grade.unsupported]` |
+| `grade.unsupported` | A rail or post grade has no Fy and Fu registry entries for the member's shape. The message names the grade and the grades supported for that shape. | W12; S5-5 (inputs.md) | `test_stop_is_triggered[grade.unsupported]` |
+| `grade.wall_over_limit` | A member in A618 Gr Ia, Ib or II has a nominal wall over 1-1/2 in, where AISC Manual Table 2-4 gives no Fy and Fu. The message names the member, its wall, the grade and the limit. | S5-7 (inputs.md) | `test_stop_is_triggered[grade.wall_over_limit]` |
 | `grade.post_fu_fy_below_limit` | The post grade's Fu/Fy is below 1.20, so yielding no longer governs over rupture and Check 5 no longer covers the post wall at the weld. | W5 (welds.md); S5-13 | `test_stop_is_triggered[grade.post_fu_fy_below_limit]` |
 | `weld.electrode_unsupported` | The electrode is not E70XX. | W12 | `test_stop_is_triggered[weld.electrode_unsupported]` |
 | `baseplate.grade_unsupported` | The baseplate grade is not A36. | W12 | `test_stop_is_triggered[baseplate.grade_unsupported]` |
@@ -151,9 +152,10 @@ Input validation: these run before anything is computed
 ### Section families at a joint
 
 The tables above (src/handrail/joints.py). Validation tests all three
-joints before anything is computed. The Check 7 weld tests its own joint
-again, so a calc computed without validation still never computes an
-unlisted post.
+joints before anything is computed, and before the grades: a grade is
+supported for a shape, and a family the tool does not have yet has no
+grades to name. The Check 7 weld tests its own joint again, so a calc
+computed without validation still never computes an unlisted post.
 
 | Id | Stops when | Decision | Test |
 | --- | --- | --- | --- |

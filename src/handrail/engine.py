@@ -7,7 +7,7 @@ top of the file.
 
 from __future__ import annotations
 
-from handrail import shapes
+from handrail import members
 from handrail.intermediate import check_4a
 from handrail.loading import build_loading
 from handrail.post import check_5, check_6
@@ -27,11 +27,9 @@ def compute(project: Project, registry: Registry) -> Results:
     A separate entry point so a test can compute a case that validation
     refuses (docs/plans/slice-3.md, T1); the CLI always validates first.
     """
-    rail = shapes.section(project.top_rail.section)
-    post = shapes.section(project.post.section)
-    member = project.intermediate_member
+    m = members.resolve(project, registry)
+    project, rail, post, inter = m.project, m.rail, m.post, m.inter
     same = project.intermediate_rail.state == SAME_AS_TOP
-    inter = None if member is None else rail if same else shapes.section(member.section)
     loading = build_loading(project, registry, rail, post, inter)
     props = section_lines(registry, rail)
     post_props = section_lines(registry, post, with_r=True)

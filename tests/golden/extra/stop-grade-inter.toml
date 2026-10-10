@@ -28,4 +28,4 @@ N = 8
 [intermediate_rail]
 same_as_top_rail = false
 section = "Pipe1-1/4STD"
-grade = "A500 Gr B"
+grade = "A992"

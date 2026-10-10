@@ -1,1 +1,1 @@
-ProjectError: intermediate rail grade 'A500 Gr B': this version supports A53 Gr B only
+ProjectError: intermediate rail grade 'A992': for AISC pipe this version supports A53 Gr B, A500 Gr B, A500 Gr C, A501 Gr A, A501 Gr B, A618 Gr Ia, A618 Gr Ib, A618 Gr II, A618 Gr III, A847, A1085 Gr A only

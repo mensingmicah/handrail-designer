@@ -23,13 +23,14 @@ from pathlib import Path
 
 import pytest
 
-from handrail import dimensions, engine, flexure, joints, post, project, shapes
+from handrail import dimensions, engine, flexure, joints, materials, members, post, project, shapes, welds
 from handrail.errors import InputError, SectionStop
 from handrail.joints import ALLOWED, CHECK_3, CHECK_4B, CHECK_7, GROUPS, JOINTS
 from handrail.project import ProjectError
 from handrail.registry import Registry
 from handrail.shapes import PIPE, RECT_HSS
 from handrail.stops import Stop
+from handrail.units import Q_
 from handrail.validate import validate
 from test_registry import entry, write
 
@@ -239,6 +240,13 @@ def _(tmp_path, monkeypatch):
     _run(post={"grade": "A36"})
 
 
+@trigger(Stop.GRADE_WALL_OVER_LIMIT)
+def _(tmp_path, monkeypatch):
+    # No database section has a wall over 1-1/2 in: a stand-in wall of 1.6 in.
+    thick = dataclasses.replace(shapes.section("Pipe12XXS"), tnom=Q_(1.6, "inch"))
+    materials.yield_stress(Registry(), "A618 Gr II", thick, "Post")
+
+
 @trigger(Stop.GRADE_POST_FU_FY_BELOW_LIMIT)
 def _(tmp_path, monkeypatch):
     reg = Registry()
@@ -298,17 +306,22 @@ def _(tmp_path, monkeypatch):
     _run(intermediate_rail=OWN, welds=OWN_WELD)
 
 
+def _check_7_on(family):
+    """Check 7 on a post of this family, as the weld code meets it when a
+    calc is computed without validation."""
+    reg = Registry()
+    res = engine.compute(_load(), reg)
+    welds.check_7(reg, res.project, dataclasses.replace(res.post, family=family), res.loading)
+
+
 @trigger(Stop.JOINT_CHECK7_NOT_SUPPORTED)
 def _(tmp_path, monkeypatch):
-    # Inside the weld code, when a calc is computed without validation.
-    _stand_in(monkeypatch, RECT_HSS)
-    engine.compute(_load(), Registry())
+    _check_7_on(RECT_HSS)
 
 
 @trigger(Stop.JOINT_CHECK7_NO_CELL)
 def _(tmp_path, monkeypatch):
-    _stand_in(monkeypatch, STAND_IN)
-    engine.compute(_load(), Registry())
+    _check_7_on(STAND_IN)
 
 
 # -- a section the checks will not check ---------------------------------------
@@ -325,7 +338,7 @@ def _(tmp_path, monkeypatch):
 
 @trigger(Stop.SECTION_SLENDER_IN_COMPRESSION)
 def _(tmp_path, monkeypatch):
-    post.compression_capacity(Registry(), _load(), _fake(100))
+    post.compression_capacity(Registry(), members.resolve(_load(), Registry()).project, _fake(100))
 
 
 @trigger(Stop.CHECK5_SECOND_ORDER_NOT_NEGLIGIBLE)
@@ -610,13 +623,21 @@ def test_a_stand_in_family_with_no_row_stops_at_each_of_the_three_joints(monkeyp
 
 
 def test_the_weld_code_stops_at_the_check_7_joint_when_a_calc_skips_validation(monkeypatch):
-    """compute() without validate(): the Check 7 weld asks the same table,
-    so an unlisted post is still never computed."""
+    """Without validate(): the Check 7 weld asks the same table, so an
+    unlisted post is still never computed. A whole calc computed for a
+    family the tool does not have stops sooner, at the first check that
+    reads a grade: a family with no row has no grades either."""
+    with pytest.raises(SectionStop) as stopped:
+        _check_7_on(STAND_IN)
+    assert stopped.value.stop is Stop.JOINT_CHECK7_NO_CELL
+    assert "Check 7 joint (post on the baseplate)" in str(stopped.value) and STAND_IN in str(stopped.value)
+
     _stand_in(monkeypatch, STAND_IN)
     with pytest.raises(SectionStop) as stopped:
         engine.compute(_load(), Registry())
-    assert stopped.value.stop is Stop.JOINT_CHECK7_NO_CELL
-    assert "Check 7 joint (post on the baseplate)" in str(stopped.value) and STAND_IN in str(stopped.value)
+    assert stopped.value.stop is Stop.GRADE_UNSUPPORTED
+    assert str(stopped.value) == ("Pipe2STD grade '': this version has no grades for a section of the family "
+                                  "stand-in family")
 
 
 def test_a_dimension_stop_keeps_its_own_id_through_the_project_file():

@@ -32,7 +32,7 @@ from handrail.directions import (
 from handrail.errors import SectionStop
 from handrail.flexure import flexural_capacity
 from handrail.loading import combo_text, exempt_case
-from handrail.materials import FY_ENTRY
+from handrail.materials import yield_stress
 from handrail.project import Project
 from handrail.registry import Entry, Registry
 from handrail.results import Case, Check, Loading
@@ -79,7 +79,7 @@ def compression_capacity(registry: Registry, project: Project, post: Section) ->
     """Classify per Table B4.1a and compute Pc per Chapter E. Raises SectionStop."""
     grade = project.post.grade
     head = Sheet(registry)
-    Fy = head.code_value("F_y", "F_y", FY_ENTRY[grade], f"Yield stress, {grade}")
+    Fy = yield_stress(registry, grade, post).line(head, "F_y", "F_y")
     E = head.code_value("E", "E", "material.steel.E", "Modulus of elasticity")
     # The same D/t line the flexure block prints, so moment cases skip it here.
     lam = head.given("lambda", "lambda", post.D_t, "lambda = D/t, tabulated (design wall)", post.source)
@@ -164,7 +164,7 @@ def tension_capacity(registry: Registry, project: Project, post: Section) -> Ten
     """Tensile yielding on the gross section, §D2(a)."""
     sh = Sheet(registry)
     grade = project.post.grade
-    Fy = sh.code_value("F_y", "F_y", FY_ENTRY[grade], f"Yield stress, {grade}")
+    Fy = yield_stress(registry, grade, post).line(sh, "F_y", "F_y")
     A = sh.given("A_g", "A_g", post.A, "Gross area", post.source)
     d21 = registry.get("aisc360.eq.D2-1")
     Pn = sh.line("P_n", "P_n", Fy * A, "Nominal tensile strength: yielding on the gross section",

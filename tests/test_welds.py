@@ -13,6 +13,7 @@ import pytest
 from handrail import dimensions, shapes, welds
 from handrail.calc import Sheet, Sym
 from handrail.errors import SectionStop
+from handrail.materials import Stress
 from handrail.registry import Registry
 from handrail.units import Q_
 
@@ -107,7 +108,7 @@ def test_directional_increase_stops_on_a_section_that_is_not_round():
 def test_strength_ratio_is_the_larger_of_weld_and_base_metal():
     reg, rg = _ring("1/4")
     wm = welds.weld_metal(reg, "E70XX")
-    bm = welds.base_metal(reg, "Base metal", "material.A36.Fu", "A36",
+    bm = welds.base_metal(reg, "Base metal", Stress("material.A36.Fu", "A36"),
                           welds.Part("t_p", "t_p", Q_(0.5, "inch"), "Baseplate", "Input"))
     sh = Sheet(reg)
     f_r = Sym("f_r", Q_(5000, "lbf/inch"))
@@ -123,7 +124,7 @@ def test_strength_ratio_is_the_larger_of_weld_and_base_metal():
 def test_strength_without_base_metal_demand_is_the_weld_metal_ratio():
     reg, rg = _ring()
     wm = welds.weld_metal(reg, "E70XX")
-    bm = welds.base_metal(reg, "Base metal", "material.A53_GrB.Fu", "A53 Gr B",
+    bm = welds.base_metal(reg, "Base metal", Stress("material.A53_GrB.Fu", "A53 Gr B"),
                           welds.Part("t_des", 't_"des"', Q_(0.135, "inch"), "Rail wall", "DB"))
     s = welds.strength(Sheet(reg), rg, wm, Sym("k_ds", 1.0), Sym("f_r", Q_(100, "lbf/inch")), bm, None, "")
     assert s.base_ratio is None and s.ratio.value == s.weld_ratio.value
@@ -263,12 +264,13 @@ def test_check_7_theta_is_computed_at_the_governing_point():
     assert 'sin(theta)^("1.5")' in printed['k_"ds"'].symbolic
 
 
-def test_check_7_stops_on_a_post_that_is_not_round(monkeypatch):
-    # W2 inside the weld code, past validation: compute() with a stand-in family.
-    real = shapes.section
-    monkeypatch.setattr(shapes, "section", lambda d: dataclasses.replace(real(d), family="rectangular HSS"))
+def test_check_7_stops_on_a_post_that_is_not_round():
+    # W2 inside the weld code, past validation: Check 7 on a post of a stand-in family.
+    reg = Registry()
+    res = engine.compute(project(), reg)
+    rectangular = dataclasses.replace(res.post, family="rectangular HSS")
     with pytest.raises(SectionStop, match=r"directional strength increase rule for this section family"):
-        engine.compute(project(), Registry())
+        welds.check_7(reg, res.project, rectangular, res.loading)
 
 
 def test_both_weld_checks_run_in_check_number_order():

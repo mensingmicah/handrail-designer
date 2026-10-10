@@ -19,7 +19,7 @@ is ever copied into tests/cases/ (CLAUDE.md rule 5).
 import dataclasses
 from collections.abc import Callable
 
-from handrail import dimensions, engine, flexure, post, project, report, shapes, welds
+from handrail import dimensions, engine, flexure, members, post, project, report, shapes, welds
 from handrail.calc import Sheet, Sym
 from handrail.errors import InputError
 from handrail.registry import Registry
@@ -39,7 +39,9 @@ RECTANGULAR = "rectangular HSS"  # a stand-in family: no project can enter one y
 
 
 def _project(**tables) -> project.Project:
-    return project.from_dict({**BASE, **tables})
+    """The project, with the grades its file leaves out filled in by shape,
+    as the engine does before any check reads one."""
+    return members.resolve(project.from_dict({**BASE, **tables}), Registry()).project
 
 
 def _fake(base: str = "Pipe2STD", **changes) -> shapes.Section:

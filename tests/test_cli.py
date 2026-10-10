@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from handrail import cli, project, shapes
+from handrail import cli, members, project, shapes
 from handrail.registry import Registry
 from handrail.validate import validate
 
@@ -32,7 +32,7 @@ def test_default_output_sits_beside_the_project_file(tmp_path):
     [
         (('span = "6\'-0\\""', 'span = "5 6"'), "not a dimension I can read"),
         (('section = "Pipe2STD"', 'section = "Pipe99STD"'), "Pipe99STD"),
-        (('grade = "A53 Gr B"', 'grade = "A36"'), "A53 Gr B only"),
+        (('grade = "A53 Gr B"', 'grade = "A36"'), "for AISC pipe this version supports A53 Gr B, "),
         (("applies = false", "applies = true"), "needs a statement"),
     ],
 )
@@ -89,7 +89,7 @@ TP = 'baseplate_thickness = "1/2"'
         ("[post]", "[posts]", "unknown table 'posts'"),
         # Post grade uses the rail's grade check, naming the member.
         ('[post]\nsection = "Pipe2STD"      # AISC designation (AISC Shapes Database v16.0)\ngrade = "A53 Gr B"',
-         '[post]\nsection = "Pipe2STD"\ngrade = "A500 Gr B"', "post grade 'A500 Gr B'"),
+         '[post]\nsection = "Pipe2STD"\ngrade = "A992"', "post grade 'A992'"),
         ("limit_L_over = 60", "limit_L_over = 0", "deflection.post.limit_L_over' must be greater than zero"),
         ("limit_L_over = 60", "limit_over = 60", "unknown key 'deflection.post.limit_over'"),
     ],
@@ -411,7 +411,10 @@ def test_own_section_reads_its_inputs_and_defaults_its_grade_to_the_top_rails():
     proj = project.from_dict(raw)
     ir = proj.intermediate_rail
     assert ir.state == project.OWN_SECTION
-    assert ir.member == project.Member("Pipe1-1/4STD", "A53 Gr B")
+    # Left out of the file: blank until the engine fills it in by shape (S5-10).
+    assert ir.member == project.Member("Pipe1-1/4STD", grade_defaulted=True)
+    filled = members.resolve(proj, Registry()).project.intermediate_rail.member
+    assert filled == project.Member("Pipe1-1/4STD", "A53 Gr B", grade_defaulted=True)
     assert proj.intermediate_member == ir.member
     assert ir.deflection == project.DeflectionLimit(ratio=180, bypass=True)
     assert proj.welds.intermediate_rail_to_post.value.m_as("inch") == 0.125
@@ -532,5 +535,6 @@ def test_a_non_round_intermediate_rail_stops(monkeypatch):
 
 
 def test_an_intermediate_grade_this_version_does_not_support_stops():
-    with pytest.raises(project.ProjectError, match="intermediate rail grade 'A500 Gr B': this version supports"):
-        _validate(_own(grade="A500 Gr B"))
+    with pytest.raises(project.ProjectError, match="intermediate rail grade 'A992': for AISC pipe this version "
+                                                   "supports"):
+        _validate(_own(grade="A992"))

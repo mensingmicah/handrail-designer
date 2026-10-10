@@ -9,7 +9,7 @@ from dataclasses import dataclass
 
 from handrail.calc import Line, Sheet, Sym, chain, compare, fmt_g, fmt_sig, minimum, mtext
 from handrail.errors import SectionStop
-from handrail.materials import FY_ENTRY
+from handrail.materials import yield_stress
 from handrail.registry import Registry
 from handrail.shapes import Section
 from handrail.stops import Stop
@@ -40,7 +40,7 @@ def flexural_capacity(registry: Registry, rail: Section, grade: str) -> Capacity
         "Pipe is designed under the round HSS provisions",
         cite_ids=("aisc360.pipe_as_round_hss",),
     )
-    Fy = sh.code_value("F_y", "F_y", FY_ENTRY[grade], f"Yield stress, {grade}")
+    Fy = yield_stress(registry, grade, rail).line(sh, "F_y", "F_y")
     E = sh.code_value("E", "E", "material.steel.E", "Modulus of elasticity")
     lam = sh.given("lambda", "lambda", rail.D_t, "lambda = D/t, tabulated (design wall)", rail.source)
     lim = sh.line("lambda_lim", "lambda_\"lim\"", sh.coeff(app.id) * E / Fy, "Applicability limit on D/t")

@@ -42,7 +42,7 @@ from handrail.errors import SectionStop
 from handrail.intermediate import NONE_TEXT
 from handrail.joints import JointMember
 from handrail.loading import COMBO, combo_text, exempt_case
-from handrail.materials import FEXX_ENTRY, FU_ENTRY
+from handrail.materials import FEXX_ENTRY, Stress, baseplate_tensile_strength, tensile_strength
 from handrail.project import NO_INTERMEDIATE, SAME_AS_TOP, Member, Project
 from handrail.registry import Registry
 from handrail.results import Case, Check, Loading
@@ -195,14 +195,14 @@ class BaseMetal:
     lines: list[Line]
 
 
-def base_metal(registry: Registry, heading: str, Fu_entry: str, Fu_note: str, part: Part,
+def base_metal(registry: Registry, heading: str, Fu_of: Stress, part: Part,
                sub: str = "BM", key: str = "BM") -> BaseMetal:
     """Shear rupture of the base metal at a fusion face, per inch of weld (W5, W6).
     ``sub`` (the printed subscript) and ``key`` (in the line keys) tell two
     fusion faces apart in one check (Check 4b)."""
     sh = Sheet(registry)
     sh.heading(heading)
-    Fu = sh.code_value(f"F_u_{key}", "F_u", Fu_entry, Fu_note)
+    Fu = Fu_of.line(sh, f"F_u_{key}", "F_u")
     t = sh.given(part.key, part.symbol, part.t, part.note, part.source)
     R = sh.line(f"R_n_{key}", f'R_(n,"{sub}")', sh.coeff("aisc360.eq.J4-4.coeff") * Fu * t,
                 "Shear rupture at the fusion face, per inch of weld",
@@ -466,8 +466,7 @@ def check_3(registry: Registry, project: Project, rail: Section, post: Section, 
                          "No directional increase at the rail to post weld (a branch-to-chord joint)")
     grade = project.top_rail.grade
     t_rail = Part("t_rail", 't_"rail"', rail.tdes, f"Top rail design wall thickness, {rail.label}", rail.source)  # W4
-    base = base_metal(registry, "Base metal: rail fusion face", FU_ENTRY[grade], f"Tensile strength, {grade}",
-                      t_rail)
+    base = base_metal(registry, "Base metal: rail fusion face", tensile_strength(registry, grade, rail), t_rail)
     normal = registry.get("ej.weld.rail_wall_normal")
     walls = Sheet(registry)
     walls.decision(mtext("Rail wall, normal force"), "Not checked", normal.value, cite_ids=(normal.id,))
@@ -507,8 +506,7 @@ def check_7(registry: Registry, project: Project, post: Section, loading: Loadin
     limits = size_limits(registry, rg.w, (nominal_wall("post", "Post", post), t_p))
     wm = weld_metal(registry, project.welds.electrode)
     grade = project.baseplate.grade
-    base = base_metal(registry, "Base metal: baseplate fusion face", FU_ENTRY[grade],
-                      f"Tensile strength, baseplate {grade}", t_p)
+    base = base_metal(registry, "Base metal: baseplate fusion face", baseplate_tensile_strength(grade), t_p)
     head = rg.lines + arm.lines + limits.lines + wm.lines + base.lines + post_wall_covered(registry)
     ws = WeldSetup(
         rg=rg, wm=wm, base=base, head=head,
@@ -638,10 +636,10 @@ def check_4b(registry: Registry, project: Project, post: Section, inter: Section
     post_grade, int_grade = project.post.grade, int_member.grade
     t_post = Part("t_post", 't_"post"', post.tdes, f"Post design wall thickness, {post.label}", post.source)
     t_int = Part("t_int", 't_"int"', inter.tdes, f"Intermediate rail design wall thickness, {inter.label}", inter.source)
-    base_post = base_metal(registry, "Base metal: post wall fusion face (chord)", FU_ENTRY[post_grade],
-                           f"Tensile strength, {post_grade}", t_post, sub="BM,post", key="BM_post")
-    base_int = base_metal(registry, "Base metal: intermediate rail wall fusion face (branch)", FU_ENTRY[int_grade],
-                          f"Tensile strength, {int_grade}", t_int, sub="BM,int", key="BM_int")
+    base_post = base_metal(registry, "Base metal: post wall fusion face (chord)",
+                           tensile_strength(registry, post_grade, post), t_post, sub="BM,post", key="BM_post")
+    base_int = base_metal(registry, "Base metal: intermediate rail wall fusion face (branch)",
+                          tensile_strength(registry, int_grade, inter), t_int, sub="BM,int", key="BM_int")
     both = registry.get("ej.weld.intermediate_base_metal")
     gov = Sheet(registry)
     # One three-way comparison picks the governing face and prints <, = or > (ADR 0002).

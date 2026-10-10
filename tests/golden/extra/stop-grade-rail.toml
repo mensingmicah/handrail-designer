@@ -12,7 +12,7 @@ baseplate_thickness = "1/2"
 
 [top_rail]
 section = "Pipe2STD"
-grade = "A500 Gr B"
+grade = "A992"
 
 [post]
 section = "Pipe2STD"

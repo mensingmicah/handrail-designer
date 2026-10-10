@@ -525,10 +525,11 @@ class Sheet:
         (a database property, or an engineering decision recorded in the brief)."""
         return self.input(key, typst, value, note, cite)
 
-    def code_value(self, key: str, typst: str, entry_id: str, note: str) -> Sym:
-        """A registry value printed as its own line."""
+    def code_value(self, key: str, typst: str, entry_id: str, note: str, select: str = "") -> Sym:
+        """A registry value printed as its own line. ``select`` names the
+        wall range to read out of a by-wall-range entry."""
         e = self.registry.get(entry_id)
-        value = e.quantity
+        value = e.in_range(select) if select else e.quantity
         self.lines.append(Line(typst, value, note, e.cite, key=_key(key)))
         return Sym(typst, value)
 

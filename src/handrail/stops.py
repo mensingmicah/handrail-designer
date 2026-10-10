@@ -50,6 +50,7 @@ class Stop(StrEnum):
     # -- sections, grades and the baseplate (shapes.py, validate.py) -----
     SECTION_NOT_FOUND = "section.not_found"
     GRADE_UNSUPPORTED = "grade.unsupported"
+    GRADE_WALL_OVER_LIMIT = "grade.wall_over_limit"
     GRADE_POST_FU_FY_BELOW_LIMIT = "grade.post_fu_fy_below_limit"
     WELD_ELECTRODE_UNSUPPORTED = "weld.electrode_unsupported"
     BASEPLATE_GRADE_UNSUPPORTED = "baseplate.grade_unsupported"
