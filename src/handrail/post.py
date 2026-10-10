@@ -25,11 +25,11 @@ from typing import Callable
 
 from handrail.calc import PI, Const, Line, Sheet, Sym, Term, compare, fmt_g, fmt_sig, number, sqrt
 from handrail.checks import (
-    DB, DIRECTIONS, DISTRIBUTED, DOWNWARD, FY_ENTRY, LOAD_TYPES, UPWARD,
-    Case, Check, Loading, SectionStop, combo_text, exempt_case, flexural_capacity,
+    DB, FY_ENTRY, Case, Check, Loading, SectionStop, combo_text, exempt_case, flexural_capacity,
 )
-from handrail.demand import (
-    ASD, HORIZONTAL_KIND, Demand, Given, Wording, demand, live_at_post,
+from handrail.demand import ASD, Demand, Given, Wording, demand, live_at_post
+from handrail.directions import (
+    DIRECTIONS, DISTRIBUTED, DOWNWARD, LOAD_TYPES, UPWARD, Direction, Kind, LoadType, kind, unknown,
 )
 from handrail.project import Project
 from handrail.registry import Entry, Registry
@@ -198,13 +198,13 @@ def _capacity(registry: Registry, project: Project, post: PipeSection) -> Capaci
 
 # Check 5 prints required strengths and factors the moment (M_r = 1.0 M_L).
 WORDING = Wording(
-    where={DOWNWARD: "vertical at the top of the post",
-           HORIZONTAL_KIND: "horizontal ({direction}) at the top of the post",
-           UPWARD: "upward at the top of the post"},
+    where={Kind.DOWNWARD: "vertical at the top of the post",
+           Kind.HORIZONTAL: "horizontal ({direction}) at the top of the post",
+           Kind.UPWARD: "upward at the top of the post"},
     axial="P_r",
-    axial_notes={DOWNWARD: "Required axial strength, compression; no moment",
-                 HORIZONTAL_KIND: "Required axial strength: dead load, compression",
-                 UPWARD: "Required axial strength: net tension, guard load opposing dead load"},
+    axial_notes={Kind.DOWNWARD: "Required axial strength, compression; no moment",
+                 Kind.HORIZONTAL: "Required axial strength: dead load, compression",
+                 Kind.UPWARD: "Required axial strength: net tension, guard load opposing dead load"},
     factored="moment", factored_symbol="M_r", factored_note="Required flexural strength",
     moment_symbol="M_L", moment_note="Live-load moment at the top of the baseplate",
     moment_cite="aisc_manual.t3-23.case22.M",
@@ -234,7 +234,11 @@ def _downward(registry, project, loading, cap: Capacity5, load_type) -> PostCase
                     equation=f"Pr/Pc ({cap.compression.Pn_entry.equation_number})")
 
 
-def _moment_case(registry, project, post, loading, cap: Capacity5, direction, load_type) -> PostCase:
+def _moment_case(registry, project, post, loading, cap: Capacity5, direction: Direction,
+                 load_type: LoadType) -> PostCase:
+    if kind(direction) is not Kind.HORIZONTAL:
+        unknown("Check 5 moment case", "horizontal direction case", direction,
+                [d for d in DIRECTIONS if kind(d) is Kind.HORIZONTAL])
     sh = Sheet(registry)
     comp = cap.compression
     sh.heading("Capacity")
@@ -307,15 +311,18 @@ def check_5(registry: Registry, project: Project, post: PipeSection, loading: Lo
     chk = Check(5, "Post combined axial and flexure", "P_r, M_r", "P_c, M_c", flags=cap.flags,
                 summary_flag=cap.compression.summary_flag, derived_lengths=[cap.compression.Lc_line])
     for direction in DIRECTIONS:
+        k = kind(direction)
         for lt in LOAD_TYPES:
             if lt == DISTRIBUTED and loading.exempt:
                 chk.cases.append(exempt_case(registry, direction, PostCase))
-            elif direction == "Downward":
+            elif k is Kind.DOWNWARD:
                 chk.cases.append(_downward(registry, project, loading, cap, lt))
-            elif direction == "Upward":
+            elif k is Kind.UPWARD:
                 chk.cases.append(_upward(registry, project, loading, cap, lt))
-            else:
+            elif k is Kind.HORIZONTAL:
                 chk.cases.append(_moment_case(registry, project, post, loading, cap, direction, lt))
+            else:
+                unknown("Check 5", "kind of direction case", k, Kind)
     return chk
 
 
@@ -349,10 +356,13 @@ def check_6(registry: Registry, project: Project, post: PipeSection, loading: Lo
         chk.bypassed = True
         return chk
     for direction in DIRECTIONS:
-        if direction in ("Downward", "Upward"):
+        k = kind(direction)
+        if k in (Kind.DOWNWARD, Kind.UPWARD):
             chk.cases.append(Case(direction, None, "not checked",
                                   remark="Vertical load: no lateral deflection of the post"))
             continue
+        if k is not Kind.HORIZONTAL:
+            unknown("Check 6", "kind of direction case", k, Kind)
         for lt in LOAD_TYPES:
             if lt == DISTRIBUTED and loading.exempt:
                 chk.cases.append(exempt_case(registry, direction))

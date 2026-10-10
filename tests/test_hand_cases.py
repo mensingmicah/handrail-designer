@@ -45,7 +45,7 @@ from pathlib import Path
 import pytest
 
 from handrail import checks, project
-from handrail.checks import CONCENTRATED
+from handrail.directions import CONCENTRATED
 from handrail.registry import Registry
 
 ROOT = Path(__file__).resolve().parents[1]

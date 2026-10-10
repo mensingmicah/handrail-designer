@@ -9,6 +9,7 @@ independent check.
 import pytest
 
 from handrail import checks, dimensions, shapes
+from handrail.directions import COMPONENT_DIRECTIONS
 from handrail.project import (
     NO_INTERMEDIATE, OWN_SECTION, SAME_AS_TOP, Baseplate, DeflectionLimit, IntermediateRail, Loads, Member, Project,
     ProjectInfo, Welds,
@@ -357,5 +358,5 @@ def test_the_check_4b_reaction_refuses_a_direction_it_does_not_know():
     for direction in ("Upward", "horizontal", "Outward"):
         with pytest.raises(ValueError, match=f"Check 4b: no component load direction '{direction}'"):
             _reaction_4b(Registry(), res.project, res.loading, direction)
-    for direction in checks.COMPONENT_DIRECTIONS:
+    for direction in COMPONENT_DIRECTIONS:
         _reaction_4b(Registry(), res.project, res.loading, direction)

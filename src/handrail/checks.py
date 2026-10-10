@@ -26,6 +26,7 @@ from typing import TYPE_CHECKING
 from handrail import beams, shapes
 from handrail.calc import (Comparison, Const, Line, Sheet, Sym, Term, absolute, chain, compare, fmt_g,
                            fmt_quantity_plain, fmt_ratio, fmt_sig, minimum, mtext, sqrt, term)
+from handrail.directions import CONCENTRATED, DIRECTIONS, DISTRIBUTED, LOAD_TYPES, Direction, LoadType, unknown
 from handrail.errors import InputError
 from handrail.project import SAME_AS_TOP, Member, Project, ProjectError
 from handrail.registry import Entry, Registry
@@ -34,14 +35,6 @@ from handrail.units import Q_
 
 if TYPE_CHECKING:
     from handrail.reactions import Reactions
-
-DOWNWARD, UPWARD, HORIZONTAL = "Downward", "Upward", "Horizontal"
-DIRECTIONS = (DOWNWARD, "Outward", "Inward", UPWARD, "Longitudinal")
-# The component load's two directions and its load type: Checks 4a and 4b (S4-10).
-COMPONENT_DIRECTIONS = (DOWNWARD, HORIZONTAL)
-COMPONENT = "Component"
-CONCENTRATED, DISTRIBUTED = "Concentrated", "Distributed"
-LOAD_TYPES = (CONCENTRATED, DISTRIBUTED)
 
 DB = "AISC Shapes Database v16.0"
 COMBO = "asce7.combo.asd.D_plus_L"
@@ -68,8 +61,8 @@ class SectionStop(InputError):
 
 @dataclass
 class Case:
-    direction: str
-    load_type: str | None
+    direction: Direction
+    load_type: LoadType | None
     status: str  # "checked", "exempt", "not checked"
     combination: str = ""
     demand: object = None
@@ -407,12 +400,14 @@ def flexural_capacity(registry: Registry, rail: PipeSection, grade: str) -> Capa
     return Capacity(allow=Ma, lines=sh.lines, flags=flags)
 
 
-def _live_moment(sh: Sheet, load_type: str, L: Sym, loading: Loading) -> Sym:
+def _live_moment(sh: Sheet, load_type: LoadType, L: Sym, loading: Loading) -> Sym:
     if load_type == CONCENTRATED:
         P = sh.given("P", loading.P, "Concentrated guard load at midspan", "Loading")
         return beams.point_moment(sh, "M_L", P, L, "Live-load moment, midspan")
-    w = sh.given("w_L", loading.w_L, "Uniform guard load", "Loading")
-    return beams.uniform_moment(sh, "M_L", w, L, "Live-load moment, midspan")
+    if load_type == DISTRIBUTED:
+        w = sh.given("w_L", loading.w_L, "Uniform guard load", "Loading")
+        return beams.uniform_moment(sh, "M_L", w, L, "Live-load moment, midspan")
+    unknown("Check 1", "guard load type", load_type, LOAD_TYPES)
 
 
 def combo_text(entry: Entry, axes: dict[str, str] | None = None, joiner: str = " + ") -> str:
@@ -438,12 +433,12 @@ def _bending_case(registry, project, rail, loading, cap: Capacity, direction, lo
     MD = beams.uniform_moment(sh, "M_D", wD, L, "Dead-load moment, midspan")
     ML = _live_moment(sh, load_type, L, loading)
 
-    if direction == "Downward":
+    if direction == Direction.DOWNWARD:
         combo = registry.get(COMBO)
         M = sh.line("M_a", sh.factor(combo.id, "D") * MD + sh.factor(combo.id, "L") * ML,
                     "Required flexural strength: D and L on the same axis", unit="lbf*inch")
         label = f"{combo_text(combo)}, vertical\n{combo.cite}"
-    elif direction in ("Outward", "Inward"):
+    elif direction in (Direction.OUTWARD, Direction.INWARD):
         combo, srss = registry.get(COMBO), registry.get("ej.bending.srss_round")
         Mv = sh.line("M_(a,v)", sh.factor(combo.id, "D") * MD, "Vertical axis: dead load", unit="lbf*inch")
         Mh = sh.line("M_(a,h)", sh.factor(combo.id, "L") * ML, f"Horizontal axis: guard load {direction.lower()}",
@@ -453,7 +448,7 @@ def _bending_case(registry, project, rail, loading, cap: Capacity, direction, lo
                     cite_ids=(srss.id,), unit="lbf*inch")
         label = (f"{combo_text(combo, {'D': 'vertical', 'L': 'horizontal'}, ', ')}, SRSS\n"
                  f"{combo.cite}; {srss.cite}")
-    else:  # Upward
+    elif direction == Direction.UPWARD:
         combo = registry.get("ej.combo.bending.upward")
         # One expression gives both the printed magnitude and the stated sense (ADR 0002).
         # Dead load acts down (+), the guard load up (-).
@@ -462,6 +457,8 @@ def _bending_case(registry, project, rail, loading, cap: Capacity, direction, lo
         M = sh.line("M_a", absolute(net),
                     f"Net vertical moment, guard load opposing dead load: {sense}", unit="lbf*inch")
         label = f"{combo_text(combo)}, net vertical\n{combo.cite}"
+    else:
+        unknown("Check 1", "direction case", direction, DIRECTIONS)
 
     ratio = sh.line('"Ratio"', M / Ma_allow, "Demand / capacity", cite_ids=("aisc360.eq.B3-2",), ratio=True)
     return Case(direction, load_type, "checked", label,
@@ -481,21 +478,26 @@ def _deflection_case(registry, project, rail, loading, direction, load_type) -> 
     if load_type == CONCENTRATED:
         P = sh.given("P", loading.P, "Concentrated guard load at midspan", "Loading")
         DL = beams.point_deflection(sh, "Delta_L", P, L, E, I, "Live-load deflection, midspan")
-    else:
+    elif load_type == DISTRIBUTED:
         w = sh.given("w_L", loading.w_L, "Uniform guard load", "Loading")
         DL = beams.uniform_deflection(sh, "Delta_L", w, L, E, I, "Live-load deflection, midspan")
-    if direction == "Downward":
+    else:
+        unknown("Check 2", "guard load type", load_type, LOAD_TYPES)
+    if direction == Direction.DOWNWARD:
         combo = registry.get("ej.combo.deflection.D_plus_L")
         wD = sh.given("w_D", loading.w_D, "Top rail self-weight", "Loading")
         DD = beams.uniform_deflection(sh, "Delta_D", wD, L, E, I, "Dead-load deflection, midspan")
         D = sh.line("Delta", sh.factor(combo.id, "D") * DD + sh.factor(combo.id, "L") * DL,
                     "D and L on the same (vertical) axis", unit="inch")
         axis = "vertical"
-    else:
+    elif direction in (Direction.OUTWARD, Direction.INWARD, Direction.UPWARD):
+        upward = direction == Direction.UPWARD
         combo = registry.get("ej.combo.deflection.L_only")
-        note = "Live load only" + (": opposes dead load, dead load not credited" if direction == "Upward" else "")
+        note = "Live load only" + (": opposes dead load, dead load not credited" if upward else "")
         D = sh.line("Delta", sh.factor(combo.id, "L") * DL, note, unit="inch")
-        axis = "vertical" if direction == "Upward" else "horizontal"
+        axis = "vertical" if upward else "horizontal"
+    else:
+        unknown("Check 2", "direction case", direction, DIRECTIONS)
     label = f"{combo_text(combo)}, {axis}\n{combo.cite}"
 
     r = project.rail_deflection.ratio
@@ -512,7 +514,7 @@ def _deflection_case(registry, project, rail, loading, direction, load_type) -> 
 # ---------------------------------------------------------------------------
 
 
-def exempt_case(registry: Registry, direction: str, case_type: type[Case] = Case) -> Case:
+def exempt_case(registry: Registry, direction: Direction, case_type: type[Case] = Case) -> Case:
     """The distributed-load row when the engineer exempts the uniform load:
     listed in the envelope, not checked. Every check builds it here."""
     exemption = registry.get("asce7.guard.uniform.exemption.intro")
@@ -522,7 +524,7 @@ def exempt_case(registry: Registry, direction: str, case_type: type[Case] = Case
 def _envelope(case_fn, registry, project, rail, loading) -> list[Case]:
     cases = []
     for direction in DIRECTIONS:
-        if direction == "Longitudinal":
+        if direction == Direction.LONGITUDINAL:
             cases.append(Case(direction, None, "not checked",
                               remark="Rail carries the longitudinal load axially; not checked"))
             continue

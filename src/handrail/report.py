@@ -17,7 +17,8 @@ from handrail.checks import Case, Check, Results
 from handrail.intermediate import ComponentCase
 from handrail.post import PostCase
 from handrail.project import OWN_SECTION, SAME_AS_TOP
-from handrail.reactions import LATERAL, Reactions, ReactionSet
+from handrail.directions import LATERAL
+from handrail.reactions import Reactions, ReactionSet
 from handrail.registry import Registry
 from handrail.welds import WeldCase
 from handrail.version import Stamp

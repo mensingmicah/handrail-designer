@@ -29,11 +29,13 @@ from typing import Callable
 from handrail.calc import (PI, Line, Sheet, Sym, absolute, arccos, compare, fmt_quantity_plain, maximum, minimum,
                            mtext, order, sin, sqrt, term)
 from handrail.checks import (
-    COMBO, COMPONENT, COMPONENT_DIRECTIONS, DB, DIRECTIONS, DISTRIBUTED, DOWNWARD, FEXX_ENTRY, FU_ENTRY, HORIZONTAL,
-    LOAD_TYPES, UPWARD,
-    Case, Check, Loading, SectionStop, combo_text, exempt_case,
+    COMBO, DB, FEXX_ENTRY, FU_ENTRY, Case, Check, Loading, SectionStop, combo_text, exempt_case,
 )
-from handrail.demand import ASD, HORIZONTAL_KIND, Given, Wording, demand
+from handrail.demand import ASD, Given, Wording, demand
+from handrail.directions import (
+    COMPONENT, COMPONENT_DIRECTIONS, DIRECTIONS, DISTRIBUTED, DOWNWARD, HORIZONTAL, LOAD_TYPES, Direction, Kind,
+    LoadType, unknown,
+)
 from handrail.dimensions import Dimension
 from handrail.intermediate import NONE_TEXT
 from handrail.project import NO_INTERMEDIATE, SAME_AS_TOP, Project
@@ -342,12 +344,12 @@ def weld_wording(where: str, moment_note: str, moment_cite: str) -> Wording:
     """What a weld check's demand block prints: forces on the weld, the shear
     factored before the moment. ``where`` is where the guard load acts."""
     return Wording(
-        where={DOWNWARD: f"vertical, {where}", HORIZONTAL_KIND: f"horizontal ({{direction}}), {where}",
-               UPWARD: f"upward, {where}"},
+        where={Kind.DOWNWARD: f"vertical, {where}", Kind.HORIZONTAL: f"horizontal ({{direction}}), {where}",
+               Kind.UPWARD: f"upward, {where}"},
         axial="P",
-        axial_notes={DOWNWARD: "Axial force on the weld, compression; no moment",
-                     HORIZONTAL_KIND: "Axial force on the weld: dead load, compression",
-                     UPWARD: "Axial force on the weld: net tension, guard load opposing dead load"},
+        axial_notes={Kind.DOWNWARD: "Axial force on the weld, compression; no moment",
+                     Kind.HORIZONTAL: "Axial force on the weld: dead load, compression",
+                     Kind.UPWARD: "Axial force on the weld: net tension, guard load opposing dead load"},
         factored="shear", factored_symbol="V", factored_note="Horizontal force on the weld",
         moment_symbol="M", moment_note=moment_note, moment_cite=moment_cite,
     )
@@ -378,7 +380,7 @@ class WeldSetup(WeldLines):
 
 
 def _weld_case(registry: Registry, project: Project, loading: Loading, ws: WeldSetup,
-               direction: str, load_type: str) -> WeldCase:
+               direction: Direction, load_type: LoadType) -> WeldCase:
     d = demand(registry, project, loading, direction, load_type, ASD, ws.wording, ws.dead, ws.arm)
     if d.P is None:
         return WeldCase(direction, load_type, "not checked", d.label, remark=d.remark)
@@ -389,7 +391,7 @@ def _weld_case(registry: Registry, project: Project, loading: Loading, ws: WeldS
     return _weld_result(sh, ws, f, direction, load_type, d.label, d.sense)
 
 
-def _weld_result(sh: Sheet, ws: WeldLines, f: RingForces, direction: str, load_type: str, label: str,
+def _weld_result(sh: Sheet, ws: WeldLines, f: RingForces, direction: Direction, load_type: LoadType, label: str,
                  sense: str) -> WeldCase:
     """k_ds, the weld metal and base metal lines, and the case. Demand and
     capacity come from the line the ratio comes from; a tie goes to the weld
@@ -522,7 +524,7 @@ def check_7(registry: Registry, project: Project, post: PipeSection, loading: Lo
 INT_RING = "ej.weld.intermediate_ring_model"
 
 
-def _reaction_4b(registry: Registry, project: Project, loading: Loading, direction: str
+def _reaction_4b(registry: Registry, project: Project, loading: Loading, direction: Direction
                  ) -> tuple[Sheet, Sym, str]:
     """The weld reaction R (S4-9): the component load adjacent to the post,
     so this end takes the full P_c, with the intermediate rail's dead-load
@@ -548,8 +550,7 @@ def _reaction_4b(registry: Registry, project: Project, loading: Loading, directi
                     unit="lbf")
         label = f"{combo_text(combo, {'D': 'vertical', 'L': 'horizontal'}, ', ')}, vector sum\n{combo.cite}"
     else:
-        raise ValueError(f"Check 4b: no component load direction {direction!r}; expected one of "
-                         f"{', '.join(COMPONENT_DIRECTIONS)}")
+        unknown("Check 4b", "component load direction", direction, COMPONENT_DIRECTIONS)
     return sh, R, label
 
 

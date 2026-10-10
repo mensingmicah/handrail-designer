@@ -23,29 +23,24 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from handrail.calc import Line, Sheet, Sym, Term, compare
-from handrail.checks import COMBO, CONCENTRATED, DOWNWARD, UPWARD, Loading, combo_text
+from handrail.checks import COMBO, Loading, combo_text
+from handrail.directions import CONCENTRATED, DISTRIBUTED, LOAD_TYPES, Direction, Kind, LoadType, kind, unknown
 from handrail.project import Project
 from handrail.registry import Registry
 
 TRIBUTARY = "Stated assumption: the tributary length is the span"
 
-# The three kinds of direction case: downward, upward, and the horizontal
-# kind, which is outward, inward and longitudinal (and the reaction sets'
-# lateral): the guard load horizontal, the dead load axial.
-HORIZONTAL_KIND = "horizontal"
 
-
-def kind(direction: str) -> str:
-    return direction if direction in (DOWNWARD, UPWARD) else HORIZONTAL_KIND
-
-
-def live_at_post(sh: Sheet, symbol: str, load_type: str, loading: Loading, project: Project, where: str) -> Sym:
+def live_at_post(sh: Sheet, symbol: str, load_type: LoadType, loading: Loading, project: Project, where: str) -> Sym:
     """The guard load reaching the top of the post: P, or w_L over the tributary length."""
     if load_type == CONCENTRATED:
         return sh.given(symbol, loading.P, f"Concentrated guard load P, {where}", "Loading")
-    w = sh.given("w_L", loading.w_L, "Uniform guard load", "Loading")
-    L = sh.given("L", project.span.value, "Span: the tributary length for the post", "Input")
-    return sh.line(symbol, w * L, f"Uniform guard load collected over the span, {where}", cite=TRIBUTARY, unit="lbf")
+    if load_type == DISTRIBUTED:
+        w = sh.given("w_L", loading.w_L, "Uniform guard load", "Loading")
+        L = sh.given("L", project.span.value, "Span: the tributary length for the post", "Input")
+        return sh.line(symbol, w * L, f"Uniform guard load collected over the span, {where}", cite=TRIBUTARY,
+                       unit="lbf")
+    unknown("Guard load at the post", "guard load type", load_type, LOAD_TYPES)
 
 
 @dataclass(frozen=True)
@@ -80,17 +75,17 @@ class Given:
 @dataclass(frozen=True)
 class Wording:
     """What a demand block prints. ``where`` and ``axial_notes`` are keyed by
-    kind (DOWNWARD, HORIZONTAL_KIND, UPWARD); "{direction}" in ``where`` is
-    filled with the direction.
+    the kind of direction case (directions.Kind); "{direction}" in ``where``
+    is filled with the direction.
 
     ``factored`` says which horizontal line carries the live-load factor:
     "shear" prints V = gamma_L V_L, then M = V times the arm (the welds);
     "moment" prints M_L = V_L times the arm, then M_r = gamma_L M_L (Check 5).
     """
 
-    where: dict[str, str]
+    where: dict[Kind, str]
     axial: str                 # symbol of the axial line
-    axial_notes: dict[str, str]
+    axial_notes: dict[Kind, str]
     factored: str              # "shear" or "moment"
     factored_symbol: str       # "V" (shear) or "M_r" (moment)
     factored_note: str
@@ -115,26 +110,27 @@ class Demand:
     no_net: str = ""           # the comparison that found no net tension, as text: "0.6D >= 1.0L"
 
 
-def demand(registry: Registry, project: Project, loading: Loading, direction: str, load_type: str,
+def demand(registry: Registry, project: Project, loading: Loading, direction: Direction, load_type: LoadType,
            combos: Combinations, wording: Wording, dead: Given, arm: Sym | Given) -> Demand:
     """The demand for one direction case and load type. ``arm`` is printed
     in the block when it is a Given, and used as is when it is a Sym already
-    printed above the block."""
+    printed above the block. A direction that is not a direction case stops
+    (directions.kind), before anything is computed."""
+    k = kind(direction)
     sh = Sheet(registry)
     sh.heading(f"Demand: {direction.lower()}, {load_type.lower()} load")
     PD = dead.put(sh)
-    k = kind(direction)
     where = wording.where[k].format(direction=direction.lower())
     note = wording.axial_notes[k]
 
-    if k == DOWNWARD:
+    if k is Kind.DOWNWARD:
         combo = registry.get(combos.with_dead)
         label = f"{combo_text(combo)}, axial\n{combo.cite}"
         PL = live_at_post(sh, "P_L", load_type, loading, project, where)
         P = sh.line(wording.axial, sh.factor(combo.id, "D") * PD + sh.factor(combo.id, "L") * PL, note, unit="lbf")
         return Demand(label, sh.lines, P, "compression")
 
-    if k == UPWARD:
+    if k is Kind.UPWARD:
         combo = registry.get(combos.against_dead)
         label = f"{combo_text(combo)}, net axial\n{combo.cite}"
         PL = live_at_post(sh, "P_L", load_type, loading, project, where)
@@ -150,6 +146,8 @@ def demand(registry: Registry, project: Project, loading: Loading, direction: st
         P = sh.line(wording.axial, net, note, unit="lbf")
         return Demand(label, sh.lines, P, "tension")
 
+    if k is not Kind.HORIZONTAL:
+        unknown("Demand", "kind of direction case", k, Kind)
     combo = registry.get(combos.with_dead)
     label = f"{combo_text(combo, {'D': 'axial', 'L': 'horizontal'}, ', ')}\n{combo.cite}"
     P = sh.line(wording.axial, sh.factor(combo.id, "D") * PD, note, unit="lbf")

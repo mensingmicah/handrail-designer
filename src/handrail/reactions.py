@@ -22,14 +22,14 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from handrail.calc import Line, Sheet, mtext, order
-from handrail.checks import CONCENTRATED, DISTRIBUTED, DOWNWARD, UPWARD, Loading
-from handrail.demand import HORIZONTAL_KIND, Combinations, Given, Wording, demand
+from handrail.checks import Loading
+from handrail.demand import Combinations, Given, Wording, demand
+from handrail.directions import CONCENTRATED, DISTRIBUTED, LATERAL, UPWARD, Direction, Kind, LoadType, unknown
 from handrail.project import Project
 from handrail.registry import Registry
 
 COMBO = "ej.combo.reaction"
 LOCATION = "ej.reaction.location"
-LATERAL = "Lateral"
 BOTH = "Concentrated and distributed"  # the load type named when P = w s (S4-5)
 
 # 0.9D + 1.6L in both sets: with the dead load (lateral) and against it (upward).
@@ -39,13 +39,13 @@ COMBINATIONS = Combinations(with_dead=COMBO, against_dead=COMBO)
 # reaction table prints them as V, N and M (S4-7). N_u prints as a
 # magnitude, its sense in the note; the table gives N its sign.
 WORDING = Wording(
-    where={DOWNWARD: "vertical at the top of the post",
-           HORIZONTAL_KIND: "horizontal at the top of the post, in any horizontal direction",
-           UPWARD: "upward at the top of the post"},
+    where={Kind.DOWNWARD: "vertical at the top of the post",
+           Kind.HORIZONTAL: "horizontal at the top of the post, in any horizontal direction",
+           Kind.UPWARD: "upward at the top of the post"},
     axial="abs(N_u)",
-    axial_notes={DOWNWARD: "Axial force at the base, compression",
-                 HORIZONTAL_KIND: "Axial force at the base: dead load, compression",
-                 UPWARD: "Axial force at the base: net tension (uplift), guard load opposing dead load"},
+    axial_notes={Kind.DOWNWARD: "Axial force at the base, compression",
+                 Kind.HORIZONTAL: "Axial force at the base: dead load, compression",
+                 Kind.UPWARD: "Axial force at the base: net tension (uplift), guard load opposing dead load"},
     factored="shear", factored_symbol="V_u", factored_note="Base shear",
     moment_symbol="M_u", moment_note="Base moment at the top of concrete: V_u at the top rail centerline, arm h",
     moment_cite=LOCATION,
@@ -54,7 +54,7 @@ WORDING = Wording(
 
 @dataclass
 class ReactionSet:
-    name: str                  # "Lateral" or "Upward"
+    name: Direction            # LATERAL or UPWARD
     load_type: str             # the governing guard load type, as named (S4-5)
     combination: str           # the label, as printed
     present: bool              # False: no upward set (no net uplift)
@@ -73,7 +73,7 @@ class Reactions:
     lateral_note: str                    # printed with the lateral set (S4-4)
 
 
-def _governing_load_type(sh: Sheet, project: Project, loading: Loading) -> tuple[str, str]:
+def _governing_load_type(sh: Sheet, project: Project, loading: Loading) -> tuple[LoadType, str]:
     """The larger guard load type at the top of the post (S4-5): (the type the
     demand runs, the type the set names)."""
     sh.heading("Governing guard load type")
@@ -139,9 +139,11 @@ def reaction_sets(registry: Registry, project: Project, loading: Loading) -> Rea
         if name == LATERAL:
             sets.append(ReactionSet(name, named, d.label, True, V=d.V.value, N=-d.P.value, M=d.M.value,
                                     lines=d.lines))
-        else:
+        elif name == UPWARD:
             zero_V, zero_M = 0 * d.P.value, 0 * d.P.value * project.post_height.value
             sets.append(ReactionSet(name, named, d.label, True, V=zero_V, N=d.P.value, M=zero_M, lines=d.lines))
+        else:
+            unknown("Anchor reactions", "reaction set", name, (LATERAL, UPWARD))
     dead_rows = [(n, p.value) for n, p in zip(names, parts)] + [("Total D", D.value)]
     return Reactions(head=head.lines, dead=dead_rows, sets=sets,
                      lateral_note=registry.get("ej.reaction.lateral_note").value)

@@ -25,9 +25,8 @@ from dataclasses import dataclass
 
 from handrail import beams
 from handrail.calc import Const, Line, Sheet, compare, fmt_quantity_plain, term
-from handrail.checks import (
-    COMBO, COMPONENT, COMPONENT_DIRECTIONS, DB, DOWNWARD, Case, Check, Loading, combo_text, flexural_capacity,
-)
+from handrail.checks import COMBO, DB, Case, Check, Loading, combo_text, flexural_capacity
+from handrail.directions import COMPONENT, COMPONENT_DIRECTIONS, DOWNWARD, HORIZONTAL, Direction, unknown
 from handrail.project import NO_INTERMEDIATE, SAME_AS_TOP, DeflectionLimit, Project
 from handrail.registry import Registry
 from handrail.shapes import PipeSection
@@ -49,7 +48,7 @@ class ComponentCase(Case):
 
 
 def _bending_case(registry: Registry, project: Project, loading: Loading, cap, head: list[Line],
-                  direction: str) -> ComponentCase:
+                  direction: Direction) -> ComponentCase:
     sh = Sheet(registry)
     sh.lines.extend(head)
     sh.heading("Capacity")
@@ -65,18 +64,20 @@ def _bending_case(registry: Registry, project: Project, loading: Loading, cap, h
         M = sh.line("M_a", sh.factor(combo.id, "D") * MD + sh.factor(combo.id, "L") * ML,
                     "Required flexural strength: D and L on the same axis", cite_ids=(down.id,), unit="lbf*inch")
         label = f"{combo_text(combo)}, vertical\n{combo.cite}; {down.cite}"
-    else:
+    elif direction == HORIZONTAL:
         M = sh.line("M_a", sh.factor(combo.id, "L") * ML,
                     "Required flexural strength: the component load alone, not combined with dead load",
                     cite_ids=(down.id,), unit="lbf*inch")
         label = f"{float(combo.value['L'])!r}L horizontal, alone\n{combo.cite}; {down.cite}"
+    else:
+        unknown("Check 4a", "component load direction", direction, COMPONENT_DIRECTIONS)
     ratio = sh.line('"Ratio"', M / cap.allow, "Demand / capacity", cite_ids=("aisc360.eq.B3-2",), ratio=True)
     return ComponentCase(direction, COMPONENT, "checked", label, demand=M.value, capacity=cap.allow.value,
                          ratio=ratio.value, lines=sh.lines, limit_state=BENDING)
 
 
 def _deflection_case(registry: Registry, project: Project, inter: PipeSection, loading: Loading,
-                     limit: DeflectionLimit, head: list[Line], direction: str) -> ComponentCase:
+                     limit: DeflectionLimit, head: list[Line], direction: Direction) -> ComponentCase:
     sh = Sheet(registry)
     sh.lines.extend(head)
     L = sh.given("L", project.span.value, "Span, simple beam", "Input")
@@ -92,10 +93,12 @@ def _deflection_case(registry: Registry, project: Project, inter: PipeSection, l
         D = sh.line("Delta", sh.factor(combo.id, "D") * DD + sh.factor(combo.id, "L") * DL,
                     "D and L on the same (vertical) axis", cite_ids=(DOWN,), unit="inch")
         axis = "vertical"
-    else:
+    elif direction == HORIZONTAL:
         combo = registry.get("ej.combo.deflection.L_only")
         D = sh.line("Delta", sh.factor(combo.id, "L") * DL, "Component load only", unit="inch")
         axis = "horizontal"
+    else:
+        unknown("Check 4a", "component load direction", direction, COMPONENT_DIRECTIONS)
     r = limit.ratio
     lim = Const(int(r) if float(r).is_integer() else r)
     Dallow = sh.line('Delta_"allow"', L / lim, f"Limit L/{lim.value}", cite_ids=("ej.deflection.limit",),

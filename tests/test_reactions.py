@@ -8,7 +8,7 @@ the release review (ADR 0007).
 import pytest
 
 from handrail import shapes
-from handrail.checks import CONCENTRATED, DISTRIBUTED
+from handrail.directions import CONCENTRATED, DISTRIBUTED
 from handrail.demand import ASD, Given, demand
 from handrail.post import WORDING as CHECK_5_WORDING
 from handrail.project import NO_INTERMEDIATE, SAME_AS_TOP, Loads
