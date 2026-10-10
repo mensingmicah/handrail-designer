@@ -267,7 +267,9 @@ section type is generalized across Checks 1–7. Issue #3 lands here: a
 custom thin-wall round tube, or a large round HSS, gives a realistic
 noncompact case for Eq. F8-2.
 
-**Depends on.** Slice 4 (all checks exist to be generalized).
+**Depends on.** Slice 4 (all checks exist to be generalized). Its build
+starts only after Micah has verified the top 20 entries of the
+catch-up (ADR 0008, Notes; gate 1).
 
 **Size.** M. About 12–15 new registry entries. Two test cases: the
 noncompact rail (#3) and a solid round bar or custom tube post.
@@ -309,7 +311,9 @@ on the post's other axis. Rectangular post welds: all around, or on one
 pair of faces picked by width or depth, with the elastic line properties of
 each pattern.
 
-**Depends on.** Slice 5 (the generic section interface).
+**Depends on.** Slice 5 (the generic section interface). Its build starts
+only after Micah has verified every other entry drafted by 2026-10-09
+and slice 5's own drafted entries (ADR 0008; gate 2).
 
 **Size.** L, the largest after slice 1. About 20 new registry entries.
 Two test cases: a rectangular HSS post where longitudinal governs on the
@@ -415,8 +419,14 @@ total falls.
 Decided (Micah, 2026-10-09; ADR 0008), replacing the release-review decision
 below: each slice's drafted entries are verified when the slice closes,
 before the next slice's build starts, and the 77 entries drafted by then are
-caught up in batches, highest fan-out first. The governing-case recompute
-stays at slice 9. The rest of this section records the 2026-10-03 decision
+caught up in batches, highest fan-out first, under two gates (Micah,
+2026-10-09): the 20 entries named in ADR 0008's notes before slice 5's
+build starts, and every other entry drafted by 2026-10-09 (57) before
+slice 6's build starts. Slice 5's own entries are due before slice 6's build
+too. Micah records his verdicts in the registry review workbook; an agent
+applies them to the registry on a branch with a pull request
+(docs/brief/verification.md, "Applying the verdicts"). The governing-case
+recompute stays at slice 9. The rest of this section records the 2026-10-03 decision
 it replaced.
 
 ### Registry verification at release (replaced)

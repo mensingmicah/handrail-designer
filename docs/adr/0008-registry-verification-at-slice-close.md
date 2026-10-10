@@ -65,7 +65,7 @@ The workbook is not committed and its order depends on the measurement that prod
 - `ej.weld.no_bearing`
 - `ej.weld.branch_kds`
 
-Each is marked verified only by Micah, in registry/code-values.toml, which also removes its id from the review list (CLAUDE.md rule 1). A correction follows "Registry corrections" in docs/brief/verification.md.
+Micah records each verdict in the workbook; an agent applies the verdicts to registry/code-values.toml on a branch with a pull request he approves, and lists every "wrong" or "unsure" entry for him (Micah, 2026-10-09; docs/brief/verification.md, "Applying the verdicts"). A correction follows "Registry corrections" in the same file.
 
 ## Considered Options
 

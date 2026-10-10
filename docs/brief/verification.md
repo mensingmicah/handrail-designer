@@ -87,6 +87,37 @@ slice 9), in this order:
 
 The registry comes first, so the recompute runs on corrected entries.
 
+### Applying the verdicts
+
+I record each verdict in the registry review workbook (out/registry-review-drafted.xlsx, not
+committed; ADR 0008), in its verdict column: verified, wrong or unsure, with
+my notes beside it. I do not edit registry/code-values.toml myself. A
+separate agent session applies the workbook to the registry:
+
+1. It works on a branch and reaches main only through a pull request I
+   approve, because a registry value feeds the calc (CLAUDE.md, Git).
+2. It reads each row of the workbook and acts on the verdict. A "verified"
+   row: status "verified", verified_by "Micah Mensing", verified_date the
+   date I give it (the date the workbook was last saved if I give none),
+   and its id removed from the review list. A "wrong" or "unsure" row, or
+   a row with no verdict: no change to the entry, which stays drafted.
+3. It edits the registry with the file-edit tool only, never a shell
+   command (.claude/rules/code-values.md). It changes no value, unit, cite,
+   section or note, and drafts no correction on its own.
+4. The pull request description is the record, since the workbook is not
+   committed: a table of every row's id, verdict and my note, the date used,
+   and a separate list of every "wrong" and "unsure" entry with its note,
+   for me to resolve. The registry lint test and the full suite pass before
+   the pull request is opened.
+5. A "wrong" entry is corrected by me, or by an agent from what I state,
+   in a later change; it stays drafted until I verify the corrected entry
+   (CLAUDE.md rule 1), and "Registry corrections" below applies.
+
+The verdict is mine; the agent only transcribes it, so CLAUDE.md rule 1
+(only I mark an entry verified) holds. The workbook is regenerated at each
+slice close under a new dated name, so a workbook holding verdicts is never
+overwritten.
+
 ### Registry corrections
 
 An entry I correct changes the tool's values. Correcting only a note or
