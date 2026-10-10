@@ -419,23 +419,15 @@ def _derived_lengths(results: Results) -> str:
 def build_source(results: Results, registry: Registry, stamp: Stamp) -> str:
     proj = results.project
     info = proj.info
-    # Every registry read must happen before the DRAFT list is taken, or the
-    # entry prints on the page without being listed as drafted.
+    # The DRAFT stamp and the "Draft code values" list are filled last, after
+    # the whole body is built (issue #11, option A): an entry read anywhere
+    # below is then stamped and listed, wherever in the build it is read.
+    # Until then the template is src[0], still holding its @@ tokens, and
+    # draft_list_at marks where the list goes in the front matter.
     # The design method is stated as a registry-cited line; the references list
     # names only the specification, so adding LRFD later does not change it.
     asd = registry.get("aisc360.B3.2.asd")
-    drafted = registry.drafted_used
-    code, reg = stamp.footer_parts()
-    fills = {
-        "@@DRAFT@@": "true" if drafted else "false",
-        "@@FOOTER_CODE@@": typst_str(code),
-        "@@FOOTER_REG@@": typst_str(reg),
-        "@@TITLE@@": typst_str(f"{info.name}: guard calculation"),
-    }
-    template = TEMPLATE
-    for token, value in fills.items():
-        template = template.replace(token, value)
-    src = [template]
+    src = [TEMPLATE]
 
     # Front matter
     src.append("#align(center, text(size: 16pt, weight: \"bold\")[Guard Calculation])")
@@ -456,12 +448,7 @@ def build_source(results: Results, registry: Registry, stamp: Stamp) -> str:
     src.append("== Sketch")
     src.append('#block(width: 100%, height: 2.2in, stroke: (dash: "dashed", paint: luma(150)), '
                'align(center + horizon, text(fill: luma(120))[Image area (image upload is a later slice)]))')
-    if drafted:
-        src.append("== Draft code values")
-        src.append("This calc uses the following registry entries, which the engineer of record has not yet "
-                   "verified against the standard:")
-        src.append(_table(["Entry", "Citation", "Source"],
-                          [[e.id, e.cite, e.source] for e in drafted], "(auto, 1fr, auto)"))
+    draft_list_at = len(src)
 
     # Dimensions
     src.append("= Dimensions")
@@ -517,6 +504,28 @@ def build_source(results: Results, registry: Registry, stamp: Stamp) -> str:
     src.append("= Summary")
     src.append(_summary(results.checks))
     src += _reactions(results)
+
+    # Last: every registry read is behind us, so this is every drafted entry
+    # the calc used. Nothing below reads the registry.
+    drafted = registry.drafted_used
+    if drafted:
+        src[draft_list_at:draft_list_at] = [
+            "== Draft code values",
+            "This calc uses the following registry entries, which the engineer of record has not yet "
+            "verified against the standard:",
+            _table(["Entry", "Citation", "Source"], [[e.id, e.cite, e.source] for e in drafted],
+                   "(auto, 1fr, auto)"),
+        ]
+    code, reg = stamp.footer_parts()
+    fills = {
+        "@@DRAFT@@": "true" if drafted else "false",
+        "@@FOOTER_CODE@@": typst_str(code),
+        "@@FOOTER_REG@@": typst_str(reg),
+        "@@TITLE@@": typst_str(f"{info.name}: guard calculation"),
+    }
+    # Only the template is filled, never the body, which holds the engineer's text.
+    for token, value in fills.items():
+        src[0] = src[0].replace(token, value)
     return "\n\n".join(src) + "\n"
 
 

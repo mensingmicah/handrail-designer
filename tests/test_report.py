@@ -57,6 +57,53 @@ def test_no_draft_stamp_when_every_entry_used_is_verified(monkeypatch):
     assert "#let draft = false" in src
 
 
+def _reading_late(monkeypatch, reg, entry_id):
+    """Make build_source read a registry entry at the very end of the body:
+    the reaction tables are the last thing it builds."""
+    real = report._reactions
+
+    def reactions_with_a_late_read(results):
+        out = real(results)
+        reg.get(entry_id)
+        return out
+
+    monkeypatch.setattr(report, "_reactions", reactions_with_a_late_read)
+
+
+def test_a_registry_read_late_in_the_build_is_still_listed_as_drafted(monkeypatch):
+    """Issue #11, option A: the DRAFT stamp and the list are filled last,
+    after the whole body is built, so an entry read anywhere in the build
+    is stamped and listed. Before, the list was taken near the top, and an
+    entry read after that point printed without either."""
+    res, reg = run()
+    late = "asce7.guard.uniform.exemption.2"  # an entry this calc does not otherwise read
+    assert late not in {e.id for e in reg.used}
+    mark_drafted(reg, late)
+    _reading_late(monkeypatch, reg, late)
+    src = report.build_source(res, reg, CLEAN)
+    assert "#let draft = true" in src
+    listed = src.split("== Draft code values")[1].split("\n= ")[0]
+    assert f'"{late}"' in listed
+
+
+def test_a_late_read_alone_is_enough_to_stamp_the_calc_draft(monkeypatch):
+    """The stamp, not only the list: with every other entry verified, the one
+    drafted entry read at the end of the build still makes the calc DRAFT."""
+    res, reg = run()
+    for i, e in reg.entries.items():
+        reg.entries[i] = dataclasses.replace(e, status="verified")
+    late = "asce7.guard.uniform.exemption.2"
+    assert "#let draft = false" in report.build_source(res, reg, CLEAN)  # nothing drafted yet
+    mark_drafted(reg, late)
+    _reading_late(monkeypatch, reg, late)
+    src = report.build_source(res, reg, CLEAN)
+    assert "#let draft = true" in src
+    listed = src.split("== Draft code values")[1].split("\n= ")[0]
+    assert listed.count('"Entry"') == 1 and f'"{late}"' in listed
+    # The list sits where it always has: in the front matter, before the dimensions page.
+    assert src.index("== Sketch") < src.index("== Draft code values") < src.index("= Dimensions")
+
+
 def test_footer_marks_uncommitted_changes():
     res, reg = run()
     assert "uncommitted changes" not in report.build_source(res, reg, CLEAN)
