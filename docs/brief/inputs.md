@@ -155,3 +155,33 @@ drafted registry entry until I verify it).
   approved standards, which makes A501 plain. If the 360-22 text still
   keys on ERW against SAW, the work stops and Claude asks him, because
   seamless A501 would then need a ruling.
+- **A618 is offered in slice 5, with its Fy and Fu by wall thickness.**
+  (S5-7, Micah 2026-10-09.) Values as drafted, from memory of AISC Manual
+  Table 2-4, to be verified like every other entry:
+
+  | Grade | Wall | Fy / Fu (ksi) |
+  | --- | --- | --- |
+  | A618 Gr Ia, Ib, II | up to 3/4 in | 50 / 70 |
+  | A618 Gr Ia, Ib, II | over 3/4 in to 1-1/2 in | 46 / 67 |
+  | A618 Gr III | all walls | 50 / 65 |
+
+  - Each grade name (Ia, Ib, II, III) has its own entries. The registry's
+    drafted list, which names them "I, II, III", is corrected.
+  - The wall compared with the limits is the nominal one: t_nom for a
+    database section, the wall as entered for a custom tube. The limit is
+    on the product's thickness, the reasoning of W11 (welds.md) for Table
+    J2.4. A wall of exactly 3/4 in takes the "up to 3/4 in" values.
+  - A Gr Ia, Ib or II wall over 1-1/2 in stops the calc: Table 2-4 gives
+    no values there. The stop names the member, its wall, the grade and
+    the limit.
+  - Fy and Fu are stored in the registry by wall range, and the two
+    limits (3/4 in and 1-1/2 in) are entries too, so slice 6's
+    rectangular A618 reuses the same entries and the same lookup.
+  - Testing: same-author machinery tests only (a wall at exactly 3/4 in,
+    one just over it, and one over 1-1/2 in that stops). No test case
+    reaches the branch, and I do not review it by hand; the
+    calc-code-review session covers the code. It is listed with the
+    known test gaps on the release-review issue (#18) when slice 5
+    closes.
+  - The entries are drafted like all the others, go in slice 5's
+    registry review workbook, and I verify them at the release review.
