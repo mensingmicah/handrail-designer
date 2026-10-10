@@ -122,6 +122,15 @@ plan's decision numbers, kept for the record.
     round (1.35) and A1085 (1.30) meet it. A code guard stops the calc,
     naming the grade and the ratio, for a post grade that does not, so
     the printed line cannot become false.
+  - The elastic weld-line stress in the post wall at the base can exceed
+    Fy/Ω while Check 5 passes (case 7: M/S = 28.1 ksi against Fy/1.67 =
+    27.5 ksi, Check 5 = 0.77 on Mp). This is accepted. The wall at the
+    base is the member section, and §F8.1 permits Mp for a compact round
+    section; Check 5 is the code check for it. The weld is analyzed
+    elastically because weld metal is the less ductile element, which does
+    not apply to the base metal of a compact section. A noncompact section
+    is checked by Eq. F8-2 on S. (Micah, 2026-10-10, ruling on the case 7
+    independent calc; no change to the calc.)
   - Baseplate side: shear rupture over t_p, 0.6·Fu·t_p/2.00, against the
     resultant weld force per inch. Accepted by Micah as checked and
     correct.
