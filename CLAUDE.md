@@ -27,8 +27,10 @@ now, next, waiting on Micah. When a slice closes, add its new deferred test
 cases to the checklist of the release-review issue (#18, label
 `release-blocker`; ADR 0006), and produce the registry review workbook for
 that slice's drafted entries; verification is optional before release
-(ADR 0008, as amended). Move the slice plan's binding engineering decisions
-into the brief before marking the plan completed.
+(ADR 0008, as amended). Each slice's pull request bumps the version in
+pyproject.toml to the slice's version, because the footer prints it. Move
+the slice plan's binding engineering decisions into the brief before
+marking the plan completed.
 
 The repo documents are the only source of truth for this project. Don't rely
 on, or write, auto-memory for it.
@@ -63,10 +65,13 @@ on, or write, auto-memory for it.
 
 Calc code goes on a branch and reaches main only through a pull request I
 approve. Calc code means anything that can change a printed calc: src/,
-tests/, data/, and registry/ (a registry value feeds the calc). Docs-only
-changes (docs/, .claude/, CLAUDE.md, CONTEXT.md, CHANGELOG.md) can be
-committed directly on main and pushed to origin/main without asking. Never
-force-push.
+tests/, data/, and registry/ (a registry value feeds the calc). It also
+means two brief texts that tests hold the code to: docs/brief/stops.md and
+the "Stated assumptions" list in docs/brief/output.md. They change only on
+a calc branch, in the same commit as the code they describe. Every other
+docs-only change (the rest of docs/, .claude/, CLAUDE.md, CONTEXT.md,
+CHANGELOG.md) can be committed directly on main and pushed to origin/main
+without asking. Never force-push.
 
 For small issues that can't change a printed number or calc text (stale
 comments, doc wording, dead references), add them to the open

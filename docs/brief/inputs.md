@@ -216,3 +216,34 @@ design", and "a custom tube's weight uses the wall thickness as entered".
   0.055 (custom)". (Claude's proposals, accepted by Micah 2026-10-09;
   exact wording on the branch.)
 - Slice 6 applies the same rule to custom rectangular tubes.
+
+## Stops and supported combinations (slice 5)
+
+(S5-9, Micah 2026-10-09; from the architecture review of 2026-10-09, F9.)
+A stop is any place the tool refuses to compute and says why: a bad or
+conflicting input, a section it will not check, a combination of sections
+it has no decision for.
+
+- **One table per joint says which section families may meet there.** The
+  joints are the Check 3 joint (top rail as chord, post as branch), the
+  Check 4b joint (post as chord, intermediate rail as branch) and the
+  Check 7 joint (post on the baseplate). Each cell is either "allowed" or
+  a stop message citing the decision behind it. A family not built yet
+  has a row that says which slice brings it.
+- **Allowed means listed as allowed.** A pair of families with no cell in
+  a joint's table stops the calc, with a message naming the joint and both
+  families. Nothing unlisted is ever computed. (Binding; Micah,
+  2026-10-09.) A test gives each of the three joints a stand-in family
+  with no row and confirms the stop.
+- **docs/brief/stops.md lists every stop:** an id, the condition, the
+  decision it comes from, and the test that triggers it. The per-joint
+  tables print there too. Rules about dimensions, not families, stay
+  ordinary stops and are on the same list: W8, S4-11, the chord D/t limit
+  (S5-3), the A618 wall limit (S5-7), B and N against the post OD.
+- **A test holds the code to that file,** as a test holds the printed
+  assumptions to output.md: every stop in the code has an id that is in
+  stops.md, and every id in stops.md has a test that triggers it. So
+  stops.md, like the assumptions list, changes only on a calc branch, in
+  the same commit as the code it describes (CLAUDE.md, Git). It is
+  created on the slice 5 branch, in the refactor step (issue #21), with
+  the golden snapshots proving no printed calc changes.
