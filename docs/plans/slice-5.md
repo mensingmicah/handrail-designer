@@ -321,10 +321,10 @@ entered and normalized.
   - a defaulted grade gains "(default)" (S5-10). Case 5 leaves its
     intermediate rail's grade out, so that line of its snapshot changes;
     every other rail and post grade in cases 1–5 and the example is
-    entered. Claude's reading, for Micah to correct in the pull request:
-    "every member" means the top rail, the post and the intermediate
-    rail, not the baseplate grade or the electrode, which accept one
-    value each;
+    entered. "Every member" means the top rail, the post and the
+    intermediate rail, not the baseplate grade or the electrode, and the
+    mark prints on the section properties page, where the grade already
+    prints (both confirmed by Micah, 2026-10-09);
   - the footer's tool version, 0.1.0 to 0.5.0 (#24). The snapshots are
     generated with a fixed stamp, so they do not show this one; the
     version test covers it.
@@ -389,6 +389,16 @@ slice-close workbook if he chooses.
 Each step is committed and pushed when its tests pass. Steps 1 and 2
 change no printed calc, and the snapshots prove it.
 
+**Snapshot rule for every step** (Micah, 2026-10-09). A step that changes
+printed text on purpose updates the golden snapshots in a commit of its
+own, one commit per intended change, and that step's report shows Micah
+the snapshot diff. A snapshot diff nobody intended, or one larger than
+the change it belongs to, is a stop: the snapshot is not regenerated
+until the cause is known. This slice has two intended changes to the
+existing calcs, both in step 8 and neither in step 1: the W7 assumption
+clause (S5-3) and "(default)" on case 5's intermediate rail grade
+(S5-10).
+
 1. **Issue #21: make the engine safe to generalize.** In this order:
    - **Golden snapshot test first** (#6): the Typst source of cases 1–5
      and `examples/slice-1.toml`, generated with a fixed stamp, committed
@@ -444,9 +454,15 @@ change no printed calc, and the snapshots prove it.
 7. **Grades through the checks**: Fy and Fu by grade, shape and wall;
    the unusual-pairing warning; the A1085 note; the grade machinery
    tests.
-8. **Report**: the section pages (F10 items 1 to 7 and 10); the W7
-   assumption clause, in output.md and the front matter in one commit;
-   snapshots regenerated on purpose for that change only.
+8. **Report**: the section pages (F10 items 1 to 7 and 10), which print
+   nothing new for an all-pipe calc with its grades entered. Then the two
+   intended changes to existing calcs, each in its own commit with its
+   snapshot update, and each diff shown in the step's report:
+   - the "(default)" mark on a defaulted grade (S5-10). The diff should
+     be one line, in case 5: its intermediate rail's grade;
+   - the W7 assumption clause (S5-3), in output.md and the front matter
+     in the same commit. The diff should be that one assumption, in each
+     of the six snapshots.
 9. **Test cases 6 and 7** wired in, values pending; independent
    templates created.
 10. **Independent calcs for cases 6 and 7**, each in a fresh session by

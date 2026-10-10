@@ -113,10 +113,10 @@ plan's decision numbers. (S5-5, Micah 2026-10-09.)
   pipe top rail defaults to A500 Gr B, not to A53 Gr B with a warning.
 - **A defaulted grade prints as defaulted,** for every member, not only
   the intermediate rail: "A500 Gr B (default)". (S5-10, Micah
-  2026-10-09.) He named the dimensions page; today each member's grade
-  prints at the head of the section properties page, so where the mark
-  sits is proposed on the slice 5 branch and accepted in the pull
-  request.
+  2026-10-09.) It prints on the section properties page, where each
+  member's grade already prints. "Every member" is the top rail, the post
+  and the intermediate rail; the baseplate grade and the electrode, which
+  accept one value each, are not marked.
 - **Slice 5 splits the Table 2-4 grades for pipe and round HSS in two.**
   A plain grade differs from the others only in Fy and Fu; slice 5 drafts
   the Fy and Fu entries for every plain grade. A grade with a rule of its
