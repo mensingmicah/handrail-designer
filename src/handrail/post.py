@@ -23,7 +23,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Callable
 
-from handrail.calc import PI, Const, Line, Sheet, Sym, fmt_sig, sqrt
+from handrail.calc import PI, Const, Line, Sheet, Sym, Term, compare, fmt_g, fmt_sig, number, sqrt
 from handrail.checks import (
     DB, DIRECTIONS, DISTRIBUTED, DOWNWARD, FY_ENTRY, LOAD_TYPES, UPWARD,
     Case, Check, Loading, SectionStop, combo_text, exempt_case, flexural_capacity,
@@ -74,20 +74,22 @@ def compression_capacity(registry: Registry, project: Project, post: PipeSection
     Fy = head.code_value("F_y", FY_ENTRY[grade], f"Yield stress, {grade}")
     E = head.code_value("E", "material.steel.E", "Modulus of elasticity")
     # The same D/t line the flexure block prints, so moment cases skip it here.
-    head.given("lambda", post.D_t, "lambda = D/t, tabulated (design wall)", DB)
+    lam = head.given("lambda", post.D_t, "lambda = D/t, tabulated (design wall)", DB)
 
     sh = Sheet(registry)
     lr_e = registry.get("aisc360.B4.1a.round_hss.lambda_r")
     # lambda_(r,c): a moment case also prints the flexure block's lambda_r (Table B4.1b).
     lr = sh.line("lambda_(r,c)", sh.coeff(lr_e.id) * E / Fy, "Slender limit, round HSS in compression")
+    # Each comparison below is evaluated once; its stop or branch and its
+    # printed decision line come from that evaluation (ADR 0002).
     D_t = post.D_t
-    if D_t > lr.value:
+    slender = compare(lam.stated(fmt_g), ">", lr.stated(fmt_sig))
+    if slender:
         raise SectionStop(
-            f"{post.label}: wall is slender in compression, D/t = {D_t:g} > lambda_r = {lr_e.value}E/Fy = "
-            f"{fmt_sig(lr.value)} ({lr_e.cite}). The tool does not check slender sections."
+            f"{post.label}: wall is slender in compression, D/t = {D_t:g} {slender.op} lambda_r = "
+            f"{lr_e.value}E/Fy = {fmt_sig(lr.value)} ({lr_e.cite}). The tool does not check slender sections."
         )
-    sh.decision(f"lambda = {D_t:g} <= lambda_(r,c) = {fmt_sig(lr.value)}", "Nonslender",
-                "Section classification, compression: no noncompact category",
+    sh.decision(slender, "Nonslender", "Section classification, compression: no noncompact category",
                 cite_ids=("aisc360.B4.1a.classification",))
 
     K = sh.code_value("K", "aisc360.CA7.K_fixed_free", "Effective length factor, fixed-free (recommended design value)")
@@ -101,16 +103,17 @@ def compression_capacity(registry: Registry, project: Project, post: PipeSection
     note_e = registry.get("aisc360.E2.user_note.slenderness")
     limit = registry.get("aisc360.E2.user_note.slenderness.limit").value
     flags, summary_flag = [], ""
-    if slenderness.value > limit:
-        sh.decision(f"frac(L_c, r) = {fmt_sig(slenderness.value)} > {limit}", "FLAG: exceeds the recommended limit",
+    slenderness_t = slenderness.stated(fmt_sig)
+    over = compare(slenderness_t, ">", number(limit))
+    if over:
+        sh.decision(over, "FLAG: exceeds the recommended limit",
                     f"{note_e.value} A recommendation, not a requirement: flagged, and the calc continues.",
                     cite_ids=(note_e.id,))
         flags.append(f"SLENDERNESS: {post.label} Lc/r = {fmt_sig(slenderness.value)} exceeds {limit}, "
                      f"the limit recommended by the {note_e.cite}. Flagged; the calc continues.")
         summary_flag = f"Lc/r = {fmt_sig(slenderness.value)} > {limit}, flagged"
     else:
-        sh.decision(f"frac(L_c, r) = {fmt_sig(slenderness.value)} <= {limit}", "Within the recommended limit",
-                    note_e.value, cite_ids=(note_e.id,))
+        sh.decision(over, "Within the recommended limit", note_e.value, cite_ids=(note_e.id,))
 
     branch = sh.coeff("aisc360.E3.branch_limit") * sqrt(E / Fy)
     lim = sh.line(branch.symbolic(), branch, "Limit between inelastic and elastic buckling")
@@ -118,17 +121,18 @@ def compression_capacity(registry: Registry, project: Project, post: PipeSection
                  cite_ids=("aisc360.eq.E3-4",), unit="ksi")
     # Each branch's equation entry is fetched only on its own branch, so the
     # DRAFT list names only the equation the calc used.
-    if slenderness.value <= lim.value:
+    inelastic = compare(slenderness_t, "<=", number(lim.value, fmt_sig))
+    if inelastic:
         e32 = registry.get("aisc360.eq.E3-2")
-        sh.decision(f"frac(L_c, r) = {fmt_sig(slenderness.value)} <= {fmt_sig(lim.value)}",
-                    f"Inelastic buckling: {e32.equation_number}", "", cite_ids=("aisc360.E3.branch_limit",))
+        sh.decision(inelastic, f"Inelastic buckling: {e32.equation_number}", "",
+                    cite_ids=("aisc360.E3.branch_limit",))
         FyFe = sh.line("frac(F_y, F_e)", Fy / Fe, f"Exponent in {e32.equation_number}", cite_ids=(e32.id,))
         Fcr = sh.line('F_"cr"', sh.coeff("aisc360.eq.E3-2.base") ** FyFe * Fy, "Critical stress",
                       cite_ids=(e32.id,), unit="ksi")
     else:
         e33 = registry.get("aisc360.eq.E3-3")
-        sh.decision(f"frac(L_c, r) = {fmt_sig(slenderness.value)} > {fmt_sig(lim.value)}",
-                    f"Elastic buckling: {e33.equation_number}", "", cite_ids=("aisc360.E3.branch_limit",))
+        sh.decision(inelastic, f"Elastic buckling: {e33.equation_number}", "",
+                    cite_ids=("aisc360.E3.branch_limit",))
         Fcr = sh.line('F_"cr"', sh.coeff("aisc360.eq.E3-3.coeff") * Fe, "Critical stress",
                       cite_ids=(e33.id,), unit="ksi")
     A = sh.given("A_g", post.A, "Gross area", DB)
@@ -247,30 +251,30 @@ def _moment_case(registry, project, post, loading, cap: Capacity5, direction, lo
     a_ratio = sh.line("frac(alpha P_r, P_e)", alpha * Pr / Pe, "Second-order ratio")
     lim = registry.get("ej.second_order.limit")
     label = f"{direction}, {load_type.lower()}"
-    if a_ratio.value > lim.value:
+    # The decision line prints the symbol alone: its value is in the sentence.
+    exceeds = compare(Term(a_ratio.typst, a_ratio.value), ">", number(lim.value))
+    if exceeds:
         raise SectionStop(
             f"Second-order effects are not negligible in the {label.lower()} case of Check 5: "
-            f"alpha Pr/Pe = {fmt_sig(a_ratio.value)} > {lim.value} ({lim.cite}). "
+            f"alpha Pr/Pe = {fmt_sig(a_ratio.value)} {exceeds.op} {lim.value} ({lim.cite}). "
             f"The tool does not amplify for second-order effects."
         )
     sentence = registry.get("ej.second_order.negligible")
-    sh.decision(f"frac(alpha P_r, P_e) <= {lim.value}",
-                sentence.value.format(ratio=fmt_sig(a_ratio.value)), "", cite_ids=(lim.id,))
+    sh.decision(exceeds, sentence.value.format(ratio=fmt_sig(a_ratio.value)), "", cite_ids=(lim.id,))
 
     Pc, Mc = comp.Pc, cap.Mc
     t = registry.get("aisc360.H1.1.threshold")
     PrPc = sh.line("frac(P_r, P_c)", Pr / Pc, "Axial ratio, selects the interaction equation", cite_ids=(t.id,))
     # Each equation entry is fetched only on its own branch, as for Chapter E.
-    if PrPc.value >= t.value:
+    high_axial = compare(PrPc.stated(fmt_sig), ">=", number(t.value))
+    if high_axial:
         eq = registry.get("aisc360.eq.H1-1a")
-        sh.decision(f"frac(P_r, P_c) = {fmt_sig(PrPc.value)} >= {t.value}", eq.equation_number, "",
-                    cite_ids=(t.id,))
+        sh.decision(high_axial, eq.equation_number, "", cite_ids=(t.id,))
         ratio = sh.line('"Ratio"', PrPc + sh.fraction("aisc360.eq.H1-1a.coeff") * (Mr / Mc),
                         "Combined axial and flexure", cite_ids=(eq.id,), ratio=True)
     else:
         eq = registry.get("aisc360.eq.H1-1b")
-        sh.decision(f"frac(P_r, P_c) = {fmt_sig(PrPc.value)} < {t.value}", eq.equation_number, "",
-                    cite_ids=(t.id,))
+        sh.decision(high_axial, eq.equation_number, "", cite_ids=(t.id,))
         ratio = sh.line('"Ratio"', Pr / (sh.coeff("aisc360.eq.H1-1b.coeff") * Pc) + Mr / Mc,
                         "Combined axial and flexure", cite_ids=(eq.id,), ratio=True)
     return PostCase(direction, load_type, "checked", d.label,

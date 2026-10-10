@@ -111,6 +111,17 @@ def test_tie_between_directions_goes_to_first_in_envelope_order():
     assert chk.controlling.direction == "Inward"
 
 
+def test_the_verdict_and_the_printed_sign_are_one_comparison():
+    """Issue #21, item 2: Check.ok and the closing line's relation both come
+    from within_unity, so they cannot disagree."""
+    for ratio, ok, printed in ((0.46, True, '"Ratio" = 0.46 <= 1.00'), (1.0, True, '"Ratio" = 1.000 <= 1.00'),
+                               (1.004, False, '"Ratio" = 1.004 > 1.00')):
+        chk = _check_with(("Downward", "Concentrated", ratio))
+        assert chk.ok is ok and chk.within_unity.holds is ok
+        assert chk.within_unity.text == printed
+        assert chk.verdict == ("OK" if ok else "NG")
+
+
 def test_tie_between_load_types_goes_to_first_in_envelope_order():
     chk = _check_with(("Downward", "Concentrated", 0.7), ("Downward", "Distributed", 0.7))
     assert chk.controlling.load_type == "Concentrated"

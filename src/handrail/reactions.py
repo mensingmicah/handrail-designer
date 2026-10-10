@@ -21,7 +21,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from handrail.calc import Line, Sheet, fmt_quantity, mtext
+from handrail.calc import Line, Sheet, mtext, order
 from handrail.checks import CONCENTRATED, DISTRIBUTED, DOWNWARD, UPWARD, Loading
 from handrail.demand import HORIZONTAL_KIND, Combinations, Given, Wording, demand
 from handrail.project import Project
@@ -88,16 +88,17 @@ def _governing_load_type(sh: Sheet, project: Project, loading: Loading) -> tuple
                  cite_ids=(LOCATION,), unit="lbf")
     # One comparison gives both the printed statement and the choice (ADR 0002).
     # Equal to within rounding of the inputs is a tie: one set names both.
-    if abs(P.value - wL.value) <= 1e-9 * max(P.value, wL.value):
-        sh.decision(f"P = {fmt_quantity(P.value)} = w_L L = {fmt_quantity(wL.value)}", "Both types, one set",
-                    "Equal at the top of the post: one set names both", cite_ids=(LOCATION,))
+    larger = order(P.stated(), wL.stated(), rel_tol=1e-9)
+    if larger.op == "=":
+        sh.decision(larger, "Both types, one set", "Equal at the top of the post: one set names both",
+                    cite_ids=(LOCATION,))
         return CONCENTRATED, BOTH
-    if P.value > wL.value:
-        sh.decision(f"P = {fmt_quantity(P.value)} > w_L L = {fmt_quantity(wL.value)}",
-                    "Concentrated load P governs", "The larger at the top of the post", cite_ids=(LOCATION,))
+    if larger.op == ">":
+        sh.decision(larger, "Concentrated load P governs", "The larger at the top of the post", cite_ids=(LOCATION,))
         return CONCENTRATED, CONCENTRATED
-    sh.decision(f"w_L L = {fmt_quantity(wL.value)} > P = {fmt_quantity(P.value)}",
-                "Distributed load governs", "The larger at the top of the post", cite_ids=(LOCATION,))
+    # Printed with the governing load first: w_L L > P.
+    sh.decision(larger.flipped(), "Distributed load governs", "The larger at the top of the post",
+                cite_ids=(LOCATION,))
     return DISTRIBUTED, DISTRIBUTED
 
 
@@ -131,10 +132,9 @@ def reaction_sets(registry: Registry, project: Project, loading: Loading) -> Rea
     for name in (LATERAL, UPWARD):
         d = demand(registry, project, loading, name, run_type, COMBINATIONS, WORDING, dead, arm)
         if d.P is None:
-            f = registry.get(COMBO).value  # the factors in the net uplift the demand found not positive
+            # d.no_net is the comparison by which the demand found no net uplift.
             sets.append(ReactionSet(name, named, d.label, False, lines=d.lines,
-                                    remark=f"No net uplift ({float(f['D'])!r}D >= {float(f['L'])!r}L): "
-                                           f"no upward set"))
+                                    remark=f"No net uplift ({d.no_net}): no upward set"))
             continue
         if name == LATERAL:
             sets.append(ReactionSet(name, named, d.label, True, V=d.V.value, N=-d.P.value, M=d.M.value,

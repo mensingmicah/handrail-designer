@@ -26,8 +26,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Callable
 
-from handrail.calc import (PI, Line, Sheet, Sym, absolute, arccos, fmt_quantity, fmt_quantity_plain, maximum,
-                           minimum, mtext, sin, sqrt)
+from handrail.calc import (PI, Line, Sheet, Sym, absolute, arccos, compare, fmt_quantity_plain, maximum, minimum,
+                           mtext, order, sin, sqrt, term)
 from handrail.checks import (
     COMBO, COMPONENT, COMPONENT_DIRECTIONS, DB, DIRECTIONS, DISTRIBUTED, DOWNWARD, FEXX_ENTRY, FU_ENTRY, HORIZONTAL,
     LOAD_TYPES, UPWARD,
@@ -147,12 +147,12 @@ def size_limits(registry: Registry, w: Sym, parts: tuple[Part, Part]) -> SizeLim
     w_min = sh.given('w_"min"', Q_(row["w_min_in"], "inch"), "Minimum fillet size for the thinner part joined",
                      table.cite)
     failure = ""
-    if w.value >= w_min.value:
-        sh.decision(f"w = {fmt_quantity(w.value)} >= w_\"min\" = {fmt_quantity(w_min.value)}", "OK",
-                    "Minimum size", cite_ids=(table.id,))
+    # One comparison gives the pass or fail and the relation printed (ADR 0002).
+    meets = compare(w.stated(), ">=", w_min.stated())
+    if meets:
+        sh.decision(meets, "OK", "Minimum size", cite_ids=(table.id,))
     else:
-        sh.decision(f"w = {fmt_quantity(w.value)} < w_\"min\" = {fmt_quantity(w_min.value)}",
-                    "NG: below the minimum size", "Minimum size: the check fails whatever its ratio",
+        sh.decision(meets, "NG: below the minimum size", "Minimum size: the check fails whatever its ratio",
                     cite_ids=(table.id,))
         failure = (f"Fillet weld w = {fmt_quantity_plain(w.value)} is below the minimum size "
                    f"{fmt_quantity_plain(w_min.value)} for the thinner part joined, "
@@ -251,11 +251,15 @@ def ring_forces(sh: Sheet, rg: Ring, P: Sym, sense: str, V: Sym | None = None, M
                       f"axial and bending add", cite_ids=(NO_BEARING,), unit=PER_INCH)
         sub = sh.line(f"f_(n,{SIDE[other]})", absolute(f_a - f_b), f"Normal force per inch, {other} side of bending",
                       cite_ids=(NO_BEARING,), unit=PER_INCH)
-        gov, side = (add, sense) if add.value >= sub.value else (sub, other)
-        low = sub if gov is add else add
+        # The larger governs, a tie going to the side where axial and bending
+        # add; the line prints the comparison that chose it (ADR 0002).
+        larger = compare(add.stated(), ">=", sub.stated())
+        gov, side = add, sense
+        if not larger:
+            larger = compare(sub.stated(), ">=", add.stated())
+            gov, side = sub, other
         fiber = f"{side} side"
-        sh.decision(f"{gov.typst} = {fmt_quantity(gov.value)} >= {low.typst} = {fmt_quantity(low.value)}",
-                    f"{side.capitalize()} side governs", "No bearing credit: both extreme fibers checked",
+        sh.decision(larger, f"{side.capitalize()} side governs", "No bearing credit: both extreme fibers checked",
                     cite_ids=(NO_BEARING,))
         f_n = sh.line("f_n", gov, f"Normal force per inch at the governing fiber, {side} side",
                       cite_ids=(NO_BEARING,), unit=PER_INCH)
@@ -580,8 +584,12 @@ def check_4b(registry: Registry, project: Project, post: PipeSection, inter: Pip
         # Two guards (Micah, 2026-10-09): R <= P, and the post wall, Check
         # 4b's chord, no thinner than the rail wall, Check 3's chord, whose
         # base metal line Check 3 checks.
+        # Each guard is one comparison: it decides, and when it fails it
+        # prints the relation it found (ADR 0002).
         t_post, t_rail = post.tdes, inter.tdes
-        if R.value <= P and t_post >= t_rail:
+        within_P = compare(R.stated(), "<=", term("P", P))
+        wall_covered = compare(term('t_"des,post"', t_post), ">=", term('t_"des,rail"', t_rail))
+        if within_P and wall_covered:
             text = registry.get("ej.weld.intermediate.same_as_top").value
             chk.observation = text.format(R=fmt_quantity_plain(R.value), P=fmt_quantity_plain(P),
                                           t_post=fmt_quantity_plain(t_post), t_rail=fmt_quantity_plain(t_rail))
@@ -589,13 +597,12 @@ def check_4b(registry: Registry, project: Project, post: PipeSection, inter: Pip
             chk.result = "Controlled by Check 3"
             return chk
         g = Sheet(registry)
-        if R.value > P:
-            g.decision(f"R = {fmt_quantity(R.value)} > P = {fmt_quantity(P)}", "Computed in full",
+        if not within_P:
+            g.decision(within_P, "Computed in full",
                        "Same section as the top rail, but the weld reaction exceeds the concentrated guard load, "
                        "so Check 3 does not cover it", cite_ids=("ej.weld.intermediate.same_as_top",))
-        if t_post < t_rail:
-            g.decision(f't_"des,post" = {fmt_quantity(t_post)} < t_"des,rail" = {fmt_quantity(t_rail)}',
-                       "Computed in full",
+        if not wall_covered:
+            g.decision(wall_covered, "Computed in full",
                        "Same section as the top rail, but the post wall (the chord here) is thinner than the rail "
                        "wall (the chord in Check 3), so Check 3's base metal line does not cover it",
                        cite_ids=("ej.weld.intermediate.same_as_top",))
@@ -624,15 +631,14 @@ def check_4b(registry: Registry, project: Project, post: PipeSection, inter: Pip
     base_int = base_metal(registry, "Base metal: intermediate rail wall fusion face (branch)", FU_ENTRY[int_grade],
                           f"Tensile strength, {int_grade}", t_int, sub="BM,int")
     both = registry.get("ej.weld.intermediate_base_metal")
-    a_post, a_int = base_post.allow.value, base_int.allow.value
     gov = Sheet(registry)
-    if a_int < a_post:  # a tie goes to the post wall, the chord, as Check 3 checks its chord
-        base, chk.base_governs, relation = base_int, "intermediate rail wall", "<"
+    # One three-way comparison picks the governing face and prints <, = or > (ADR 0002).
+    lower = order(base_int.allow.stated(), base_post.allow.stated())
+    if lower.op == "<":  # a tie goes to the post wall, the chord, as Check 3 checks its chord
+        base, chk.base_governs = base_int, "intermediate rail wall"
     else:
-        base, chk.base_governs, relation = base_post, "post wall", "=" if a_int == a_post else ">"
-    gov.decision(f'frac(R_(n,"BM,int"), Omega_"BM") = {fmt_quantity(a_int)} {relation} '
-                 f'frac(R_(n,"BM,post"), Omega_"BM") = {fmt_quantity(a_post)}',
-                 f"{chk.base_governs.capitalize()} governs", both.value, cite_ids=(both.id,))
+        base, chk.base_governs = base_post, "post wall"
+    gov.decision(lower, f"{chk.base_governs.capitalize()} governs", both.value, cite_ids=(both.id,))
     chord = registry.get("ej.weld.post_wall_chord_intermediate")
     walls = Sheet(registry)
     walls.decision(mtext("Post wall, chord limit states"), "Not checked", chord.value, cite_ids=(chord.id,))

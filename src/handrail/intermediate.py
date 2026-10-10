@@ -24,7 +24,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from handrail import beams
-from handrail.calc import Const, Line, Sheet, fmt_quantity, fmt_quantity_plain
+from handrail.calc import Const, Line, Sheet, compare, fmt_quantity_plain, term
 from handrail.checks import (
     COMBO, COMPONENT, COMPONENT_DIRECTIONS, DB, DOWNWARD, Case, Check, Loading, combo_text, flexural_capacity,
 )
@@ -120,7 +120,9 @@ def check_4a(registry: Registry, project: Project, inter: PipeSection | None, lo
     head: list[Line] = []
     if same:
         P, Pc = loading.P, loading.P_c
-        if Pc <= P:
+        # One comparison: it decides, and when it fails it prints what it found (ADR 0002).
+        covered = compare(term("P_c", Pc), "<=", term("P", P))
+        if covered:
             text = registry.get("ej.intermediate.same_as_top").value
             chk.observation = text.format(Pc=fmt_quantity_plain(Pc), P=fmt_quantity_plain(P))
             if limit.bypass:
@@ -129,7 +131,7 @@ def check_4a(registry: Registry, project: Project, inter: PipeSection | None, lo
             return chk
         # The one guard (S4-2): a component load above P runs the full check.
         sh = Sheet(registry)
-        sh.decision(f"P_c = {fmt_quantity(Pc)} > P = {fmt_quantity(P)}", "Computed in full",
+        sh.decision(covered, "Computed in full",
                     "Same section as the top rail, but the component load exceeds the concentrated guard load, "
                     "so Checks 1 and 2 do not cover it", cite_ids=("ej.intermediate.same_as_top",))
         head = sh.lines

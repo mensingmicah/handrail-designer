@@ -24,7 +24,8 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 from handrail import beams, shapes
-from handrail.calc import Const, Line, Sheet, Sym, absolute, fmt_quantity_plain, fmt_sig, minimum, mtext, sqrt
+from handrail.calc import (Comparison, Const, Line, Sheet, Sym, Term, absolute, chain, compare, fmt_g,
+                           fmt_quantity_plain, fmt_ratio, fmt_sig, minimum, mtext, sqrt, term)
 from handrail.errors import InputError
 from handrail.project import SAME_AS_TOP, Member, Project, ProjectError
 from handrail.registry import Entry, Registry
@@ -119,9 +120,15 @@ class Check:
         return not self.bypassed and not self.result
 
     @property
+    def within_unity(self) -> Comparison:
+        """The controlling ratio against 1.00: one comparison gives both the
+        verdict and the sign the closing line prints (ADR 0002)."""
+        return compare(term('"Ratio"', self.controlling.ratio, fmt_ratio), "<=", Term("1.00", 1.0))
+
+    @property
     def ok(self) -> bool:
         # A check not computed defers to the checks it names; it fails nothing itself.
-        return not self.computed or (not self.failures and self.controlling.ratio <= 1.0)
+        return not self.computed or (not self.failures and self.within_unity.holds)
 
     @property
     def verdict(self) -> str:
@@ -344,21 +351,23 @@ def flexural_capacity(registry: Registry, rail: PipeSection, grade: str) -> Capa
     lp = sh.line("lambda_p", sh.coeff(lp_e.id) * E / Fy, "Compact limit, round HSS in flexure")
     lr = sh.line("lambda_r", sh.coeff(lr_e.id) * E / Fy, "Noncompact limit, round HSS in flexure")
 
+    # Each comparison is evaluated once; its stop, its branch and its printed
+    # decision line all come from that evaluation (ADR 0002).
     D_t, name = rail.D_t, rail.label
-    if not D_t < lim.value:
+    lam_t = lam.stated(fmt_g)
+    applies = compare(lam_t, "<", lim.stated(fmt_sig))
+    if not applies:
         raise SectionStop(
             f"{name}: D/t = {D_t:g} is not less than the {app.cite} limit "
             f"{app.value}E/Fy = {fmt_sig(lim.value)}. The tool does not check this section."
         )
-    if D_t > lr.value:
+    slender = compare(lam_t, ">", lr.stated(fmt_sig))
+    if slender:
         raise SectionStop(
-            f"{name}: wall is slender in flexure, D/t = {D_t:g} > lambda_r = {lr_e.value}E/Fy = "
+            f"{name}: wall is slender in flexure, D/t = {D_t:g} {slender.op} lambda_r = {lr_e.value}E/Fy = "
             f"{fmt_sig(lr.value)} ({lr_e.cite}). The tool does not check slender sections."
         )
-    sh.decision(
-        f"lambda = {D_t:g} < lambda_\"lim\" = {fmt_sig(lim.value)}", "Applies",
-        "Applicability", cite_ids=(app.id,),
-    )
+    sh.decision(applies, "Applies", "Applicability", cite_ids=(app.id,))
     sh.decision(
         mtext("Round HSS"), "Lateral-torsional buckling does not apply",
         "Limit states: yielding and local buckling only; Lb and Cb do not enter",
@@ -369,9 +378,9 @@ def flexural_capacity(registry: Registry, rail: PipeSection, grade: str) -> Capa
     Mp = sh.line("M_p", Fy * Z, "Plastic moment (yielding)", cite_ids=("aisc360.eq.F8-1",),
                  unit="lbf*inch")
     flags = []
-    if D_t <= lp.value:
-        sh.decision(f"lambda = {D_t:g} <= lambda_p = {fmt_sig(lp.value)}", "Compact",
-                    "Section classification", cite_ids=("aisc360.B4.1b.classification",))
+    compact = compare(lam_t, "<=", lp.stated(fmt_sig))
+    if compact:
+        sh.decision(compact, "Compact", "Section classification", cite_ids=("aisc360.B4.1b.classification",))
         sh.decision(mtext("Compact wall"), "Local buckling does not apply",
                     "", cite_ids=("aisc360.F8.nominal_strength",))
         Mn = sh.line("M_n", Mp, "Nominal flexural strength", cite_ids=("aisc360.F8.nominal_strength",),
@@ -380,8 +389,8 @@ def flexural_capacity(registry: Registry, rail: PipeSection, grade: str) -> Capa
         # Fetched only here: Registry.get records every lookup for the DRAFT list,
         # and a compact calc must not list an equation it never used.
         f82 = registry.get("aisc360.eq.F8-2")
-        sh.decision(f"lambda_p = {fmt_sig(lp.value)} < lambda = {D_t:g} <= lambda_r = {fmt_sig(lr.value)}",
-                    "NONCOMPACT", "Section classification: reduced capacity",
+        # Not compact, and not slender: lambda_p < lambda <= lambda_r.
+        sh.decision(chain(compact.flipped(), slender), "NONCOMPACT", "Section classification: reduced capacity",
                     cite_ids=("aisc360.B4.1b.classification",))
         flags.append(
             f"NONCOMPACT: {name} D/t = {D_t:g} exceeds lambda_p = {fmt_sig(lp.value)} "

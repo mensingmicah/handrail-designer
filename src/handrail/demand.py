@@ -22,11 +22,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from handrail.calc import Line, Sheet, Sym
+from handrail.calc import Line, Sheet, Sym, Term, compare
 from handrail.checks import COMBO, CONCENTRATED, DOWNWARD, UPWARD, Loading, combo_text
 from handrail.project import Project
 from handrail.registry import Registry
-from handrail.units import Q_
 
 TRIBUTARY = "Stated assumption: the tributary length is the span"
 
@@ -113,6 +112,7 @@ class Demand:
     V: Sym | None = None
     M: Sym | None = None
     remark: str = ""           # why there is no P
+    no_net: str = ""           # the comparison that found no net tension, as text: "0.6D >= 1.0L"
 
 
 def demand(registry: Registry, project: Project, loading: Loading, direction: str, load_type: str,
@@ -138,12 +138,15 @@ def demand(registry: Registry, project: Project, loading: Loading, direction: st
         combo = registry.get(combos.against_dead)
         label = f"{combo_text(combo)}, net axial\n{combo.cite}"
         PL = live_at_post(sh, "P_L", load_type, loading, project, where)
-        # One expression gives both the printed value and the decision (ADR 0002).
-        net = sh.factor(combo.id, "L") * PL - sh.factor(combo.id, "D") * PD
-        if not net.eval() > Q_(0, "lbf"):
-            no_net = f"{float(combo.value['D'])!r}D >= {float(combo.value['L'])!r}L"  # the factors in net
-            return Demand(label, sh.lines, None, "tension",
-                          remark=f"No net tension ({no_net}); compression covered by downward")
+        # The two factored terms give the printed value (their difference) and
+        # the decision (their comparison), which prints as it was evaluated (ADR 0002).
+        up, down = sh.factor(combo.id, "L") * PL, sh.factor(combo.id, "D") * PD
+        net = up - down
+        no_tension = compare(Term(f"{float(combo.value['D'])!r}D", down.eval()), ">=",
+                             Term(f"{float(combo.value['L'])!r}L", up.eval()))
+        if no_tension:
+            return Demand(label, sh.lines, None, "tension", no_net=no_tension.text,
+                          remark=f"No net tension ({no_tension.text}); compression covered by downward")
         P = sh.line(wording.axial, net, note, unit="lbf")
         return Demand(label, sh.lines, P, "tension")
 

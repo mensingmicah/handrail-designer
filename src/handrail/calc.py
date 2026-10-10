@@ -15,6 +15,7 @@ drift apart. Rendering produces Typst math source.
 from __future__ import annotations
 
 import math
+import operator
 from dataclasses import dataclass, field
 from typing import Callable
 
@@ -130,6 +131,96 @@ def fmt_quantity_plain(q, ratio: bool = False) -> str:
     return f"{num}{_unit_gap(unit)}{unit}{sup}"
 
 
+def fmt_g(x: float) -> str:
+    """A tabulated ratio as published, without trailing zeros: 15.4, 300."""
+    return f"{x:g}"
+
+
+# ---------------------------------------------------------------------------
+# Comparisons: one definition per decision line (ADR 0002 applied to decisions)
+# ---------------------------------------------------------------------------
+
+_HOLDS = {"<": operator.lt, "<=": operator.le, ">": operator.gt, ">=": operator.ge}
+# The relation that is true when the one asked for is not.
+_COMPLEMENT = {"<": ">=", "<=": ">", ">": "<=", ">=": "<"}
+# The same relation read from the other side: a < b is b > a.
+_FLIPPED = {"<": ">", "<=": ">=", ">": "<", ">=": "<=", "=": "="}
+
+
+@dataclass(frozen=True)
+class Term:
+    """One side of a comparison: the text it prints as (Typst math in a calc
+    line, plain text in a message) and the value compared."""
+
+    text: str
+    value: object
+
+
+def term(symbol: str, value, fmt: Callable[[object], str] | None = None) -> Term:
+    """A side printed as 'symbol = value'. The value is given once, so the
+    number printed is the number compared."""
+    return Term(f"{symbol} = {(fmt or fmt_quantity)(value)}", value)
+
+
+def number(value, fmt: Callable[[object], str] = str) -> Term:
+    """A side printed as the bare number, as written unless ``fmt`` is given."""
+    return Term(fmt(value), value)
+
+
+@dataclass(frozen=True)
+class Comparison:
+    """A comparison that has been evaluated.
+
+    ``holds`` says whether the relation asked for held, and is what an
+    ``if`` tests. ``left``, ``op`` and ``right`` state the relation that is
+    true: the one asked for when it held, its complement when it did not.
+    The printed relation and the branch taken therefore come from one
+    evaluation and cannot drift apart.
+    """
+
+    left: Term
+    op: str
+    right: Term
+    holds: bool
+
+    def __bool__(self) -> bool:
+        return self.holds
+
+    @property
+    def text(self) -> str:
+        return f"{self.left.text} {self.op} {self.right.text}"
+
+    def flipped(self) -> Comparison:
+        """The same true relation, read from the other side."""
+        return Comparison(self.right, _FLIPPED[self.op], self.left, self.holds)
+
+
+def compare(left: Term, op: str, right: Term) -> Comparison:
+    """Evaluate ``left op right`` (op is <, <=, > or >=). The result is true
+    or false as the relation held, and prints the relation that is true."""
+    holds = bool(_HOLDS[op](left.value, right.value))
+    return Comparison(left, op if holds else _COMPLEMENT[op], right, holds)
+
+
+def order(left: Term, right: Term, rel_tol: float = 0.0) -> Comparison:
+    """Which of <, = or > holds between two values; the caller branches on
+    ``op``. Values within ``rel_tol`` (relative to the larger) are equal."""
+    a, b = left.value, right.value
+    if abs(a - b) <= rel_tol * max(a, b):
+        op = "="
+    else:
+        op = "<" if a < b else ">"
+    return Comparison(left, op, right, True)
+
+
+def chain(first: Comparison, second: Comparison) -> str:
+    """Two true relations sharing their middle term, printed as one:
+    a < b and b <= c print as a < b <= c."""
+    if first.right is not second.left:
+        raise ValueError(f"cannot chain {first.text!r} and {second.text!r}: they do not share a middle term")
+    return f"{first.text} {second.op} {second.right.text}"
+
+
 # ---------------------------------------------------------------------------
 # Expression tree
 # ---------------------------------------------------------------------------
@@ -191,6 +282,10 @@ class Sym(Expr):
         # Parenthesize quantities with units, or negatives, so juxtaposition reads.
         needs = (hasattr(self.value, "units") and not self.value.dimensionless) or mag < 0
         return f"({text})" if needs else text
+
+    def stated(self, fmt: Callable[[object], str] | None = None) -> Term:
+        """This line as one side of a comparison: 'symbol = value'."""
+        return term(self.typst, self.value, fmt)
 
 
 @dataclass(eq=False)
@@ -468,8 +563,14 @@ class Sheet:
         )
         return Sym(typst, value)
 
-    def decision(self, statement: str, result: str, note: str, cite: str = "", cite_ids: tuple[str, ...] = ()) -> None:
-        """A comparison with a stated outcome, e.g. λ ≤ λp → compact."""
+    def decision(self, statement: str | Comparison, result: str, note: str, cite: str = "",
+                 cite_ids: tuple[str, ...] = ()) -> None:
+        """A statement with a stated outcome, e.g. λ ≤ λp → compact. A
+        relation between values is passed as the Comparison that was
+        evaluated (compare, order), so the line prints the relation the code
+        acted on; plain text is for statements that compare nothing."""
+        if isinstance(statement, Comparison):
+            statement = statement.text
         cites = [self.registry.get(i).cite for i in cite_ids] + ([cite] if cite else [])
         self.lines.append(
             Line(symbol=statement, value=None, note=note, cite="; ".join(cites), text=result, kind="decision")

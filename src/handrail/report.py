@@ -298,11 +298,11 @@ def _check(chk: Check) -> str:
         out.append(f"#heading(level: 2, {typst_str(f'{title}: {c.label} ({combination})')})")
         out.append(_lines(c.lines))
     # The verdict is decided once, by the Check; the page only prints it. The
-    # sign compares the ratio alone: a check can be NG with its ratio under
-    # 1.00 (a weld below the minimum size), and then says why.
-    cmp = "<=" if ctrl.ratio <= 1.0 else ">"
+    # relation is the Check's own comparison of the ratio alone: a check can
+    # be NG with its ratio under 1.00 (a weld below the minimum size), and
+    # then says why.
     why = f"#h(6pt) #{typst_str('; ' + chk.summary_flag)}" if chk.failures else ""
-    out.append(f"#align(right, text(size: 12pt, weight: \"bold\")[$\"Ratio\" = {fmt_ratio(ctrl.ratio)} {cmp} 1.00$ "
+    out.append(f"#align(right, text(size: 12pt, weight: \"bold\")[${chk.within_unity.text}$ "
                f"{why}#h(10pt) #{typst_str(chk.verdict)}])")
     return "\n\n".join(out)
 
