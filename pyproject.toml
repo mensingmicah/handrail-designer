@@ -21,8 +21,24 @@ build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
+    "pyright>=1.1.414",
     "pytest>=9.1.1",
+    "ruff>=0.17.0",
 ]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.ruff.lint]
+# ruff's own default rule set, at the version uv.lock pins. One rule is
+# off: I001 (import sorting) rewrites the layout of every import block,
+# which is a formatter's job and waits for `ruff format` (issue #7).
+ignore = ["I001"]
+
+[tool.pyright]
+# Basic mode, not strict (docs/plans/slice-5.md, step 1). pyright reads the
+# source without running it and reports arguments and attributes whose
+# types cannot be right.
+include = ["src"]
+typeCheckingMode = "basic"
+pythonVersion = "3.13"
