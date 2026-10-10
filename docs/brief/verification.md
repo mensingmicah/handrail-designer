@@ -59,6 +59,20 @@ the guard fits the tool's assumptions) is separate and unchanged.
   follows the printed case, it confirms what the tool did rather than
   finding what the tool left out; omissions are caught by the independent
   calc and checklist items 1–3.
+  - **What counts as new in a section family's first case.** (S5-2, Micah
+    2026-10-09; a reading of the rule above, not a change to it.) Slices 5
+    to 7 add section families, not checks. My recompute covers a check in
+    a family's first test case when that case reaches a provision, an
+    equation branch or a computed property that none of my own arithmetic
+    has touched. A new section name alone does not trigger it: a check
+    whose provisions and branches I have already recomputed, run on a new
+    section with only its registry values (Fy, Fu) or published
+    properties different, is covered by the independent calc and my
+    registry verification. Each slice plan names the groups this reading
+    gives, and the case lists them in `[verification] recompute`. Slice
+    5: Check 1 on the noncompact rail (Eq. F8-2), and the custom tube's
+    section properties (the §B4.2 design wall, and A, I, S, Z and r from
+    dimensions).
 
 ## In each slice
 
@@ -165,6 +179,18 @@ A value in a test case that has not been worked yet reads "pending" or
 - Each new check arrives with at least one test case, and each code branch
   it adds (for example Eq. E3-2 and Eq. E3-3) is reached by at least one
   case.
+- **A section family's case covers the groups its family changes.** (S5-2,
+  Micah 2026-10-09.) From slice 5 on, a test case for a new section family
+  need not cover all seven checks. It lists in `[verification] covers`
+  the groups its new member changes: a rail case, the section group and
+  the rail's checks; a post case, the post group, the post's checks and
+  the reactions. The members it leaves on pipe stay covered by cases 1 to
+  5, which rerun on every change. One addition: a narrowed case still
+  records, as independent-calc values, every cross-member quantity its
+  family changes, even when the checks downstream of it are not covered.
+  A custom rail case records the rail's weight and D at the post, for
+  example, though it does not cover Checks 5 to 7. Each slice plan lists
+  each case's groups and those quantities.
 - Every value records its provenance. A value corrected after comparison
   with the tool keeps a note saying so, because it is no longer an
   independent check. Tool output is never used to fill or edit a test
