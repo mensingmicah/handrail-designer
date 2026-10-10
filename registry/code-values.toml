@@ -2620,10 +2620,9 @@ verified_date = ""
 note = "From memory, as drafted in docs/brief/inputs.md (S5-7): one value for every wall thickness. Fu/Fy = 65/50 = 1.30."
 
 # --- AISC 360-22 B4.2: design wall thickness for HSS (S5-6, S5-8) -----------
-# S5-6 asked for these to be drafted from the 360-22 text. The 2022 text
-# could not be opened (the AISC site refused the request). They are drafted
-# from the text of the 2016 edition, which keys the rule on the ASTM
-# standard, not on ERW against SAW. Check them against the 2022 edition.
+# Drafted from the 360-22 text, as S5-6 asked (re-cited 2026-10-10 from
+# the engineer's copy of the Specification, page 16.1-24). The rule is
+# keyed on the ASTM standard, not on ERW against SAW.
 
 [[entry]]
 id = "aisc360.B4.2.design_wall"
@@ -2632,28 +2631,26 @@ unit = "provision"
 cite = "AISC 360-22 §B4.2"
 document = "AISC 360-22, Specification for Structural Steel Buildings"
 edition = "2022"
-section = "§B4.2, Design Wall Thickness for HSS"
-source = "https://user.eng.umd.edu/~ccfu/ref/a360-16-spec-and-commentary.pdf"
+section = "§B4.2, Design Wall Thickness for HSS, page 16.1-24"
+source = "AISC 360-22 text, read 2026-10-10"
 status = "drafted"
 drafted_on = 2026-10-10
 verified_by = ""
 verified_date = ""
 note = """
-Paraphrase. NOT drafted from the 360-22 text, which S5-6 asked for: \
-aisc.org refused the request for the 2022 PDF on 2026-10-10. Drafted \
-from the 2016 edition's text at the source URL (a university's copy of \
-ANSI/AISC 360-16), read the same day. There the rule is by ASTM \
-standard: nominal wall for box sections and for HSS to A1065 or A1085, \
-and 0.93 times the nominal wall for HSS to other approved standards. \
-It does not key on electric-resistance-welded against \
-submerged-arc-welded, so seamless and hot-formed tubing to A501 or A618 \
-takes 0.93 like A500 (S5-6's stop-and-ask condition is not met on this \
-evidence). Micah's recollection is that the wording has been so since \
-360-16. Check the 2022 edition's §B4.2 for any change. The same section \
-of the 2016 edition carries a User Note allowing ASTM A53 Gr B pipe to \
-be designed as round HSS (see aisc360.pipe_as_round_hss). The tool \
-applies this rule to a custom tube only; a database section uses its \
-published t_des (S5-6)."""
+Paraphrase of the 360-22 text, §B4.2 on page 16.1-24, as S5-6 asked \
+(re-cited 2026-10-10; first drafted the same day from the 2016 \
+edition's text, which reads the same on these points). The rule is by \
+ASTM standard: the nominal thickness for box sections and for HSS \
+produced to ASTM A1065/A1065M or ASTM A1085/A1085M, and 0.93 times the \
+nominal wall thickness for HSS produced to other standards approved for \
+use under the Specification. It does not key on \
+electric-resistance-welded against submerged-arc-welded, so seamless \
+and hot-formed tubing to A501 or A618 takes 0.93 like A500, and S5-6's \
+stop-and-ask condition is not met. The same section carries a User Note \
+allowing pipe to ASTM A53/A53M Grade B to be designed as round HSS (see \
+aisc360.pipe_as_round_hss). The tool applies this rule to a custom tube \
+only; a database section uses its published t_des (S5-6)."""
 
 [[entry]]
 id = "aisc360.B4.2.coeff"
@@ -2662,14 +2659,14 @@ unit = ""
 cite = "AISC 360-22 §B4.2"
 document = "AISC 360-22, Specification for Structural Steel Buildings"
 edition = "2022"
-section = "§B4.2, Design Wall Thickness for HSS: the coefficient on the nominal wall for HSS produced to standards other than ASTM A1065 and A1085"
-source = "https://user.eng.umd.edu/~ccfu/ref/a360-16-spec-and-commentary.pdf"
+section = "§B4.2, Design Wall Thickness for HSS, page 16.1-24: the coefficient on the nominal wall thickness for HSS produced to standards other than ASTM A1065/A1065M and A1085/A1085M"
+source = "AISC 360-22 text, read 2026-10-10"
 status = "drafted"
 drafted_on = 2026-10-10
 verified_by = ""
 verified_date = ""
 note = """
-Read in the 2016 edition's text, not the 2022 edition's (see \
+Read in the 360-22 text, page 16.1-24 (re-cited 2026-10-10; see \
 aisc360.B4.2.design_wall). The design wall of a custom round tube of \
 any grade the tool accepts but A1085: t_des = 0.93 t_nom (S5-8). Test \
 case 6's rail: 0.93 x 0.055 in = 0.05115 in."""
@@ -2681,15 +2678,15 @@ unit = "provision"
 cite = "AISC 360-22 §B4.2"
 document = "AISC 360-22, Specification for Structural Steel Buildings"
 edition = "2022"
-section = "§B4.2, Design Wall Thickness for HSS: HSS produced to ASTM A1065 or ASTM A1085"
-source = "https://user.eng.umd.edu/~ccfu/ref/a360-16-spec-and-commentary.pdf"
+section = "§B4.2, Design Wall Thickness for HSS, page 16.1-24: box sections and HSS produced to ASTM A1065/A1065M or ASTM A1085/A1085M"
+source = "AISC 360-22 text, read 2026-10-10"
 status = "drafted"
 drafted_on = 2026-10-10
 verified_by = ""
 verified_date = ""
 note = """
-Paraphrase, read in the 2016 edition's text, not the 2022 edition's \
-(see aisc360.B4.2.design_wall). Cited on the design wall line of a \
+Paraphrase of the 360-22 text, page 16.1-24 (re-cited 2026-10-10; see \
+aisc360.B4.2.design_wall). Cited on the design wall line of a \
 custom A1085 tube: t_des = t_nom (S5-6). A1065 is the other standard \
 the provision names; it is not a round HSS grade and arrives with \
 rectangular HSS in slice 6."""
@@ -2847,24 +2844,25 @@ unit = ""
 cite = "AISC 360-22 Tables K3.1A and K4.1A"
 document = "AISC 360-22, Specification for Structural Steel Buildings"
 edition = "2022"
-section = "Chapter K, Tables K3.1A and K4.1A, Limits of Applicability of Tables K3.1 and K4.1 (round HSS-to-HSS truss and moment connections): chord wall slenderness D/t for T- and Y-connections"
-source = "https://user.eng.umd.edu/~ccfu/ref/a360-16-spec-and-commentary.pdf"
+section = "Chapter K, Table K3.1A, Limits of Applicability of Table K3.1 (round HSS-to-HSS truss connections), page 16.1-164, and Table K4.1A, Limits of Applicability of Table K4.1 (round HSS-to-HSS moment connections), page 16.1-168: chord wall slenderness D/t for T- and Y-connections"
+source = "AISC 360-22 text, read 2026-10-10"
 status = "drafted"
 drafted_on = 2026-10-10
 verified_by = ""
 verified_date = ""
 note = """
-The value and both table numbers were read in the 2016 edition's text \
-at the source URL, not in the 2022 edition (see \
-aisc360.B4.2.design_wall): confirm the table numbers against 360-22. \
-There the chord wall limit is D/t of 50 for T- and Y-connections, in \
-both the truss table (K3.1A) and the moment table (K4.1A), and 40 for \
-cross-connections. The same tables carry other limits the tool does \
-not test, because W7 leaves the Chapter K limit states unchecked: \
-branch wall slenderness, the width ratio (over 0.2), Fy of 52 ksi or \
-less, and Fy/Fu of 0.8 or less (A500 Grade C is noted as acceptable). \
-Slice 6 checks the chord limit states and decides what becomes of this \
-stop (S5-3)."""
+The value and both table numbers were read in the 360-22 text \
+(re-cited 2026-10-10; first drafted the same day from the 2016 \
+edition, which has the same numbers). The chord wall limit is D/t of \
+50 for T-, Y- and K-connections in the truss table (K3.1A, page \
+16.1-164) and for T- and Y-connections in the moment table (K4.1A, \
+page 16.1-168), and 40 for cross-connections in both. The same tables \
+carry other limits the tool does not test, because W7 leaves the \
+Chapter K limit states unchecked: branch wall slenderness (Db/tb of 50 \
+or less, and 0.05E/Fyb or less), the width ratio (over 0.2, up to \
+1.0), Fy and Fyb of 52 ksi or less, and Fy/Fu and Fyb/Fub of 0.8 or \
+less (ASTM A500 Grade C is noted as acceptable). Slice 6 checks the \
+chord limit states and decides what becomes of this stop (S5-3)."""
 
 [[entry]]
 id = "ej.weld.chord_D_over_t_stop"
