@@ -569,10 +569,10 @@ def check_4b(registry: Registry, project: Project, post: Section, inter: Section
     connected walls, the post wall (the chord) and the intermediate rail wall
     (the branch), each in shear rupture against the in-plane shear, the lower
     allowable governing (Micah 2026-10-09, the W5 rule); the post wall's chord
-    limit states are not checked (W7, extended). Same as the top rail with R <= P
-    and the post wall no thinner than the rail wall, the observation line
-    instead (S4-8; wall guard, Micah 2026-10-09); with no intermediate rail,
-    "none"."""
+    limit states are not checked (W7, extended). Same as the top rail with R <= P,
+    the post wall no thinner than the rail wall and the post no wider than the
+    rail, the observation line instead (S4-8; wall guard, Micah 2026-10-09;
+    width guard, S5-11); with no intermediate rail, "none"."""
     chk = WeldCheck("4b", "Intermediate rail weld to post", "f_r", "frac(R_n, Omega_w)")
     state = project.intermediate_rail.state
     if state == NO_INTERMEDIATE:
@@ -590,15 +590,20 @@ def check_4b(registry: Registry, project: Project, post: Section, inter: Section
         reactions = [_reaction_4b(registry, project, loading, direction) for direction in COMPONENT_DIRECTIONS]
         rsh, R, _ = max(reactions, key=lambda t: t[1].value)
         P = loading.P
-        # Two guards (Micah, 2026-10-09): R <= P, and the post wall, Check
-        # 4b's chord, no thinner than the rail wall, Check 3's chord, whose
-        # base metal line Check 3 checks.
+        # Three guards. R <= P, and the post wall, Check 4b's chord, no
+        # thinner than the rail wall, Check 3's chord, whose base metal line
+        # Check 3 checks (Micah, 2026-10-09). And the post no wider than the
+        # rail by any amount (S5-11): the observation says this weld's ring,
+        # the rail's perimeter, is at least Check 3's, the post's, and the
+        # OD tolerance of the width comparison (S5-4) lets a post be wider
+        # than its rail by up to 0.01 in.
         # Each guard is one comparison: it decides, and when it fails it
         # prints the relation it found (ADR 0002).
         t_post, t_rail = post.tdes, inter.tdes
         within_P = compare(R.stated(), "<=", term("P", P))
         wall_covered = compare(term('t_"des,post"', t_post), ">=", term('t_"des,rail"', t_rail))
-        if within_P and wall_covered:
+        ring_covered = compare(term('D_"post"', post.OD), "<=", term('D_"rail"', inter.OD))
+        if within_P and wall_covered and ring_covered:
             text = registry.get("ej.weld.intermediate.same_as_top").value
             chk.observation = text.format(R=fmt_quantity_plain(R.value), P=fmt_quantity_plain(P),
                                           t_post=fmt_quantity_plain(t_post), t_rail=fmt_quantity_plain(t_rail))
@@ -614,6 +619,11 @@ def check_4b(registry: Registry, project: Project, post: Section, inter: Section
             g.decision(wall_covered, "Computed in full",
                        "Same section as the top rail, but the post wall (the chord here) is thinner than the rail "
                        "wall (the chord in Check 3), so Check 3's base metal line does not cover it",
+                       cite_ids=("ej.weld.intermediate.same_as_top",))
+        if not ring_covered:
+            g.decision(ring_covered, "Computed in full",
+                       "Same section as the top rail, but the post is wider than the rail, so this weld's ring (the "
+                       "rail's perimeter) is smaller than Check 3's (the post's) and Check 3 does not cover it",
                        cite_ids=("ej.weld.intermediate.same_as_top",))
         head_guard = g.lines
 

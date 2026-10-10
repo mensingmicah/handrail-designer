@@ -146,8 +146,8 @@ Input validation: these run before anything is computed
 | `weld.electrode_unsupported` | The electrode is not E70XX. | W12 | `test_stop_is_triggered[weld.electrode_unsupported]` |
 | `baseplate.grade_unsupported` | The baseplate grade is not A36. | W12 | `test_stop_is_triggered[baseplate.grade_unsupported]` |
 | `baseplate.smaller_than_post` | B or N is smaller than the post OD. | S4-6 | `test_stop_is_triggered[baseplate.smaller_than_post]` |
-| `section.post_wider_than_rail` | The post OD is greater than the top rail OD: the coped post to rail underside detail requires post OD ≤ rail OD. Equal ODs are allowed. | W8 (welds.md) | `test_stop_is_triggered[section.post_wider_than_rail]` |
-| `section.intermediate_wider_than_post` | The intermediate rail OD is greater than the post OD: its end is coped to the side of the post. Equal ODs are allowed. | S4-11 (welds.md) | `test_stop_is_triggered[section.intermediate_wider_than_post]` |
+| `section.post_wider_than_rail` | The post OD is greater than the top rail OD: the coped post to rail underside detail requires post OD ≤ rail OD. Equal ODs are allowed, and ODs within 0.01 in of each other are equal. | W8; S5-4 (welds.md) | `test_stop_is_triggered[section.post_wider_than_rail]` |
+| `section.intermediate_wider_than_post` | The intermediate rail OD is greater than the post OD: its end is coped to the side of the post. Equal ODs are allowed, and ODs within 0.01 in of each other are equal. | S4-11; S5-4 (welds.md) | `test_stop_is_triggered[section.intermediate_wider_than_post]` |
 
 ### Section families at a joint
 

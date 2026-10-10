@@ -33,6 +33,24 @@ def require_supported_grade(registry: Registry, member: Member, sec: Section, na
     materials.yield_stress(registry, member.grade, sec, name.capitalize())
 
 
+OD_TOLERANCE = "ej.section.od_tolerance"
+
+
+def wider(registry: Registry, a, b) -> bool:
+    """Whether outside diameter ``a`` is wider than ``b`` for the width
+    comparisons W8 and S4-11: greater by more than the tolerance within
+    which two outside diameters are equal (S5-4). The database rounds a
+    round HSS's OD (2.38 in for HSS2.375) and stores a pipe's exactly
+    (2.375 in), so a pipe and an HSS of one size differ on paper only.
+
+    The tolerance is read only when it decides, so a calc whose members
+    are no wider than they may be does not list it as used.
+    """
+    if not a > b:
+        return False
+    return a - b > registry.get(OD_TOLERANCE).quantity
+
+
 def validate(project: Project, registry: Registry) -> None:
     """The input checks that need more than one field, or a lookup. Raises an
     InputError naming what it checked and why. Runs before compute, so no
@@ -44,9 +62,11 @@ def validate(project: Project, registry: Registry) -> None:
       section that is not round hollow);
     - each grade is one the tool supports for its member's shape (S5-5), and
       the electrode and the baseplate grade are ones it supports (W12);
-    - the post is no wider than the rail (W8);
+    - the post is no wider than the rail (W8), ODs within 0.01 in being
+      equal (S5-4);
     - the post grade's Fu/Fy keeps its wall at the weld covered by Check 5 (W5);
-    - the intermediate rail is no wider than the post (S4-11);
+    - the intermediate rail is no wider than the post (S4-11), with the same
+      tolerance;
     - the baseplate is no smaller in plan than the post OD (S4-6).
     """
     m = members.resolve(project, registry)
@@ -79,7 +99,7 @@ def validate(project: Project, registry: Registry) -> None:
                            f"{', '.join(BASEPLATE_GRADES)} only", stop=Stop.BASEPLATE_GRADE_UNSUPPORTED)
 
     D_rail, D_post = rail.OD, post.OD
-    if D_post > D_rail:
+    if wider(registry, D_post, D_rail):
         raise ProjectError(
             f"The post ({post.label}, OD {fmt_quantity_plain(D_post)}) is wider than the top rail "
             f"({rail.label}, OD {fmt_quantity_plain(D_rail)}). The coped post to rail underside detail "
@@ -102,7 +122,7 @@ def validate(project: Project, registry: Registry) -> None:
     if member is not None:
         same = project.intermediate_rail.state == SAME_AS_TOP
         sec = rail if same else cast(Section, inter)
-        if sec.OD > D_post:
+        if wider(registry, sec.OD, D_post):
             how = ("With same_as_top_rail = true it takes the top rail's section: uncheck same_as_top_rail and "
                    "enter a section no wider than the post." if same else
                    "Enter a section no wider than the post.")
