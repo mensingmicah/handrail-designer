@@ -1,0 +1,1 @@
+SectionStop: FakePipe: wall is slender in compression, D/t = 100 > lambda_r = 0.11E/Fy = 91.14 (AISC 360-22 Table B4.1a, Case 9). The tool does not check slender sections.

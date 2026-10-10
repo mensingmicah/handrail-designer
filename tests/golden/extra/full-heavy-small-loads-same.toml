@@ -1,0 +1,30 @@
+# Extra golden scenario full-heavy-small-loads-same (tests/test_golden.py, the second tier).
+# The tool runs this project and its whole printed calc is compared with full-heavy-small-loads-same.typ.
+# Inputs only: this file holds no value, and none is ever copied into a test case.
+
+[project]
+name = "char"
+
+[geometry]
+span = "6'-0\""
+post_height = 42
+baseplate_thickness = "1/2"
+
+[top_rail]
+section = "Pipe12STD"
+
+[post]
+section = "Pipe12STD"
+
+[welds]
+rail_to_post = "1/8"
+post_to_baseplate = "1/4"
+
+[baseplate]
+B = 14
+N = 14
+
+[loads]
+concentrated_lb = 10
+uniform_plf = 1
+component_lb = 5

@@ -36,7 +36,10 @@ another inside a function (tests/test_structure.py).
 ## Conventions
 
 - **A printed-text change shows in the golden snapshots**
-  (tests/test_golden.py, tests/golden/). A refactor leaves them
+  (tests/test_golden.py, tests/golden/). Two tiers: the calcs Micah
+  reviews (cases 1 to 5 and the example), and tests/golden/extra/, 92
+  machinery scenarios for the branches and stops those never reach. A
+  refactor leaves both tiers
   byte-identical. A change made on purpose regenerates them in a commit of
   its own, one commit per intended change. An unexplained difference is a
   stop: find the cause before regenerating.

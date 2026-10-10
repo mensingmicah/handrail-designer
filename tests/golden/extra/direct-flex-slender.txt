@@ -1,0 +1,1 @@
+SectionStop: FakePipe: wall is slender in flexure, D/t = 300 > lambda_r = 0.31E/Fy = 256.9 (AISC 360-22 Table B4.1b, Case 20). The tool does not check slender sections.

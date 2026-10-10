@@ -1,0 +1,1 @@
+ProjectError: The intermediate rail (Pipe2STD, OD 2.375 in) is wider than the post (Pipe1-1/2STD, OD 1.900 in). Its end is coped to the side of the post, which requires intermediate rail OD <= post OD. With same_as_top_rail = true it takes the top rail's section: uncheck same_as_top_rail and enter a section no wider than the post.

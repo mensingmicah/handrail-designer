@@ -1,0 +1,8 @@
+#subhead("Fillet size limits")
+#calcline([$t_1 = "0.8000 in"$], "Part 1", "Input")
+#calcline([$t_2 = "1.000 in"$], "Part 2", "Input")
+#calcline([$display(t_"min" = "min"(t_1, t_2) = "min"(("0.8000 in"), ("1.000 in")) = "0.8000 in")$], "Thinner part joined", "AISC 360-22 Table J2.4")
+#calcline([$w_"min" = "0.3125 in"$], "Minimum fillet size for the thinner part joined", "AISC 360-22 Table J2.4")
+#calcline([$w = "0.2500 in" < w_"min" = "0.3125 in"$ #h(6pt) $arrow.r$ #h(6pt) *#"NG: below the minimum size"*], "Minimum size: the check fails whatever its ratio", "AISC 360-22 Table J2.4")
+#calcline([$"Maximum fillet size"$ #h(6pt) $arrow.r$ #h(6pt) *#"Not applicable"*], "Maximum fillet size along edges of material does not apply: this weld is a T-joint, not a weld along an edge. No maximum size is checked.", "AISC 360-22 §J2.2b(b); Engineering judgement (EOR): no maximum fillet size at a T-joint")
+Fillet weld w = 0.2500 in is below the minimum size 0.3125 in for the thinner part joined, t = 0.8000 in (AISC 360-22 Table J2.4).

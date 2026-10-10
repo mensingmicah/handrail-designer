@@ -1,0 +1,1 @@
+SectionStop: FakeTube (rectangular HSS): the directional strength increase rule for this section family has not been drafted. The tool applies the increase only to round hollow sections. Check 7 joint (post on the baseplate): a rectangular HSS post is not supported until slice 6 (S5-1).

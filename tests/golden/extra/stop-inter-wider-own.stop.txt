@@ -1,0 +1,1 @@
+ProjectError: The intermediate rail (Pipe2-1/2STD, OD 2.875 in) is wider than the post (Pipe2STD, OD 2.375 in). Its end is coped to the side of the post, which requires intermediate rail OD <= post OD. Enter a section no wider than the post.

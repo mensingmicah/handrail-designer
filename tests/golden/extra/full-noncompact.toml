@@ -1,0 +1,28 @@
+# Extra golden scenario full-noncompact (tests/test_golden.py, the second tier).
+# The tool runs this project and its whole printed calc is compared with full-noncompact.typ.
+# Inputs only: this file holds no value, and none is ever copied into a test case.
+
+[project]
+name = "char"
+
+[geometry]
+span = "12'-0\""
+post_height = 42
+baseplate_thickness = "1/2"
+
+[top_rail]
+section = "Pipe26STD"
+
+[post]
+section = "Pipe12STD"
+
+[welds]
+rail_to_post = "1/8"
+post_to_baseplate = "1/4"
+
+[baseplate]
+B = 14
+N = 14
+
+[intermediate_rail]
+none = true

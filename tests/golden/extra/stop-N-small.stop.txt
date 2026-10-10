@@ -1,0 +1,1 @@
+ProjectError: [baseplate] N = 2 in (perpendicular to the rail) is smaller than the post OD (Pipe2STD, 2.375 in). Check the inputs.

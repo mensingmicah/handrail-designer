@@ -1,0 +1,1 @@
+ProjectError: [welds] is missing 'intermediate_rail_to_post', required when the intermediate rail has its own section (same_as_top_rail = false)

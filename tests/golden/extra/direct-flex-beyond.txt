@@ -1,0 +1,1 @@
+SectionStop: FakePipe: D/t = 400 is not less than the AISC 360-22 §F8 limit 0.45E/Fy = 372.9. The tool does not check this section.

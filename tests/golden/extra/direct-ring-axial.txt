@@ -1,0 +1,10 @@
+#subhead("Weld properties")
+#calcline([$D = "1.900 in"$], "Pipe1-1/2STD: outside diameter; the weld ring is the post perimeter", "AISC Shapes Database v16.0")
+#calcline([$w = "0.1250 in"$], "Fillet weld leg size, all around (1/8 as entered)", "Input")
+#calcline([$display(L_w = pi D = pi ("1.900 in") = "5.969 in")$], "Weld length: the post perimeter", "Engineering judgement (EOR): elastic weld as a line")
+#calcline([$display(S_w = frac(pi D^("2"), "4") = frac(pi ("1.900 in")^("2"), "4") = "2.835 in"^2)$], "Section modulus of the ring as a line", "Engineering judgement (EOR): elastic weld as a line")
+#calcline([$display(t_e = "0.707" w = "0.707" ("0.1250 in") = "0.08837 in")$], "Effective throat, equal-leg fillet", "AISC 360-22 §J2.2a")
+#calcline([$display(f_a = frac(P, L_w) = frac(("250.0 lb"), ("5.969 in")) = "41.88 lb/in")$], "Axial force per inch of weld, compression, uniform around the ring", "Engineering judgement (EOR): elastic weld as a line")
+#calcline([$display(f_n = f_a = "41.88 lb/in")$], "Normal force per inch: no moment, the same at every point of the ring", "Engineering judgement (EOR): no bearing credit at the weld")
+#calcline([$display(f_r = f_n = "41.88 lb/in")$], "Resultant per inch: normal force only", "Engineering judgement (EOR): elastic weld as a line")
+uniform

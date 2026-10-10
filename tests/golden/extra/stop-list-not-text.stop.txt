@@ -1,0 +1,1 @@
+ProjectError: project file: 'project.references' must be a list of quoted text, e.g. ["..."]

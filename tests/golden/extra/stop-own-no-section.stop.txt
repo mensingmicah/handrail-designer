@@ -1,0 +1,1 @@
+ProjectError: [intermediate_rail] same_as_top_rail = false needs a section (or none = true for no intermediate rail)

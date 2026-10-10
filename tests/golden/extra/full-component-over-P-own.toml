@@ -1,0 +1,33 @@
+# Extra golden scenario full-component-over-P-own (tests/test_golden.py, the second tier).
+# The tool runs this project and its whole printed calc is compared with full-component-over-P-own.typ.
+# Inputs only: this file holds no value, and none is ever copied into a test case.
+
+[project]
+name = "char"
+
+[geometry]
+span = "6'-0\""
+post_height = 42
+baseplate_thickness = "1/2"
+
+[top_rail]
+section = "Pipe2STD"
+
+[post]
+section = "Pipe2STD"
+
+[welds]
+rail_to_post = "1/8"
+post_to_baseplate = "1/4"
+intermediate_rail_to_post = "1/8"
+
+[baseplate]
+B = 6
+N = 8
+
+[intermediate_rail]
+same_as_top_rail = false
+section = "Pipe1-1/4STD"
+
+[loads]
+component_lb = 250

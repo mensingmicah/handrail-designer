@@ -1,0 +1,1 @@
+SectionStop: Second-order effects are not negligible in the outward, concentrated case of Check 5: alpha Pr/Pe = 1.026 > 0.05 (Engineering judgement (EOR): second-order limit). The tool does not amplify for second-order effects.

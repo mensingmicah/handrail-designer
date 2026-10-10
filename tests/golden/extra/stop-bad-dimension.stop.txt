@@ -1,0 +1,1 @@
+ProjectError: [geometry] span: 'six feet' is not a dimension I can read. Use forms like 5' 6-1/8", 66.125 in, 3 ft 6 in, or 42 (bare number = inches).

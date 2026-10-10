@@ -1,0 +1,1 @@
+ProjectError: [baseplate] B = 2 (parallel to the rail) is smaller than the post OD (Pipe2STD, 2.375 in). Check the inputs.
