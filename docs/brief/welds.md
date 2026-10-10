@@ -426,3 +426,31 @@ plan's decision numbers.
     reaches 0.05 in (10.8 in against Pipe10STD's 10.75 in), so a
     same-size pipe and HSS pair at 10.75 in or larger would still stop.
     No guard member is that large.
+- **A post wider than the rail at all runs the full Check 4b.** (S5-11,
+  Micah 2026-10-09.) The same-as-top observation for Check 4b (S4-8) says
+  the intermediate rail's ring is at least Check 3's "since post OD ≤ rail
+  OD per W8". Under the 0.01 in tolerance (S5-4) a post can be wider than
+  the rail by up to that much (an HSS2.375 post, 2.38 in, under a Pipe2STD
+  rail), and the sentence would be false by 0.2%. So the observation gets
+  a third guard beside R ≤ P and t_des,post ≥ t_des,rail: if the post OD
+  is greater than the rail OD by any amount, the full Check 4b runs
+  instead, printing which guard failed. The tolerance still decides
+  whether W8 stops the calc; it no longer decides whether the observation
+  may be used.
+- **The round weld rulings hold for every round hollow section slice 5
+  adds.** (S5-12; Claude's, confirmed by Micah 2026-10-09.)
+  - The weld envelope's five orthogonal direction cases and the ruling
+    that guard loads act through the rail centerline (above) both rest on
+    Check 3 running far below 1.0. Check 3's weld metal demand depends on
+    the post OD, the rail OD and the weld size, not on either wall, so a
+    thin-wall round rail does not change it. The rail-wall base metal
+    line does thin with the wall, but its demand is the in-plane shear
+    V/(πD) only (planning arithmetic: about 0.04 for a 0.051 in wall).
+    Both rulings stand for round HSS and custom round tubes. Slice 6
+    redoes them for rectangular rails.
+  - W2's directional increase applies at Check 7 to every round hollow
+    post, whatever its grade, custom round tubes included. The entry's
+    test basis is cold-formed round HSS; a hot-formed grade (A501, A618)
+    extends it by the same engineering judgement the entry already
+    records for base moment, and its note says so. Checks 3 and 4b keep
+    k_ds = 1.0.

@@ -104,6 +104,19 @@ plan's decision numbers. (S5-5, Micah 2026-10-09.)
   grade name.
 - **Defaults.** Round HSS and custom round tube: A500 Gr B (conservative,
   and commonly specified). Pipe: A53 Gr B, as before.
+- **The intermediate rail's default grade.** (S5-10, Micah 2026-10-09;
+  it refines S4-1, "the grade defaults to the top rail's".) An
+  intermediate rail of its own section takes the top rail's grade when
+  that grade is on the standard list for the intermediate rail's own
+  shape (any grade a custom tube accepts, for a custom tube). Otherwise
+  it takes its own shape's default. So an HSS intermediate rail under a
+  pipe top rail defaults to A500 Gr B, not to A53 Gr B with a warning.
+- **A defaulted grade prints as defaulted,** for every member, not only
+  the intermediate rail: "A500 Gr B (default)". (S5-10, Micah
+  2026-10-09.) He named the dimensions page; today each member's grade
+  prints at the head of the section properties page, so where the mark
+  sits is proposed on the slice 5 branch and accepted in the pull
+  request.
 - **Slice 5 splits the Table 2-4 grades for pipe and round HSS in two.**
   A plain grade differs from the others only in Fy and Fu; slice 5 drafts
   the Fy and Fu entries for every plain grade. A grade with a rule of its

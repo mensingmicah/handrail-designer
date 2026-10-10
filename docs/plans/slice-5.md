@@ -1,12 +1,11 @@
 # Slice 5 plan: hollow round sections (round HSS and custom round tubes)
 
-Status: **planned** 2026-10-09, from Micah's rulings S5-1 to S5-9 in the
-planning interview of that date. Three points found when the decisions
-were checked against each other are open for him ("Open for Micah",
-below); the build's first step does not depend on any of them.
+Status: **planned** 2026-10-09, from Micah's rulings S5-1 to S5-14 in the
+planning interview of that date. Nothing is open. The build starts on the
+`slice-5` branch with step 1.
 
 > This plan is a record of what slice 5 sets out to build and why. The
-> binding engineering decisions (S5-1 to S5-9) were recorded in the brief
+> binding engineering decisions (S5-1 to S5-14) were recorded in the brief
 > as they were made: docs/brief/checks.md ("Section families"),
 > docs/brief/verification.md, docs/brief/welds.md ("Hollow round sections
 > (slice 5)"), docs/brief/inputs.md (grades, custom round tube input,
@@ -31,7 +30,7 @@ rectangular bar (S5-1).
 
 ## Decisions settled for this slice
 
-S5-1 to S5-9 are in the brief, with Micah's name and date on each. In
+S5-1 to S5-14 are in the brief, with Micah's name and date on each. In
 short:
 
 | No. | Decision | Brief |
@@ -45,6 +44,11 @@ short:
 | S5-7 | A618 offered with Fy and Fu by wall range (Gr Ia, Ib, II: 50/70 to 3/4 in, 46/67 over 3/4 to 1-1/2 in, stop above; Gr III 50/65). The nominal wall is compared. Entries stored by wall range for slice 6 to reuse. Machinery tests only. | inputs.md |
 | S5-8 | A custom tube's wall is always the nominal wall: key `wall_nominal`, required, no nominal/design flag. t_des per §B4.2 by grade. t_nom feeds Table J2.4, the A618 ranges and weight; t_des feeds properties and strength. | inputs.md, checks.md, scope.md |
 | S5-9 | One table per joint says which section families may meet; a pair with no cell stops. docs/brief/stops.md lists every stop with its decision and its test, and a test holds the code to it. Built in the #21 step. (#22, F9) | inputs.md, CLAUDE.md |
+| S5-10 | The intermediate rail takes the top rail's grade when that grade is on the standard list for its own shape, otherwise its own shape's default (refines S4-1). A defaulted grade prints as "A500 Gr B (default)", for every member. | inputs.md |
+| S5-11 | A third guard on Check 4b's same-as-top observation: a post OD greater than the rail OD by any amount runs the full Check 4b. | welds.md |
+| S5-12 | The weld envelope and load-at-centerline rulings hold for every round hollow rail; W2's directional increase applies at Check 7 to every round hollow post, custom tubes and hot-formed grades included. (Claude's, confirmed.) | welds.md |
+| S5-13 | The Fu/Fy ≥ 1.20 post-grade guard carries the no-tension-rupture ruling to the new grades. (Claude's, confirmed.) | checks.md |
+| S5-14 | "Designed as round HSS" prints for AISC pipe and a custom A53 tube only. (Claude's, confirmed.) | checks.md |
 
 Decided outside the interview and applied here:
 
@@ -59,76 +63,22 @@ Decided outside the interview and applied here:
   waits on registry verification, apart from the four A500 values Micah
   chose to verify first (S5-5).
 
-### Claude's decisions, for Micah to confirm
+### How S5-10 to S5-14 came about
 
-Each follows from a ruling above or from the roadmap's "confirm here"
-list. None was put to him as a question.
+S5-10 and S5-11 were found when the decisions were checked against each
+other: S4-1 against S5-5 (the intermediate rail's default grade), and
+S4-8 against S5-4 (the observation sentence inside the OD tolerance).
+S5-12 to S5-14 were Claude's, following from the rulings above or from
+the roadmap's "confirm here" list; Micah confirmed all of them on
+2026-10-09. One more was Claude's and is a build decision, not
+engineering:
 
-- **The round weld rulings hold for every round hollow rail this slice
-  adds** (the roadmap asked for this to be confirmed). The weld envelope's
-  five orthogonal cases and the load-at-the-rail-centerline ruling
-  (welds.md) both rest on Check 3 running far below 1.0. Check 3's weld
-  metal demand depends on the post OD, the rail OD and the weld size, not
-  on either wall, so a thin wall does not change it. The rail-wall base
-  metal line does thin with the wall, but its demand is the in-plane shear
-  V/(πD) only: for case 6's 0.0512 in wall it is about 0.04. Planning
-  arithmetic, not test values.
-- **W2's directional increase applies at Check 7 to every round hollow
-  post**, whatever its grade, custom round tubes included. W2 is written
-  for "round HSS (pipe included)". Its entry's test basis is cold-formed
-  round HSS, so a hot-formed grade (A501, A618) extends it by the same
-  engineering judgement the entry already records for base moment. The
-  entry's note is broadened to say so; #18 already asks Micah to verify
-  that entry closely.
-- **The post-grade guard Fu/Fy ≥ 1.20 (W5) also carries the
-  tension-rupture ruling to the new grades.** checks.md rules out a
-  rupture check because yielding governs for A53 Gr B. The same holds
-  whenever Fu/Fy ≥ 1.20, which the guard already enforces on the post
-  grade. Every grade drafted here passes on its drafted values; the
-  lowest is A500 Gr C at 62/50 = 1.24.
-- **A custom tube of an HSS grade is designed as round HSS and prints no
-  "designed as" line; a custom A53 tube prints the pipe line** (F10
-  inventory, item 1).
 - **Step 1 adds `ruff check` (the linter) but not `ruff format`.** A
   linter flags likely mistakes; a formatter rewrites layout. Reformatting
   the whole codebase would bury the refactor's diff, so it stays on #7.
-
-### Open for Micah
-
-Found when the decisions were checked against each other. Each touches a
-calc result or calc text, so it is his.
-
-- **O1. The intermediate rail's default grade.** S4-1 says the grade
-  defaults to the top rail's. S5-5 says a round HSS defaults to A500 Gr B.
-  They collide when the two are different families: an HSS intermediate
-  rail under a pipe top rail would default to A53 Gr B and print the
-  unusual-pairing warning. Proposed (S5-10 if accepted): the intermediate
-  rail takes the top rail's grade when that grade is on the standard list
-  for the intermediate rail's own shape (any accepted grade, for a custom
-  tube); otherwise it takes its own shape's default. The grade used
-  prints on the section page either way.
-- **O2. Check 4b's same-as-top observation inside the OD tolerance.** The
-  observation sentence says the intermediate rail's ring is at least
-  Check 3's "since post OD ≤ rail OD per W8" (S4-8). Under S5-4 a post can
-  now be up to 0.01 in wider than the rail (an HSS2.375 post, 2.38 in,
-  under a Pipe2STD rail), and then the sentence is false by 0.2%.
-  Proposed (S5-11 if accepted): a third guard. If the post OD exceeds the
-  rail OD at all, the full Check 4b runs instead of the observation,
-  printing which guard failed, as the two existing guards do.
-- **O3. What the property-formula test asserts** (T3). A scratch trial
-  of the formulas against the database (planning arithmetic, 2026-10-09)
-  gave: every round HSS row with an exact OD of 10 in or less reproduces
-  all of A, I, S, Z, r and weight to the last published digit (67 of 67).
-  Larger round HSS rows miss by the last digit on 23 of 61 rows (worst
-  0.5%). Pipe rows do not reproduce: 11 of 51 do, and the published pipe
-  areas run above the computed ones (Pipe2STD: 1.02 in² published against
-  1.003 computed from its OD and t_des, 1.7%; up to 3.4% for large XS
-  pipe), although pipe t_des is 0.93·t_nom. Micah asked for failures to
-  be reported rather than the tolerance widened. The build reruns this as
-  the real test and reports the rows. His ruling is needed on what the
-  test then asserts; proposed: the 67 small round HSS rows are the
-  binding assertion, and the other rows are listed in the pull request
-  as a finding, not asserted.
+  If `ruff check` flags existing code, those fixes go in their own
+  commit, separate from the #21 refactor. (Confirmed by Micah,
+  2026-10-09.)
 
 ### Test decisions
 
@@ -200,11 +150,29 @@ A500 Fy in Chapter E; the default grade.
 **T3. The property-formula test.** The custom tube's formulas (A, I, S,
 Z, r, D/t, and weight on the nominal wall) are run on database rows and
 compared with the published values, a check against AISC's numbers rather
-than a same-author one. Round HSS rows whose OD column equals the
-designation's OD; extended to the pipe rows, whose t_des is 0.93·t_nom
-(Micah, 2026-10-09). A row that fails to reproduce within the database's
-rounding is reported to Micah; the tolerance is not widened. The scratch
-trial's result and the ruling it needs are in O3.
+than a same-author one. A row that fails to reproduce within the
+database's rounding is reported to Micah; the tolerance is never widened.
+(Micah, 2026-10-09.)
+
+- **Binding:** the round HSS rows whose OD column equals the
+  designation's OD and is 10 in or less. All six properties must
+  reproduce to the last published digit on every one. A scratch trial
+  (planning arithmetic, 2026-10-09) found 67 such rows, all reproducing.
+- **Round HSS rows over 10 in:** not asserted. The trial missed the last
+  digit on 23 of 61 (worst 0.5%). The build lists them in the pull
+  request as a finding.
+- **Pipe rows:** before the pull request, the build reports to Micah, for
+  each property (A, I, S, Z, r, weight): how many rows reproduce, and for
+  the misses, the direction (formula above or below published) and the
+  worst percentage. The trial reproduced 11 of 51 rows in full; the
+  published pipe areas run above the computed ones (Pipe2STD: 1.02 in²
+  published, 1.003 computed, 1.7%; up to 3.4% for large XS pipe).
+  - **Stop and ask Micah if the formula comes out above the published I,
+    S or Z for any pipe row.** That would make a custom A53 tube
+    unconservative against the database shape of the same dimensions.
+  - If every miss is below published, it is listed as a finding, and the
+    properties that reproduce on every pipe row become binding for pipe
+    too.
 
 **T4. Machinery tests** (same-author), for what cases 6 and 7 do not
 reach:
@@ -228,7 +196,12 @@ reach:
 - S5-9: a stand-in family with no row stops at each of the three joints,
   naming the joint and both families; every stop id in the code is in
   stops.md and every id there has a test.
-- O1 and O2, once ruled.
+- S5-10: an HSS intermediate rail under a pipe top rail defaults to A500
+  Gr B; under an HSS Gr C top rail, to Gr C; a defaulted grade prints
+  "(default)" and an entered one does not.
+- S5-11: a post 0.005 in wider than the rail, same-as-top state, runs the
+  full Check 4b and prints which guard failed; equal ODs keep the
+  observation.
 
 ## Supported combinations (F9)
 
@@ -276,7 +249,7 @@ pipe. File and line as of main at 17ca67f; step 1 moves most of them.
 | --- | --- | --- | --- |
 | 1 | checks.py:336–338 | "Designed as round HSS: Pipe is designed under the round HSS provisions" (`aisc360.pipe_as_round_hss`), printed for any section through §F8 | Prints for AISC pipe and a custom A53 tube only. A round HSS, or a custom tube of an HSS grade, is round HSS and prints no such line. |
 | 2 | report.py:487 | "Properties are used exactly as published in the AISC Shapes Database v16.0.", once, after the top rail | Per member. Database section: the sentence as it stands. Custom section: properties computed from the dimensions entered, t_des per §B4.2. |
-| 3 | project.py:242 | Every member defaults to A53 Gr B | Default by shape (S5-5); the intermediate rail per O1. |
+| 3 | project.py:242 | Every member defaults to A53 Gr B | Default by shape (S5-5); the intermediate rail per S5-10; a defaulted grade prints "(default)". |
 | 4 | checks.py:306, 342; post.py:77 | D/t "tabulated" | "tabulated" for a database section; a computed calc line for a custom tube. |
 | 5 | checks.py:253, 266, 281, 300 | Self-weight "tabulated W = …", cited to the database | For a custom tube, the weight is a calc line: density × area on the nominal wall. |
 | 6 | checks.py:296–298 | D, t_nom, t_des as givens cited to the database | For a custom tube: D and t_nom "as entered"; t_des a calc line citing §B4.2 (S5-8). A, I, S, Z, r as calc lines. |
@@ -306,7 +279,7 @@ The project file gains (bare numbers are inches):
   `section` (a Pipe or round HSS designation) or a custom round tube:
   `shape = "round tube"`, `OD` and `wall_nominal`. Both together stop.
 - `grade`: any grade with Fy and Fu entries for the member's shape. Left
-  out, it defaults by shape (S5-5; O1 for the intermediate rail).
+  out, it defaults by shape (S5-5; S5-10 for the intermediate rail).
 - No new keys for loads, welds, deflection or the baseplate.
 - Validation (`validate()`): the per-joint tables (S5-9); the chord D/t
   limit (S5-3); W8 and S4-11 with the OD tolerance (S5-4); the A618 wall
@@ -345,8 +318,13 @@ entered and normalized.
   - the W7 stated assumption gains its clause (S5-3), changed in
     output.md's list in the same commit that prints it. It shows in the
     golden snapshots for Micah's review;
-  - Check 4b's observation sentence, only if O2 changes its wording
-    (also in the snapshots);
+  - a defaulted grade gains "(default)" (S5-10). Case 5 leaves its
+    intermediate rail's grade out, so that line of its snapshot changes;
+    every other rail and post grade in cases 1–5 and the example is
+    entered. Claude's reading, for Micah to correct in the pull request:
+    "every member" means the top rail, the post and the intermediate
+    rail, not the baseplate grade or the electrode, which accept one
+    value each;
   - the footer's tool version, 0.1.0 to 0.5.0 (#24). The snapshots are
     generated with a fixed stamp, so they do not show this one; the
     version test covers it.
@@ -435,7 +413,9 @@ change no printed calc, and the snapshots prove it.
      data, docs/brief/stops.md, the test that holds the code to it, and
      the stand-in family test. The tables start with pipe on pipe as the
      only allowed pair.
-   - **pyright and `ruff check`** in the dev group and CI (#7).
+   - **pyright and `ruff check`** in the dev group and CI (#7). Any fix
+     `ruff check` asks of existing code goes in its own commit, separate
+     from the refactor (Micah, 2026-10-09).
    - **#24 items 2 and 3**: the welds.py docstring; the case 5 header.
    - `.claude/rules/` and the calc-code-review skill updated where they
      name moved files.
@@ -458,7 +438,9 @@ change no printed calc, and the snapshots prove it.
    set to allowed; the D/t stop; the OD tolerance; the A618 wall lookup
    and stop; their machinery tests.
 6. **Custom tube properties** as calc lines; the property-formula test
-   (T3), with its findings reported to Micah.
+   (T3). The pipe-row report goes to Micah here, well before the pull
+   request, and the work stops if the formula exceeds a published I, S
+   or Z.
 7. **Grades through the checks**: Fy and Fu by grade, shape and wall;
    the unusual-pairing warning; the A1085 note; the grade machinery
    tests.
@@ -489,9 +471,9 @@ earlier case recorded, "Registry corrections" in verification.md applies.
 
 ## What Micah does
 
-- Answer O1, O2 and O3, and confirm or correct Claude's five decisions
-  above. None blocks step 1.
-- During the build: give his verdict on the A500 Gr B and Gr C round Fy
+- During the build: read the pipe-row report from the property-formula
+  test (T3), and rule if it stops.
+- Also during the build: give his verdict on the A500 Gr B and Gr C round Fy
   and Fu against Table 2-4, before step 10. Answer if §B4.2 turns out to
   key on ERW against SAW.
 - Review the case 6 and case 7 independent calcs and PDFs against the

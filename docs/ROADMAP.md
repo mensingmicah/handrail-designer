@@ -289,7 +289,7 @@ doubled the count. Two test cases: case 6, a custom noncompact tube rail
 (#3), and case 7, a database round HSS post, each covering only the
 groups its member changes.
 
-**Settled** (Micah, 2026-10-09): S5-1 to S5-9 in the brief. The W7
+**Settled** (Micah, 2026-10-09): S5-1 to S5-14 in the brief. The W7
 assumption is kept with a stop at chord D/t > 50, and the Chapter K chord
 limit states become a check in slice 6 (S5-3). A round HSS's OD is used
 as published, with ODs within 0.01 in equal in W8 and S4-11 (S5-4). Every
@@ -299,8 +299,7 @@ docs/brief/stops.md with one table of allowed families per joint (S5-9).
 A new family's first case gets Micah's release recompute where it reaches
 something his arithmetic has not touched (S5-2). The weld envelope and
 load-at-centerline rulings are confirmed for every round hollow rail in
-the plan. **Plan:** docs/plans/slice-5.md, with test cases 6 and 7; three
-points are open for Micah there (O1 to O3).
+the plan. **Plan:** docs/plans/slice-5.md, with test cases 6 and 7.
 
 ### Slice 6: hollow rectangular sections
 

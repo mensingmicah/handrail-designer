@@ -265,3 +265,16 @@ plan's decision numbers, kept for the record.
     the OD column.
   - The W8 and S4-11 width comparisons treat two ODs within 0.01 in as
     equal (welds.md, S5-4).
+- **The Fu/Fy ≥ 1.20 guard on the post grade also carries the
+  tension-rupture ruling to the new grades.** (S5-13; Claude's, confirmed
+  by Micah 2026-10-09.) "The post" above rules out a tensile rupture
+  check because yielding governs for A53 Gr B. The same holds for any
+  grade with Fu/Fy ≥ 1.20, which the weld decisions' guard on the post
+  grade already enforces by stopping the calc (welds.md, W5). Every grade
+  slice 5 drafts passes on its drafted values; the lowest is A500 Gr C at
+  62/50 = 1.24.
+- **Which sections print "designed as round HSS".** (S5-14; Claude's,
+  confirmed by Micah 2026-10-09.) The line "Pipe is designed under the
+  round HSS provisions" prints for an AISC pipe and for a custom A53
+  tube. A round HSS, or a custom tube of an HSS grade, is round HSS and
+  prints no such line.
