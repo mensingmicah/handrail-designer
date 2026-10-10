@@ -128,6 +128,11 @@ class Results:
     inter: Section | None = None  # the intermediate rail's section: the top rail's, its own, or None
     inter_section_lines: list[Line] = field(default_factory=list)  # its own section only
     reactions: Reactions | None = None  # the anchor reaction sets
+    # What the section page prints under each member about its grade: the
+    # unusual-pairing warning and the A1085 note (properties.grade_notes).
+    rail_notes: list[str] = field(default_factory=list)
+    post_notes: list[str] = field(default_factory=list)
+    inter_notes: list[str] = field(default_factory=list)  # its own section only
 
     def check(self, number: int | str) -> Check:
         return next(c for c in self.checks if c.number == number)

@@ -494,14 +494,17 @@ def build_source(results: Results, registry: Registry, stamp: Stamp) -> str:
     src.append("= Section properties")
     src.append(f"#text({typst_str(f'Top rail: {results.rail.label}, {proj.top_rail.grade}.')}) "
                "Properties are used exactly as published in the AISC Shapes Database v16.0.")
+    src += _flags(results.rail_notes)
     src.append(_lines(results.section_lines))
     src.append(f"#text({typst_str(f'Post: {results.post.label}, {proj.post.grade}.')})")
+    src += _flags(results.post_notes)
     src.append(_lines(results.post_section_lines))
     state = proj.intermediate_rail.state
     if state == OWN_SECTION:
         member = cast(Member, proj.intermediate_member)
         inter_label = cast(Section, results.inter).label
         src.append(f"#text({typst_str(f'Intermediate rail: {inter_label}, {member.grade}.')})")
+        src += _flags(results.inter_notes)
         src.append(_lines(results.inter_section_lines))
     elif state == SAME_AS_TOP:
         src.append(f"#text({typst_str('Intermediate rail: same section and grade as the top rail.')})")
@@ -549,6 +552,11 @@ def build_source(results: Results, registry: Registry, stamp: Stamp) -> str:
     for token, value in fills.items():
         src[0] = src[0].replace(token, value)
     return "\n\n".join(src) + "\n"
+
+
+def _flags(texts: list[str]) -> list[str]:
+    """Each text as a flag box, as a check's flags print."""
+    return [f"#flag({typst_str(t)})" for t in texts]
 
 
 def render_pdf(results: Results, registry: Registry, stamp: Stamp, out_pdf: Path) -> Path:

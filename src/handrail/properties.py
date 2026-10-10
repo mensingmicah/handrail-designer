@@ -4,9 +4,37 @@ calc lines, with where each value comes from.
 
 from __future__ import annotations
 
+from handrail import materials
 from handrail.calc import Line, Sheet
 from handrail.registry import Registry
-from handrail.shapes import Section
+from handrail.shapes import PIPE, ROUND_HSS, Section
+
+# A database shape as the unusual-pairing warning names it.
+SHAPE_NAME = {PIPE: "pipe", ROUND_HSS: "round HSS"}
+UNUSUAL_PAIRING = "ej.grade.unusual_pairing"
+A1085_NOTE = "ej.grade.A1085_database_note"
+
+
+def grade_notes(registry: Registry, sec: Section, grade: str) -> list[str]:
+    """What the section page prints under a member about its grade. Both
+    are for a database section only; a custom tube takes every grade it
+    accepts as usual, and its A1085 wall is the nominal wall.
+
+    - An unusual pairing (S5-5): a grade outside the standard list for the
+      section's shape, AISC Manual Table 2-4. Allowed, with this warning.
+    - A1085 (S5-6): AISC 360-22 B4.2 permits the nominal wall, and the
+      database's properties are on 0.93 of it. The note says so, and how to
+      get the credit.
+    """
+    if sec.family not in materials.STANDARD_GRADES:
+        return []
+    notes = []
+    if grade not in registry.get(materials.STANDARD_GRADES[sec.family]).value:
+        warning = registry.get(UNUSUAL_PAIRING)
+        notes.append("UNUSUAL PAIRING: " + warning.value.format(grade=grade, shape=SHAPE_NAME[sec.family]))
+    if grade in materials.NOMINAL_DESIGN_WALL:
+        notes.append(registry.get(A1085_NOTE).value)
+    return notes
 
 
 def section_lines(registry: Registry, sec: Section, with_r: bool = False) -> list[Line]:

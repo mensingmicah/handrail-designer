@@ -11,7 +11,7 @@ import dataclasses
 
 import pytest
 
-from handrail import engine, materials, members, project, shapes
+from handrail import engine, materials, members, project, properties, report, shapes
 from handrail.calc import Sheet
 from handrail.errors import SectionStop
 from handrail.project import ProjectError
@@ -19,6 +19,7 @@ from handrail.registry import Registry
 from handrail.shapes import PIPE, ROUND_HSS, ROUND_TUBE
 from handrail.stops import Stop
 from handrail.units import Q_
+from test_report import CLEAN
 
 
 def _raw(**tables) -> dict:
@@ -230,3 +231,83 @@ def test_a1065_is_not_a_round_grade():
 def test_a_blank_grade_entered_is_not_defaulted():
     with pytest.raises(ProjectError, match="post grade '': for AISC pipe this version supports"):
         engine.run(project.from_dict(_raw(post={"grade": ""})), Registry())
+
+
+# -- the section page: the unusual-pairing warning and the A1085 note (S5-5, S5-6) ---
+
+def _source(**tables) -> str:
+    reg = Registry()
+    return report.build_source(engine.run(project.from_dict(_raw(**tables)), reg), reg, CLEAN)
+
+
+def test_an_hss_grade_on_a_pipe_designation_prints_the_unusual_pairing_warning():
+    reg = Registry()
+    res = engine.run(project.from_dict(_raw(top_rail={"grade": "A500 Gr C"})), reg)
+    text = reg.entries["ej.grade.unusual_pairing"].value.format(grade="A500 Gr C", shape="pipe")
+    assert res.rail_notes == [f"UNUSUAL PAIRING: {text}"]
+    assert text == ("A500 Gr C is not a grade AISC Manual Table 2-4 lists for pipe. The calc uses the Fy and Fu "
+                    "of A500 Gr C; confirm the grade.")
+    assert res.post_notes == [] and res.inter_notes == []  # the post is A53 Gr B pipe by default
+    assert "ej.grade.unusual_pairing" in [e.id for e in reg.drafted_used]
+
+
+def test_a53_gr_b_on_an_hss_designation_prints_the_unusual_pairing_warning():
+    res = engine.run(project.from_dict(_raw(post={"section": "HSS2.375X0.125", "grade": "A53 Gr B"})), Registry())
+    warning = ("UNUSUAL PAIRING: A53 Gr B is not a grade AISC Manual Table 2-4 lists for round HSS. "
+               "The calc uses the Fy and Fu of A53 Gr B; confirm the grade.")
+    assert res.post_notes == [warning]
+    assert res.rail_notes == []
+
+
+def test_a_grade_on_its_shapes_standard_list_prints_no_warning():
+    reg = Registry()
+    res = engine.run(project.from_dict(_raw(post={"section": "HSS2.375X0.125", "grade": "A500 Gr C"})), reg)
+    assert res.rail_notes == res.post_notes == res.inter_notes == []
+    assert "ej.grade.unusual_pairing" not in [e.id for e in reg.used]
+
+
+def test_no_grade_is_unusual_for_a_custom_round_tube():
+    """A custom round tube takes every round HSS grade and A53 Gr B, and
+    none is an unusual pairing for it. No custom tube can be entered yet, so
+    this is a stand-in: a pipe given the custom round tube family."""
+    tube = dataclasses.replace(shapes.section("Pipe2STD"), family=ROUND_TUBE)
+    for grade in materials.supported(ROUND_TUBE):
+        assert properties.grade_notes(Registry(), tube, grade) == []
+
+
+def test_the_warning_prints_under_its_own_member_on_the_section_page():
+    src = _source(intermediate_rail=_own("HSS1.900X0.120", grade="A53 Gr B"), welds=OWN_WELD)
+    header = src.index('#text("Intermediate rail: HSS1.900X0.120, A53 Gr B.")')
+    flag = src.index('#flag("UNUSUAL PAIRING: A53 Gr B is not a grade AISC Manual Table 2-4 lists for round HSS.')
+    assert header < flag < src.index("= Loading")
+    assert src.count("UNUSUAL PAIRING") == 1
+
+
+def test_an_a1085_database_section_prints_the_note_and_runs_on_its_published_properties():
+    reg = Registry()
+    res = engine.run(project.from_dict(_raw(post={"section": "HSS2.375X0.125", "grade": "A1085 Gr A"})), reg)
+    note = reg.entries["ej.grade.A1085_database_note"].value
+    assert res.post_notes == [note] and note.startswith("A1085: AISC 360-22 §B4.2 permits")
+    published = shapes.section("HSS2.375X0.125")
+    assert res.post == published and res.post.tdes < res.post.tnom  # the database's 0.93 wall, as published
+    t_des = next(ln for ln in res.post_section_lines if ln.key == "t_des")
+    assert t_des.value == published.tdes
+    fy = next(ln for ln in next(c for c in res.check(5).cases if c.lines).lines if ln.key == "F_y")
+    assert fy.value == reg.entries["material.A1085_GrA.hss_round.Fy"].quantity
+
+
+def test_a1085_on_a_pipe_designation_prints_both_the_warning_and_the_note():
+    res = engine.run(project.from_dict(_raw(top_rail={"grade": "A1085 Gr A"})), Registry())
+    assert len(res.rail_notes) == 2
+    assert res.rail_notes[0].startswith("UNUSUAL PAIRING: A1085 Gr A is not a grade")
+    assert res.rail_notes[1].startswith("A1085: ")
+
+
+def test_same_as_the_top_rail_prints_the_top_rails_notes_once():
+    src = _source(top_rail={"grade": "A500 Gr B"}, intermediate_rail={"same_as_top_rail": True})
+    assert src.count("UNUSUAL PAIRING") == 1
+
+
+def test_an_all_pipe_calc_with_its_grades_entered_prints_no_grade_note():
+    src = _source(top_rail={"grade": "A53 Gr B"}, post={"grade": "A53 Gr B"})
+    assert "UNUSUAL PAIRING" not in src and "A1085" not in src

@@ -68,6 +68,11 @@ _ROUND_HOLLOW: dict[str, Grade] = {
 # grades for yet (the per-joint tables stop it first, joints.py).
 GRADES: dict[str, dict[str, Grade]] = {PIPE: _ROUND_HOLLOW, ROUND_HSS: _ROUND_HOLLOW, ROUND_TUBE: _ROUND_HOLLOW}
 
+# Grades whose design wall is the nominal wall under AISC 360-22 B4.2 (S5-6).
+# A database section in one still runs on its published properties, with a
+# printed note (properties.grade_notes).
+NOMINAL_DESIGN_WALL = ("A1085 Gr A",)
+
 # The grade a member takes when the project file leaves it out (S5-5).
 DEFAULT_GRADE = {PIPE: "A53 Gr B", ROUND_HSS: "A500 Gr B", ROUND_TUBE: "A500 Gr B"}
 # The entry listing the standard grades of each database shape (Table 2-4).

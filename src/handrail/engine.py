@@ -12,7 +12,7 @@ from handrail.intermediate import check_4a
 from handrail.loading import build_loading
 from handrail.post import check_5, check_6
 from handrail.project import SAME_AS_TOP, Project
-from handrail.properties import section_lines
+from handrail.properties import grade_notes, section_lines
 from handrail.rail import check_1, check_2
 from handrail.reactions import reaction_sets
 from handrail.registry import Registry
@@ -33,14 +33,21 @@ def compute(project: Project, registry: Registry) -> Results:
     loading = build_loading(project, registry, rail, post, inter)
     props = section_lines(registry, rail)
     post_props = section_lines(registry, post, with_r=True)
-    inter_props = section_lines(registry, inter) if inter is not None and not same else []
+    own = inter is not None and not same  # the intermediate rail has its own section
+    inter_props = section_lines(registry, inter) if inter is not None and own else []
+    rail_notes = grade_notes(registry, rail, project.top_rail.grade)
+    post_notes = grade_notes(registry, post, project.post.grade)
+    inter_member = project.intermediate_member
+    inter_notes = (grade_notes(registry, inter, inter_member.grade)
+                   if inter is not None and inter_member is not None and own else [])
     checks = [check_1(registry, project, rail, loading), check_2(registry, project, rail, loading),
               check_3(registry, project, rail, post, loading),
               check_4a(registry, project, inter, loading), check_4b(registry, project, post, inter, loading),
               check_5(registry, project, post, loading), check_6(registry, project, post, loading),
               check_7(registry, project, post, loading)]
     reactions = reaction_sets(registry, project, loading)
-    return Results(project, rail, post, loading, props, post_props, checks, inter, inter_props, reactions)
+    return Results(project, rail, post, loading, props, post_props, checks, inter, inter_props, reactions,
+                   rail_notes=rail_notes, post_notes=post_notes, inter_notes=inter_notes)
 
 
 def run(project: Project, registry: Registry) -> Results:
