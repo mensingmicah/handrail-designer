@@ -288,6 +288,11 @@ def _(tmp_path, monkeypatch):
     _run(baseplate={"B": 2})
 
 
+@trigger(Stop.SECTION_CHORD_D_T_OVER_LIMIT)
+def _(tmp_path, monkeypatch):
+    _run(top_rail={"section": "HSS6.000X0.125"}, baseplate={"B": 8, "N": 8})  # D/t = 51.7
+
+
 @trigger(Stop.SECTION_POST_WIDER_THAN_RAIL)
 def _(tmp_path, monkeypatch):
     _run(top_rail={"section": "Pipe1-1/2STD"})
@@ -361,8 +366,8 @@ def _(tmp_path, monkeypatch):
 
 @trigger(Stop.CHECK5_SECOND_ORDER_NOT_NEGLIGIBLE)
 def _(tmp_path, monkeypatch):
-    # A 103 lb/ft rail over 12'-0" on a Pipe2STD post: alpha Pr/Pe is about 0.087.
-    _run(top_rail={"section": "Pipe26STD"}, geometry={"span": "12'-0\""})
+    # A 104 lb/ft rail over 12'-0" on a Pipe2STD post: alpha Pr/Pe is about 0.087.
+    _run(top_rail={"section": "Pipe20XS"}, geometry={"span": "12'-0\""})
 
 
 # -- the code-value registry -------------------------------------------------

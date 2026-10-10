@@ -173,16 +173,17 @@ def test_moment_cases_print_the_second_order_sentence(check5):
 
 
 def test_second_order_ratio_above_the_limit_stops_naming_case_ratio_and_limit():
-    # A 103 lb/ft rail over 12'-0" on a Pipe2STD post: 1.6 P_D / P_e is about 0.088.
-    s2, s26 = shapes.section("Pipe2STD"), shapes.section("Pipe26STD")
-    PD = s26.W.m_as("lbf/inch") * 144 + s2.W.m_as("lbf/inch") * 41.5
+    # A 104 lb/ft rail over 12'-0" on a Pipe2STD post: 1.6 P_D / P_e is about 0.088.
+    # Pipe20XS, whose D/t of 43.0 is under the chord limit (S5-3).
+    s2, s20 = shapes.section("Pipe2STD"), shapes.section("Pipe20XS")
+    PD = s20.W.m_as("lbf/inch") * 144 + s2.W.m_as("lbf/inch") * 41.5
     a = 1.6 * PD / (math.pi**2 * E * 1000 * s2.I.m_as("in^4") / 88.2**2)
     assert a > 0.05  # the premise
     lim = Registry().get("ej.second_order.limit")
     expected = (rf"outward, concentrated case of Check 5: alpha Pr/Pe = {re.escape(fmt_sig(a))} > "
                 rf"{lim.value} \({re.escape(lim.cite)}\)")
     with pytest.raises(SectionStop, match=expected):
-        engine.run(project(rail="Pipe26STD", span="12'-0\""), Registry())
+        engine.run(project(rail="Pipe20XS", span="12'-0\""), Registry())
 
 
 def test_downward_above_the_second_order_limit_does_not_stop():

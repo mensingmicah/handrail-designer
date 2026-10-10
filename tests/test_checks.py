@@ -140,7 +140,10 @@ def test_outward_and_inward_tie_exactly_for_a_round_section(results):
 
 def test_noncompact_section_uses_eq_F8_2_and_is_flagged():
     # A 103 lb/ft rail needs a post that keeps alpha Pr/Pe under the second-order limit.
-    res = engine.run(project(section="Pipe26STD", span="12'-0\"", post="Pipe12STD"), Registry())
+    # Its D/t of 74.5 is over the chord limit of 50 (S5-3), so validation refuses it and
+    # the checks are reached through the compute step: no A53 Gr B rail can be noncompact
+    # under that limit (lambda_p = 58).
+    res = engine.compute(project(section="Pipe26STD", span="12'-0\"", post="Pipe12STD"), Registry())
     chk1 = res.checks[0]
     assert chk1.flags and "NONCOMPACT" in chk1.flags[0]
     expected = plain("Pipe26STD", L=144.0)

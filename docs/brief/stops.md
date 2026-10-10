@@ -151,6 +151,7 @@ Input validation: these run before anything is computed
 | `weld.electrode_unsupported` | The electrode is not E70XX. | W12 | `test_stop_is_triggered[weld.electrode_unsupported]` |
 | `baseplate.grade_unsupported` | The baseplate grade is not A36. | W12 | `test_stop_is_triggered[baseplate.grade_unsupported]` |
 | `baseplate.smaller_than_post` | B or N is smaller than the post OD. | S4-6 | `test_stop_is_triggered[baseplate.smaller_than_post]` |
+| `section.chord_D_t_over_limit` | A chord's D/t is over 50, the AISC 360-22 Chapter K limit of applicability for the chord of a round T-connection: the top rail (Check 3), or the post when there is an intermediate rail (Check 4b). D/t is the value the section's classification uses. The message names the member, its D/t, the limit and W7. | S5-3 (welds.md); W7 | `test_stop_is_triggered[section.chord_D_t_over_limit]` |
 | `section.post_wider_than_rail` | The post OD is greater than the top rail OD: the coped post to rail underside detail requires post OD ≤ rail OD. Equal ODs are allowed, and ODs within 0.01 in of each other are equal. | W8; S5-4 (welds.md) | `test_stop_is_triggered[section.post_wider_than_rail]` |
 | `section.intermediate_wider_than_post` | The intermediate rail OD is greater than the post OD: its end is coped to the side of the post. Equal ODs are allowed, and ODs within 0.01 in of each other are equal. | S4-11; S5-4 (welds.md) | `test_stop_is_triggered[section.intermediate_wider_than_post]` |
 
@@ -210,6 +211,6 @@ Listed here when their code lands, in the same commit: the chord D/t limit
 (S5-3); the OD tolerance inside W8 and S4-11 (S5-4, a change to two
 existing stops); the A618 wall over 1-1/2 in (S5-7); the custom tube input
 stops (S5-8); a grade with no Fy or Fu entry for the shape (the existing
-`grade.unsupported`, now per shape). Landed so far: all but the chord D/t
-limit. A custom tube that is slender, or beyond the §F8 limit, meets the
-existing stops on its computed D/t.
+`grade.unsupported`, now per shape). All have landed. A custom tube that is
+slender, or beyond the §F8 limit, meets the existing stops on its computed
+D/t.

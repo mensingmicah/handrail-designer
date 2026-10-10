@@ -230,3 +230,55 @@ def test_a_custom_round_tube_is_pipe_only_in_the_pipe_grade():
     assert not flexure.designed_as_round_hss(tube, "A500 Gr B")
     assert flexure.designed_as_round_hss(shapes.section("Pipe2STD"), "A500 Gr B")
     assert not flexure.designed_as_round_hss(shapes.section("HSS2.375X0.125"), "A53 Gr B")
+
+
+# -- the chord D/t limit (S5-3) -----------------------------------------------------------
+
+CHORD_LIMIT = "aisc360.K.round_chord.D_over_t_max"
+BIG_PLATE = {"B": 8, "N": 8}
+
+
+def test_a_top_rail_over_the_chord_limit_stops_naming_member_ratio_limit_and_w7():
+    reg = Registry()
+    with pytest.raises(ProjectError) as stopped:
+        _run(reg, top_rail={"section": "HSS6.000X0.125"}, baseplate=BIG_PLATE)  # D/t = 51.7
+    assert stopped.value.stop is Stop.SECTION_CHORD_D_T_OVER_LIMIT
+    limit, rule = reg.entries[CHORD_LIMIT], reg.entries["ej.weld.chord_D_over_t_stop"]
+    assert str(stopped.value) == (
+        f"top rail HSS6.000X0.125: D/t = 51.7 > {limit.value}, the limit of applicability for the chord of a "
+        f"round T-connection ({limit.cite}). The local strength of the rail wall at the post is a stated "
+        f"assumption, not a check (W7), and it is not assumed for a chord over the limit ({rule.cite}). "
+        f"The tool does not check this section as a chord.")
+
+
+def test_a_post_over_the_chord_limit_stops_when_there_is_an_intermediate_rail():
+    """The post is the chord of the Check 4b joint, same as the top rail or its own section."""
+    for inter in ({"same_as_top_rail": True},
+                  {"same_as_top_rail": False, "section": "HSS1.900X0.120"}):
+        with pytest.raises(ProjectError) as stopped:
+            _run(top_rail={"section": "HSS6.000X0.250"}, post={"section": "HSS6.000X0.125"},
+                 intermediate_rail=inter, welds=OWN_WELD if "section" in inter else {}, baseplate=BIG_PLATE)
+        assert stopped.value.stop is Stop.SECTION_CHORD_D_T_OVER_LIMIT
+        assert str(stopped.value).startswith("post HSS6.000X0.125: D/t = 51.7 > 50, ")
+        assert "the post wall at the intermediate rail" in str(stopped.value)
+
+
+def test_a_post_over_the_chord_limit_with_no_intermediate_rail_is_not_a_chord_and_runs():
+    res = _run(top_rail={"section": "HSS6.000X0.250"}, post={"section": "HSS6.000X0.125"}, baseplate=BIG_PLATE)
+    assert res.post.D_t > 50 and res.check(5).computed
+
+
+def test_a_chord_at_exactly_the_limit_runs(monkeypatch):
+    """The stop is on D/t over 50; 50 itself is within the limit. A stand-in D/t."""
+    _with(monkeypatch, "Pipe2STD", D_t=50.0)
+    _run()  # rail and post, no intermediate rail
+    _run(intermediate_rail={"same_as_top_rail": True})
+
+
+def test_the_chord_limit_is_read_for_every_calc_and_the_decision_only_when_it_stops():
+    """The limit is a drafted entry read to decide, so every calc lists it.
+    The engineering decision behind the stop is cited in the message only."""
+    reg = Registry()
+    _run(reg)
+    used = [e.id for e in reg.used]
+    assert CHORD_LIMIT in used and "ej.weld.chord_D_over_t_stop" not in used

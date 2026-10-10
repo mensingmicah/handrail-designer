@@ -58,6 +58,7 @@ class Stop(StrEnum):
     WELD_ELECTRODE_UNSUPPORTED = "weld.electrode_unsupported"
     BASEPLATE_GRADE_UNSUPPORTED = "baseplate.grade_unsupported"
     BASEPLATE_SMALLER_THAN_POST = "baseplate.smaller_than_post"
+    SECTION_CHORD_D_T_OVER_LIMIT = "section.chord_D_t_over_limit"
     SECTION_POST_WIDER_THAN_RAIL = "section.post_wider_than_rail"
     SECTION_INTERMEDIATE_WIDER_THAN_POST = "section.intermediate_wider_than_post"
 

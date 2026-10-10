@@ -7,7 +7,7 @@ from __future__ import annotations
 from typing import cast
 
 from handrail import joints, materials, members
-from handrail.calc import fmt_quantity_plain, fmt_sig
+from handrail.calc import compare, fmt_g, fmt_quantity_plain, fmt_sig, number
 from handrail.joints import JointMember
 from handrail.materials import BASEPLATE_GRADES, FEXX_ENTRY
 from handrail.project import SAME_AS_TOP, Member, Project, ProjectError
@@ -35,6 +35,32 @@ def require_supported_grade(registry: Registry, member: Member, sec: Section, na
 
 
 OD_TOLERANCE = "ej.section.od_tolerance"
+CHORD_LIMIT = "aisc360.K.round_chord.D_over_t_max"
+CHORD_STOP = "ej.weld.chord_D_over_t_stop"
+
+
+def require_chord_within_limit(registry: Registry, sec: Section, name: str, wall: str) -> None:
+    """Refuse a chord whose D/t is over the Chapter K limit of applicability
+    (S5-3). The local strength of a chord's wall at the member welded to it
+    is a stated assumption, not a check (W7), and the engineer of record
+    makes that assumption only up to the limit. D/t is the value the
+    section's classification uses (design wall). ``wall`` says which wall:
+    the rail's at the post, or the post's at the intermediate rail.
+
+    The limit is read for every calc, so every calc lists it while it is
+    drafted. The decision behind the stop is read only when it stops.
+    """
+    limit = registry.get(CHORD_LIMIT)
+    over = compare(number(sec.D_t, fmt_g), ">", number(limit.value))
+    if over:
+        rule = registry.get(CHORD_STOP)
+        raise ProjectError(
+            f"{name} {sec.label}: D/t = {over.left.text} {over.op} {over.right.text}, the limit of applicability "
+            f"for the chord of a round T-connection ({limit.cite}). The local strength of {wall} is a stated "
+            f"assumption, not a check (W7), and it is not assumed for a chord over the limit ({rule.cite}). "
+            f"The tool does not check this section as a chord.",
+            stop=Stop.SECTION_CHORD_D_T_OVER_LIMIT
+        )
 
 
 def wider(registry: Registry, a: Q_, b: Q_) -> bool:
@@ -61,6 +87,8 @@ def validate(project: Project, registry: Registry) -> None:
     - the section families at each joint are a pair its table lists as
       allowed (joints.py, S5-9; before the tables, W7 and S4-12's stop on a
       section that is not round hollow);
+    - each chord's D/t is within the Chapter K limit of applicability
+      (S5-3): the top rail, and the post when there is an intermediate rail;
     - each grade is one the tool supports for its member's shape (S5-5), and
       the electrode and the baseplate grade are ones it supports (W12);
     - the post is no wider than the rail (W8), ODs within 0.01 in being
@@ -85,6 +113,13 @@ def validate(project: Project, registry: Registry) -> None:
         branch = rail if same else cast(Section, inter)
         joints.CHECK_4B.require(chord=at_post, branch=JointMember("intermediate rail", branch), error=ProjectError)
     joints.CHECK_7.require(at_post, error=ProjectError)
+
+    # The chords (S5-3), beside W7's stop on a section that is not round
+    # hollow: the top rail in Check 3, and the post in Check 4b whenever
+    # there is an intermediate rail.
+    require_chord_within_limit(registry, rail, "top rail", "the rail wall at the post")
+    if project.intermediate_member is not None:
+        require_chord_within_limit(registry, post, "post", "the post wall at the intermediate rail")
 
     require_supported_grade(registry, project.top_rail, rail, "top rail")
     require_supported_grade(registry, project.post, post, "post")
