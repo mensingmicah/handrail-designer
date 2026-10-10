@@ -41,8 +41,8 @@ In scope:
 - Dead load of rails, post and baseplate: the AISC tabulated weight for
   database shapes, computed from area and steel density (a registry entry)
   for sections defined by dimensions and for the baseplate. A custom tube's
-  weight uses the wall thickness as entered; its strength uses the design
-  thickness (see checks.md).
+  wall is entered as the nominal wall: its weight uses that, and its
+  strength uses the design wall (see checks.md; S5-8, inputs.md).
 
 Out of scope for v1 (push back if I try to add these):
 - Anchorage or substrate checks of any kind. The tool stops at the baseplate

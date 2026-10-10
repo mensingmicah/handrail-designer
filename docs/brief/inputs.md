@@ -32,8 +32,8 @@ and how it is entered.
   checks one post. A baseplate thickness of zero or less, or not less than
   h, is rejected at input. (Slice 2, D9.)
 - Top rail and post sections: pick an AISC designation, or define a custom
-  section by dimensions. For tubes, the engineer says whether the entered wall
-  thickness is nominal or design. For rectangular sections, the engineer sets
+  section by dimensions. For a custom tube, the wall entered is always the
+  nominal wall; there is no nominal/design choice (S5-8, below). For rectangular sections, the engineer sets
   which axis resists the horizontal guard load.
 - Intermediate rail: one of three states (S4-1, checks.md). Same as the
   top rail (a checkbox, `same_as_top_rail`, default checked): section and
@@ -144,8 +144,8 @@ drafted registry entry until I verify it).
     database properties are used as published, on t_des = 0.93·t_nom. To
     use the nominal wall, enter the tube as a custom section." Claude
     proposes the final wording on the slice 5 branch.
-  - A custom A1085 tube whose wall is marked nominal uses t_des = t_nom
-    (§B4.2).
+  - A custom A1085 tube uses t_des = t_nom (§B4.2). Its wall, like every
+    custom tube's, is entered as the nominal wall (S5-8).
   - Accepted: the same tube gives two answers, about 7% apart on wall
     thickness, by the route it is entered. The database route is the
     conservative one.
@@ -168,7 +168,7 @@ drafted registry entry until I verify it).
   - Each grade name (Ia, Ib, II, III) has its own entries. The registry's
     drafted list, which names them "I, II, III", is corrected.
   - The wall compared with the limits is the nominal one: t_nom for a
-    database section, the wall as entered for a custom tube. The limit is
+    database section, the nominal wall entered for a custom tube (S5-8). The limit is
     on the product's thickness, the reasoning of W11 (welds.md) for Table
     J2.4. A wall of exactly 3/4 in takes the "up to 3/4 in" values.
   - A Gr Ia, Ib or II wall over 1-1/2 in stops the calc: Table 2-4 gives
@@ -185,3 +185,34 @@ drafted registry entry until I verify it).
     closes.
   - The entries are drafted like all the others, go in slice 5's
     registry review workbook, and I verify them at the release review.
+
+## Custom round tube input (slice 5)
+
+(S5-8, Micah 2026-10-09.) This supersedes two earlier lines of the brief:
+"the engineer says whether the entered wall thickness is nominal or
+design", and "a custom tube's weight uses the wall thickness as entered".
+
+- **A custom tube's wall is always the nominal wall.** There is no
+  nominal/design flag. The key is `wall_nominal`, so the project file says
+  what the number is. It is required, with no default.
+- **The design wall follows §B4.2 by grade:** t_des = 0.93·t_nom, or
+  t_des = t_nom for A1085 (S5-6).
+- **What each wall feeds.** t_nom: Table J2.4's minimum fillet (W11), the
+  A618 wall ranges (S5-7) and the weight. t_des: section properties and
+  strength, including the fusion face thickness (W4).
+- **The section page prints both**, roughly: "t_nom = 0.120 in (as
+  entered); t_des = 0.93·t_nom = 0.112 in, AISC 360-22 §B4.2".
+- **Why no flag.** Every grade allowed for a custom tube is specified by
+  its nominal wall. The only error this rule allows is entering a wall
+  that has already been reduced, which is then reduced again: that is
+  conservative. A nominal/design flag would allow the unconservative
+  error, a nominal wall marked "design", with no sign of it in the
+  output.
+- **Project file.** A custom round tube is entered with
+  `shape = "round tube"`, `OD` and `wall_nominal` in place of `section`.
+  Giving `section` together with any of those stops the calc as
+  conflicting inputs, like the intermediate rail's stops. A wall of half
+  the OD or more stops. The printed label reads like "Round tube 2.375 ×
+  0.055 (custom)". (Claude's proposals, accepted by Micah 2026-10-09;
+  exact wording on the branch.)
+- Slice 6 applies the same rule to custom rectangular tubes.

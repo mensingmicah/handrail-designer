@@ -66,10 +66,12 @@ loads-and-envelope.md).
   the AISC corner-radius convention, a registry entry. Custom tubes convert
   nominal to design wall thickness per AISC 360-22 §B4.2, a registry entry.
   A1085 is the first grade both rules meet: S5-6, inputs.md.
-- Custom tube thickness: dead weight uses the wall thickness as entered.
-  Strength and section properties use the design thickness, reduced from
-  nominal when the input is marked nominal. This matches AISC's convention
-  (tabulated weight on nominal wall, properties on design wall).
+- Custom tube thickness: the wall entered is always the nominal wall
+  (S5-8, inputs.md; Micah 2026-10-09, replacing the nominal/design
+  choice). Dead weight uses the nominal wall. Strength and section
+  properties use the design wall, converted from nominal per §B4.2. This
+  matches AISC's convention (tabulated weight on nominal wall, properties
+  on design wall).
 - Pipe is designed under the AISC 360-22 round HSS provisions; the
   registry records the basis. (Slice 1.)
 - A round section whose D/t is beyond the §F8 applicability limit is a

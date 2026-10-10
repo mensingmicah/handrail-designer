@@ -269,9 +269,9 @@ snapshots to change no printed calc. Then the section type generalized
 across Checks 1–7, with per-axis properties (x and y) from the start;
 round shapes set x = y, and which checks read which axis is slice 6's
 decision. Round HSS from the database (extraction and row-for-row test
-for HSS round rows). Custom round tubes defined by dimensions (nominal or
-design wall, §B4.2 conversion; weight on the wall as entered, strength on
-design), with section properties computed from dimensions and printed as
+for HSS round rows). Custom round tubes defined by dimensions (the wall
+always entered as nominal, §B4.2 conversion; weight on the nominal wall,
+strength on the design wall; S5-8), with section properties computed from dimensions and printed as
 calc lines. Grade lists and the unusual-pairing warning (A500 Gr B/C,
 A1085 with the "properties as published" note). The supported-combinations
 table and the list of stops (#22, F9), and the pipe-specific printed text
