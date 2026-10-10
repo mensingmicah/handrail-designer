@@ -38,6 +38,35 @@ Verification at slice close, ahead of the next slice's build, brings back the co
 
 The fan-out figures come from the five test cases only. A zero means no case exercises the entry yet (the H1-1a branch, the HSS grades and the intermediate-rail "same as top rail" entries are examples), not that no input could. A later slice can raise any of them, so the order is a starting point and the workbook is regenerated at each close.
 
+## Notes
+
+**Catch-up ruling (Micah, 2026-10-09).** The catch-up of the 77 entries drafted before this decision has two gates. The top 20 entries of the "By fan-out" tab of the registry review workbook are verified before slice 5's build starts. Every other entry drafted by 2026-10-09 is verified before slice 6's build starts. Slice 5's own drafted entries follow the ordinary rule above: verified before slice 6's build starts as well.
+
+The workbook is not committed and its order depends on the measurement that produced it, so the top 20 are fixed here, in tab order (all read by all five test cases; weld entries first). There is no tie at the cut: the 20th reads in 6 case x check pairs and the 21st, `aisc360.eq.A-8-5`, in 5.
+
+- `aisc360.eq.J4-4.coeff`
+- `aisc360.J2.5.fnw`
+- `aisc360.J2.5.omega_w`
+- `aisc360.J2.5.fnw.coeff`
+- `aisc360.J2.2a.throat`
+- `aisc360.J2.2a.throat.coeff`
+- `aisc360.J2.2b.max_size_edges`
+- `aisc360.J2.4.min_size`
+- `aisc360.J2.4.fillet_strength`
+- `material.E70XX.FEXX`
+- `aisc360.eq.J4-4`
+- `aisc360.J4.2.omega_rupture`
+- `aisc_manual.part9.base_metal`
+- `ej.weld.max_size_not_applicable`
+- `ej.weld.line_method`
+- `material.A53_GrB.Fu`
+- `aisc_manual.t3-23.case22.M`
+- `ej.weld.post_wall_covered`
+- `ej.weld.no_bearing`
+- `ej.weld.branch_kds`
+
+Each is marked verified only by Micah, in registry/code-values.toml, which also removes its id from the review list (CLAUDE.md rule 1). A correction follows "Registry corrections" in docs/brief/verification.md.
+
 ## Considered Options
 
 - Keep ADR 0005: one review at release. Not chosen, because the late-correction exposure grows with every slice and the final sitting is projected at 8 to 13 hours.

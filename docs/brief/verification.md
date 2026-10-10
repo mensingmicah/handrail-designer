@@ -34,7 +34,9 @@ the guard fits the tool's assumptions) is separate and unchanged.
   registry entries against the standard (CLAUDE.md rule 1) from the registry
   review workbook, before the next slice's build starts (ADR 0008). The
   entries drafted before that decision are caught up in batches, highest
-  fan-out first (the number of test cases that read the entry). Until an
+  fan-out first (the number of test cases that read the entry): the 20
+  entries named in ADR 0008's notes before slice 5's build starts, every
+  other one before slice 6's build starts (Micah, 2026-10-09). Until an
   entry is verified, the check code runs on it and every calc that uses it
   prints the DRAFT stamp. The independent calc reads verified entries only,
   so it works every still-drafted value from its own reading of the code.
