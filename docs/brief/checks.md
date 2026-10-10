@@ -221,3 +221,27 @@ plan's decision numbers, kept for the record.
     withstand 150 lb downward or outward; enter 150 lb where OSHA
     applies." Its text is a registry entry, like the exemption info box.
     An OSHA toggle is out of v1 (docs/ROADMAP.md, after v1).
+
+### Section families (slices 5 to 7)
+
+Decided in planning slice 5 (docs/plans/slice-5.md); S5 numbers are that
+plan's decision numbers, kept for the record.
+
+- **Section families arrive grouped by engineering.** (S5-1, Micah
+  2026-10-09.) Slice 5: hollow round sections, that is round HSS from the
+  database and custom round tubes (§B4.2), on the same provisions as pipe
+  (§F8, Table B4.1, Chapter E), with a noncompact test case for Eq. F8-2.
+  Slice 6: rectangular HSS and custom rectangular tubes. Slice 7: solid
+  round bar and solid rectangular bar together (§F11, LTB with Cb, and
+  welds to a member with no wall). This replaces the earlier grouping by
+  outline, which put solid round bar with the round tubes.
+  - Until slice 7 a solid bar cannot be entered. Everything in welds.md
+    that is written over a wall (the fusion face thickness W4, the base
+    metal lines W5 and W6, "post wall covered by Check 5", Table J2.4's
+    thinner part W11, Check 4b's base metal on both walls) is decided for
+    solid members once, in slice 7's plan.
+  - The section type carries per-axis properties (I, S, Z and r about x
+    and about y) from slice 5. A round section has x = y. This fixes the
+    data a section holds, not how a check uses it: which axis each check
+    reads, the axis input, and Chapter H biaxial bending for non-round
+    sections are slice 6's decisions.

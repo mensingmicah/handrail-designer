@@ -2,9 +2,10 @@
 
 Status: **accepted by Micah, 2026-09-30.** Slice 2 is the post (option A
 below). **Current status (2026-10-09):** slices 1–4 are done (v0.1.0 to
-v0.4.0, the first complete all-pipe package); slice 5 is next, and its
-plan starts with the open decisions on its milestone (regrouping slices
-5–7, recompute for new section families). What the tool must do is set by the brief
+v0.4.0, the first complete all-pipe package); slice 5 is next. Slices 5–7
+were regrouped by engineering on 2026-10-09 (Micah; S5-1 in
+docs/brief/checks.md): hollow round, then hollow rectangular, then every
+solid bar. What the tool must do is set by the brief
 (docs/BRIEF.md); if this roadmap disagrees with the brief, the brief wins.
 Each slice gets its own plan in docs/plans/ before work starts. That plan
 settles the slice's open questions, and it can reorder or split the slice.
@@ -17,9 +18,9 @@ settles the slice's open questions, and it can reorder or split the slice.
 | 2 (done, v0.2.0) | Checks 5–6: the post (pipe) | 1 | M | 2 | — |
 | 3 (done, v0.3.0) | Checks 3 and 7: both welds (pipe rail on pipe post) | 2 | M | 1 | — |
 | 4 (done, v0.4.0) | Check 4 (intermediate rail, 4a member and 4b weld) and the anchor reaction sets | 2 (3 for a full package) | M | 1 | #4 (closed) |
-| 5 | Round section family: round HSS, custom round tube, solid round bar | 4 | M | 2 | #3 |
-| 6 | Rectangular tubes: rectangular HSS, custom rectangular tube | 5 | L | 2 | — |
-| 7 | Solid rectangular bar | 6 | M | 1–2 | — |
+| 5 | Hollow round sections: round HSS, custom round tube; the two-axis section type; the engine refactor (#21) | 4 | M | 2 | #3, #21, #24 |
+| 6 | Hollow rectangular sections: rectangular HSS, custom rectangular tube | 5 | L | 2 | — |
+| 7 | Solid bars: solid round bar and solid rectangular bar | 6 | L | 2–3 | — |
 | 8 | Input form and front-matter image | 7 | L | 0 | — |
 | 9 | v1 release | 8 | S code, L review | 0 | — |
 | After v1 | Display units, LRFD, slender sections, other mounts | v1 | — | — | #1 |
@@ -32,8 +33,9 @@ These are rough guesses. Slice 2, the first check against them, drafted 31
 registry entries against an estimate of 18–23 and needed the 2 test cases
 planned. Slices 3 and 4 drafted 28 and 15 entries against estimates of
 about 15 and 6–8, so the actuals have run 1.5–2 times the estimates. The
-estimates for slices 5–9 below have not been revised; read them with that
-overrun in mind.
+estimates for slices 5–7 were redone with the regrouping of 2026-10-09
+and already allow for that overrun; they are still guesses. Those for
+slices 8 and 9 have not been revised.
 
 A test case costs Micah less than it did in slice 1. Case 1 was a full
 hand calc of every value. From slice 2 on, each test case is an
@@ -255,48 +257,50 @@ About 10–12 registry entries. Micah's release recompute now covers the
 reaction sets (ADR 0007). **Plan:** docs/plans/slice-4.md, with test
 case 5.
 
-### Slice 5: round section family
+### Slice 5: hollow round sections
 
-**Covers.** Round HSS from the database (extraction and row-for-row test
-for HSS round rows), custom round tubes defined by dimensions (nominal or
+Regrouped 2026-10-09 (Micah; S5-1, docs/brief/checks.md): solid round bar
+moved to slice 7, so every section in this slice has a wall and uses the
+same provisions as pipe (§F8, Table B4.1, Chapter E).
+
+**Covers.** First, the engine refactor of issue #21, proven by golden
+snapshots to change no printed calc. Then the section type generalized
+across Checks 1–7, with per-axis properties (x and y) from the start;
+round shapes set x = y, and which checks read which axis is slice 6's
+decision. Round HSS from the database (extraction and row-for-row test
+for HSS round rows). Custom round tubes defined by dimensions (nominal or
 design wall, §B4.2 conversion; weight on the wall as entered, strength on
-design), and solid round bar (§F11 flexure; compression with no
-local-buckling limit). Section properties computed from dimensions print as
-calc lines. Grade lists and the unusual-pairing warning (A500 Gr B/C, A1085
-with the "properties as published" note; bars A36). This is also where the
-section type is generalized across Checks 1–7. Issue #3 lands here: a
-custom thin-wall round tube, or a large round HSS, gives a realistic
-noncompact case for Eq. F8-2.
+design), with section properties computed from dimensions and printed as
+calc lines. Grade lists and the unusual-pairing warning (A500 Gr B/C,
+A1085 with the "properties as published" note). The supported-combinations
+table and the list of stops (#22, F9), and the pipe-specific printed text
+(#22, F10). Issue #3 lands here: a custom thin-wall round tube, or a large
+round HSS, gives a noncompact case for Eq. F8-2. The footer version and
+the other #24 items.
 
 **Depends on.** Slice 4 (all checks exist to be generalized).
 
-**Size.** M. About 12–15 new registry entries. Two test cases: the
-noncompact rail (#3) and a solid round bar or custom tube post.
+**Size.** M. It loses the bar engineering and gains the #21 refactor and
+the two-axis type. About 15–20 new registry entries (A500 and A1085 Fy and
+Fu, §B4.2, the property formulas for a round tube, the grade defaults); I'm
+not sure of that count. Two test cases: the noncompact rail (#3) and a
+round HSS or custom tube post.
 
-**To settle in the slice plan.** The base metal check for a weld to a
-solid bar post: welds.md specifies it over "the thickness on the fusion
-face", and a solid bar has no wall.
-Also whether the stated assumption that the rail wall's Chapter K chord
-limit states are not checked (welds.md, W7) still holds for a thin-wall
-custom round rail, or whether Check 3 needs that limit state. Check 3
-stops on any rail or post that is not round hollow until this is
-decided. A rail welded to the side of a post wider than it, or a
-cap-plate detail, is a different connection and is out of v1; the tool
-stops when the post is wider than the rail (welds.md, W8). Slices 5 and
-6 keep that stop as section families widen, and slice 6 decides which
-dimensions it compares for rectangular sections. The weld envelope's
-orthogonal-cases ruling and the load-at-the-rail-centerline ruling
-(welds.md) are revisited for rectangular rails in slice 6; confirm here
-that both still hold for every round rail this slice adds.
-Check 4b now checks base metal on both walls, the post and the
-intermediate rail (welds.md, Micah 2026-10-09): settle what that line
-becomes for a solid bar intermediate rail, which has no wall, with the
-solid bar post question above. (The slice 4 plan's flag on the
-"branch-wall argument" is moot: that argument was removed with the
-simple shear connection.) Whether solid round bar stays in this slice
-is open on the Slice 5 milestone (regrouping slices 5–7).
+**To settle in the slice plan.** Whether the stated assumption that the
+rail wall's Chapter K chord limit states are not checked (welds.md, W7)
+still holds for a thin-wall round rail, or whether Check 3 needs that
+limit state or a stop. Check 3 stops on any rail or post that is not round
+hollow. A rail welded to the side of a post wider than it, or a cap-plate
+detail, is a different connection and is out of v1; the tool stops when
+the post is wider than the rail (welds.md, W8). Slices 5 and 6 keep that
+stop as section families widen, and slice 6 decides which dimensions it
+compares for rectangular sections. The weld envelope's orthogonal-cases
+ruling and the load-at-the-rail-centerline ruling (welds.md) are revisited
+for rectangular rails in slice 6; confirm here that both still hold for
+every round rail this slice adds. Whether a new section family's first
+test case gets Micah's release recompute (#23).
 
-### Slice 6: rectangular tubes
+### Slice 6: hollow rectangular sections
 
 **Covers.** Rectangular HSS from the database and custom rectangular tubes
 (AISC corner-radius convention, §B4.2 design thickness). Table B4.1a/B4.1b
@@ -310,9 +314,11 @@ on the post's other axis. Rectangular post welds: all around, or on one
 pair of faces picked by width or depth, with the elastic line properties of
 each pattern.
 
-**Depends on.** Slice 5 (the generic section interface).
+**Depends on.** Slice 5 (the generic section interface, whose per-axis
+properties already hold the rectangular columns; this slice decides which
+checks read which axis).
 
-**Size.** L, the largest after slice 1. About 20 new registry entries.
+**Size.** L, the largest after slice 1. About 20–30 new registry entries.
 Two test cases: a rectangular HSS post where longitudinal governs on the
 weak axis, and a rectangular rail.
 
@@ -331,26 +337,49 @@ surface are neglected because Check 3 ratios are far below 1.0 for pipe
 on pipe (welds.md, Check 3 weld model; Micah 2026-10-08). Redo that for a
 rectangular rail, whose depth and weld pattern differ.
 
-### Slice 7: solid rectangular bar
+### Slice 7: solid bars, round and rectangular
 
-**Covers.** Flat and rectangular bar, always defined by dimensions: §F11
-(yielding and LTB) with Cb from the §F1 moment diagram for each load case
-(simple span for the rail, cantilever for the post). This is the first
-section where LTB can govern. Includes a flat bar rail loaded about its
-weak axis, the case the brief names where a horizontal case may control,
-and a flat bar intermediate rail: Check 4a's two component load cases
-(horizontal, downward; S4-10) on different axes, with Cb for the
-midspan point load. Check 4b's weld ring (S4-8, S4-9) and the cope limit
-(S4-11) are round-only until slices 6 and 7 extend them.
+Regrouped 2026-10-09 (Micah; S5-1, docs/brief/checks.md): solid round bar
+joins solid rectangular bar here, so the questions a member with no wall
+raises are settled once.
+
+**Covers.** Solid round bar and flat or rectangular bar, always defined by
+dimensions, with properties computed from them. §F11: yielding for both;
+LTB for rectangular bar, with Cb from the §F1 moment diagram for each load
+case (simple span for the rail, cantilever for the post). This is the
+first section where LTB can govern; round bar has no LTB limit state
+(checks.md, D5). Compression with no local-buckling limit. Biaxial SRSS
+for round bar, Chapter H for rectangular bar. Bar grades (A36 by default;
+Fy and Fu per AISC Manual Table 2-5). Includes a flat bar rail loaded
+about its weak axis, the case the brief names where a horizontal case may
+control, and a flat bar intermediate rail: Check 4a's two component load
+cases (horizontal, downward; S4-10) on different axes, with Cb for the
+midspan point load. Welds to and from a solid member, in Checks 3, 4b
+and 7. Check 4b's weld ring (S4-8, S4-9) and the cope limit (S4-11) are
+round-hollow-only until slices 6 and 7 extend them.
 
 **Depends on.** Slice 6 (rectangular axis input, biaxial H provisions,
 face-pair welds).
 
-**Size.** M. About 8–10 new registry entries. One or two test cases (a
-flat bar rail on its weak axis; a bar post where LTB matters).
+**Size.** L, up from M: it now carries LTB and the welds to solid members
+together, for two bar shapes. About 15–20 new registry entries. Two or
+three test cases (a solid round bar member; a flat bar rail on its weak
+axis; a bar post where LTB matters).
 
-It would be reasonable to merge this into slice 6. I've kept it separate so
-the one slice that brings in LTB carries nothing else new.
+**To settle in the slice plan.** Everything a missing wall breaks in the
+weld decisions (welds.md): the fusion face thickness (W4) and the base
+metal lines (W5, W6), which are written over a wall's design thickness;
+the line "post wall covered by Check 5" (W5); Table J2.4's "thinner part
+joined" (W11); and Check 4b's base metal on both walls (Micah, 2026-10-09)
+for a solid bar post or a solid bar intermediate rail. Also whether the
+Chapter K chord-wall assumption (W7) has any meaning for a solid chord,
+the directional increase rule for a solid round or rectangular bar (W2
+covers round HSS only), and whether a solid bar can be coped at all, or
+needs a different joint from W8 and S4-11.
+
+Slice 7 no longer carries LTB alone, which was the reason it was kept
+apart from slice 6. It stays a separate slice because both of its halves
+are bar engineering and neither touches the hollow sections.
 
 ### Slice 8: input form and front-matter image
 
