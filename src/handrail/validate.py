@@ -49,12 +49,12 @@ def validate(project: Project, registry: Registry) -> None:
     - the intermediate rail is no wider than the post (S4-11);
     - the baseplate is no smaller in plan than the post OD (S4-6).
     """
-    rail = shapes.pipe(project.top_rail.section)
-    post = shapes.pipe(project.post.section)
+    rail = shapes.section(project.top_rail.section)
+    post = shapes.section(project.post.section)
     require_supported_grade(project.top_rail, "top rail")
     require_supported_grade(project.post, "post")
     own = project.intermediate_rail.member  # its own section, or None
-    inter = shapes.pipe(own.section) if own else None
+    inter = shapes.section(own.section) if own else None
     if own:
         require_supported_grade(own, "intermediate rail")
     electrode = project.welds.electrode

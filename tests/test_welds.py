@@ -16,7 +16,7 @@ from handrail.errors import SectionStop
 from handrail.registry import Registry
 from handrail.units import Q_
 
-P15 = shapes.pipe("Pipe1-1/2STD")  # D = 1.900 in, t_des = 0.135 in
+P15 = shapes.section("Pipe1-1/2STD")  # D = 1.900 in, t_des = 0.135 in
 
 
 def _ring(size="1/8", sec=P15):
@@ -152,7 +152,7 @@ def project(rail="Pipe2STD", post="Pipe2STD", span="6'-0\"", r2p="1/8", p2b="1/4
 
 def plain_check_3(rail="Pipe2STD", post="Pipe2STD", L_ft=6.0, w=0.125, P=P_CONC, w_plf=W_PLF):
     """Check 3 by hand in plain floats: {(direction, load type): (f_r, ratio) or None}."""
-    r, p = shapes.pipe(rail), shapes.pipe(post)
+    r, p = shapes.section(rail), shapes.section(post)
     D, e = p.OD.m_as("inch"), r.OD.m_as("inch") / 2
     Lw, Sw = math.pi * D, math.pi * D**2 / 4
     weld = 0.60 * 70e3 * 0.707 * w * 1.0 / 2.00
@@ -225,7 +225,7 @@ def test_check_3_exempt_distributed_cases():
 
 def plain_check_7(rail="Pipe2STD", post="Pipe2STD", L_ft=6.0, h=42.0, tp=0.5, w=0.25, P=P_CONC, w_plf=W_PLF):
     """Check 7 by hand in plain floats: {(direction, load type): (f_r, ratio)}."""
-    r, p = shapes.pipe(rail), shapes.pipe(post)
+    r, p = shapes.section(rail), shapes.section(post)
     D, arm = p.OD.m_as("inch"), h - tp
     Lw, Sw = math.pi * D, math.pi * D**2 / 4
     weld = 0.60 * 70e3 * 0.707 * w * 1.5 / 2.00   # theta = 90 deg at the governing fiber: k_ds = 1.5
@@ -265,8 +265,8 @@ def test_check_7_theta_is_computed_at_the_governing_point():
 
 def test_check_7_stops_on_a_post_that_is_not_round(monkeypatch):
     # W2 inside the weld code, past validation: compute() with a stand-in family.
-    real = shapes.pipe
-    monkeypatch.setattr(shapes, "pipe", lambda d: dataclasses.replace(real(d), family="rectangular HSS"))
+    real = shapes.section
+    monkeypatch.setattr(shapes, "section", lambda d: dataclasses.replace(real(d), family="rectangular HSS"))
     with pytest.raises(SectionStop, match=r"directional strength increase rule for this section family"):
         engine.compute(project(), Registry())
 
@@ -280,7 +280,7 @@ def test_minimum_size_reads_the_nominal_wall_and_strength_the_design_wall():
     """Table J2.4 takes the physical wall, t_nom; the fusion-face strength line
     keeps t_des (W4). Pipe5STD straddles the 1/4 in row limit: t_nom = 0.258
     gives a 3/16 in minimum, where t_des = 0.241 would give 1/8 in."""
-    p5 = shapes.pipe("Pipe5STD")
+    p5 = shapes.section("Pipe5STD")
     assert p5.tnom.m_as("inch") > 0.25 >= p5.tdes.m_as("inch")  # the premise
     res = engine.run(project(rail="Pipe5STD", post="Pipe5STD", r2p="1/8", p2b="1/8"), Registry())
     for n in (3, 7):

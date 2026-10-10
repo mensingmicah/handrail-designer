@@ -41,7 +41,7 @@ def project(rail="Pipe2STD", span="6'-0\"", post_section="Pipe2STD", h="42", tp=
 
 def plain(rail="Pipe2STD", L=72.0, post_section="Pipe2STD", h=42.0, tp=0.5, P=P, w=W_L):
     """Check 5 by hand in plain floats: {(direction, load type): (ratio, equation, alpha Pr/Pe)}."""
-    r_, p = shapes.pipe(rail), shapes.pipe(post_section)
+    r_, p = shapes.section(rail), shapes.section(post_section)
     A, I, Z, r = p.A.m_as("in^2"), p.I.m_as("in^4"), p.Z.m_as("in^3"), p.r.m_as("inch")
     Lp = h - tp
     PD = r_.W.m_as("lbf/inch") * L + p.W.m_as("lbf/inch") * Lp
@@ -174,7 +174,7 @@ def test_moment_cases_print_the_second_order_sentence(check5):
 
 def test_second_order_ratio_above_the_limit_stops_naming_case_ratio_and_limit():
     # A 103 lb/ft rail over 12'-0" on a Pipe2STD post: 1.6 P_D / P_e is about 0.088.
-    s2, s26 = shapes.pipe("Pipe2STD"), shapes.pipe("Pipe26STD")
+    s2, s26 = shapes.section("Pipe2STD"), shapes.section("Pipe26STD")
     PD = s26.W.m_as("lbf/inch") * 144 + s2.W.m_as("lbf/inch") * 41.5
     a = 1.6 * PD / (math.pi**2 * E * 1000 * s2.I.m_as("in^4") / 88.2**2)
     assert a > 0.05  # the premise
@@ -189,7 +189,7 @@ def test_downward_above_the_second_order_limit_does_not_stop():
     # Test case 2's geometry (plan D1, D7): Pipe1-1/2STD rail over 7'-0" on a
     # Pipe1-1/2STD post at h = 42 in. The downward distributed case would exceed
     # 0.05 if it were checked; it has no moment, so it is not.
-    s = shapes.pipe("Pipe1-1/2STD")
+    s = shapes.section("Pipe1-1/2STD")
     PD = s.W.m_as("lbf/inch") * (84 + 41.5)
     Pe = math.pi**2 * E * 1000 * s.I.m_as("in^4") / 88.2**2
     assert 1.6 * (PD + W_L * 84) / Pe > 0.05  # the premise
@@ -205,7 +205,7 @@ def test_downward_above_the_second_order_limit_does_not_stop():
 def test_eq_H1_1a_arithmetic_with_an_artificial_dead_load():
     reg = Registry()
     proj = project(post_section="Pipe8STD")
-    p8 = shapes.pipe("Pipe8STD")
+    p8 = shapes.section("Pipe8STD")
     # A Pipe8STD post under a Pipe2STD rail fails W8 at validation; only the
     # loading is wanted here, so compute past it.
     base = engine.compute(proj, reg)
@@ -232,7 +232,7 @@ def test_slender_in_compression_is_a_hard_stop_naming_ratio_and_limit():
     # compression (lambda_r = 0.11 E/Fy = 91.1).
     reg = Registry()
     lr = reg.get("aisc360.B4.1a.round_hss.lambda_r")
-    fake = dataclasses.replace(shapes.pipe("Pipe2STD"), D_t=100, label="FakePipe")
+    fake = dataclasses.replace(shapes.section("Pipe2STD"), D_t=100, label="FakePipe")
     expected = (rf"FakePipe: wall is slender in compression, D/t = 100 > lambda_r = "
                 rf"{re.escape(str(lr.value))}E/Fy = {re.escape(fmt_sig(lr.value * E / FY))} "
                 rf"\({re.escape(lr.cite)}\)")

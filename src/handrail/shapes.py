@@ -7,9 +7,10 @@ value is returned as a pint quantity in the units the database states.
 import tomllib
 from dataclasses import dataclass
 from functools import cache
+from pathlib import Path
 
 from handrail.errors import InputError
-from handrail.shapes_extract import PIPE_TOML
+from handrail.shapes_extract import PIPE_TOML, ROUND_HSS_TOML
 from handrail.stops import Stop
 from handrail.units import Q_
 
@@ -24,9 +25,9 @@ DB = "AISC Shapes Database v16.0"
 
 
 # Section families, as the per-joint tables name them (joints.py; S5-9).
-# AISC pipe is the only one a project can enter so far; the others are
-# named here so each has its row in those tables, which say which slice
-# brings it (S5-1).
+# AISC pipe and round HSS are the ones the database lookup returns; the
+# others are named here so each has its row in those tables, which say
+# which slice brings it (S5-1).
 PIPE = "AISC pipe"
 ROUND_HSS = "round HSS"
 ROUND_TUBE = "custom round tube"
@@ -88,26 +89,41 @@ class Section:
 
 
 @cache
-def _pipe_table() -> dict:
-    with open(PIPE_TOML, "rb") as f:
+def _table(path: Path) -> dict:
+    with open(path, "rb") as f:
         return tomllib.load(f)
 
 
-def pipe(designation: str) -> Section:
-    """Look up an AISC pipe by designation, ignoring case and spaces."""
-    table = _pipe_table()
+# The derived database files a designation is looked up in, in this order,
+# with the family of the sections each one holds.
+_DATABASE = ((PIPE_TOML, PIPE), (ROUND_HSS_TOML, ROUND_HSS))
+
+
+def labels(family: str) -> list[str]:
+    """Every designation of one family, in database order."""
+    return [label for path, fam in _DATABASE if fam == family for label in _table(path)["shape"]]
+
+
+def section(designation: str) -> Section:
+    """Look up a standard section by its AISC designation (the database's
+    AISC_Manual_Label), ignoring case and spaces: an AISC pipe or a round
+    HSS. Every value is the published one, the outside diameter included
+    (S5-4): nothing is read out of the designation."""
     key = designation.replace(" ", "").upper()
-    for label, row in table["shape"].items():
-        if label.upper() == key:
-            u = table["units"]
-            q = lambda name, row=row, u=u: Q_(row[name], u[name])
-            return Section(
-                label=label, family=PIPE, source=DB,
-                W=q("W"), A=q("A"), OD=q("OD"),
-                tnom=q("tnom"), tdes=q("tdes"), D_t=row["D/t"],
-                x=Axis(I=q("Ix"), S=q("Sx"), Z=q("Zx"), r=q("rx")),
-                y=Axis(I=q("Iy"), S=q("Sy"), Z=q("Zy"), r=q("ry")),
-            )
+    for path, family in _DATABASE:
+        table = _table(path)
+        for label, row in table["shape"].items():
+            if label.upper() == key:
+                u = table["units"]
+                q = lambda name, row=row, u=u: Q_(row[name], u[name])
+                return Section(
+                    label=label, family=family, source=DB,
+                    W=q("W"), A=q("A"), OD=q("OD"),
+                    tnom=q("tnom"), tdes=q("tdes"), D_t=row["D/t"],
+                    x=Axis(I=q("Ix"), S=q("Sx"), Z=q("Zx"), r=q("rx")),
+                    y=Axis(I=q("Iy"), S=q("Sy"), Z=q("Zy"), r=q("ry")),
+                )
     raise ShapeNotFound(
-        f"{designation!r} is not an AISC pipe in {table['source_file']}", stop=Stop.SECTION_NOT_FOUND
+        f"{designation!r} is not an AISC pipe or round HSS in {_table(PIPE_TOML)['source_file']}",
+        stop=Stop.SECTION_NOT_FOUND,
     )

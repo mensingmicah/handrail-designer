@@ -17,7 +17,7 @@ from handrail.registry import Registry
 from handrail.units import Q_
 from test_intermediate import run
 
-P2, P125 = shapes.pipe("Pipe2STD"), shapes.pipe("Pipe1-1/4STD")
+P2, P125 = shapes.section("Pipe2STD"), shapes.section("Pipe1-1/4STD")
 RHO = 490.0 / 1728  # lb/in^3 (registry value, restated for the plain calc)
 H, TP, L = 42.0, 0.5, 72.0
 

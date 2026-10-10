@@ -42,7 +42,7 @@ def project(section="Pipe2STD", span="6'-0\"", post="Pipe2STD", h="42", tp="1/2"
 
 def plain(section="Pipe2STD", L=72.0):
     """Hand-style calc in plain floats: {(check, direction, load type): ratio}."""
-    s = shapes.pipe(section)
+    s = shapes.section(section)
     I, Z, S, Dt = s.I.m_as("in^4"), s.Z.m_as("in^3"), s.S.m_as("in^3"), s.D_t
     wD = s.W.m_as("lbf/inch")
     Mn = FY * 1000 * Z
@@ -150,7 +150,7 @@ def test_noncompact_section_uses_eq_F8_2_and_is_flagged():
 
 
 def _fake(D_t):
-    s = shapes.pipe("Pipe2STD")
+    s = shapes.section("Pipe2STD")
     return dataclasses.replace(s, D_t=D_t, label="FakePipe")
 
 
@@ -300,8 +300,8 @@ def test_upward_margin_note_states_net_downward_when_dead_load_wins():
 
 
 def test_post_radius_of_gyration_is_the_database_rx():
-    assert shapes.pipe("Pipe2STD").r.m_as("inch") == 0.791
-    assert shapes.pipe("Pipe1-1/2STD").r.m_as("inch") == 0.626
+    assert shapes.section("Pipe2STD").r.m_as("inch") == 0.791
+    assert shapes.section("Pipe1-1/2STD").r.m_as("inch") == 0.626
 
 
 def test_dead_load_at_the_post_matches_plain_calc(results):

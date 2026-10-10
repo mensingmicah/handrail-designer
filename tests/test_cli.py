@@ -345,9 +345,9 @@ def test_equal_ods_are_allowed():
 def _validate_with(monkeypatch, *, family=None, fu=None):
     """validate() on the example with a stand-in: a section of another family,
     or a post grade with a lower Fu. Stand-ins for machinery tests only."""
-    real = shapes.pipe
+    real = shapes.section
     if family:
-        monkeypatch.setattr(shapes, "pipe", lambda d: dataclasses.replace(real(d), family=family))
+        monkeypatch.setattr(shapes, "section", lambda d: dataclasses.replace(real(d), family=family))
     reg = Registry()
     if fu:
         e = reg.entries["material.A53_GrB.Fu"]
@@ -523,8 +523,8 @@ def test_a_baseplate_smaller_than_the_post_od_stops(name, other):
 
 def test_a_non_round_intermediate_rail_stops(monkeypatch):
     # W7 extended (S4-12), with a stand-in family on the intermediate section only.
-    real = shapes.pipe
-    monkeypatch.setattr(shapes, "pipe", lambda d: dataclasses.replace(real(d), family="rectangular HSS")
+    real = shapes.section
+    monkeypatch.setattr(shapes, "section", lambda d: dataclasses.replace(real(d), family="rectangular HSS")
                         if d == "Pipe1-1/4STD" else real(d))
     with pytest.raises(project.ProjectError,
                        match=r"intermediate rail Pipe1-1/4STD \(rectangular HSS\) is not a round hollow section"):

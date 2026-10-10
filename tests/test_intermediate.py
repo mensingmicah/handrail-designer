@@ -19,7 +19,7 @@ from handrail.units import Q_
 from handrail.welds import _reaction_4b
 
 _LBF = Q_(1, "lbf")
-P2, P125 = shapes.pipe("Pipe2STD"), shapes.pipe("Pipe1-1/4STD")
+P2, P125 = shapes.section("Pipe2STD"), shapes.section("Pipe1-1/4STD")
 
 
 def project(state=OWN_SECTION, section="Pipe1-1/4STD", rail="Pipe2STD", post="Pipe2STD", span="6'-0\"",
@@ -329,7 +329,7 @@ def test_a_post_wall_thinner_than_the_rail_wall_runs_the_full_check_4b():
     but a Pipe2XS rail (t_des 0.204 in) on a Pipe2STD post (t_des 0.143 in),
     equal ODs. Check 3 checks the rail wall's base metal and Check 4b the
     post wall's, so the observation does not hold and the full check runs."""
-    p2xs = shapes.pipe("Pipe2XS")
+    p2xs = shapes.section("Pipe2XS")
     assert p2xs.OD == P2.OD and P2.tdes < p2xs.tdes  # the premise
     res = run(state=SAME_AS_TOP, rail="Pipe2XS")
     chk = res.check("4b")

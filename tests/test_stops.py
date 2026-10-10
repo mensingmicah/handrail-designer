@@ -88,17 +88,17 @@ OWN_WELD = {"intermediate_rail_to_post": "1/8"}
 def _stand_in(monkeypatch, family, only=None):
     """Sections of another family: every section, or only the one labelled
     ``only``. Stand-ins for machinery tests; no project can enter one."""
-    real = shapes.pipe
+    real = shapes.section
 
     def pipe(designation):
         sec = real(designation)
         return dataclasses.replace(sec, family=family) if only in (None, sec.label) else sec
 
-    monkeypatch.setattr(shapes, "pipe", pipe)
+    monkeypatch.setattr(shapes, "section", pipe)
 
 
 def _fake(D_t):
-    return dataclasses.replace(shapes.pipe("Pipe2STD"), D_t=D_t, label="FakePipe")
+    return dataclasses.replace(shapes.section("Pipe2STD"), D_t=D_t, label="FakePipe")
 
 
 # -- the project file -------------------------------------------------------
@@ -627,3 +627,15 @@ def test_a_dimension_stop_keeps_its_own_id_through_the_project_file():
         _load(geometry={"span": "six feet"})
     assert direct.value.stop is through_file.value.stop is Stop.DIMENSION_UNREADABLE
     assert str(through_file.value) == f"[geometry] span: {direct.value}"
+
+
+def test_a_round_hss_is_found_in_the_database_but_not_yet_allowed_at_a_joint():
+    """Step 3 of slice 5 added the round HSS rows; step 5 sets their cells to
+    allowed. Until then a round HSS reaches a stop cell, by a real input."""
+    with pytest.raises(ProjectError) as stopped:
+        _run(post={"section": "HSS2.375X0.125"})
+    assert stopped.value.stop is Stop.JOINT_CHECK3_NOT_SUPPORTED
+    assert str(stopped.value) == (
+        "post HSS2.375X0.125 (round HSS): this version does not have this section family yet. Check 3 joint "
+        "(top rail as chord, post as branch): AISC pipe as the chord with round HSS as the branch is not "
+        "supported until slice 5 (S5-1).")

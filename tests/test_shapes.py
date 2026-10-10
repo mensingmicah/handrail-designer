@@ -18,11 +18,11 @@ from test_report import CLEAN
 
 
 def _pipes():
-    return [shapes.pipe(label) for label in shapes._pipe_table()["shape"]]
+    return [shapes.section(label) for label in shapes.labels(PIPE)]
 
 
 def test_a_pipe_is_a_database_section_of_the_pipe_family():
-    sec = shapes.pipe("Pipe2STD")
+    sec = shapes.section("Pipe2STD")
     assert isinstance(sec, Section)
     assert sec.family == PIPE and sec.source == DB == "AISC Shapes Database v16.0"
 
@@ -41,7 +41,7 @@ def test_the_single_value_properties_read_the_x_axis():
     """Every check reads sec.I, sec.S, sec.Z and sec.r, as it did before the
     type had two axes. Which axis a check reads for a section that is not
     round is slice 6's decision; until then these are the x axis."""
-    base = shapes.pipe("Pipe2STD")
+    base = shapes.section("Pipe2STD")
     y = Axis(I=Q_(9, "in^4"), S=Q_(9, "in^3"), Z=Q_(9, "in^3"), r=Q_(9, "inch"))
     sec = dataclasses.replace(base, y=y)
     assert (sec.I, sec.S, sec.Z, sec.r) == (base.x.I, base.x.S, base.x.Z, base.x.r)
@@ -68,8 +68,8 @@ def cited(monkeypatch):
     """Case 5's guard with three different sections, each given a source of
     its own, so a line citing the wrong member's source shows."""
     sources = {"Pipe2-1/2STD": RAIL, "Pipe2STD": POST, "Pipe1-1/4STD": INT}
-    real = shapes.pipe
-    monkeypatch.setattr(shapes, "pipe", lambda d: dataclasses.replace(real(d), source=sources[real(d).label]))
+    real = shapes.section
+    monkeypatch.setattr(shapes, "section", lambda d: dataclasses.replace(real(d), source=sources[real(d).label]))
     reg = Registry()
     res = engine.run(project(rail="Pipe2-1/2STD"), reg)
     return res, reg

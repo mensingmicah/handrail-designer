@@ -27,11 +27,11 @@ def compute(project: Project, registry: Registry) -> Results:
     A separate entry point so a test can compute a case that validation
     refuses (docs/plans/slice-3.md, T1); the CLI always validates first.
     """
-    rail = shapes.pipe(project.top_rail.section)
-    post = shapes.pipe(project.post.section)
+    rail = shapes.section(project.top_rail.section)
+    post = shapes.section(project.post.section)
     member = project.intermediate_member
     same = project.intermediate_rail.state == SAME_AS_TOP
-    inter = None if member is None else rail if same else shapes.pipe(member.section)
+    inter = None if member is None else rail if same else shapes.section(member.section)
     loading = build_loading(project, registry, rail, post, inter)
     props = section_lines(registry, rail)
     post_props = section_lines(registry, post, with_r=True)
