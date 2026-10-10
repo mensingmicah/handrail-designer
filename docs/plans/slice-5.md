@@ -174,6 +174,31 @@ database's rounding is reported to Micah; the tolerance is never widened.
     properties that reproduce on every pipe row become binding for pipe
     too.
 
+**T3 as ruled during the build** (Micah, 2026-10-10, on the pipe-row
+report). The formula did come out above the published I, S and Z, on six
+pipe rows: XS pipe 14 to 26 in, whose published A, I, S and Z match a wall
+of 0.90·t_nom, not the listed design wall. His ruling: the custom tube
+formulas are accepted as exact geometry on the listed OD and the design
+wall of §B4.2. The binding tests became:
+
+- the 67 round HSS rows: A, I, S, Z, r and D/t reproduce at the database's
+  printed precision; weight within 0.5%;
+- pipe rows under 12 in OD: A, I, S, Z and r reproduce or come out below
+  published, never above; D/t reproduces. A row above on any of them is
+  parked and reported;
+- the six XS rows and the large-HSS misses are a database finding, listed
+  in data/README.md and the pull request, not asserted.
+
+As built (tests/test_tube.py): the round HSS rows pass in full, and the
+pipe rows pass on I, S, Z and r. Pipe area comes out above published on
+five rows under 12 in (Pipe3STD, Pipe6XS, Pipe5STD, Pipe3-1/2XS, Pipe4STD,
+0.37 to 0.64%) and pipe D/t misses on one (Pipe2XS, below); neither is
+asserted, and both wait on Micah.
+
+Two more changes to the snapshot rule were ruled the same day: the chord
+D/t draft row is a third intended change to existing calcs, and
+stop-second-order's rail moved to Pipe20XS.
+
 **T4. Machinery tests** (same-author), for what cases 6 and 7 do not
 reach:
 
