@@ -22,7 +22,7 @@
 # independent calc records every value the test compares in
 # tests/cases/independent/case-05.toml, written up beside it as case-05.md,
 # in a fresh session by the independent-calc skill (CLAUDE.md rule 6). Every
-# value there is "pending" until then, and a pending value blocks merge.
+# value there is filled.
 #
 # [hand] below holds Micah's governing-case values for what is new in slice
 # 4 only: Checks 4a and 4b, and the lateral and upward reaction sets (V, N

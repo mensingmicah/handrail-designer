@@ -15,8 +15,10 @@ branch and the post wall the chord.
   so theta = 90 deg there. The §J2.4 directional increase k_ds applies on
   round hollow sections only (W2); Check 3 takes k_ds = 1.0.
 - Weld metal: F_nw t_e k_ds / Omega per inch. Base metal at a fusion face:
-  shear rupture, 0.60 Fu t / Omega per inch (W5, W6). The post wall is
-  covered by Check 5 (W5; the Fu/Fy guard is in validate.py).
+  shear rupture, 0.60 Fu t / Omega per inch (W5, W6). In Checks 3 and 7 the
+  post wall is covered by Check 5 (W5; the Fu/Fy guard is in validate.py).
+  Check 4b does not rely on that: there the post wall is the chord, and its
+  base metal is checked directly, with the intermediate rail wall's.
 - Minimum size per Table J2.4 on the thinner part joined, walls at their
   nominal thickness, is pass/fail; no maximum size is checked (W11).
 """
