@@ -16,6 +16,7 @@ convention below is held by a test, named beside it.
 | calc.py | Calc lines, the expression tree, number formatting, comparisons |
 | directions.py | Direction, LoadType and Kind enums; the envelope orders |
 | stops.py, errors.py | The id of every stop; the error classes that carry one |
+| shapes.py | Section, the one type for every section (family, source, both axes); the family names; the database lookup |
 | joints.py | Which section families may meet at each joint, as data |
 | results.py | Case, Check, Loading, Results |
 | loading.py | The guard loads and the dead load at the post |

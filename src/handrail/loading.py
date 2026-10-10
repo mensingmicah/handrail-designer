@@ -10,15 +10,15 @@ from handrail.directions import DISTRIBUTED, Direction
 from handrail.project import Project
 from handrail.registry import Entry, Registry
 from handrail.results import Case, Loading
-from handrail.shapes import DB, PipeSection
+from handrail.shapes import Section
 
 # ASCE 7-22 ASD D + L: the combination of every check where the guard load
 # acts with or beside the dead load.
 COMBO = "asce7.combo.asd.D_plus_L"
 
 
-def build_loading(project: Project, registry: Registry, rail: PipeSection, post: PipeSection,
-                  inter: PipeSection | None = None) -> Loading:
+def build_loading(project: Project, registry: Registry, rail: Section, post: Section,
+                  inter: Section | None = None) -> Loading:
     """The guard loads and the dead load at the post. ``inter`` is the
     intermediate rail's section (the top rail's when it is the same), or
     None when there is none."""
@@ -68,7 +68,7 @@ def build_loading(project: Project, registry: Registry, rail: PipeSection, post:
                 cite=f"Input; {code_Pc.cite}",
             ).value
 
-    w_D = sh.given("w_D", "w_D", rail.W, f"Top rail self-weight: tabulated W = {rail.W.m_as('lbf/ft'):g} lb/ft", DB)
+    w_D = sh.given("w_D", "w_D", rail.W, f"Top rail self-weight: tabulated W = {rail.W.m_as('lbf/ft'):g} lb/ft", rail.source)
 
     # Dead load reaching the post (docs/plans/slice-2.md, D2). The critical
     # section is the top of the baseplate (D4), so the post weight is taken
@@ -81,7 +81,7 @@ def build_loading(project: Project, registry: Registry, rail: PipeSection, post:
                      cite="Stated assumption: post fixed at the top of the baseplate", unit="inch")
     L_post_line = sh.lines[-1]
     W_post = sh.given("W_post", 'W_"post"', post.W,
-                      f"Post self-weight: {post.label}, tabulated W = {post.W.m_as('lbf/ft'):g} lb/ft", DB)
+                      f"Post self-weight: {post.label}, tabulated W = {post.W.m_as('lbf/ft'):g} lb/ft", post.source)
     D_post = sh.line("D_post", 'D_"post"', W_post * L_post, "Post dead load, full weight at the base",
                      cite_ids=(dl,), unit="lbf")
     s = sh.given("L", "L", project.span.value, "Span: the tributary length for the post (stated assumption)", "Input")
@@ -96,7 +96,7 @@ def build_loading(project: Project, registry: Registry, rail: PipeSection, post:
         # Check 3's D (docs/plans/slice-4.md, where the dead load goes).
         same = " (same section as the top rail)" if inter is rail else ""
         w_D_int = sh.given("w_D_int", 'w_(D,"int")', inter.W, f"Intermediate rail self-weight: {inter.label}{same}, "
-                           f"tabulated W = {inter.W.m_as('lbf/ft'):g} lb/ft", DB)
+                           f"tabulated W = {inter.W.m_as('lbf/ft'):g} lb/ft", inter.source)
         D_int = sh.line("D_int", 'D_"int"', w_D_int * s, "Intermediate rail dead load delivered to the post",
                         cite_ids=(dl,), unit="lbf")
         P_D = sh.line("P_D", "P_D", D_rail + D_int + D_post, "D at the post: axial dead load at the top of the baseplate",

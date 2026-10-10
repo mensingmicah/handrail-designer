@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING, Any, cast
 from handrail.calc import Comparison, Line, Term, compare, fmt_ratio, term
 from handrail.directions import Direction, LoadType
 from handrail.project import Project
-from handrail.shapes import PipeSection
+from handrail.shapes import Section
 from handrail.units import Q_
 
 if TYPE_CHECKING:
@@ -119,13 +119,13 @@ class Loading:
 @dataclass
 class Results:
     project: Project
-    rail: PipeSection
-    post: PipeSection
+    rail: Section
+    post: Section
     loading: Loading
     section_lines: list[Line]       # top rail
     post_section_lines: list[Line]
     checks: list[Check]
-    inter: PipeSection | None = None  # the intermediate rail's section: the top rail's, its own, or None
+    inter: Section | None = None  # the intermediate rail's section: the top rail's, its own, or None
     inter_section_lines: list[Line] = field(default_factory=list)  # its own section only
     reactions: Reactions | None = None  # the anchor reaction sets
 

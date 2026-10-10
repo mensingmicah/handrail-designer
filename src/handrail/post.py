@@ -36,7 +36,7 @@ from handrail.materials import FY_ENTRY
 from handrail.project import Project
 from handrail.registry import Entry, Registry
 from handrail.results import Case, Check, Loading
-from handrail.shapes import DB, PipeSection
+from handrail.shapes import Section
 from handrail.stops import Stop
 
 
@@ -75,14 +75,14 @@ class Compression:
     summary_flag: str
 
 
-def compression_capacity(registry: Registry, project: Project, post: PipeSection) -> Compression:
+def compression_capacity(registry: Registry, project: Project, post: Section) -> Compression:
     """Classify per Table B4.1a and compute Pc per Chapter E. Raises SectionStop."""
     grade = project.post.grade
     head = Sheet(registry)
     Fy = head.code_value("F_y", "F_y", FY_ENTRY[grade], f"Yield stress, {grade}")
     E = head.code_value("E", "E", "material.steel.E", "Modulus of elasticity")
     # The same D/t line the flexure block prints, so moment cases skip it here.
-    lam = head.given("lambda", "lambda", post.D_t, "lambda = D/t, tabulated (design wall)", DB)
+    lam = head.given("lambda", "lambda", post.D_t, "lambda = D/t, tabulated (design wall)", post.source)
 
     sh = Sheet(registry)
     lr_e = registry.get("aisc360.B4.1a.round_hss.lambda_r")
@@ -106,7 +106,7 @@ def compression_capacity(registry: Registry, project: Project, post: PipeSection
     Lc = sh.line("L_c", "L_c", K * h, "Effective length, with the unbraced length taken as the post height h",
                  cite_ids=("aisc360.E2.effective_length", "ej.post.unbraced_length"), unit="inch")
     Lc_line = sh.lines[-1]
-    r = sh.given("r", "r", post.r, "Radius of gyration", DB)
+    r = sh.given("r", "r", post.r, "Radius of gyration", post.source)
     slenderness = sh.line("L_c_over_r", "frac(L_c, r)", Lc / r, "Effective slenderness ratio", cite_ids=("aisc360.eq.E3-4",))
 
     note_e = registry.get("aisc360.E2.user_note.slenderness")
@@ -144,7 +144,7 @@ def compression_capacity(registry: Registry, project: Project, post: PipeSection
                     cite_ids=("aisc360.E3.branch_limit",), key=E3_BRANCH)
         Fcr = sh.line("F_cr", 'F_"cr"', sh.coeff("aisc360.eq.E3-3.coeff") * Fe, "Critical stress",
                       cite_ids=(e33.id,), unit="ksi")
-    A = sh.given("A_g", "A_g", post.A, "Gross area", DB)
+    A = sh.given("A_g", "A_g", post.A, "Gross area", post.source)
     e31 = registry.get("aisc360.eq.E3-1")
     Pn = sh.line("P_n", "P_n", Fcr * A, "Nominal compressive strength", cite_ids=(e31.id,), unit="lbf")
     Om = sh.code_value("Omega_c", "Omega_c", "aisc360.E1.omega_c", "Safety factor for compression (ASD)")
@@ -160,12 +160,12 @@ class Tension:
     Pn_entry: Entry    # the equation Pn comes from, named in the envelope's Equation column
 
 
-def tension_capacity(registry: Registry, project: Project, post: PipeSection) -> Tension:
+def tension_capacity(registry: Registry, project: Project, post: Section) -> Tension:
     """Tensile yielding on the gross section, §D2(a)."""
     sh = Sheet(registry)
     grade = project.post.grade
     Fy = sh.code_value("F_y", "F_y", FY_ENTRY[grade], f"Yield stress, {grade}")
-    A = sh.given("A_g", "A_g", post.A, "Gross area", DB)
+    A = sh.given("A_g", "A_g", post.A, "Gross area", post.source)
     d21 = registry.get("aisc360.eq.D2-1")
     Pn = sh.line("P_n", "P_n", Fy * A, "Nominal tensile strength: yielding on the gross section",
                  cite_ids=(d21.id,), unit="lbf")
@@ -183,7 +183,7 @@ class Capacity5:
     flags: list[str] = field(default_factory=list)
 
 
-def _capacity(registry: Registry, project: Project, post: PipeSection) -> Capacity5:
+def _capacity(registry: Registry, project: Project, post: Section) -> Capacity5:
     flex = flexural_capacity(registry, post, project.post.grade)
     sh = Sheet(registry)
     sh.lines.extend(flex.lines)
@@ -257,7 +257,7 @@ def _moment_case(registry, project, post, loading, cap: Capacity5, direction: Di
     Pr, Mr = cast(Sym, d.P), cast(Sym, d.M)  # a horizontal demand always has both
 
     # Second-order effects: a ratio and a stop, not an amplifier (plan D1).
-    I = sh.given("I", "I", post.I, "Moment of inertia", DB)
+    I = sh.given("I", "I", post.I, "Moment of inertia", post.source)
     Pe = sh.line("P_e", "P_e", PI**2 * comp.E * I / comp.Lc**2, "Elastic critical buckling load, at the compression Lc",
                  cite_ids=("aisc360.eq.A-8-5", "ej.second_order.pe_length"), unit="lbf")
     alpha = sh.coeff("aisc360.app8.alpha_asd")
@@ -315,7 +315,7 @@ def _upward(registry, project, loading, cap: Capacity5, load_type) -> PostCase:
                     equation=f"Pr/Pt ({tension.Pn_entry.equation_number})")
 
 
-def check_5(registry: Registry, project: Project, post: PipeSection, loading: Loading) -> Check:
+def check_5(registry: Registry, project: Project, post: Section, loading: Loading) -> Check:
     cap = _capacity(registry, project, post)
     chk = Check(5, "Post combined axial and flexure", "P_r, M_r", "P_c, M_c", flags=cap.flags,
                 summary_flag=cap.compression.summary_flag, derived_lengths=[cap.compression.Lc_line])
@@ -345,7 +345,7 @@ def _deflection_case(registry, project, post, loading, direction, load_type) -> 
     combo = registry.get("ej.combo.deflection.L_only")
     Lp = sh.given("L_post", 'L_"post"', loading.L_post, "Cantilever length, h - t_p", "Loading")
     E = sh.code_value("E", "E", "material.steel.E", "Modulus of elasticity")
-    I = sh.given("I", "I", post.I, "Moment of inertia", DB)
+    I = sh.given("I", "I", post.I, "Moment of inertia", post.source)
     V = live_at_post(sh, "V_L", "V_L", load_type, loading, project, f"horizontal ({direction.lower()}) at the top of the post")
     DL = sh.line("Delta_L", "Delta_L", V * Lp**3 / (3 * E * I), "Live-load deflection at the top of the post",
                  cite_ids=("aisc_manual.t3-23.case22.delta",), unit="inch")
@@ -359,7 +359,7 @@ def _deflection_case(registry, project, post, loading, direction, load_type) -> 
                 demand=D.value, capacity=Dallow.value, ratio=ratio.value, lines=sh.lines)
 
 
-def check_6(registry: Registry, project: Project, post: PipeSection, loading: Loading) -> Check:
+def check_6(registry: Registry, project: Project, post: Section, loading: Loading) -> Check:
     chk = Check(6, "Post deflection", "Delta", 'Delta_"allow"')
     if project.post_deflection.bypass:
         chk.bypassed = True

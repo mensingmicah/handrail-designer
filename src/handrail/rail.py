@@ -26,7 +26,6 @@ from handrail.directions import CONCENTRATED, DIRECTIONS, DISTRIBUTED, LOAD_TYPE
 from handrail.flexure import Capacity, flexural_capacity
 from handrail.loading import COMBO, combo_text, exempt_case
 from handrail.results import Case, Check, Loading
-from handrail.shapes import DB
 from handrail.units import Q_
 
 # ---------------------------------------------------------------------------
@@ -96,7 +95,7 @@ def _deflection_case(registry, project, rail, loading, direction, load_type) -> 
     sh = Sheet(registry)
     L = sh.given("L", "L", project.span.value, "Span, simple beam", "Input")
     E = sh.code_value("E", "E", "material.steel.E", "Modulus of elasticity")
-    I = sh.given("I", "I", rail.I, "Moment of inertia", DB)
+    I = sh.given("I", "I", rail.I, "Moment of inertia", rail.source)
     if load_type == CONCENTRATED:
         P = sh.given("P", "P", loading.P, "Concentrated guard load at midspan", "Loading")
         DL = beams.point_deflection(sh, "Delta_L", "Delta_L", P, L, E, I, "Live-load deflection, midspan")

@@ -46,7 +46,7 @@ from handrail.materials import FEXX_ENTRY, FU_ENTRY
 from handrail.project import NO_INTERMEDIATE, SAME_AS_TOP, Member, Project
 from handrail.registry import Registry
 from handrail.results import Case, Check, Loading
-from handrail.shapes import DB, PipeSection
+from handrail.shapes import Section
 from handrail.units import Q_
 
 LINE_METHOD = "ej.weld.line_method"
@@ -97,14 +97,14 @@ class Ring:
     lines: list[Line]
 
 
-def ring(registry: Registry, sec: PipeSection, size: Dimension, member: str = "post", symbol: str = "D",
+def ring(registry: Registry, sec: Section, size: Dimension, member: str = "post", symbol: str = "D",
          bending: bool = True) -> Ring:
     """Line properties of a fillet weld all around a round member (W3): the
     post for Checks 3 and 7, the intermediate rail for Check 4b. Without
     bending (Check 4b) the section modulus S_w is not needed or printed."""
     sh = Sheet(registry)
     sh.heading("Weld properties")
-    D = sh.given("D", symbol, sec.OD, f"{sec.label}: outside diameter; the weld ring is the {member} perimeter", DB)
+    D = sh.given("D", symbol, sec.OD, f"{sec.label}: outside diameter; the weld ring is the {member} perimeter", sec.source)
     w = sh.given("w", "w", size.value, f"Fillet weld leg size, all around ({size.entered} as entered)", "Input")
     L_w = sh.line("L_w", "L_w", PI * D, f"Weld length: the {member} perimeter", cite_ids=(LINE_METHOD,), unit="inch")
     S_w = None
@@ -127,11 +127,11 @@ class Part:
     source: str
 
 
-def nominal_wall(name: str, member: str, sec: PipeSection) -> Part:
+def nominal_wall(name: str, member: str, sec: Section) -> Part:
     """A wall as a part joined for the minimum size: nominal thickness, the
     physical wall, because Table J2.4 is a heat-input rule, not a strength
     provision (welds.md, fillet size limits). Strength lines use t_des (W4)."""
-    return Part(f"t_{name}_nom", f't_"{name},nom"', sec.tnom, f"{member} nominal wall thickness, {sec.label}", DB)
+    return Part(f"t_{name}_nom", f't_"{name},nom"', sec.tnom, f"{member} nominal wall thickness, {sec.label}", sec.source)
 
 
 @dataclass
@@ -295,7 +295,7 @@ def shear_only(sh: Sheet, rg: Ring, V: Sym) -> RingForces:
     return RingForces(f_a=None, f_b=None, f_v=f_v, f_n=None, f_r=f_r, fiber="uniform")
 
 
-def directional_increase(sh: Sheet, registry: Registry, f_r: Sym, section: PipeSection) -> tuple[Sym, Sym]:
+def directional_increase(sh: Sheet, registry: Registry, f_r: Sym, section: Section) -> tuple[Sym, Sym]:
     """theta at the governing point and k_ds from it, for a post the Check 7
     joint's table lists as allowed (W2; joints.py). Returns (theta, k_ds).
     Raises SectionStop otherwise: validation makes the same test, and this
@@ -447,7 +447,7 @@ def _weld_check(chk: WeldCheck, registry: Registry, project: Project, loading: L
 # ---------------------------------------------------------------------------
 
 
-def check_3(registry: Registry, project: Project, rail: PipeSection, post: PipeSection, loading: Loading) -> Check:
+def check_3(registry: Registry, project: Project, rail: Section, post: Section, loading: Loading) -> Check:
     """The rail to post weld: a flat ring of the post perimeter at the rail's
     underside, loaded at e = d_rail/2 (W1); k_ds = 1.0 (W2); base metal on
     the rail side, in-plane force only (W6); the rail wall's normal force is
@@ -455,7 +455,7 @@ def check_3(registry: Registry, project: Project, rail: PipeSection, post: PipeS
     rg = ring(registry, post, project.welds.rail_to_post)
     ecc = Sheet(registry)
     ecc.heading("Eccentricity")
-    d = ecc.given("d_rail", 'd_"rail"', rail.OD, f"{rail.label}: outside diameter, the rail depth", DB)
+    d = ecc.given("d_rail", 'd_"rail"', rail.OD, f"{rail.label}: outside diameter, the rail depth", rail.source)
     e = ecc.line("e", "e", d / 2, "Eccentricity: rail centerline to the weld plane at the rail underside",
                  cite_ids=("ej.weld.ring_model",), unit="inch")
     e_line = ecc.lines[-1]
@@ -465,7 +465,7 @@ def check_3(registry: Registry, project: Project, rail: PipeSection, post: PipeS
     k_ds = kd.code_value("k_ds", 'k_"ds"', "ej.weld.branch_kds",
                          "No directional increase at the rail to post weld (a branch-to-chord joint)")
     grade = project.top_rail.grade
-    t_rail = Part("t_rail", 't_"rail"', rail.tdes, f"Top rail design wall thickness, {rail.label}", DB)  # W4
+    t_rail = Part("t_rail", 't_"rail"', rail.tdes, f"Top rail design wall thickness, {rail.label}", rail.source)  # W4
     base = base_metal(registry, "Base metal: rail fusion face", FU_ENTRY[grade], f"Tensile strength, {grade}",
                       t_rail)
     normal = registry.get("ej.weld.rail_wall_normal")
@@ -493,7 +493,7 @@ def check_3(registry: Registry, project: Project, rail: PipeSection, post: PipeS
 # ---------------------------------------------------------------------------
 
 
-def check_7(registry: Registry, project: Project, post: PipeSection, loading: Loading) -> Check:
+def check_7(registry: Registry, project: Project, post: Section, loading: Loading) -> Check:
     """The post to baseplate weld: a ring of the post perimeter at the top of
     the baseplate, moment arm h - t_p; k_ds from theta at the governing point
     (W2); base metal on the baseplate side against the resultant (W5)."""
@@ -561,7 +561,7 @@ def _reaction_4b(registry: Registry, project: Project, loading: Loading, directi
     return sh, R, label
 
 
-def check_4b(registry: Registry, project: Project, post: PipeSection, inter: PipeSection | None,
+def check_4b(registry: Registry, project: Project, post: Section, inter: Section | None,
              loading: Loading) -> WeldCheck:
     """The intermediate rail to post weld (S4-8 to S4-12): a flat ring of the
     intermediate rail's perimeter at the post face, a simple shear
@@ -582,7 +582,7 @@ def check_4b(registry: Registry, project: Project, post: PipeSection, inter: Pip
         return chk
 
     # Past the "none" return above there is an intermediate rail: its section and its member.
-    inter = cast(PipeSection, inter)
+    inter = cast(Section, inter)
     int_member = cast(Member, project.intermediate_member)
     same = state == SAME_AS_TOP
     head_guard: list[Line] = []
@@ -636,8 +636,8 @@ def check_4b(registry: Registry, project: Project, post: PipeSection, inter: Pip
     # Base metal at both fusion faces, each in shear rupture against the
     # in-plane shear; the lower allowable governs (Micah, 2026-10-09). W4: t_des.
     post_grade, int_grade = project.post.grade, int_member.grade
-    t_post = Part("t_post", 't_"post"', post.tdes, f"Post design wall thickness, {post.label}", DB)
-    t_int = Part("t_int", 't_"int"', inter.tdes, f"Intermediate rail design wall thickness, {inter.label}", DB)
+    t_post = Part("t_post", 't_"post"', post.tdes, f"Post design wall thickness, {post.label}", post.source)
+    t_int = Part("t_int", 't_"int"', inter.tdes, f"Intermediate rail design wall thickness, {inter.label}", inter.source)
     base_post = base_metal(registry, "Base metal: post wall fusion face (chord)", FU_ENTRY[post_grade],
                            f"Tensile strength, {post_grade}", t_post, sub="BM,post", key="BM_post")
     base_int = base_metal(registry, "Base metal: intermediate rail wall fusion face (branch)", FU_ENTRY[int_grade],

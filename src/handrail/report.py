@@ -22,7 +22,7 @@ from handrail.directions import LATERAL
 from handrail.reactions import Reactions, ReactionSet
 from handrail.registry import Registry
 from handrail.results import Case, Check, Results
-from handrail.shapes import PipeSection
+from handrail.shapes import Section
 from handrail.welds import WeldCase
 from handrail.version import Stamp
 
@@ -500,7 +500,7 @@ def build_source(results: Results, registry: Registry, stamp: Stamp) -> str:
     state = proj.intermediate_rail.state
     if state == OWN_SECTION:
         member = cast(Member, proj.intermediate_member)
-        inter_label = cast(PipeSection, results.inter).label
+        inter_label = cast(Section, results.inter).label
         src.append(f"#text({typst_str(f'Intermediate rail: {inter_label}, {member.grade}.')})")
         src.append(_lines(results.inter_section_lines))
     elif state == SAME_AS_TOP:

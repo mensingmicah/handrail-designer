@@ -11,7 +11,7 @@ from handrail.calc import Line, Sheet, Sym, chain, compare, fmt_g, fmt_sig, mini
 from handrail.errors import SectionStop
 from handrail.materials import FY_ENTRY
 from handrail.registry import Registry
-from handrail.shapes import DB, PipeSection
+from handrail.shapes import Section
 from handrail.stops import Stop
 
 
@@ -24,7 +24,7 @@ class Capacity:
     flags: list[str]
 
 
-def flexural_capacity(registry: Registry, rail: PipeSection, grade: str) -> Capacity:
+def flexural_capacity(registry: Registry, rail: Section, grade: str) -> Capacity:
     """Classify the section and compute M_n/Omega_b. Raises SectionStop.
 
     Every coefficient and citation in the printed lines and the stop
@@ -42,7 +42,7 @@ def flexural_capacity(registry: Registry, rail: PipeSection, grade: str) -> Capa
     )
     Fy = sh.code_value("F_y", "F_y", FY_ENTRY[grade], f"Yield stress, {grade}")
     E = sh.code_value("E", "E", "material.steel.E", "Modulus of elasticity")
-    lam = sh.given("lambda", "lambda", rail.D_t, "lambda = D/t, tabulated (design wall)", DB)
+    lam = sh.given("lambda", "lambda", rail.D_t, "lambda = D/t, tabulated (design wall)", rail.source)
     lim = sh.line("lambda_lim", "lambda_\"lim\"", sh.coeff(app.id) * E / Fy, "Applicability limit on D/t")
     lp = sh.line("lambda_p", "lambda_p", sh.coeff(lp_e.id) * E / Fy, "Compact limit, round HSS in flexure")
     lr = sh.line("lambda_r", "lambda_r", sh.coeff(lr_e.id) * E / Fy, "Noncompact limit, round HSS in flexure")
@@ -72,7 +72,7 @@ def flexural_capacity(registry: Registry, rail: PipeSection, grade: str) -> Capa
         cite_ids=("aisc360.F8.no_ltb",),
     )
 
-    Z = sh.given("Z", "Z", rail.Z, "Plastic section modulus", DB)
+    Z = sh.given("Z", "Z", rail.Z, "Plastic section modulus", rail.source)
     Mp = sh.line("M_p", "M_p", Fy * Z, "Plastic moment (yielding)", cite_ids=("aisc360.eq.F8-1",),
                  unit="lbf*inch")
     flags = []
@@ -94,7 +94,7 @@ def flexural_capacity(registry: Registry, rail: PipeSection, grade: str) -> Capa
             f"NONCOMPACT: {name} D/t = {D_t:g} exceeds lambda_p = {fmt_sig(lp.value)} "
             f"(lambda_r = {fmt_sig(lr.value)}); Mn reduced by local buckling, {f82.cite}."
         )
-        S = sh.given("S", "S", rail.S, "Elastic section modulus", DB)
+        S = sh.given("S", "S", rail.S, "Elastic section modulus", rail.source)
         Mlb = sh.line("M_n_LB", "M_(n,\"LB\")", (sh.coeff("aisc360.eq.F8-2.coeff") * E / lam + Fy) * S,
                       "Local buckling, noncompact wall", cite_ids=(f82.id,), unit="lbf*inch")
         Mn = sh.line("M_n", "M_n", minimum(Mp, Mlb), "Lower of yielding and local buckling",

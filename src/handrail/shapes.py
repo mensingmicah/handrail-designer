@@ -18,7 +18,8 @@ class ShapeNotFound(InputError):
     """The designation is not in the shapes database."""
 
 
-# The citation printed beside every value taken from the database.
+# The source of a standard section: the citation printed beside every value
+# taken from the database (Section.source).
 DB = "AISC Shapes Database v16.0"
 
 
@@ -36,19 +37,54 @@ RECT_BAR = "solid rectangular bar"
 
 
 @dataclass(frozen=True)
-class PipeSection:
+class Axis:
+    """A section's properties about one principal axis."""
+
+    I: Q_   # moment of inertia
+    S: Q_   # elastic section modulus
+    Z: Q_   # plastic section modulus
+    r: Q_   # radius of gyration
+
+
+@dataclass(frozen=True)
+class Section:
+    """One type for every section (S5-1): its family, where its values come
+    from, and its properties about both principal axes.
+
+    ``source`` is the citation printed beside every value taken from the
+    section: the shapes database for a standard section. A round section
+    has x = y. I, S, Z and r below read the x axis, the single value every
+    check reads today; which axis each check reads for a section that is
+    not round is slice 6's decision.
+    """
+
     label: str   # AISC_Manual_Label, as printed in the calc
+    family: str  # one of the families the per-joint tables name (joints.py)
+    source: str  # the citation printed beside each of its values
     W: Q_        # nominal weight
     A: Q_
     OD: Q_
     tnom: Q_
     tdes: Q_
     D_t: float   # D/t as tabulated
-    I: Q_
-    S: Q_
-    Z: Q_
-    r: Q_        # radius of gyration (rx; equal to ry for a pipe)
-    family: str = PIPE
+    x: Axis
+    y: Axis
+
+    @property
+    def I(self) -> Q_:
+        return self.x.I
+
+    @property
+    def S(self) -> Q_:
+        return self.x.S
+
+    @property
+    def Z(self) -> Q_:
+        return self.x.Z
+
+    @property
+    def r(self) -> Q_:
+        return self.x.r
 
 
 @cache
@@ -57,7 +93,7 @@ def _pipe_table() -> dict:
         return tomllib.load(f)
 
 
-def pipe(designation: str) -> PipeSection:
+def pipe(designation: str) -> Section:
     """Look up an AISC pipe by designation, ignoring case and spaces."""
     table = _pipe_table()
     key = designation.replace(" ", "").upper()
@@ -65,11 +101,12 @@ def pipe(designation: str) -> PipeSection:
         if label.upper() == key:
             u = table["units"]
             q = lambda name, row=row, u=u: Q_(row[name], u[name])
-            return PipeSection(
-                label=label,
+            return Section(
+                label=label, family=PIPE, source=DB,
                 W=q("W"), A=q("A"), OD=q("OD"),
                 tnom=q("tnom"), tdes=q("tdes"), D_t=row["D/t"],
-                I=q("Ix"), S=q("Sx"), Z=q("Zx"), r=q("rx"),
+                x=Axis(I=q("Ix"), S=q("Sx"), Z=q("Zx"), r=q("rx")),
+                y=Axis(I=q("Iy"), S=q("Sy"), Z=q("Zy"), r=q("ry")),
             )
     raise ShapeNotFound(
         f"{designation!r} is not an AISC pipe in {table['source_file']}", stop=Stop.SECTION_NOT_FOUND

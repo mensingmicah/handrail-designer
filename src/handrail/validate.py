@@ -12,7 +12,7 @@ from handrail.joints import JointMember
 from handrail.materials import BASEPLATE_GRADES, FEXX_ENTRY, FU_ENTRY, FY_ENTRY
 from handrail.project import SAME_AS_TOP, Member, Project, ProjectError
 from handrail.registry import Registry
-from handrail.shapes import PipeSection
+from handrail.shapes import Section
 from handrail.stops import Stop
 
 
@@ -72,7 +72,7 @@ def validate(project: Project, registry: Registry) -> None:
     if project.intermediate_member is not None:
         same = project.intermediate_rail.state == SAME_AS_TOP
         # Its own section was looked up above when it is not the top rail's.
-        branch = rail if same else cast(PipeSection, inter)
+        branch = rail if same else cast(Section, inter)
         joints.CHECK_4B.require(chord=at_post, branch=JointMember("intermediate rail", branch), error=ProjectError)
     joints.CHECK_7.require(at_post, error=ProjectError)
 
@@ -98,7 +98,7 @@ def validate(project: Project, registry: Registry) -> None:
     member = project.intermediate_member
     if member is not None:
         same = project.intermediate_rail.state == SAME_AS_TOP
-        sec = rail if same else cast(PipeSection, inter)
+        sec = rail if same else cast(Section, inter)
         if sec.OD > D_post:
             how = ("With same_as_top_rail = true it takes the top rail's section: uncheck same_as_top_rail and "
                    "enter a section no wider than the post." if same else

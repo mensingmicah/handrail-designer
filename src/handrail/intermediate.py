@@ -32,7 +32,7 @@ from handrail.directions import COMPONENT, COMPONENT_DIRECTIONS, DOWNWARD, HORIZ
 from handrail.project import NO_INTERMEDIATE, SAME_AS_TOP, DeflectionLimit, Member, Project
 from handrail.registry import Registry
 from handrail.results import Case, Check, Loading
-from handrail.shapes import DB, PipeSection
+from handrail.shapes import Section
 
 BENDING, DEFLECTION = "Bending", "Deflection"
 MIDSPAN, DOWN = "ej.component.midspan", "ej.component.downward"
@@ -79,13 +79,13 @@ def _bending_case(registry: Registry, project: Project, loading: Loading, cap, h
                          ratio=ratio.value, lines=sh.lines, limit_state=BENDING)
 
 
-def _deflection_case(registry: Registry, project: Project, inter: PipeSection, loading: Loading,
+def _deflection_case(registry: Registry, project: Project, inter: Section, loading: Loading,
                      limit: DeflectionLimit, head: list[Line], direction: Direction) -> ComponentCase:
     sh = Sheet(registry)
     sh.lines.extend(head)
     L = sh.given("L", "L", project.span.value, "Span, simple beam", "Input")
     E = sh.code_value("E", "E", "material.steel.E", "Modulus of elasticity")
-    I = sh.given("I_int", 'I_"int"', inter.I, f"Moment of inertia, {inter.label}", DB)
+    I = sh.given("I_int", 'I_"int"', inter.I, f"Moment of inertia, {inter.label}", inter.source)
     Pc = sh.given("P_c", "P_c", loading.P_c, "Component load, a point load at midspan", "Loading")
     DL = beams.point_deflection(sh, "Delta_L", "Delta_L", Pc, L, E, I, "Component load deflection, midspan",
                                 cite_ids=(MIDSPAN,))
@@ -112,7 +112,7 @@ def _deflection_case(registry: Registry, project: Project, inter: PipeSection, l
                          limit_state=DEFLECTION)
 
 
-def check_4a(registry: Registry, project: Project, inter: PipeSection | None, loading: Loading) -> Check:
+def check_4a(registry: Registry, project: Project, inter: Section | None, loading: Loading) -> Check:
     """The intermediate rail member: the full check, the same-as-top
     observation (S4-2), or "none"."""
     chk = Check("4a", "Intermediate rail", "M_a, Delta", 'M_n / Omega_b, Delta_"allow"')
@@ -143,7 +143,7 @@ def check_4a(registry: Registry, project: Project, inter: PipeSection | None, lo
         head = sh.lines
 
     # Past the "none" return above there is an intermediate rail: its section and its member.
-    inter = cast(PipeSection, inter)
+    inter = cast(Section, inter)
     grade = cast(Member, project.intermediate_member).grade
     cap = flexural_capacity(registry, inter, grade)
     chk.flags = cap.flags

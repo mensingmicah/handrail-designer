@@ -29,7 +29,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from handrail.errors import InputError
-from handrail.shapes import PIPE, RECT_BAR, RECT_HSS, RECT_TUBE, ROUND_BAR, ROUND_HSS, ROUND_TUBE, PipeSection
+from handrail.shapes import PIPE, RECT_BAR, RECT_HSS, RECT_TUBE, ROUND_BAR, ROUND_HSS, ROUND_TUBE, Section
 from handrail.stops import Stop
 
 # The families in table order, grouped as the tables print them: families
@@ -114,7 +114,7 @@ class JointMember:
     """A member at a joint: what the message calls it, and its section."""
 
     name: str            # "top rail", "post", "intermediate rail"
-    section: PipeSection
+    section: Section
 
 
 @dataclass(frozen=True)
