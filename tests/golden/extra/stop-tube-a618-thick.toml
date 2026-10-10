@@ -1,0 +1,33 @@
+# Extra golden scenario stop-tube-a618-thick (tests/test_golden.py, the second tier).
+# The tool refuses this project; the error class and message are compared with stop-tube-a618-thick.stop.txt.
+# Inputs only: this file holds no value, and none is ever copied into a test case.
+
+[project]
+name = "char"
+
+[geometry]
+span = "5'-0\""
+post_height = 42
+baseplate_thickness = "1/2"
+
+[top_rail]
+shape = "round tube"
+OD = 8
+wall_nominal = 0.25
+
+[post]
+shape = "round tube"
+OD = 8
+wall_nominal = 1.6
+grade = "A618 Gr II"
+
+[welds]
+rail_to_post = "1/8"
+post_to_baseplate = "1/4"
+
+[baseplate]
+B = 10
+N = 10
+
+[intermediate_rail]
+none = true

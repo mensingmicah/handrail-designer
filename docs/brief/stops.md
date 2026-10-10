@@ -103,7 +103,7 @@ for inputs the engineer did not intend (src/handrail/project.py).
 | `file.invalid_toml` | The project file is not valid TOML. | Project file (output.md) | `test_stop_is_triggered[file.invalid_toml]` |
 | `file.unknown_key` | A table or key is not one the tool reads; a misspelled override would otherwise fall back silently to the code value. | Strict reader (slice 1) | `test_stop_is_triggered[file.unknown_key]` |
 | `file.not_a_table` | A value is given where a table is expected. | Strict reader (slice 1) | `test_stop_is_triggered[file.not_a_table]` |
-| `file.missing_key` | A required table or key is left out: the post, the weld sizes and the baseplate's B and N have no default. | D9 (slice 2); W12 (slice 3); S4-6 | `test_stop_is_triggered[file.missing_key]` |
+| `file.missing_key` | A required table or key is left out: the post, the weld sizes and the baseplate's B and N have no default, and neither have a custom round tube's `shape`, `OD` and `wall_nominal`. | D9 (slice 2); W12 (slice 3); S4-6; S5-8 | `test_stop_is_triggered[file.missing_key]` |
 | `file.not_text` | A text field is not quoted text. | Strict reader (slice 1) | `test_stop_is_triggered[file.not_text]` |
 | `file.not_a_text_list` | References or assumptions are not a list of quoted text. | Strict reader (slice 1) | `test_stop_is_triggered[file.not_a_text_list]` |
 | `file.not_a_boolean` | A true or false field is quoted text; the text "false" must never read as true. | Strict reader (slice 1) | `test_stop_is_triggered[file.not_a_boolean]` |
@@ -113,6 +113,9 @@ for inputs the engineer did not intend (src/handrail/project.py).
 | `file.dimension_not_positive` | A dimension is zero. | Dimension entry (inputs.md); D9 for the baseplate thickness | `test_stop_is_triggered[file.dimension_not_positive]` |
 | `geometry.baseplate_thickness_not_below_post_height` | The baseplate thickness is not less than the post height h. | D9 (slice 2; inputs.md) | `test_stop_is_triggered[geometry.baseplate_thickness_not_below_post_height]` |
 | `loads.exemption_needs_statement` | The distributed-load exemption is ticked with no statement of why ASCE 7-22 §4.5.1.1 exempts the guard. | Distributed-load exemption (inputs.md) | `test_stop_is_triggered[loads.exemption_needs_statement]` |
+| `member.section_with_custom_dimensions` | A member gives `section` together with a custom round tube's `shape`, `OD` or `wall_nominal`: it is one or the other. | S5-8 (inputs.md); conflicting inputs | `test_stop_is_triggered[member.section_with_custom_dimensions]` |
+| `member.shape_unsupported` | A custom section's `shape` is not "round tube", the only custom shape so far. | S5-8; S5-1 (rectangular tubes arrive in slice 6) | `test_stop_is_triggered[member.shape_unsupported]` |
+| `member.wall_half_od_or_more` | A custom round tube's nominal wall is half its OD or more: not a tube. | S5-8 (inputs.md) | `test_stop_is_triggered[member.wall_half_od_or_more]` |
 | `intermediate.none_and_same` | The intermediate rail is both "none" and "same as the top rail". | S4-1; conflicting inputs (Micah, 2026-10-09) | `test_stop_is_triggered[intermediate.none_and_same]` |
 | `intermediate.none_with_inputs` | "None", with a section, a grade, an intermediate weld size or an intermediate deflection limit given. | S4-1; conflicting inputs (Micah, 2026-10-09) | `test_stop_is_triggered[intermediate.none_with_inputs]` |
 | `intermediate.same_with_inputs` | "Same as the top rail", with a section, a grade, an intermediate weld size or an intermediate deflection limit given. | S4-1; conflicting inputs (Micah, 2026-10-09) | `test_stop_is_triggered[intermediate.same_with_inputs]` |
@@ -207,4 +210,6 @@ Listed here when their code lands, in the same commit: the chord D/t limit
 (S5-3); the OD tolerance inside W8 and S4-11 (S5-4, a change to two
 existing stops); the A618 wall over 1-1/2 in (S5-7); the custom tube input
 stops (S5-8); a grade with no Fy or Fu entry for the shape (the existing
-`grade.unsupported`, now per shape).
+`grade.unsupported`, now per shape). Landed so far: all but the chord D/t
+limit. A custom tube that is slender, or beyond the §F8 limit, meets the
+existing stops on its computed D/t.

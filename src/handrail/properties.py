@@ -38,8 +38,12 @@ def grade_notes(registry: Registry, sec: Section, grade: str) -> list[str]:
 
 
 def section_lines(registry: Registry, sec: Section, with_r: bool = False) -> list[Line]:
-    """Section properties as published. The post block adds r, which only
-    the compression check uses; the rail block prints as it did in slice 1."""
+    """Section properties: as published for a database section, and for a
+    custom section the lines that computed them from the dimensions entered
+    (tube.py). The post block adds r, which only the compression check
+    uses; the rail block prints as it did in slice 1."""
+    if sec.custom:
+        return [ln for ln in sec.computed if with_r or ln.key != "r"]
     sh = Sheet(registry)
     sh.given("D", "D", sec.OD, f"{sec.label}: outside diameter", sec.source)
     sh.given("t_nom", 't_"nom"', sec.tnom, "Nominal wall thickness", sec.source)

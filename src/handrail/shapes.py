@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from functools import cache
 from pathlib import Path
 
+from handrail.calc import Line, fmt_g, fmt_sig
 from handrail.errors import InputError
 from handrail.shapes_extract import PIPE_TOML, ROUND_HSS_TOML
 from handrail.stops import Stop
@@ -22,6 +23,9 @@ class ShapeNotFound(InputError):
 # The source of a standard section: the citation printed beside every value
 # taken from the database (Section.source).
 DB = "AISC Shapes Database v16.0"
+# The source of a custom section: its values are computed on the section
+# properties page from the dimensions entered (tube.py).
+CUSTOM = "Section properties (custom section)"
 
 
 # Section families, as the per-joint tables name them (joints.py; S5-9).
@@ -53,7 +57,9 @@ class Section:
     from, and its properties about both principal axes.
 
     ``source`` is the citation printed beside every value taken from the
-    section: the shapes database for a standard section. A round section
+    section: the shapes database for a standard section, the section
+    properties page for a custom one, whose values are computed there from
+    the dimensions entered (``computed`` holds those lines). A round section
     has x = y. I, S, Z and r below read the x axis, the single value every
     check reads today; which axis each check reads for a section that is
     not round is slice 6's decision.
@@ -67,9 +73,26 @@ class Section:
     OD: Q_
     tnom: Q_
     tdes: Q_
-    D_t: float   # D/t as tabulated
+    D_t: float   # D/t: as tabulated, or as computed for a custom section
     x: Axis
     y: Axis
+    custom: bool = False               # computed from the dimensions entered, not looked up
+    computed: tuple[Line, ...] = ()    # a custom section: the calc lines that computed its values
+
+    @property
+    def how(self) -> str:
+        """How the section's values were arrived at, as a calc line's note says it."""
+        return "computed" if self.custom else "tabulated"
+
+    def ratio_text(self, ratio: float) -> str:
+        """D/t as printed: a tabulated ratio as published, a computed one to four significant figures."""
+        return fmt_sig(ratio) if self.custom else fmt_g(ratio)
+
+    @property
+    def W_text(self) -> str:
+        """The weight in lb/ft as a note prints it: as published, or to four significant figures."""
+        W = self.W.m_as("lbf/ft")
+        return fmt_sig(W) if self.custom else f"{W:g}"
 
     @property
     def I(self) -> Q_:

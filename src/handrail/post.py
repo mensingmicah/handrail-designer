@@ -24,7 +24,7 @@ from dataclasses import dataclass, field
 from typing import Any, cast
 from collections.abc import Callable
 
-from handrail.calc import PI, Const, Line, Sheet, Sym, Term, compare, fmt_g, fmt_sig, number, sqrt
+from handrail.calc import PI, Const, Line, Sheet, Sym, Term, compare, fmt_sig, number, sqrt
 from handrail.demand import ASD, Demand, Given, Wording, demand, live_at_post
 from handrail.directions import (
     DIRECTIONS, DISTRIBUTED, DOWNWARD, LOAD_TYPES, UPWARD, Direction, Kind, LoadType, kind, unknown,
@@ -82,7 +82,7 @@ def compression_capacity(registry: Registry, project: Project, post: Section) ->
     Fy = yield_stress(registry, grade, post).line(head, "F_y", "F_y")
     E = head.code_value("E", "E", "material.steel.E", "Modulus of elasticity")
     # The same D/t line the flexure block prints, so moment cases skip it here.
-    lam = head.given("lambda", "lambda", post.D_t, "lambda = D/t, tabulated (design wall)", post.source)
+    lam = head.given("lambda", "lambda", post.D_t, f"lambda = D/t, {post.how} (design wall)", post.source)
 
     sh = Sheet(registry)
     lr_e = registry.get("aisc360.B4.1a.round_hss.lambda_r")
@@ -90,11 +90,11 @@ def compression_capacity(registry: Registry, project: Project, post: Section) ->
     lr = sh.line("lambda_r_c", "lambda_(r,c)", sh.coeff(lr_e.id) * E / Fy, "Slender limit, round HSS in compression")
     # Each comparison below is evaluated once; its stop or branch and its
     # printed decision line come from that evaluation (ADR 0002).
-    D_t = post.D_t
-    slender = compare(lam.stated(fmt_g), ">", lr.stated(fmt_sig))
+    D_t = post.ratio_text(post.D_t)
+    slender = compare(lam.stated(post.ratio_text), ">", lr.stated(fmt_sig))
     if slender:
         raise SectionStop(
-            f"{post.label}: wall is slender in compression, D/t = {D_t:g} {slender.op} lambda_r = "
+            f"{post.label}: wall is slender in compression, D/t = {D_t} {slender.op} lambda_r = "
             f"{lr_e.value}E/Fy = {fmt_sig(lr.value)} ({lr_e.cite}). The tool does not check slender sections.",
             stop=Stop.SECTION_SLENDER_IN_COMPRESSION
         )

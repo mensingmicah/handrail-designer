@@ -1,1 +1,1 @@
-ProjectError: project file: unknown key 'top_rail.sektion'. Allowed here: section, grade
+ProjectError: project file: unknown key 'top_rail.sektion'. Allowed here: section, grade, shape, OD, wall_nominal

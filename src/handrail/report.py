@@ -485,6 +485,12 @@ def build_source(results: Results, registry: Registry, stamp: Stamp) -> str:
         # Its own section always has its own weld size (project.py requires it).
         dims.append(("Fillet weld, intermediate rail to post",
                      cast(Dimension, proj.welds.intermediate_rail_to_post)))
+    # A custom round tube's dimensions, as entered (S5-8).
+    for name, member in (("Top rail", proj.top_rail), ("Post", proj.post),
+                         ("Intermediate rail", proj.intermediate_rail.member)):
+        if member is not None and member.OD is not None and member.wall_nominal is not None:
+            dims.append((f"{name}, custom round tube: outside diameter", member.OD))
+            dims.append((f"{name}, custom round tube: nominal wall", member.wall_nominal))
     rows = [[label, d.entered, d.normalized, fmt_quantity_plain(d.value)] for label, d in dims]
     src.append(_table(["Dimension", "As entered", "Read as", "Inches"], rows, "(1fr, auto, auto, auto)"))
     src.append("Derived lengths, each computed in the calc where it is used:")
@@ -492,18 +498,21 @@ def build_source(results: Results, registry: Registry, stamp: Stamp) -> str:
 
     # Section properties
     src.append("= Section properties")
-    src.append(f"#text({typst_str(f'Top rail: {results.rail.label}, {_grade(proj.top_rail)}.')}) "
-               "Properties are used exactly as published in the AISC Shapes Database v16.0.")
+    sources = _SourceSentences(registry)
+    src.append(f"#text({typst_str(f'Top rail: {results.rail.label}, {_grade(proj.top_rail)}.')})"
+               + sources.after(results.rail))
     src += _flags(results.rail_notes)
     src.append(_lines(results.section_lines))
-    src.append(f"#text({typst_str(f'Post: {results.post.label}, {_grade(proj.post)}.')})")
+    src.append(f"#text({typst_str(f'Post: {results.post.label}, {_grade(proj.post)}.')})"
+               + sources.after(results.post))
     src += _flags(results.post_notes)
     src.append(_lines(results.post_section_lines))
     state = proj.intermediate_rail.state
     if state == OWN_SECTION:
         member = cast(Member, proj.intermediate_member)
         inter_label = cast(Section, results.inter).label
-        src.append(f"#text({typst_str(f'Intermediate rail: {inter_label}, {_grade(member)}.')})")
+        src.append(f"#text({typst_str(f'Intermediate rail: {inter_label}, {_grade(member)}.')})"
+                   + sources.after(cast(Section, results.inter)))
         src += _flags(results.inter_notes)
         src.append(_lines(results.inter_section_lines))
     elif state == SAME_AS_TOP:
@@ -552,6 +561,29 @@ def build_source(results: Results, registry: Registry, stamp: Stamp) -> str:
     for token, value in fills.items():
         src[0] = src[0].replace(token, value)
     return "\n\n".join(src) + "\n"
+
+
+class _SourceSentences:
+    """The sentence after a member's name on the section properties page,
+    saying where its properties come from (F10 item 2). A database section:
+    the sentence the page has always printed, once, after the first
+    database section. A custom section: its own sentence, after each."""
+
+    DATABASE = "Properties are used exactly as published in the AISC Shapes Database v16.0."
+
+    def __init__(self, registry: Registry):
+        self.registry = registry
+        self.database_said = False
+
+    def after(self, sec: Section) -> str:
+        if sec.custom:
+            rule = self.registry.get("aisc360.B4.2.design_wall")
+            return (" Properties are computed below from the dimensions entered, on the design wall thickness of "
+                    f"{rule.cite}; the weight is on the nominal wall.")
+        if self.database_said:
+            return ""
+        self.database_said = True
+        return f" {self.DATABASE}"
 
 
 def _grade(member: Member) -> str:

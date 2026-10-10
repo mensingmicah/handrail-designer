@@ -176,6 +176,24 @@ def _(tmp_path, monkeypatch):
     _load(loads={"uniform_exemption": {"applies": True}})
 
 
+TUBE = {"shape": "round tube", "OD": 2.375, "wall_nominal": 0.12}
+
+
+@trigger(Stop.MEMBER_SECTION_WITH_CUSTOM_DIMENSIONS)
+def _(tmp_path, monkeypatch):
+    _load(top_rail={**TUBE})  # with the base project's section = "Pipe2STD"
+
+
+@trigger(Stop.MEMBER_SHAPE_UNSUPPORTED)
+def _(tmp_path, monkeypatch):
+    project.from_dict({**_raw(), "post": {**TUBE, "shape": "square tube"}})
+
+
+@trigger(Stop.MEMBER_WALL_HALF_OD_OR_MORE)
+def _(tmp_path, monkeypatch):
+    project.from_dict({**_raw(), "post": {**TUBE, "wall_nominal": 1.1875}})
+
+
 @trigger(Stop.INTERMEDIATE_NONE_AND_SAME)
 def _(tmp_path, monkeypatch):
     _load(intermediate_rail={"none": True, "same_as_top_rail": True})

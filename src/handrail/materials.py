@@ -187,15 +187,17 @@ def _with_default(registry: Registry, member: Member, family: str, top_rail_grad
     return dataclasses.replace(member, grade=default_grade(registry, family, top_rail_grade))
 
 
-def with_default_grades(project: Project, registry: Registry, rail: Section, post: Section,
-                        inter: Section | None) -> Project:
+def with_default_grades(project: Project, registry: Registry, rail: str, post: str, inter: str | None) -> Project:
     """The project with every grade the file left out filled in (S5-5,
-    S5-10). ``inter`` is the intermediate rail's own section, or None. A
-    family with no default keeps its blank grade, which no shape supports."""
-    top = _with_default(registry, project.top_rail, rail.family)
+    S5-10). ``rail``, ``post`` and ``inter`` are the members' section
+    families; ``inter`` is that of the intermediate rail's own section, or
+    None. The family is enough, and is known before a custom tube's section
+    is, whose design wall depends on its grade. A family with no default
+    keeps its blank grade, which no shape supports."""
+    top = _with_default(registry, project.top_rail, rail)
     intermediate = project.intermediate_rail
     own = intermediate.member
     if intermediate.state == OWN_SECTION and own is not None and inter is not None:
-        intermediate = dataclasses.replace(intermediate, member=_with_default(registry, own, inter.family, top.grade))
-    return dataclasses.replace(project, top_rail=top, post=_with_default(registry, project.post, post.family),
+        intermediate = dataclasses.replace(intermediate, member=_with_default(registry, own, inter, top.grade))
+    return dataclasses.replace(project, top_rail=top, post=_with_default(registry, project.post, post),
                                intermediate_rail=intermediate)

@@ -68,7 +68,7 @@ def build_loading(project: Project, registry: Registry, rail: Section, post: Sec
                 cite=f"Input; {code_Pc.cite}",
             ).value
 
-    w_D = sh.given("w_D", "w_D", rail.W, f"Top rail self-weight: tabulated W = {rail.W.m_as('lbf/ft'):g} lb/ft", rail.source)
+    w_D = sh.given("w_D", "w_D", rail.W, f"Top rail self-weight: {rail.how} W = {rail.W_text} lb/ft", rail.source)
 
     # Dead load reaching the post (docs/plans/slice-2.md, D2). The critical
     # section is the top of the baseplate (D4), so the post weight is taken
@@ -81,7 +81,7 @@ def build_loading(project: Project, registry: Registry, rail: Section, post: Sec
                      cite="Stated assumption: post fixed at the top of the baseplate", unit="inch")
     L_post_line = sh.lines[-1]
     W_post = sh.given("W_post", 'W_"post"', post.W,
-                      f"Post self-weight: {post.label}, tabulated W = {post.W.m_as('lbf/ft'):g} lb/ft", post.source)
+                      f"Post self-weight: {post.label}, {post.how} W = {post.W_text} lb/ft", post.source)
     D_post = sh.line("D_post", 'D_"post"', W_post * L_post, "Post dead load, full weight at the base",
                      cite_ids=(dl,), unit="lbf")
     s = sh.given("L", "L", project.span.value, "Span: the tributary length for the post (stated assumption)", "Input")
@@ -96,7 +96,7 @@ def build_loading(project: Project, registry: Registry, rail: Section, post: Sec
         # Check 3's D (docs/plans/slice-4.md, where the dead load goes).
         same = " (same section as the top rail)" if inter is rail else ""
         w_D_int = sh.given("w_D_int", 'w_(D,"int")', inter.W, f"Intermediate rail self-weight: {inter.label}{same}, "
-                           f"tabulated W = {inter.W.m_as('lbf/ft'):g} lb/ft", inter.source)
+                           f"{inter.how} W = {inter.W_text} lb/ft", inter.source)
         D_int = sh.line("D_int", 'D_"int"', w_D_int * s, "Intermediate rail dead load delivered to the post",
                         cite_ids=(dl,), unit="lbf")
         P_D = sh.line("P_D", "P_D", D_rail + D_int + D_post, "D at the post: axial dead load at the top of the baseplate",

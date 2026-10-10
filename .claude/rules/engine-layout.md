@@ -17,6 +17,7 @@ convention below is held by a test, named beside it.
 | directions.py | Direction, LoadType and Kind enums; the envelope orders |
 | stops.py, errors.py | The id of every stop; the error classes that carry one |
 | shapes.py | Section, the one type for every section (family, source, both axes); the family names; the database lookup |
+| tube.py | A custom round tube: its section computed from the dimensions entered, each property a calc line |
 | joints.py | Which section families may meet at each joint, as data |
 | materials.py | Which registry entry holds Fy and Fu for a grade, shape and wall; the default grade by shape |
 | members.py | Each member as the checks read it: its section, and the project with every default grade filled in |
@@ -39,7 +40,7 @@ another inside a function (tests/test_structure.py).
 
 - **A printed-text change shows in the golden snapshots**
   (tests/test_golden.py, tests/golden/). Two tiers: the calcs Micah
-  reviews (cases 1 to 5 and the example), and tests/golden/extra/, 95
+  reviews (cases 1 to 5 and the example), and tests/golden/extra/, 104
   machinery scenarios for the branches and stops those never reach. A
   refactor leaves both tiers
   byte-identical. A change made on purpose regenerates them in a commit of

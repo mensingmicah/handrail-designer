@@ -15,6 +15,8 @@ for inputs the engineer didn't intend:
   thickness must be less than the post height;
 - both weld sizes are required, with no default (docs/brief/inputs.md);
 - the baseplate's plan dimensions B and N are required, with no default (S4-6);
+- a member is a standard section (section) or a custom round tube (shape,
+  OD and wall_nominal), never both (S5-8);
 - the intermediate rail is in one of three states (S4-1): same as the top
   rail (the default), its own section, or none. Inputs that conflict with
   the state stop the calc, never silently ignored (docs/plans/slice-4.md):
@@ -62,9 +64,17 @@ class Member:
     here with ``grade_defaulted`` set; the engine fills it in by shape
     before anything reads it (materials.with_default_grades; S5-5, S5-10)."""
 
-    section: str  # AISC designation, e.g. "Pipe1-1/2STD"
+    section: str  # AISC designation, e.g. "Pipe1-1/2STD"; blank for a custom round tube
     grade: str = ""
     grade_defaulted: bool = False
+    # A custom round tube (S5-8): its outside diameter and its nominal wall,
+    # in place of ``section``. The wall entered is always the nominal wall.
+    OD: Dimension | None = None
+    wall_nominal: Dimension | None = None
+
+    @property
+    def custom(self) -> bool:
+        return self.OD is not None
 
 
 @dataclass(frozen=True)
@@ -159,9 +169,10 @@ class Project:
 SCHEMA = {
     "project": {"name": None, "phase": None, "description": None, "references": None, "assumptions": None},
     "geometry": {"span": None, "post_height": None, "baseplate_thickness": None},
-    "top_rail": {"section": None, "grade": None},
-    "post": {"section": None, "grade": None},
-    "intermediate_rail": {"same_as_top_rail": None, "none": None, "section": None, "grade": None},
+    "top_rail": {"section": None, "grade": None, "shape": None, "OD": None, "wall_nominal": None},
+    "post": {"section": None, "grade": None, "shape": None, "OD": None, "wall_nominal": None},
+    "intermediate_rail": {"same_as_top_rail": None, "none": None, "section": None, "grade": None,
+                          "shape": None, "OD": None, "wall_nominal": None},
     "baseplate": {"B": None, "N": None, "grade": None},
     "welds": {"rail_to_post": None, "post_to_baseplate": None, "electrode": None,
               "intermediate_rail_to_post": None},
@@ -255,11 +266,42 @@ def _grade(table: dict, where: str) -> tuple[str, bool]:
     return "", True
 
 
+# A custom round tube is entered with these keys in place of ``section`` (S5-8).
+CUSTOM_KEYS = ("shape", "OD", "wall_nominal")
+ROUND_TUBE_SHAPE = "round tube"
+
+
+def _section_or_tube(t: dict, where: str) -> tuple[str, Dimension | None, Dimension | None]:
+    """The member's designation, or a custom round tube's outside diameter
+    and nominal wall. Both together stop, as conflicting inputs; so does a
+    shape other than a round tube, and a wall of half the OD or more."""
+    custom = [key for key in CUSTOM_KEYS if key in t]
+    if not custom:
+        return _str(_need(t, "section", where), f"{where}.section"), None, None
+    if "section" in t:
+        raise ProjectError(
+            f"[{where}] section is given together with {', '.join(custom)}. A member is either a standard section "
+            f"(section) or a custom round tube (shape = \"{ROUND_TUBE_SHAPE}\", OD and wall_nominal), not both. "
+            f"Remove one.", stop=Stop.MEMBER_SECTION_WITH_CUSTOM_DIMENSIONS)
+    shape = _str(_need(t, "shape", where), f"{where}.shape")
+    if shape != ROUND_TUBE_SHAPE:
+        raise ProjectError(f"[{where}] shape {shape!r}: this version supports \"{ROUND_TUBE_SHAPE}\" only",
+                           stop=Stop.MEMBER_SHAPE_UNSUPPORTED)
+    OD = _dimension(t, "OD", where)
+    wall = _dimension(t, "wall_nominal", where)
+    if not 2 * wall.value < OD.value:
+        raise ProjectError(
+            f"[{where}] wall_nominal ({wall.entered}) is half the OD ({OD.entered}) or more, which is not a tube. "
+            f"The wall entered is the nominal wall thickness. Check the inputs.",
+            stop=Stop.MEMBER_WALL_HALF_OD_OR_MORE)
+    return "", OD, wall
+
+
 def _member(raw: dict, where: str) -> Member:
     t = _need(raw, where, "top level")
     grade, defaulted = _grade(t, where)
-    return Member(section=_str(_need(t, "section", where), f"{where}.section"), grade=grade,
-                  grade_defaulted=defaulted)
+    section, OD, wall = _section_or_tube(t, where)
+    return Member(section=section, grade=grade, grade_defaulted=defaulted, OD=OD, wall_nominal=wall)
 
 
 def _given(table: dict, where: str, fields: dict) -> dict:
@@ -295,10 +337,10 @@ def _intermediate_rail(raw: dict, welds: Welds) -> IntermediateRail:
     none = _bool(t["none"], f"{w}.none") if "none" in t else False
     same_given = "same_as_top_rail" in t
     same = _bool(t["same_as_top_rail"], f"{w}.same_as_top_rail") if same_given else True  # the default (S4-1)
-    section = _str(t["section"], f"{w}.section") if "section" in t else None
     grade_given = "grade" in t
     own_inputs = [name for name, given in (
-        ("[intermediate_rail] section", section is not None),
+        ("[intermediate_rail] section", "section" in t),
+        *((f"[intermediate_rail] {key}", key in t) for key in CUSTOM_KEYS),
         ("[intermediate_rail] grade", grade_given),
         ("[welds] intermediate_rail_to_post", welds.intermediate_rail_to_post is not None),
         ("[deflection.intermediate_rail]", "intermediate_rail" in raw.get("deflection", {})),
@@ -323,7 +365,7 @@ def _intermediate_rail(raw: dict, welds: Welds) -> IntermediateRail:
                 stop=Stop.INTERMEDIATE_SAME_WITH_INPUTS
             )
         return IntermediateRail(state=SAME_AS_TOP)
-    if section is None:
+    if "section" not in t and not any(key in t for key in CUSTOM_KEYS):
         raise ProjectError("[intermediate_rail] same_as_top_rail = false needs a section "
                            "(or none = true for no intermediate rail)", stop=Stop.INTERMEDIATE_OWN_NEEDS_SECTION)
     if welds.intermediate_rail_to_post is None:
@@ -331,9 +373,10 @@ def _intermediate_rail(raw: dict, welds: Welds) -> IntermediateRail:
                            "has its own section (same_as_top_rail = false)",
                            stop=Stop.INTERMEDIATE_OWN_NEEDS_WELD_SIZE)
     grade, defaulted = _grade(t, w)  # a grade left out: S5-10, refining S4-1
+    section, OD, wall = _section_or_tube(t, w)
     return IntermediateRail(
         state=OWN_SECTION,
-        member=Member(section=section, grade=grade, grade_defaulted=defaulted),
+        member=Member(section=section, grade=grade, grade_defaulted=defaulted, OD=OD, wall_nominal=wall),
         deflection=_deflection_limit(raw, "intermediate_rail", RAIL_DEFLECTION),
     )
 

@@ -1,0 +1,1 @@
+ProjectError: [top_rail] wall_nominal (1-3/16) is half the OD (2.375) or more, which is not a tube. The wall entered is the nominal wall thickness. Check the inputs.

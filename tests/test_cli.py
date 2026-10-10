@@ -225,7 +225,12 @@ def _full_project_files():
     raw["welds"]["intermediate_rail_to_post"] = "1/8"
     raw["deflection"]["intermediate_rail"] = {"limit_L_over": 120, "bypass": False}
     none["intermediate_rail"] = {"same_as_top_rail": False, "none": True}
-    return raw, none
+    # A member is a section or a custom round tube, never both (S5-8): a third file of tubes.
+    tubes = copy.deepcopy(raw)
+    for table, od in (("top_rail", 2.375), ("post", 2.375), ("intermediate_rail", 1.66)):
+        del tubes[table]["section"]
+        tubes[table].update(shape="round tube", OD=od, wall_nominal="1/8")
+    return raw, none, tubes
 
 
 def test_the_parser_reads_every_key_schema_allows_and_no_other():

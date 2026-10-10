@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from handrail.calc import Line, Sheet, Sym, chain, compare, fmt_g, fmt_sig, minimum, mtext
+from handrail.calc import Line, Sheet, Sym, chain, compare, fmt_sig, minimum, mtext
 from handrail.errors import SectionStop
 from handrail.materials import yield_stress
 from handrail.registry import Registry
@@ -55,26 +55,26 @@ def flexural_capacity(registry: Registry, rail: Section, grade: str) -> Capacity
         )
     Fy = yield_stress(registry, grade, rail).line(sh, "F_y", "F_y")
     E = sh.code_value("E", "E", "material.steel.E", "Modulus of elasticity")
-    lam = sh.given("lambda", "lambda", rail.D_t, "lambda = D/t, tabulated (design wall)", rail.source)
+    lam = sh.given("lambda", "lambda", rail.D_t, f"lambda = D/t, {rail.how} (design wall)", rail.source)
     lim = sh.line("lambda_lim", "lambda_\"lim\"", sh.coeff(app.id) * E / Fy, "Applicability limit on D/t")
     lp = sh.line("lambda_p", "lambda_p", sh.coeff(lp_e.id) * E / Fy, "Compact limit, round HSS in flexure")
     lr = sh.line("lambda_r", "lambda_r", sh.coeff(lr_e.id) * E / Fy, "Noncompact limit, round HSS in flexure")
 
     # Each comparison is evaluated once; its stop, its branch and its printed
     # decision line all come from that evaluation (ADR 0002).
-    D_t, name = rail.D_t, rail.label
-    lam_t = lam.stated(fmt_g)
+    D_t, name = rail.ratio_text(rail.D_t), rail.label
+    lam_t = lam.stated(rail.ratio_text)
     applies = compare(lam_t, "<", lim.stated(fmt_sig))
     if not applies:
         raise SectionStop(
-            f"{name}: D/t = {D_t:g} is not less than the {app.cite} limit "
+            f"{name}: D/t = {D_t} is not less than the {app.cite} limit "
             f"{app.value}E/Fy = {fmt_sig(lim.value)}. The tool does not check this section.",
             stop=Stop.SECTION_BEYOND_F8_LIMIT
         )
     slender = compare(lam_t, ">", lr.stated(fmt_sig))
     if slender:
         raise SectionStop(
-            f"{name}: wall is slender in flexure, D/t = {D_t:g} {slender.op} lambda_r = {lr_e.value}E/Fy = "
+            f"{name}: wall is slender in flexure, D/t = {D_t} {slender.op} lambda_r = {lr_e.value}E/Fy = "
             f"{fmt_sig(lr.value)} ({lr_e.cite}). The tool does not check slender sections.",
             stop=Stop.SECTION_SLENDER_IN_FLEXURE
         )
@@ -104,7 +104,7 @@ def flexural_capacity(registry: Registry, rail: Section, grade: str) -> Capacity
         sh.decision(chain(compact.flipped(), slender), "NONCOMPACT", "Section classification: reduced capacity",
                     cite_ids=("aisc360.B4.1b.classification",))
         flags.append(
-            f"NONCOMPACT: {name} D/t = {D_t:g} exceeds lambda_p = {fmt_sig(lp.value)} "
+            f"NONCOMPACT: {name} D/t = {D_t} exceeds lambda_p = {fmt_sig(lp.value)} "
             f"(lambda_r = {fmt_sig(lr.value)}); Mn reduced by local buckling, {f82.cite}."
         )
         S = sh.given("S", "S", rail.S, "Elastic section modulus", rail.source)
