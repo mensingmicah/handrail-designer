@@ -60,11 +60,25 @@ drafted registry entries, git history and diffs, and every tool output (PDF, Typ
 write it as an open question in the calc and carry on with your own
 reading.
 
+Named, because each of these holds tool output or is derived from it:
+
+- **tests/golden/**, every file in it and in tests/golden/extra/: the
+  printed calcs and stop messages the tool produced, saved as snapshots.
+- **tests/golden_scenarios.py**, the inputs of the direct snapshots.
+- **Every other file under tests/**: every test file, every other case
+  file, and every other case's independent calc and values. In tests/ you
+  read only your own case file, through the command above, and your own
+  values template, tests/cases/independent/$ARGUMENTS.toml, in step 7.
+- **Everything in out/** except out/aisc-360-22.pdf, the Specification's
+  own text, which you may read. The rest of out/ is calc PDFs, review
+  workbooks and saved patches.
+
 ## Steps
 
 1. **Confirm the session is clean.** This session must not have read
-   src/, tests/, tool output or drafted registry entries before this
-   skill started. If it has, stop and tell Micah to start a fresh session.
+   src/, tests/ (tests/golden/ and tests/golden_scenarios.py included),
+   out/ other than out/aisc-360-22.pdf, tool output or drafted registry
+   entries before this skill started. If it has, stop and tell Micah to start a fresh session.
    Done when you have checked the transcript so far.
 2. **Read your sources.** Done when you have the case inputs, the plan's
    decisions, every verified entry and each section's row.

@@ -15,6 +15,7 @@ from dataclasses import dataclass
 from fractions import Fraction
 
 from handrail.errors import InputError
+from handrail.stops import Stop
 from handrail.units import Q_
 
 
@@ -40,7 +41,7 @@ _PATTERN = re.compile(
 def _fraction(text: str, entered: str) -> Fraction:
     num, den = text.split("/")
     if int(den) == 0:
-        raise DimensionError(f"{entered!r}: fraction has a zero denominator")
+        raise DimensionError(f"{entered!r}: fraction has a zero denominator", stop=Stop.DIMENSION_ZERO_DENOMINATOR)
     return Fraction(int(num), int(den))
 
 
@@ -50,15 +51,15 @@ def parse_inches(entered: str) -> float:
         entered = str(entered)
     text = entered.strip()
     if not text:
-        raise DimensionError("empty dimension")
+        raise DimensionError("empty dimension", stop=Stop.DIMENSION_EMPTY)
     if text.startswith("-"):
-        raise DimensionError(f"{entered!r}: dimensions cannot be negative")
+        raise DimensionError(f"{entered!r}: dimensions cannot be negative", stop=Stop.DIMENSION_NEGATIVE)
 
     m = _PATTERN.match(text)
     if m is None or (m["ft"] is None and not _has_inches(m)):
         raise DimensionError(
             f"{entered!r} is not a dimension I can read. Use forms like "
-            "5' 6-1/8\", 66.125 in, 3 ft 6 in, or 42 (bare number = inches)."
+            "5' 6-1/8\", 66.125 in, 3 ft 6 in, or 42 (bare number = inches).", stop=Stop.DIMENSION_UNREADABLE
         )
 
     feet = float(m["ft"]) if m["ft"] is not None else 0.0
@@ -74,7 +75,7 @@ def parse_inches(entered: str) -> float:
     if m["ft"] is not None and inches >= 12:
         raise DimensionError(
             f"{entered!r}: the inches part ({inches:g}) must be less than 12 "
-            "when feet are given"
+            "when feet are given", stop=Stop.DIMENSION_INCHES_12_OR_MORE
         )
     return 12.0 * feet + inches
 

@@ -1,0 +1,38 @@
+# Extra golden scenario full-tube-all (tests/test_golden.py, the second tier).
+# The tool runs this project and its whole printed calc is compared with full-tube-all.typ.
+# Inputs only: this file holds no value, and none is ever copied into a test case.
+
+[project]
+name = "char"
+
+[geometry]
+span = "5'-0\""
+post_height = 42
+baseplate_thickness = "1/2"
+
+[top_rail]
+shape = "round tube"
+OD = 2.375
+wall_nominal = 0.12
+grade = "A1085 Gr A"
+
+[post]
+shape = "round tube"
+OD = 2.375
+wall_nominal = 0.154
+grade = "A53 Gr B"
+
+[welds]
+rail_to_post = "1/8"
+post_to_baseplate = "1/4"
+intermediate_rail_to_post = "1/8"
+
+[baseplate]
+B = 6
+N = 8
+
+[intermediate_rail]
+same_as_top_rail = false
+shape = "round tube"
+OD = 1.66
+wall_nominal = 0.109

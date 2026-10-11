@@ -51,14 +51,14 @@ and how it is entered.
   pipe, round HSS and rectangular HSS are registry entries
   (material.grades.pipe, material.grades.hss_round, material.grades.hss_rect;
   AISC Manual Table 2-4). Two different cases:
-  - A grade with no Fy or Fu registry entry stops the calc with a message
-    naming the grade and the grades supported. So far that leaves A53 Gr B
-    as the only rail and post grade, and A36 as the only baseplate grade
-    (W12).
+  - A grade with no Fy or Fu registry entry for the member's shape stops
+    the calc with a message naming the grade and the grades supported for
+    that shape. Since slice 5 the rail and post grades are those under
+    "Grades for pipe, round HSS and custom round tubes" below; A36 is
+    still the only baseplate grade (W12).
   - A grade that has its entries but is outside the standard list for the
-    shape is an unusual pairing, and gets a warning, not a block. With one
-    grade per member accepted so far, no such pairing can be entered, so
-    the warning is not built yet.
+    shape is an unusual pairing, and gets a warning, not a block. Built in
+    slice 5: it prints on the section properties page, under the member.
 
   The grade list for solid bars and baseplate is not yet in the registry.
   A500 (Gr B, Gr C) is never offered for solid bars, and the defaults
@@ -80,6 +80,13 @@ and how it is entered.
   stops with a message. More baseplate grades come with baseplate checks
   (after v1, docs/ROADMAP.md); more rail and post grades come with the
   section families. (Slice 3, W12.)
+  The directional strength increase at the post to baseplate weld is the
+  engineer's election: `directional_increase` under `[welds]`, true or
+  false without quotes, false when left out. False, Check 7 uses
+  k_ds = 1.0. True, it uses AISC 360-22 Eq. J2-5 and prints a line saying
+  the increase is applied at the engineer's election. The rail to post
+  welds use k_ds = 1.0 either way. The setting is echoed on the dimensions
+  page. (Micah, 2026-10-10; welds.md, W2 as revised.)
 - Guard loads (concentrated, distributed, component), defaulting to code
   values, editable
 - Deflection limits: L/120 for the rail span and L/60 for the post
@@ -130,11 +137,13 @@ plan's decision numbers. (S5-5, Micah 2026-10-09.)
   designation, A53 Gr B on an HSS designation) are allowed, with the
   printed warning this file already calls for. Slice 5 builds the
   warning.
-- **Verify before the independent calcs.** I verify the A500 Gr B and
-  Gr C round Fy and Fu entries against Table 2-4 before slice 5's
-  independent calcs run: ASTM A500-21 changed the round values, and both
-  new test cases turn on them. This is my choice for these four values,
-  not a gate on the slice (ADR 0008 as amended).
+- **Verify at the release review.** I verify the A500 Gr B and Gr C round
+  Fy and Fu entries against Table 2-4: ASTM A500-21 changed the round
+  values, and both new test cases turn on them. I had planned to verify
+  these four before slice 5's independent calcs ran; on 2026-10-10 I
+  deferred it to the release review ("fix in post"). A correction then
+  regenerates the affected case values in fresh independent-calc
+  sessions. This is not a gate on the slice (ADR 0008 as amended).
 
 ### The plain grades and the grades with a rule of their own
 

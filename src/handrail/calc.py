@@ -15,8 +15,11 @@ drift apart. Rendering produces Typst math source.
 from __future__ import annotations
 
 import math
+import operator
+import re
 from dataclasses import dataclass, field
-from typing import Callable
+from typing import Any
+from collections.abc import Callable
 
 from handrail.registry import Entry, Registry
 from handrail.units import ureg
@@ -56,7 +59,7 @@ def fmt_sig(x: float, sig: int = 4) -> str:
         decimals -= 1
         r = round(x, decimals)
     if decimals <= 0:
-        return f"{int(round(r)):,}"
+        return f"{round(r):,}"
     return f"{r:,.{decimals}f}"
 
 
@@ -126,8 +129,99 @@ def fmt_quantity_plain(q, ratio: bool = False) -> str:
     """Plain text (not math) for tables: '4,200 lb-in', '0.293 in^4'."""
     mag, unit, exp = display(q)
     num = fmt_ratio(mag) if ratio else fmt_sig(mag)
-    sup = {2: "²", 3: "³", 4: "⁴"}.get(exp, "")
+    superscripts: dict[int | None, str] = {2: "²", 3: "³", 4: "⁴"}
+    sup = superscripts.get(exp, "")
     return f"{num}{_unit_gap(unit)}{unit}{sup}"
+
+
+def fmt_g(x: float) -> str:
+    """A tabulated ratio as published, without trailing zeros: 15.4, 300."""
+    return f"{x:g}"
+
+
+# ---------------------------------------------------------------------------
+# Comparisons: one definition per decision line (ADR 0002 applied to decisions)
+# ---------------------------------------------------------------------------
+
+_HOLDS = {"<": operator.lt, "<=": operator.le, ">": operator.gt, ">=": operator.ge}
+# The relation that is true when the one asked for is not.
+_COMPLEMENT = {"<": ">=", "<=": ">", ">": "<=", ">=": "<"}
+# The same relation read from the other side: a < b is b > a.
+_FLIPPED = {"<": ">", "<=": ">=", ">": "<", ">=": "<=", "=": "="}
+
+
+@dataclass(frozen=True)
+class Term:
+    """One side of a comparison: the text it prints as (Typst math in a calc
+    line, plain text in a message) and the value compared."""
+
+    text: str
+    value: Any
+
+
+def term(symbol: str, value, fmt: Callable[[Any], str] | None = None) -> Term:
+    """A side printed as 'symbol = value'. The value is given once, so the
+    number printed is the number compared."""
+    return Term(f"{symbol} = {(fmt or fmt_quantity)(value)}", value)
+
+
+def number(value, fmt: Callable[[Any], str] = str) -> Term:
+    """A side printed as the bare number, as written unless ``fmt`` is given."""
+    return Term(fmt(value), value)
+
+
+@dataclass(frozen=True)
+class Comparison:
+    """A comparison that has been evaluated.
+
+    ``holds`` says whether the relation asked for held, and is what an
+    ``if`` tests. ``left``, ``op`` and ``right`` state the relation that is
+    true: the one asked for when it held, its complement when it did not.
+    The printed relation and the branch taken therefore come from one
+    evaluation and cannot drift apart.
+    """
+
+    left: Term
+    op: str
+    right: Term
+    holds: bool
+
+    def __bool__(self) -> bool:
+        return self.holds
+
+    @property
+    def text(self) -> str:
+        return f"{self.left.text} {self.op} {self.right.text}"
+
+    def flipped(self) -> Comparison:
+        """The same true relation, read from the other side."""
+        return Comparison(self.right, _FLIPPED[self.op], self.left, self.holds)
+
+
+def compare(left: Term, op: str, right: Term) -> Comparison:
+    """Evaluate ``left op right`` (op is <, <=, > or >=). The result is true
+    or false as the relation held, and prints the relation that is true."""
+    holds = bool(_HOLDS[op](left.value, right.value))
+    return Comparison(left, op if holds else _COMPLEMENT[op], right, holds)
+
+
+def order(left: Term, right: Term, rel_tol: float = 0.0) -> Comparison:
+    """Which of <, = or > holds between two values; the caller branches on
+    ``op``. Values within ``rel_tol`` (relative to the larger) are equal."""
+    a, b = left.value, right.value
+    if abs(a - b) <= rel_tol * max(a, b):
+        op = "="
+    else:
+        op = "<" if a < b else ">"
+    return Comparison(left, op, right, True)
+
+
+def chain(first: Comparison, second: Comparison) -> str:
+    """Two true relations sharing their middle term, printed as one:
+    a < b and b <= c print as a < b <= c."""
+    if first.right is not second.left:
+        raise ValueError(f"cannot chain {first.text!r} and {second.text!r}: they do not share a middle term")
+    return f"{first.text} {second.op} {second.right.text}"
 
 
 # ---------------------------------------------------------------------------
@@ -141,7 +235,7 @@ _ADD, _MUL, _POW, _ATOM = 1, 2, 3, 4
 class Expr:
     prec = _ATOM
 
-    def eval(self): ...
+    def eval(self) -> Any: ...
     def symbolic(self) -> str: ...
     def substituted(self) -> str: ...
 
@@ -177,7 +271,7 @@ class Sym(Expr):
     """A named quantity: an input, a registry value or a computed line."""
 
     typst: str       # Typst math for the symbol, e.g. 'M_n', 'Omega_b', 't_"des"'
-    value: object    # pint quantity or float
+    value: Any    # pint quantity or float
 
     def eval(self):
         return self.value
@@ -191,6 +285,10 @@ class Sym(Expr):
         # Parenthesize quantities with units, or negatives, so juxtaposition reads.
         needs = (hasattr(self.value, "units") and not self.value.dimensionless) or mag < 0
         return f"({text})" if needs else text
+
+    def stated(self, fmt: Callable[[Any], str] | None = None) -> Term:
+        """This line as one side of a comparison: 'symbol = value'."""
+        return term(self.typst, self.value, fmt)
 
 
 @dataclass(eq=False)
@@ -372,7 +470,7 @@ class Line:
     """One printed calc line: the record the PDF prints (ADR 0002)."""
 
     symbol: str                 # Typst math
-    value: object               # full-precision pint quantity or float
+    value: Any               # full-precision pint quantity or float
     note: str                   # margin note
     cite: str                   # printed citation(s)
     symbolic: str | None = None     # Typst math of the formula, if computed
@@ -380,10 +478,23 @@ class Line:
     ratio: bool = False         # display to 2 decimals
     text: str | None = None     # for decision lines: the stated result
     kind: str = "value"         # "value", "decision", "heading"
+    key: str = ""               # stable identifier, never printed (see Sheet)
 
     @property
     def result(self) -> str:
         return fmt_quantity(self.value, ratio=self.ratio)
+
+
+_KEY = re.compile(r"[A-Za-z][A-Za-z0-9_]*")
+
+
+def _key(key: str) -> str:
+    """A line key is a plain name: letters, digits and underscores. Refusing
+    anything else catches a key and a Typst symbol passed in the wrong order."""
+    if not isinstance(key, str) or not _KEY.fullmatch(key):
+        raise ValueError(f"calc-line key {key!r}: a key is a plain name (letters, digits, underscores), "
+                         f"given before the Typst symbol")
+    return key
 
 
 @dataclass
@@ -392,26 +503,34 @@ class Sheet:
 
     Every registry read goes through the Sheet's Registry, which records it
     for the DRAFT list.
+
+    Every value line takes a key as its first argument: a plain name for
+    the quantity ("M_n", "L_c_over_r"), separate from the Typst symbol it
+    prints as. The key is never printed. Tests and tools find a line by its
+    key, so rewording a printed symbol cannot break or silently redirect a
+    lookup (issues #8 and #21). A key names one line within the block it is
+    printed in (a case, the loading, a section's properties).
     """
 
     registry: Registry
     lines: list[Line] = field(default_factory=list)
 
     # -- values that enter the calc -------------------------------------
-    def input(self, typst: str, value, note: str, cite: str = "Input") -> Sym:
-        self.lines.append(Line(typst, value, note, cite))
+    def input(self, key: str, typst: str, value, note: str, cite: str = "Input") -> Sym:
+        self.lines.append(Line(typst, value, note, cite, key=_key(key)))
         return Sym(typst, value)
 
-    def given(self, typst: str, value, note: str, cite: str) -> Sym:
+    def given(self, key: str, typst: str, value, note: str, cite: str) -> Sym:
         """A value taken from a non-registry source that is printed with its source
         (a database property, or an engineering decision recorded in the brief)."""
-        return self.input(typst, value, note, cite)
+        return self.input(key, typst, value, note, cite)
 
-    def code_value(self, typst: str, entry_id: str, note: str) -> Sym:
-        """A registry value printed as its own line."""
+    def code_value(self, key: str, typst: str, entry_id: str, note: str, select: str = "") -> Sym:
+        """A registry value printed as its own line. ``select`` names the
+        wall range to read out of a by-wall-range entry."""
         e = self.registry.get(entry_id)
-        value = e.quantity
-        self.lines.append(Line(typst, value, note, e.cite))
+        value = e.in_range(select) if select else e.quantity
+        self.lines.append(Line(typst, value, note, e.cite, key=_key(key)))
         return Sym(typst, value)
 
     def coeff(self, entry_id: str) -> Const:
@@ -432,6 +551,7 @@ class Sheet:
     # -- computed lines ---------------------------------------------------
     def line(
         self,
+        key: str,
         typst: str,
         expr: Expr,
         note: str,
@@ -463,16 +583,24 @@ class Sheet:
         self.lines.append(
             Line(
                 symbol=typst, value=value, note=note, cite="; ".join(dict.fromkeys(cites)),
-                symbolic=expr.symbolic(), substituted=expr.substituted(), ratio=ratio,
+                symbolic=expr.symbolic(), substituted=expr.substituted(), ratio=ratio, key=_key(key),
             )
         )
         return Sym(typst, value)
 
-    def decision(self, statement: str, result: str, note: str, cite: str = "", cite_ids: tuple[str, ...] = ()) -> None:
-        """A comparison with a stated outcome, e.g. λ ≤ λp → compact."""
+    def decision(self, statement: str | Comparison, result: str, note: str, cite: str = "",
+                 cite_ids: tuple[str, ...] = (), key: str = "") -> None:
+        """A statement with a stated outcome, e.g. λ ≤ λp → compact. A
+        relation between values is passed as the Comparison that was
+        evaluated (compare, order), so the line prints the relation the code
+        acted on; plain text is for statements that compare nothing. A
+        decision takes a key only where something reads its outcome."""
+        if isinstance(statement, Comparison):
+            statement = statement.text
         cites = [self.registry.get(i).cite for i in cite_ids] + ([cite] if cite else [])
         self.lines.append(
-            Line(symbol=statement, value=None, note=note, cite="; ".join(cites), text=result, kind="decision")
+            Line(symbol=statement, value=None, note=note, cite="; ".join(cites), text=result, kind="decision",
+                 key=_key(key) if key else "")
         )
 
     def heading(self, text: str) -> None:

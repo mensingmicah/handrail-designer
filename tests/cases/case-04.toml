@@ -68,6 +68,7 @@ N = 8                  # perpendicular to the rail; no reaction values recorded
 rail_to_post = "1/8"
 post_to_baseplate = "1/4"
 electrode = "E70XX"
+directional_increase = true   # engineer's election at the post to baseplate weld (Micah, 2026-10-10); input only, no recorded value changes
 
 [deflection.rail]
 limit_L_over = 120

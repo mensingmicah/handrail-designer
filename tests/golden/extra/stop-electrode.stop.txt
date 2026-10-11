@@ -1,0 +1,1 @@
+ProjectError: [welds] electrode 'E60XX': this version supports E70XX only

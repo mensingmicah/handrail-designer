@@ -8,7 +8,8 @@ independent check.
 
 import pytest
 
-from handrail import checks, dimensions, shapes
+from handrail import dimensions, engine, shapes
+from handrail.directions import COMPONENT_DIRECTIONS
 from handrail.project import (
     NO_INTERMEDIATE, OWN_SECTION, SAME_AS_TOP, Baseplate, DeflectionLimit, IntermediateRail, Loads, Member, Project,
     ProjectInfo, Welds,
@@ -18,7 +19,7 @@ from handrail.units import Q_
 from handrail.welds import _reaction_4b
 
 _LBF = Q_(1, "lbf")
-P2, P125 = shapes.pipe("Pipe2STD"), shapes.pipe("Pipe1-1/4STD")
+P2, P125 = shapes.section("Pipe2STD"), shapes.section("Pipe1-1/4STD")
 
 
 def project(state=OWN_SECTION, section="Pipe1-1/4STD", rail="Pipe2STD", post="Pipe2STD", span="6'-0\"",
@@ -37,7 +38,7 @@ def project(state=OWN_SECTION, section="Pipe1-1/4STD", rail="Pipe2STD", post="Pi
 
 
 def run(**kw):
-    return checks.run(project(**kw), Registry())
+    return engine.run(project(**kw), Registry())
 
 
 def _lb(q):
@@ -328,7 +329,7 @@ def test_a_post_wall_thinner_than_the_rail_wall_runs_the_full_check_4b():
     but a Pipe2XS rail (t_des 0.204 in) on a Pipe2STD post (t_des 0.143 in),
     equal ODs. Check 3 checks the rail wall's base metal and Check 4b the
     post wall's, so the observation does not hold and the full check runs."""
-    p2xs = shapes.pipe("Pipe2XS")
+    p2xs = shapes.section("Pipe2XS")
     assert p2xs.OD == P2.OD and P2.tdes < p2xs.tdes  # the premise
     res = run(state=SAME_AS_TOP, rail="Pipe2XS")
     chk = res.check("4b")
@@ -357,5 +358,5 @@ def test_the_check_4b_reaction_refuses_a_direction_it_does_not_know():
     for direction in ("Upward", "horizontal", "Outward"):
         with pytest.raises(ValueError, match=f"Check 4b: no component load direction '{direction}'"):
             _reaction_4b(Registry(), res.project, res.loading, direction)
-    for direction in checks.COMPONENT_DIRECTIONS:
+    for direction in COMPONENT_DIRECTIONS:
         _reaction_4b(Registry(), res.project, res.loading, direction)

@@ -1,0 +1,1 @@
+ProjectError: [top_rail] section is given together with OD, wall_nominal. A member is either a standard section (section) or a custom round tube (shape = "round tube", OD and wall_nominal), not both. Remove one.

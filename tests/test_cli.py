@@ -7,8 +7,9 @@ from pathlib import Path
 
 import pytest
 
-from handrail import checks, cli, project, shapes
+from handrail import cli, members, project, shapes
 from handrail.registry import Registry
+from handrail.validate import validate
 
 EXAMPLE = Path(__file__).resolve().parents[1] / "examples" / "slice-1.toml"
 
@@ -31,7 +32,7 @@ def test_default_output_sits_beside_the_project_file(tmp_path):
     [
         (('span = "6\'-0\\""', 'span = "5 6"'), "not a dimension I can read"),
         (('section = "Pipe2STD"', 'section = "Pipe99STD"'), "Pipe99STD"),
-        (('grade = "A53 Gr B"', 'grade = "A36"'), "A53 Gr B only"),
+        (('grade = "A53 Gr B"', 'grade = "A36"'), "for AISC pipe this version supports A53 Gr B, "),
         (("applies = false", "applies = true"), "needs a statement"),
     ],
 )
@@ -88,7 +89,7 @@ TP = 'baseplate_thickness = "1/2"'
         ("[post]", "[posts]", "unknown table 'posts'"),
         # Post grade uses the rail's grade check, naming the member.
         ('[post]\nsection = "Pipe2STD"      # AISC designation (AISC Shapes Database v16.0)\ngrade = "A53 Gr B"',
-         '[post]\nsection = "Pipe2STD"\ngrade = "A500 Gr B"', "post grade 'A500 Gr B'"),
+         '[post]\nsection = "Pipe2STD"\ngrade = "A992"', "post grade 'A992'"),
         ("limit_L_over = 60", "limit_L_over = 0", "deflection.post.limit_L_over' must be greater than zero"),
         ("limit_L_over = 60", "limit_over = 60", "unknown key 'deflection.post.limit_over'"),
     ],
@@ -166,7 +167,7 @@ def test_hand_and_verification_tables_are_allowed_in_a_case_file(name):
 
 
 def test_every_input_error_derives_from_the_one_class_the_cli_catches():
-    from handrail.checks import SectionStop
+    from handrail.errors import SectionStop
     from handrail.dimensions import DimensionError
     from handrail.errors import InputError
     from handrail.registry import MissingEntry, RegistryError
@@ -224,7 +225,12 @@ def _full_project_files():
     raw["welds"]["intermediate_rail_to_post"] = "1/8"
     raw["deflection"]["intermediate_rail"] = {"limit_L_over": 120, "bypass": False}
     none["intermediate_rail"] = {"same_as_top_rail": False, "none": True}
-    return raw, none
+    # A member is a section or a custom round tube, never both (S5-8): a third file of tubes.
+    tubes = copy.deepcopy(raw)
+    for table, od in (("top_rail", 2.375), ("post", 2.375), ("intermediate_rail", 1.66)):
+        del tubes[table]["section"]
+        tubes[table].update(shape="round tube", OD=od, wall_nominal="1/8")
+    return raw, none, tubes
 
 
 def test_the_parser_reads_every_key_schema_allows_and_no_other():
@@ -277,6 +283,20 @@ def test_weld_sizes_and_defaults_are_read():
     assert proj.welds.post_to_baseplate.value.m_as("inch") == 0.25
     assert proj.welds.post_to_baseplate.normalized == '1/4"'
     assert proj.welds.electrode == "E70XX" and proj.baseplate.grade == "A36"
+
+
+def test_the_directional_increase_is_off_unless_the_file_elects_it():
+    """W2 as revised 2026-10-10: an engineer's election, false by default,
+    and a real TOML boolean like every other true or false field."""
+    raw = tomllib.loads(EXAMPLE.read_text(encoding="utf-8"))
+    assert project.from_dict(raw).welds.directional_increase is True  # the example elects it
+    del raw["welds"]["directional_increase"]
+    assert project.from_dict(raw).welds.directional_increase is False
+    raw["welds"]["directional_increase"] = False
+    assert project.from_dict(raw).welds.directional_increase is False
+    raw["welds"]["directional_increase"] = "true"
+    with pytest.raises(project.ProjectError, match="'welds.directional_increase' must be true or false without quotes"):
+        project.from_dict(raw)
 
 
 def test_electrode_and_baseplate_grade_default_when_left_out(tmp_path):
@@ -338,20 +358,20 @@ def test_post_wider_than_rail_stops_naming_both_ods(tmp_path, capsys):
 
 def test_equal_ods_are_allowed():
     proj = project.load(EXAMPLE)  # Pipe2STD rail and post
-    checks.validate(proj, Registry())
+    validate(proj, Registry())
 
 
 def _validate_with(monkeypatch, *, family=None, fu=None):
     """validate() on the example with a stand-in: a section of another family,
     or a post grade with a lower Fu. Stand-ins for machinery tests only."""
-    real = shapes.pipe
+    real = shapes.section
     if family:
-        monkeypatch.setattr(shapes, "pipe", lambda d: dataclasses.replace(real(d), family=family))
+        monkeypatch.setattr(shapes, "section", lambda d: dataclasses.replace(real(d), family=family))
     reg = Registry()
     if fu:
         e = reg.entries["material.A53_GrB.Fu"]
         reg.entries[e.id] = dataclasses.replace(e, value=fu)
-    checks.validate(project.load(EXAMPLE), reg)
+    validate(project.load(EXAMPLE), reg)
 
 
 def test_a_section_that_is_not_round_hollow_stops(monkeypatch):
@@ -410,7 +430,10 @@ def test_own_section_reads_its_inputs_and_defaults_its_grade_to_the_top_rails():
     proj = project.from_dict(raw)
     ir = proj.intermediate_rail
     assert ir.state == project.OWN_SECTION
-    assert ir.member == project.Member("Pipe1-1/4STD", "A53 Gr B")
+    # Left out of the file: blank until the engine fills it in by shape (S5-10).
+    assert ir.member == project.Member("Pipe1-1/4STD", grade_defaulted=True)
+    filled = members.resolve(proj, Registry()).project.intermediate_rail.member
+    assert filled == project.Member("Pipe1-1/4STD", "A53 Gr B", grade_defaulted=True)
     assert proj.intermediate_member == ir.member
     assert ir.deflection == project.DeflectionLimit(ratio=180, bypass=True)
     assert proj.welds.intermediate_rail_to_post.value.m_as("inch") == 0.125
@@ -479,7 +502,7 @@ def test_conflicting_or_missing_intermediate_and_baseplate_inputs_stop(raw, mess
 
 
 def _validate(raw):
-    checks.validate(project.from_dict(raw), Registry())
+    validate(project.from_dict(raw), Registry())
 
 
 def test_an_intermediate_rail_wider_than_the_post_stops_in_both_states():
@@ -522,8 +545,8 @@ def test_a_baseplate_smaller_than_the_post_od_stops(name, other):
 
 def test_a_non_round_intermediate_rail_stops(monkeypatch):
     # W7 extended (S4-12), with a stand-in family on the intermediate section only.
-    real = shapes.pipe
-    monkeypatch.setattr(shapes, "pipe", lambda d: dataclasses.replace(real(d), family="rectangular HSS")
+    real = shapes.section
+    monkeypatch.setattr(shapes, "section", lambda d: dataclasses.replace(real(d), family="rectangular HSS")
                         if d == "Pipe1-1/4STD" else real(d))
     with pytest.raises(project.ProjectError,
                        match=r"intermediate rail Pipe1-1/4STD \(rectangular HSS\) is not a round hollow section"):
@@ -531,5 +554,6 @@ def test_a_non_round_intermediate_rail_stops(monkeypatch):
 
 
 def test_an_intermediate_grade_this_version_does_not_support_stops():
-    with pytest.raises(project.ProjectError, match="intermediate rail grade 'A500 Gr B': this version supports"):
-        _validate(_own(grade="A500 Gr B"))
+    with pytest.raises(project.ProjectError, match="intermediate rail grade 'A992': for AISC pipe this version "
+                                                   "supports"):
+        _validate(_own(grade="A992"))

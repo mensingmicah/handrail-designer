@@ -1,0 +1,182 @@
+"""Input validation: the checks on the inputs that need more than one
+field, or a lookup. It runs before anything is computed (engine.run).
+"""
+
+from __future__ import annotations
+
+from typing import cast
+
+from handrail import joints, materials, members
+from handrail.calc import compare, fmt_g, fmt_quantity_plain, fmt_sig, number
+from handrail.joints import JointMember
+from handrail.materials import BASEPLATE_GRADES, FEXX_ENTRY
+from handrail.project import SAME_AS_TOP, Member, Project, ProjectError
+from handrail.registry import Registry
+from handrail.shapes import Section
+from handrail.stops import Stop
+from handrail.units import Q_
+
+
+def require_supported_grade(registry: Registry, member: Member, sec: Section, name: str) -> None:
+    """Refuse a grade the tool has no Fy and Fu entries for, for the
+    member's shape, naming the grade and the grades supported for that
+    shape. Both values are needed: Fy for the member checks, Fu for the
+    fusion face of a weld (Check 3's rail side, Check 4b's post and
+    intermediate rail walls) and the post wall's Fu/Fy guard.
+
+    A grade whose Fy and Fu go by wall thickness (A618, S5-7) also stops
+    here when the member's nominal wall is over the thickest wall it has
+    values for (materials.py).
+    """
+    if member.grade not in materials.supported(sec.family):
+        raise ProjectError(materials.unsupported_message(name, member.grade, sec.family),
+                           stop=Stop.GRADE_UNSUPPORTED)
+    materials.yield_stress(registry, member.grade, sec, name.capitalize())
+
+
+OD_TOLERANCE = "ej.section.od_tolerance"
+CHORD_LIMIT = "aisc360.K.round_chord.D_over_t_max"
+CHORD_STOP = "ej.weld.chord_D_over_t_stop"
+
+
+def require_chord_within_limit(registry: Registry, sec: Section, name: str, wall: str) -> None:
+    """Refuse a chord whose D/t is over the Chapter K limit of applicability
+    (S5-3). The local strength of a chord's wall at the member welded to it
+    is a stated assumption, not a check (W7), and the engineer of record
+    makes that assumption only up to the limit. D/t is the value the
+    section's classification uses (design wall). ``wall`` says which wall:
+    the rail's at the post, or the post's at the intermediate rail.
+
+    The limit is read for every calc, so every calc lists it while it is
+    drafted. The decision behind the stop is read only when it stops.
+    """
+    limit = registry.get(CHORD_LIMIT)
+    over = compare(number(sec.D_t, fmt_g), ">", number(limit.value))
+    if over:
+        rule = registry.get(CHORD_STOP)
+        raise ProjectError(
+            f"{name} {sec.label}: D/t = {sec.ratio_text(sec.D_t)} {over.op} {over.right.text}, the limit of applicability "
+            f"for the chord of a round T-connection ({limit.cite}). The local strength of {wall} is a stated "
+            f"assumption, not a check (W7), and it is not assumed for a chord over the limit ({rule.cite}). "
+            f"The tool does not check this section as a chord.",
+            stop=Stop.SECTION_CHORD_D_T_OVER_LIMIT
+        )
+
+
+def wider(registry: Registry, a: Q_, b: Q_) -> bool:
+    """Whether outside diameter ``a`` is wider than ``b`` for the width
+    comparisons W8 and S4-11: greater by more than the tolerance within
+    which two outside diameters are equal (S5-4). The database rounds a
+    round HSS's OD (2.38 in for HSS2.375) and stores a pipe's exactly
+    (2.375 in), so a pipe and an HSS of one size differ on paper only.
+
+    The tolerance is read only when it decides, so a calc whose members
+    are no wider than they may be does not list it as used.
+    """
+    if not a > b:
+        return False
+    # Round the difference to 0.0001 in so a float such as 1.91 - 1.90 =
+    # 0.010000000000000009 in counts as exactly 0.01 in, which is equal.
+    difference = round((a - b).to("in").magnitude, 4)
+    return difference > registry.get(OD_TOLERANCE).quantity.to("in").magnitude
+
+
+def validate(project: Project, registry: Registry) -> None:
+    """The input checks that need more than one field, or a lookup. Raises an
+    InputError naming what it checked and why. Runs before compute, so no
+    check runs on inputs that fail.
+
+    - the sections exist;
+    - the section families at each joint are a pair its table lists as
+      allowed (joints.py, S5-9; before the tables, W7 and S4-12's stop on a
+      section that is not round hollow);
+    - each chord's D/t is within the Chapter K limit of applicability
+      (S5-3): the top rail, and the post when there is an intermediate rail;
+    - each grade is one the tool supports for its member's shape (S5-5), and
+      the electrode and the baseplate grade are ones it supports (W12);
+    - the post is no wider than the rail (W8), ODs within 0.01 in being
+      equal (S5-4);
+    - the post grade's Fu/Fy keeps its wall at the weld covered by Check 5 (W5);
+    - the intermediate rail is no wider than the post (S4-11), with the same
+      tolerance;
+    - the baseplate is no smaller in plan than the post OD (S4-6).
+    """
+    m = members.resolve(project, registry)
+    project, rail, post, inter = m.project, m.rail, m.post, m.own
+
+    # The section families at each joint (S5-9): a pair its table does not
+    # list as allowed stops here, before anything is computed. They come
+    # before the grades, because a grade is supported for a shape: a family
+    # the tool does not have yet has no grades to name.
+    at_post = JointMember("post", post)
+    joints.CHECK_3.require(chord=JointMember("top rail", rail), branch=at_post, error=ProjectError)
+    if project.intermediate_member is not None:
+        same = project.intermediate_rail.state == SAME_AS_TOP
+        # Its own section was looked up above when it is not the top rail's.
+        branch = rail if same else cast(Section, inter)
+        joints.CHECK_4B.require(chord=at_post, branch=JointMember("intermediate rail", branch), error=ProjectError)
+    joints.CHECK_7.require(at_post, error=ProjectError)
+
+    # The chords (S5-3), beside W7's stop on a section that is not round
+    # hollow: the top rail in Check 3, and the post in Check 4b whenever
+    # there is an intermediate rail.
+    require_chord_within_limit(registry, rail, "top rail", "the rail wall at the post")
+    if project.intermediate_member is not None:
+        require_chord_within_limit(registry, post, "post", "the post wall at the intermediate rail")
+
+    require_supported_grade(registry, project.top_rail, rail, "top rail")
+    require_supported_grade(registry, project.post, post, "post")
+    own = project.intermediate_rail.member  # its own section, or None
+    if own:
+        require_supported_grade(registry, own, cast(Section, inter), "intermediate rail")
+    electrode = project.welds.electrode
+    if electrode not in FEXX_ENTRY:
+        raise ProjectError(f"[welds] electrode {electrode!r}: this version supports {', '.join(FEXX_ENTRY)} only",
+                           stop=Stop.WELD_ELECTRODE_UNSUPPORTED)
+    if project.baseplate.grade not in BASEPLATE_GRADES:
+        raise ProjectError(f"[baseplate] grade {project.baseplate.grade!r}: this version supports "
+                           f"{', '.join(BASEPLATE_GRADES)} only", stop=Stop.BASEPLATE_GRADE_UNSUPPORTED)
+
+    D_rail, D_post = rail.OD, post.OD
+    if wider(registry, D_post, D_rail):
+        raise ProjectError(
+            f"The post ({post.label}, OD {fmt_quantity_plain(D_post)}) is wider than the top rail "
+            f"({rail.label}, OD {fmt_quantity_plain(D_rail)}). The coped post to rail underside detail "
+            f"requires post OD <= rail OD. Check the inputs.", stop=Stop.SECTION_POST_WIDER_THAN_RAIL
+        )
+
+    grade = project.post.grade
+    Fy = materials.yield_stress(registry, grade, post).quantity(registry)
+    Fu = materials.tensile_strength(registry, grade, post).quantity(registry)
+    limit = registry.get("ej.weld.post_wall.fu_fy_min")
+    ratio = Fu / Fy
+    if ratio < limit.value:
+        raise ProjectError(
+            f"post grade {grade}: Fu/Fy = {fmt_sig(ratio.m_as('dimensionless'))} is below {limit.value} ({limit.cite}). "
+            f"The post wall at the weld is covered by Check 5 only while yielding governs over rupture; "
+            f"the tool does not check this grade's post wall at the weld.", stop=Stop.GRADE_POST_FU_FY_BELOW_LIMIT
+        )
+
+    member = project.intermediate_member
+    if member is not None:
+        same = project.intermediate_rail.state == SAME_AS_TOP
+        sec = rail if same else cast(Section, inter)
+        if wider(registry, sec.OD, D_post):
+            how = ("With same_as_top_rail = true it takes the top rail's section: uncheck same_as_top_rail and "
+                   "enter a section no wider than the post." if same else
+                   "Enter a section no wider than the post.")
+            raise ProjectError(
+                f"The intermediate rail ({sec.label}, OD {fmt_quantity_plain(sec.OD)}) is wider than the post "
+                f"({post.label}, OD {fmt_quantity_plain(D_post)}). Its end is coped to the side of the post, "
+                f"which requires intermediate rail OD <= post OD. {how}",
+                stop=Stop.SECTION_INTERMEDIATE_WIDER_THAN_POST
+            )
+
+    for name, d, orientation in (("B", project.baseplate.B, "parallel to the rail"),
+                                 ("N", project.baseplate.N, "perpendicular to the rail")):
+        if d.value < D_post:
+            raise ProjectError(
+                f"[baseplate] {name} = {d.entered} ({orientation}) is smaller than the post OD "
+                f"({post.label}, {fmt_quantity_plain(D_post)}). Check the inputs.",
+                stop=Stop.BASEPLATE_SMALLER_THAN_POST
+            )

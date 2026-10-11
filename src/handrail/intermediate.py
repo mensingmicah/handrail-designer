@@ -22,15 +22,17 @@ intermediate rail it prints "none".
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import cast
 
 from handrail import beams
-from handrail.calc import Const, Line, Sheet, fmt_quantity, fmt_quantity_plain
-from handrail.checks import (
-    COMBO, COMPONENT, COMPONENT_DIRECTIONS, DB, DOWNWARD, Case, Check, Loading, combo_text, flexural_capacity,
-)
-from handrail.project import NO_INTERMEDIATE, SAME_AS_TOP, DeflectionLimit, Project
+from handrail.calc import Const, Line, Sheet, compare, fmt_quantity_plain, term
+from handrail.flexure import flexural_capacity
+from handrail.loading import COMBO, combo_text
+from handrail.directions import COMPONENT, COMPONENT_DIRECTIONS, DOWNWARD, HORIZONTAL, Direction, unknown
+from handrail.project import NO_INTERMEDIATE, SAME_AS_TOP, DeflectionLimit, Member, Project
 from handrail.registry import Registry
-from handrail.shapes import PipeSection
+from handrail.results import Case, Check, Loading
+from handrail.shapes import Section
 
 BENDING, DEFLECTION = "Bending", "Deflection"
 MIDSPAN, DOWN = "ej.component.midspan", "ej.component.downward"
@@ -49,64 +51,68 @@ class ComponentCase(Case):
 
 
 def _bending_case(registry: Registry, project: Project, loading: Loading, cap, head: list[Line],
-                  direction: str) -> ComponentCase:
+                  direction: Direction) -> ComponentCase:
     sh = Sheet(registry)
     sh.lines.extend(head)
     sh.heading("Capacity")
     sh.lines.extend(cap.lines)
     sh.heading(f"Demand: {direction.lower()}, component load")
     combo, down = registry.get(COMBO), registry.get(DOWN)
-    L = sh.given("L", project.span.value, "Span, simple beam", "Input")
-    Pc = sh.given("P_c", loading.P_c, "Component load, a point load at midspan", "Loading")
-    ML = beams.point_moment(sh, "M_L", Pc, L, "Component load moment, midspan", cite_ids=(MIDSPAN,))
+    L = sh.given("L", "L", project.span.value, "Span, simple beam", "Input")
+    Pc = sh.given("P_c", "P_c", loading.P_c, "Component load, a point load at midspan", "Loading")
+    ML = beams.point_moment(sh, "M_L", "M_L", Pc, L, "Component load moment, midspan", cite_ids=(MIDSPAN,))
     if direction == DOWNWARD:
-        wD = sh.given('w_(D,"int")', loading.w_D_int, "Intermediate rail self-weight", "Loading")
-        MD = beams.uniform_moment(sh, "M_D", wD, L, "Dead-load moment, midspan")
-        M = sh.line("M_a", sh.factor(combo.id, "D") * MD + sh.factor(combo.id, "L") * ML,
+        wD = sh.given("w_D_int", 'w_(D,"int")', loading.w_D_int, "Intermediate rail self-weight", "Loading")
+        MD = beams.uniform_moment(sh, "M_D", "M_D", wD, L, "Dead-load moment, midspan")
+        M = sh.line("M_a", "M_a", sh.factor(combo.id, "D") * MD + sh.factor(combo.id, "L") * ML,
                     "Required flexural strength: D and L on the same axis", cite_ids=(down.id,), unit="lbf*inch")
         label = f"{combo_text(combo)}, vertical\n{combo.cite}; {down.cite}"
-    else:
-        M = sh.line("M_a", sh.factor(combo.id, "L") * ML,
+    elif direction == HORIZONTAL:
+        M = sh.line("M_a", "M_a", sh.factor(combo.id, "L") * ML,
                     "Required flexural strength: the component load alone, not combined with dead load",
                     cite_ids=(down.id,), unit="lbf*inch")
         label = f"{float(combo.value['L'])!r}L horizontal, alone\n{combo.cite}; {down.cite}"
-    ratio = sh.line('"Ratio"', M / cap.allow, "Demand / capacity", cite_ids=("aisc360.eq.B3-2",), ratio=True)
+    else:
+        unknown("Check 4a", "component load direction", direction, COMPONENT_DIRECTIONS)
+    ratio = sh.line("Ratio", '"Ratio"', M / cap.allow, "Demand / capacity", cite_ids=("aisc360.eq.B3-2",), ratio=True)
     return ComponentCase(direction, COMPONENT, "checked", label, demand=M.value, capacity=cap.allow.value,
                          ratio=ratio.value, lines=sh.lines, limit_state=BENDING)
 
 
-def _deflection_case(registry: Registry, project: Project, inter: PipeSection, loading: Loading,
-                     limit: DeflectionLimit, head: list[Line], direction: str) -> ComponentCase:
+def _deflection_case(registry: Registry, project: Project, inter: Section, loading: Loading,
+                     limit: DeflectionLimit, head: list[Line], direction: Direction) -> ComponentCase:
     sh = Sheet(registry)
     sh.lines.extend(head)
-    L = sh.given("L", project.span.value, "Span, simple beam", "Input")
-    E = sh.code_value("E", "material.steel.E", "Modulus of elasticity")
-    I = sh.given('I_"int"', inter.I, f"Moment of inertia, {inter.label}", DB)
-    Pc = sh.given("P_c", loading.P_c, "Component load, a point load at midspan", "Loading")
-    DL = beams.point_deflection(sh, "Delta_L", Pc, L, E, I, "Component load deflection, midspan",
+    L = sh.given("L", "L", project.span.value, "Span, simple beam", "Input")
+    E = sh.code_value("E", "E", "material.steel.E", "Modulus of elasticity")
+    I = sh.given("I_int", 'I_"int"', inter.I, f"Moment of inertia, {inter.label}", inter.source)
+    Pc = sh.given("P_c", "P_c", loading.P_c, "Component load, a point load at midspan", "Loading")
+    DL = beams.point_deflection(sh, "Delta_L", "Delta_L", Pc, L, E, I, "Component load deflection, midspan",
                                 cite_ids=(MIDSPAN,))
     if direction == DOWNWARD:
         combo = registry.get("ej.combo.deflection.D_plus_L")
-        wD = sh.given('w_(D,"int")', loading.w_D_int, "Intermediate rail self-weight", "Loading")
-        DD = beams.uniform_deflection(sh, "Delta_D", wD, L, E, I, "Dead-load deflection, midspan")
-        D = sh.line("Delta", sh.factor(combo.id, "D") * DD + sh.factor(combo.id, "L") * DL,
+        wD = sh.given("w_D_int", 'w_(D,"int")', loading.w_D_int, "Intermediate rail self-weight", "Loading")
+        DD = beams.uniform_deflection(sh, "Delta_D", "Delta_D", wD, L, E, I, "Dead-load deflection, midspan")
+        D = sh.line("Delta", "Delta", sh.factor(combo.id, "D") * DD + sh.factor(combo.id, "L") * DL,
                     "D and L on the same (vertical) axis", cite_ids=(DOWN,), unit="inch")
         axis = "vertical"
-    else:
+    elif direction == HORIZONTAL:
         combo = registry.get("ej.combo.deflection.L_only")
-        D = sh.line("Delta", sh.factor(combo.id, "L") * DL, "Component load only", unit="inch")
+        D = sh.line("Delta", "Delta", sh.factor(combo.id, "L") * DL, "Component load only", unit="inch")
         axis = "horizontal"
+    else:
+        unknown("Check 4a", "component load direction", direction, COMPONENT_DIRECTIONS)
     r = limit.ratio
     lim = Const(int(r) if float(r).is_integer() else r)
-    Dallow = sh.line('Delta_"allow"', L / lim, f"Limit L/{lim.value}", cite_ids=("ej.deflection.limit",),
+    Dallow = sh.line("Delta_allow", 'Delta_"allow"', L / lim, f"Limit L/{lim.value}", cite_ids=("ej.deflection.limit",),
                      unit="inch")
-    ratio = sh.line('"Ratio"', D / Dallow, "Deflection / limit", cite_ids=("ej.deflection.limit",), ratio=True)
+    ratio = sh.line("Ratio", '"Ratio"', D / Dallow, "Deflection / limit", cite_ids=("ej.deflection.limit",), ratio=True)
     return ComponentCase(direction, COMPONENT, "checked", f"{combo_text(combo)}, {axis}\n{combo.cite}",
                          demand=D.value, capacity=Dallow.value, ratio=ratio.value, lines=sh.lines,
                          limit_state=DEFLECTION)
 
 
-def check_4a(registry: Registry, project: Project, inter: PipeSection | None, loading: Loading) -> Check:
+def check_4a(registry: Registry, project: Project, inter: Section | None, loading: Loading) -> Check:
     """The intermediate rail member: the full check, the same-as-top
     observation (S4-2), or "none"."""
     chk = Check("4a", "Intermediate rail", "M_a, Delta", 'M_n / Omega_b, Delta_"allow"')
@@ -120,7 +126,9 @@ def check_4a(registry: Registry, project: Project, inter: PipeSection | None, lo
     head: list[Line] = []
     if same:
         P, Pc = loading.P, loading.P_c
-        if Pc <= P:
+        # One comparison: it decides, and when it fails it prints what it found (ADR 0002).
+        covered = compare(term("P_c", Pc), "<=", term("P", P))
+        if covered:
             text = registry.get("ej.intermediate.same_as_top").value
             chk.observation = text.format(Pc=fmt_quantity_plain(Pc), P=fmt_quantity_plain(P))
             if limit.bypass:
@@ -129,12 +137,14 @@ def check_4a(registry: Registry, project: Project, inter: PipeSection | None, lo
             return chk
         # The one guard (S4-2): a component load above P runs the full check.
         sh = Sheet(registry)
-        sh.decision(f"P_c = {fmt_quantity(Pc)} > P = {fmt_quantity(P)}", "Computed in full",
+        sh.decision(covered, "Computed in full",
                     "Same section as the top rail, but the component load exceeds the concentrated guard load, "
                     "so Checks 1 and 2 do not cover it", cite_ids=("ej.intermediate.same_as_top",))
         head = sh.lines
 
-    grade = project.intermediate_member.grade
+    # Past the "none" return above there is an intermediate rail: its section and its member.
+    inter = cast(Section, inter)
+    grade = cast(Member, project.intermediate_member).grade
     cap = flexural_capacity(registry, inter, grade)
     chk.flags = cap.flags
     for direction in COMPONENT_DIRECTIONS:

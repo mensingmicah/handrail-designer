@@ -1,0 +1,1 @@
+ShapeNotFound: 'Pipe99STD' is not an AISC pipe or round HSS in aisc-shapes-database-v16.0.xlsx

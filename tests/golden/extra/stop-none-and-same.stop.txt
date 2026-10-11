@@ -1,0 +1,1 @@
+ProjectError: [intermediate_rail] none = true and same_as_top_rail = true contradict each other: choose one

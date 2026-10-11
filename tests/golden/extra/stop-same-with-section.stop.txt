@@ -1,0 +1,1 @@
+ProjectError: [intermediate_rail] same_as_top_rail = true (the default), but [intermediate_rail] section is given. Same as the top rail, the intermediate rail takes the top rail's section, grade and rail to post weld size, and follows the top rail's deflection limit. Set same_as_top_rail = false to give it its own, or remove the input.

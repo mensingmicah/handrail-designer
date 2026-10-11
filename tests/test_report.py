@@ -1,12 +1,13 @@
 """PDF rendering: stamps, footer, and a real compile (dev section, not test case 1)."""
 
 import dataclasses
+import itertools
 from pathlib import Path
 
 import pytest
 import typst
 
-from handrail import checks, dimensions, report
+from handrail import dimensions, engine, report
 from handrail.calc import typst_str
 from handrail.project import (
     NO_INTERMEDIATE, SAME_AS_TOP, Baseplate, DeflectionLimit, IntermediateRail, Loads, Member, Project, ProjectInfo,
@@ -27,7 +28,7 @@ def run(**kw):
                 post=Member("Pipe2STD", "A53 Gr B"), post_height=dimensions.parse("42"),
                 baseplate_thickness=dimensions.parse("1/2"), **kw)
     reg = Registry()
-    return checks.run(p, reg), reg
+    return engine.run(p, reg), reg
 
 
 def mark_drafted(reg, *ids):
@@ -55,6 +56,53 @@ def test_no_draft_stamp_when_every_entry_used_is_verified(monkeypatch):
     monkeypatch.setattr(Registry, "drafted_used", property(lambda self: []))
     src = report.build_source(res, reg, CLEAN)
     assert "#let draft = false" in src
+
+
+def _reading_late(monkeypatch, reg, entry_id):
+    """Make build_source read a registry entry at the very end of the body:
+    the reaction tables are the last thing it builds."""
+    real = report._reactions
+
+    def reactions_with_a_late_read(results):
+        out = real(results)
+        reg.get(entry_id)
+        return out
+
+    monkeypatch.setattr(report, "_reactions", reactions_with_a_late_read)
+
+
+def test_a_registry_read_late_in_the_build_is_still_listed_as_drafted(monkeypatch):
+    """Issue #11, option A: the DRAFT stamp and the list are filled last,
+    after the whole body is built, so an entry read anywhere in the build
+    is stamped and listed. Before, the list was taken near the top, and an
+    entry read after that point printed without either."""
+    res, reg = run()
+    late = "asce7.guard.uniform.exemption.2"  # an entry this calc does not otherwise read
+    assert late not in {e.id for e in reg.used}
+    mark_drafted(reg, late)
+    _reading_late(monkeypatch, reg, late)
+    src = report.build_source(res, reg, CLEAN)
+    assert "#let draft = true" in src
+    listed = src.split("== Draft code values")[1].split("\n= ")[0]
+    assert f'"{late}"' in listed
+
+
+def test_a_late_read_alone_is_enough_to_stamp_the_calc_draft(monkeypatch):
+    """The stamp, not only the list: with every other entry verified, the one
+    drafted entry read at the end of the build still makes the calc DRAFT."""
+    res, reg = run()
+    for i, e in reg.entries.items():
+        reg.entries[i] = dataclasses.replace(e, status="verified")
+    late = "asce7.guard.uniform.exemption.2"
+    assert "#let draft = false" in report.build_source(res, reg, CLEAN)  # nothing drafted yet
+    mark_drafted(reg, late)
+    _reading_late(monkeypatch, reg, late)
+    src = report.build_source(res, reg, CLEAN)
+    assert "#let draft = true" in src
+    listed = src.split("== Draft code values")[1].split("\n= ")[0]
+    assert listed.count('"Entry"') == 1 and f'"{late}"' in listed
+    # The list sits where it always has: in the front matter, before the dimensions page.
+    assert src.index("== Sketch") < src.index("== Draft code values") < src.index("= Dimensions")
 
 
 def test_footer_marks_uncommitted_changes():
@@ -103,7 +151,7 @@ def test_closing_verdict_is_the_checks_own_and_never_reads_1_00_beside_NG():
 def test_closing_line_prints_the_checks_verdict_not_a_recomputed_one(monkeypatch):
     # A sentinel verdict proves the page prints Check.verdict rather than
     # recomputing OK/NG from the ratio.
-    from handrail.checks import Check
+    from handrail.results import Check
 
     res, reg = run()
     monkeypatch.setattr(Check, "verdict", property(lambda self: "SENTINEL"))
@@ -123,20 +171,20 @@ def _printed_equations(lines):
 
 
 def test_mn_over_omega_prints_its_symbol_once():
-    res, reg = run()
+    res, _ = run()
     eqs = _printed_equations(res.checks[0].controlling.lines)
     mn_om = [eq for eq in eqs if eq[0] == "frac(M_n,Omega_b)"]
     assert len(mn_om) == 1
-    symbol, *rest = mn_om[0]
+    _, *rest = mn_om[0]
     assert "frac(M_n,Omega_b)" not in rest  # printed once: symbol, then substitution, then result
     assert rest[0].startswith("frac((")    # the substituted values come straight after the symbol
 
 
 def test_no_printed_line_repeats_a_part_side_by_side():
-    res, reg = run()
+    res, _ = run()
     for chk in (c for c in res.checks if c.computed):
         for eq in _printed_equations(chk.controlling.lines):
-            for a, b in zip(eq, eq[1:]):
+            for a, b in itertools.pairwise(eq):
                 assert a != b, f"repeated part in printed line: {' = '.join(eq)}"
 
 
@@ -146,7 +194,7 @@ def test_a_slash_symbol_is_refused():
     sh = Sheet(Registry())
     a, b = Sym("M_n", Q_(1, "lbf*inch")), Sym("Omega_b", 1.67)
     with pytest.raises(ValueError, match="frac"):
-        sh.line("M_n / Omega_b", a / b, note="", cite="")
+        sh.line("M_n_over_Omega_b", "M_n / Omega_b", a / b, note="", cite="")
 
 
 def test_front_matter_states_the_design_method_from_the_registry():
@@ -208,7 +256,7 @@ def test_printed_calc_never_cites_the_development_plan():
     base = run()[0].project
     for post in ("Pipe2STD", "Pipe1STD"):
         reg = Registry()
-        res = checks.run(dataclasses.replace(base, post=Member(post, "A53 Gr B")), reg)
+        res = engine.run(dataclasses.replace(base, post=Member(post, "A53 Gr B")), reg)
         src = report.build_source(res, reg, CLEAN)
         assert "plan D" not in src, post
     assert "A recommendation, not a requirement: flagged, and the calc continues." in src
@@ -223,7 +271,7 @@ def test_section_properties_page_has_a_post_block_with_r():
 
 
 def test_check_5_envelope_prints_alpha_ratio_only_for_moment_cases():
-    res, reg = run()
+    res, _ = run()
     chk5 = res.check(5)
     table = report._envelope_5(chk5)
     for c in chk5.checked:
@@ -261,7 +309,7 @@ def test_slenderness_flag_prints_in_the_check_5_summary_row():
                 baseplate=Baseplate(dimensions.parse("30"), dimensions.parse("30")),
                 intermediate_rail=IntermediateRail(NO_INTERMEDIATE))
     reg = Registry()
-    res = checks.run(p, reg)
+    res = engine.run(p, reg)
     src = report.build_source(res, reg, CLEAN)
     summary = src.split("= Summary")[1]
     assert "(Lc/r = 208.5 > 200, flagged)" in summary
@@ -269,7 +317,7 @@ def test_slenderness_flag_prints_in_the_check_5_summary_row():
 
 
 def test_second_order_sentence_is_printed_in_the_controlling_moment_case():
-    res, reg = run()
+    res, _ = run()
     src = report._lines(res.check(5).controlling.lines)
     assert "Second-order effects negligible: αPr/Pe = " in src
     assert "amplification taken as 1.0." in src
@@ -299,8 +347,48 @@ def test_dimensions_page_echoes_both_weld_sizes_and_lists_e():
             '[$e = frac(d_"rail", "2")$], "1.188 in", "Check 3"') in dims
 
 
-def test_weld_checks_print_in_check_number_order_with_their_envelopes():
+ELECTED = Welds(dimensions.parse("1/8"), dimensions.parse("1/4"), directional_increase=True)
+
+
+def _check_7(src):
+    return src.split("= Check 7: Post weld to baseplate")[1].split("\n= ")[0]
+
+
+def test_dimensions_page_echoes_the_election_of_the_directional_increase():
+    """W2 as revised 2026-10-10: the engineer's election prints with the
+    weld sizes, whichever way it is set."""
+    def dims(**kw):
+        res, reg = run(**kw)
+        return report.build_source(res, reg, CLEAN).split("= Dimensions")[1].split("\n= ")[0]
+
+    echo = "Directional strength increase at the post to baseplate weld: "
+    assert echo + "not elected (directional_increase = false)." in dims()
+    assert echo + "elected by the engineer (directional_increase = true)." in dims(welds=ELECTED)
+    assert dims().count(echo) == 1 and dims(welds=ELECTED).count(echo) == 1
+
+
+def test_the_election_line_prints_in_check_7_only_when_the_increase_is_elected():
+    line = '#calcline([$"Directional strength increase"$ #h(6pt) $arrow.r$ #h(6pt) *#"Applied at the engineer\'s election"*]'
+    res, reg = run(welds=ELECTED)
+    elected = report.build_source(res, reg, CLEAN)
+    assert _check_7(elected).count(line) == 1 and elected.count(line) == 1
+    printed = next(ln for ln in _check_7(elected).splitlines() if ln.startswith(line))
+    assert "AISC 360-22 Eq. J2-5; Engineering judgement (EOR), after STI" in printed
+    assert "at the engineer's election" in printed and "Steel Tube Institute" in printed
     res, reg = run()
+    default = report.build_source(res, reg, CLEAN)
+    assert "election" not in _check_7(default)
+    assert ('#calcline([$k_"ds" = "1.000"$], "No directional strength increase at the post to baseplate weld: '
+            'not elected by the engineer", "AISC 360-22 §J2.4(a)(3)")') in _check_7(default)
+
+
+def test_check_7_has_a_theta_column_only_when_the_increase_is_elected():
+    res, reg = run()
+    assert "[$theta$" not in _check_7(report.build_source(res, reg, CLEAN))
+
+
+def test_weld_checks_print_in_check_number_order_with_their_envelopes():
+    res, reg = run(welds=ELECTED)
     src = report.build_source(res, reg, CLEAN)
     heads = [ln for ln in src.splitlines() if ln.startswith("= Check ")]
     assert [h.split(":")[0] for h in heads] == ["= Check 1", "= Check 2", "= Check 3", "= Check 4a",
@@ -342,7 +430,7 @@ def _slice4_source(**kw):
     """Case 5's guard (test_intermediate.project): its own Pipe1-1/4STD intermediate rail, B x N = 6 x 8 in."""
 
     reg = Registry()
-    res = checks.run(slice4_project(**kw), reg)
+    res = engine.run(slice4_project(**kw), reg)
     return res, report.build_source(res, reg, CLEAN)
 
 

@@ -14,7 +14,11 @@ for inputs the engineer didn't intend:
 - the post is required (every v1 calc checks one post), and the baseplate
   thickness must be less than the post height;
 - both weld sizes are required, with no default (docs/brief/inputs.md);
+- the directional strength increase at the post to baseplate weld is the
+  engineer's election, off unless the file sets it (docs/brief/welds.md, W2);
 - the baseplate's plan dimensions B and N are required, with no default (S4-6);
+- a member is a standard section (section) or a custom round tube (shape,
+  OD and wall_nominal), never both (S5-8);
 - the intermediate rail is in one of three states (S4-1): same as the top
   rail (the default), its own section, or none. Inputs that conflict with
   the state stop the calc, never silently ignored (docs/plans/slice-4.md):
@@ -34,10 +38,12 @@ import dataclasses
 import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 
 from handrail import dimensions
 from handrail.dimensions import Dimension
 from handrail.errors import InputError
+from handrail.stops import Stop
 from handrail.units import Q_
 
 
@@ -56,8 +62,21 @@ class ProjectInfo:
 
 @dataclass(frozen=True)
 class Member:
-    section: str  # AISC designation, e.g. "Pipe1-1/2STD"
-    grade: str
+    """A rail or the post as entered. A grade the file leaves out is blank
+    here with ``grade_defaulted`` set; the engine fills it in by shape
+    before anything reads it (materials.with_default_grades; S5-5, S5-10)."""
+
+    section: str  # AISC designation, e.g. "Pipe1-1/2STD"; blank for a custom round tube
+    grade: str = ""
+    grade_defaulted: bool = False
+    # A custom round tube (S5-8): its outside diameter and its nominal wall,
+    # in place of ``section``. The wall entered is always the nominal wall.
+    OD: Dimension | None = None
+    wall_nominal: Dimension | None = None
+
+    @property
+    def custom(self) -> bool:
+        return self.OD is not None
 
 
 @dataclass(frozen=True)
@@ -73,7 +92,7 @@ class Loads:
 class Welds:
     """Fillet welds, all around (docs/brief/inputs.md, W12). The sizes are
     required; the electrode defaults to E70XX, the only one v1 accepts
-    (checked in checks.validate)."""
+    (checked in validate.py)."""
 
     rail_to_post: Dimension       # fillet leg size, top rail to post
     post_to_baseplate: Dimension  # fillet leg size, post to baseplate
@@ -81,6 +100,11 @@ class Welds:
     # Intermediate rail to post: its own section only, where it is required
     # (S4-8). Same as the top rail, the rail to post size applies.
     intermediate_rail_to_post: Dimension | None = None
+    # The directional strength increase at the post to baseplate weld (Check
+    # 7): the engineer's election, off unless the file sets it (welds.md, W2
+    # as revised 2026-10-10). The rail to post welds take k_ds = 1.0 whatever
+    # this says.
+    directional_increase: bool = False
 
 
 @dataclass(frozen=True)
@@ -152,12 +176,13 @@ class Project:
 SCHEMA = {
     "project": {"name": None, "phase": None, "description": None, "references": None, "assumptions": None},
     "geometry": {"span": None, "post_height": None, "baseplate_thickness": None},
-    "top_rail": {"section": None, "grade": None},
-    "post": {"section": None, "grade": None},
-    "intermediate_rail": {"same_as_top_rail": None, "none": None, "section": None, "grade": None},
+    "top_rail": {"section": None, "grade": None, "shape": None, "OD": None, "wall_nominal": None},
+    "post": {"section": None, "grade": None, "shape": None, "OD": None, "wall_nominal": None},
+    "intermediate_rail": {"same_as_top_rail": None, "none": None, "section": None, "grade": None,
+                          "shape": None, "OD": None, "wall_nominal": None},
     "baseplate": {"B": None, "N": None, "grade": None},
     "welds": {"rail_to_post": None, "post_to_baseplate": None, "electrode": None,
-              "intermediate_rail_to_post": None},
+              "intermediate_rail_to_post": None, "directional_increase": None},
     "loads": {"concentrated_lb": None, "uniform_plf": None, "component_lb": None,
               "uniform_exemption": {"applies": None, "statement": None}},
     "deflection": {"rail": {"limit_L_over": None, "bypass": None},
@@ -176,30 +201,31 @@ def _check_keys(table: dict, schema: dict, where: str) -> None:
             what = "table" if isinstance(value, dict) else "key"
             raise ProjectError(
                 f"project file: unknown {what} '{name}'. "
-                f"Allowed {'here' if where else 'at top level'}: {allowed}"
+                f"Allowed {'here' if where else 'at top level'}: {allowed}", stop=Stop.FILE_UNKNOWN_KEY
             )
         sub = schema[key]
         if isinstance(sub, dict):
             if not isinstance(value, dict):
-                raise ProjectError(f"project file: '{name}' must be a table [{name}]")
+                raise ProjectError(f"project file: '{name}' must be a table [{name}]", stop=Stop.FILE_NOT_A_TABLE)
             _check_keys(value, sub, name)
 
 
 def _need(table: dict, key: str, where: str):
     if key not in table:
-        raise ProjectError(f"project file: [{where}] is missing '{key}'")
+        raise ProjectError(f"project file: [{where}] is missing '{key}'", stop=Stop.FILE_MISSING_KEY)
     return table[key]
 
 
 def _str(value, name: str) -> str:
     if not isinstance(value, str):
-        raise ProjectError(f"project file: '{name}' must be text in quotes, not {value!r}")
+        raise ProjectError(f"project file: '{name}' must be text in quotes, not {value!r}", stop=Stop.FILE_NOT_TEXT)
     return value
 
 
 def _str_list(value, name: str) -> tuple[str, ...]:
     if not isinstance(value, list) or not all(isinstance(v, str) for v in value):
-        raise ProjectError(f"project file: '{name}' must be a list of quoted text, e.g. [\"...\"]")
+        raise ProjectError(f"project file: '{name}' must be a list of quoted text, e.g. [\"...\"]",
+                           stop=Stop.FILE_NOT_A_TEXT_LIST)
     return tuple(value)
 
 
@@ -207,7 +233,8 @@ def _bool(value, name: str) -> bool:
     # bool("false") is True in Python, so text must never be read as a boolean.
     if not isinstance(value, bool):
         raise ProjectError(
-            f"project file: '{name}' must be true or false without quotes, not {value!r}"
+            f"project file: '{name}' must be true or false without quotes, not {value!r}",
+            stop=Stop.FILE_NOT_A_BOOLEAN
         )
     return value
 
@@ -215,9 +242,11 @@ def _bool(value, name: str) -> bool:
 def _positive(value, name: str) -> float:
     # bool is a subclass of int in Python; exclude it explicitly.
     if isinstance(value, bool) or not isinstance(value, (int, float)):
-        raise ProjectError(f"project file: '{name}' must be a number without quotes, not {value!r}")
+        raise ProjectError(f"project file: '{name}' must be a number without quotes, not {value!r}",
+                           stop=Stop.FILE_NOT_A_NUMBER)
     if not value > 0:
-        raise ProjectError(f"project file: '{name}' must be greater than zero, not {value!r}")
+        raise ProjectError(f"project file: '{name}' must be greater than zero, not {value!r}",
+                           stop=Stop.FILE_NOT_POSITIVE)
     return value
 
 
@@ -225,22 +254,61 @@ def _dimension(table: dict, key: str, where: str) -> Dimension:
     """A required, positive dimension in the forms docs/brief/inputs.md accepts."""
     raw = _need(table, key, where)
     if isinstance(raw, bool) or not isinstance(raw, (str, int, float)):
-        raise ProjectError(f"project file: '{where}.{key}' must be a dimension, not {raw!r}")
+        raise ProjectError(f"project file: '{where}.{key}' must be a dimension, not {raw!r}",
+                           stop=Stop.FILE_NOT_A_DIMENSION)
     try:
         dim = dimensions.parse(str(raw))
     except dimensions.DimensionError as e:
-        raise ProjectError(f"[{where}] {key}: {e}") from None
+        raise ProjectError(f"[{where}] {key}: {e}", stop=e.stop) from None  # the dimension's own stop
     if dim.value.m_as("inch") <= 0:
-        raise ProjectError(f"[{where}] {key} must be greater than zero")
+        raise ProjectError(f"[{where}] {key} must be greater than zero", stop=Stop.FILE_DIMENSION_NOT_POSITIVE)
     return dim
+
+
+def _grade(table: dict, where: str) -> tuple[str, bool]:
+    """The member's grade as entered, and whether it is to be defaulted by
+    shape because the file leaves it out (S5-5)."""
+    if "grade" in table:
+        return _str(table["grade"], f"{where}.grade"), False
+    return "", True
+
+
+# A custom round tube is entered with these keys in place of ``section`` (S5-8).
+CUSTOM_KEYS = ("shape", "OD", "wall_nominal")
+ROUND_TUBE_SHAPE = "round tube"
+
+
+def _section_or_tube(t: dict, where: str) -> tuple[str, Dimension | None, Dimension | None]:
+    """The member's designation, or a custom round tube's outside diameter
+    and nominal wall. Both together stop, as conflicting inputs; so does a
+    shape other than a round tube, and a wall of half the OD or more."""
+    custom = [key for key in CUSTOM_KEYS if key in t]
+    if not custom:
+        return _str(_need(t, "section", where), f"{where}.section"), None, None
+    if "section" in t:
+        raise ProjectError(
+            f"[{where}] section is given together with {', '.join(custom)}. A member is either a standard section "
+            f"(section) or a custom round tube (shape = \"{ROUND_TUBE_SHAPE}\", OD and wall_nominal), not both. "
+            f"Remove one.", stop=Stop.MEMBER_SECTION_WITH_CUSTOM_DIMENSIONS)
+    shape = _str(_need(t, "shape", where), f"{where}.shape")
+    if shape != ROUND_TUBE_SHAPE:
+        raise ProjectError(f"[{where}] shape {shape!r}: this version supports \"{ROUND_TUBE_SHAPE}\" only",
+                           stop=Stop.MEMBER_SHAPE_UNSUPPORTED)
+    OD = _dimension(t, "OD", where)
+    wall = _dimension(t, "wall_nominal", where)
+    if not 2 * wall.value < OD.value:
+        raise ProjectError(
+            f"[{where}] wall_nominal ({wall.entered}) is half the OD ({OD.entered}) or more, which is not a tube. "
+            f"The wall entered is the nominal wall thickness. Check the inputs.",
+            stop=Stop.MEMBER_WALL_HALF_OD_OR_MORE)
+    return "", OD, wall
 
 
 def _member(raw: dict, where: str) -> Member:
     t = _need(raw, where, "top level")
-    return Member(
-        section=_str(_need(t, "section", where), f"{where}.section"),
-        grade=_str(t.get("grade", "A53 Gr B"), f"{where}.grade"),  # brief: pipe defaults to A53 Gr B
-    )
+    grade, defaulted = _grade(t, where)
+    section, OD, wall = _section_or_tube(t, where)
+    return Member(section=section, grade=grade, grade_defaulted=defaulted, OD=OD, wall_nominal=wall)
 
 
 def _given(table: dict, where: str, fields: dict) -> dict:
@@ -269,18 +337,18 @@ def _deflection_limit(raw: dict, member: str, default: DeflectionLimit) -> Defle
     return dataclasses.replace(default, **given)
 
 
-def _intermediate_rail(raw: dict, top_rail: Member, welds: Welds) -> IntermediateRail:
+def _intermediate_rail(raw: dict, welds: Welds) -> IntermediateRail:
     """The intermediate rail's state, refusing inputs that conflict with it."""
     t = raw.get("intermediate_rail", {})
     w = "intermediate_rail"
     none = _bool(t["none"], f"{w}.none") if "none" in t else False
     same_given = "same_as_top_rail" in t
     same = _bool(t["same_as_top_rail"], f"{w}.same_as_top_rail") if same_given else True  # the default (S4-1)
-    section = _str(t["section"], f"{w}.section") if "section" in t else None
-    grade = _str(t["grade"], f"{w}.grade") if "grade" in t else None
+    grade_given = "grade" in t
     own_inputs = [name for name, given in (
-        ("[intermediate_rail] section", section is not None),
-        ("[intermediate_rail] grade", grade is not None),
+        ("[intermediate_rail] section", "section" in t),
+        *((f"[intermediate_rail] {key}", key in t) for key in CUSTOM_KEYS),
+        ("[intermediate_rail] grade", grade_given),
         ("[welds] intermediate_rail_to_post", welds.intermediate_rail_to_post is not None),
         ("[deflection.intermediate_rail]", "intermediate_rail" in raw.get("deflection", {})),
     ) if given]
@@ -288,10 +356,11 @@ def _intermediate_rail(raw: dict, top_rail: Member, welds: Welds) -> Intermediat
     if none:
         if same_given and same:
             raise ProjectError("[intermediate_rail] none = true and same_as_top_rail = true contradict each "
-                               "other: choose one")
+                               "other: choose one", stop=Stop.INTERMEDIATE_NONE_AND_SAME)
         if own_inputs:
             raise ProjectError(f"[intermediate_rail] none = true, but {', '.join(own_inputs)} is given: there is "
-                               f"no intermediate rail to apply it to. Remove it, or set none = false.")
+                               f"no intermediate rail to apply it to. Remove it, or set none = false.",
+                               stop=Stop.INTERMEDIATE_NONE_WITH_INPUTS)
         return IntermediateRail(state=NO_INTERMEDIATE)
     if same:
         if own_inputs:
@@ -299,18 +368,22 @@ def _intermediate_rail(raw: dict, top_rail: Member, welds: Welds) -> Intermediat
                 f"[intermediate_rail] same_as_top_rail = true{'' if same_given else ' (the default)'}, but "
                 f"{', '.join(own_inputs)} is given. Same as the top rail, the intermediate rail takes the top "
                 f"rail's section, grade and rail to post weld size, and follows the top rail's deflection limit. "
-                f"Set same_as_top_rail = false to give it its own, or remove the input."
+                f"Set same_as_top_rail = false to give it its own, or remove the input.",
+                stop=Stop.INTERMEDIATE_SAME_WITH_INPUTS
             )
         return IntermediateRail(state=SAME_AS_TOP)
-    if section is None:
+    if "section" not in t and not any(key in t for key in CUSTOM_KEYS):
         raise ProjectError("[intermediate_rail] same_as_top_rail = false needs a section "
-                           "(or none = true for no intermediate rail)")
+                           "(or none = true for no intermediate rail)", stop=Stop.INTERMEDIATE_OWN_NEEDS_SECTION)
     if welds.intermediate_rail_to_post is None:
         raise ProjectError("[welds] is missing 'intermediate_rail_to_post', required when the intermediate rail "
-                           "has its own section (same_as_top_rail = false)")
+                           "has its own section (same_as_top_rail = false)",
+                           stop=Stop.INTERMEDIATE_OWN_NEEDS_WELD_SIZE)
+    grade, defaulted = _grade(t, w)  # a grade left out: S5-10, refining S4-1
+    section, OD, wall = _section_or_tube(t, w)
     return IntermediateRail(
         state=OWN_SECTION,
-        member=Member(section=section, grade=grade if grade is not None else top_rail.grade),  # S4-1
+        member=Member(section=section, grade=grade, grade_defaulted=defaulted, OD=OD, wall_nominal=wall),
         deflection=_deflection_limit(raw, "intermediate_rail", RAIL_DEFLECTION),
     )
 
@@ -321,9 +394,9 @@ def load(path: str | Path) -> Project:
         with open(path, "rb") as f:
             raw = tomllib.load(f)
     except FileNotFoundError:
-        raise ProjectError(f"project file not found: {path}") from None
+        raise ProjectError(f"project file not found: {path}", stop=Stop.FILE_NOT_FOUND) from None
     except tomllib.TOMLDecodeError as e:
-        raise ProjectError(f"project file {path} is not valid TOML: {e}") from None
+        raise ProjectError(f"project file {path} is not valid TOML: {e}", stop=Stop.FILE_INVALID_TOML) from None
     return from_dict(raw)
 
 
@@ -345,24 +418,27 @@ def from_dict(raw: dict) -> Project:
     if not tp.value < h.value:
         raise ProjectError(
             f"[geometry] baseplate_thickness ({tp.entered}) must be less than "
-            f"post_height ({h.entered})"
+            f"post_height ({h.entered})", stop=Stop.GEOMETRY_BASEPLATE_NOT_BELOW_POST_HEIGHT
         )
 
     top_rail = _member(raw, "top_rail")
     post = _member(raw, "post")
 
     wt = _need(raw, "welds", "top level")
+    intermediate_weld: dict[str, Any] = (
+        {"intermediate_rail_to_post": _dimension(wt, "intermediate_rail_to_post", "welds")}
+        if "intermediate_rail_to_post" in wt else {})
     welds = Welds(
         rail_to_post=_dimension(wt, "rail_to_post", "welds"),
         post_to_baseplate=_dimension(wt, "post_to_baseplate", "welds"),
-        **_given(wt, "welds", {"electrode": ("electrode", _str)}),
-        **({"intermediate_rail_to_post": _dimension(wt, "intermediate_rail_to_post", "welds")}
-           if "intermediate_rail_to_post" in wt else {}),
+        **_given(wt, "welds", {"electrode": ("electrode", _str),
+                               "directional_increase": ("directional_increase", _bool)}),
+        **intermediate_weld,
     )
     bt = _need(raw, "baseplate", "top level")
     baseplate = Baseplate(B=_dimension(bt, "B", "baseplate"), N=_dimension(bt, "N", "baseplate"),
                           **_given(bt, "baseplate", {"grade": ("grade", _str)}))
-    intermediate = _intermediate_rail(raw, top_rail, welds)
+    intermediate = _intermediate_rail(raw, welds)
 
     ld = raw.get("loads", {})
     ex = ld.get("uniform_exemption", {})
@@ -376,7 +452,7 @@ def from_dict(raw: dict) -> Project:
     if loads.uniform_exempt and not loads.exemption_statement.strip():
         raise ProjectError(
             "[loads.uniform_exemption] applies = true needs a statement of why the "
-            "guard is exempt from the uniform load"
+            "guard is exempt from the uniform load", stop=Stop.LOADS_EXEMPTION_NEEDS_STATEMENT
         )
 
     return Project(

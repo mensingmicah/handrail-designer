@@ -51,6 +51,11 @@ grade = "A36"             # A36 is the only baseplate grade supported (all of v1
 rail_to_post = "1/8"
 post_to_baseplate = "1/4"
 electrode = "E70XX"       # E70XX is the only electrode supported
+# The directional strength increase at the post to baseplate weld (AISC
+# 360-22 Eq. J2-5) is the engineer's election: false, or left out, the
+# weld is checked with k_ds = 1.0. The rail to post welds take k_ds = 1.0
+# either way.
+directional_increase = true
 
 [loads]
 # Leave these out to use the ASCE 7-22 values from the registry.

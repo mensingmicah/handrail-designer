@@ -1,0 +1,33 @@
+# Extra golden scenario full-compute-past-w8 (tests/test_golden.py, the second tier).
+# The tool runs this project and its whole printed calc is compared with full-compute-past-w8.typ.
+# Inputs only: this file holds no value, and none is ever copied into a test case.
+
+[project]
+name = "char"
+
+[geometry]
+span = "6'-0\""
+post_height = 42
+baseplate_thickness = "1/2"
+
+[top_rail]
+section = "Pipe1-1/2STD"
+
+[post]
+section = "Pipe2STD"
+
+[welds]
+rail_to_post = "1/8"
+post_to_baseplate = "1/4"
+
+[baseplate]
+B = 6
+N = 8
+
+[intermediate_rail]
+none = true
+
+# Validation refuses this project (a post wider than its rail, W8). Like test case 3, its
+# calc is taken through the compute step, so the checks' text is held past the stop.
+[verification]
+stops_at_validation = "is wider than the top rail"

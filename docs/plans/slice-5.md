@@ -174,6 +174,75 @@ database's rounding is reported to Micah; the tolerance is never widened.
     properties that reproduce on every pipe row become binding for pipe
     too.
 
+**T3 as ruled during the build** (Micah, 2026-10-10, on the pipe-row
+report). The formula did come out above the published I, S and Z, on six
+pipe rows: XS pipe 14 to 26 in, whose published A, I, S and Z match a wall
+of 0.90·t_nom, not the listed design wall. His ruling: the custom tube
+formulas are accepted as exact geometry on the listed OD and the design
+wall of §B4.2. The binding tests became:
+
+- the 67 round HSS rows: A, I, S, Z, r and D/t reproduce at the database's
+  printed precision; weight within 0.5%;
+- pipe rows under 12 in OD: A, I, S, Z and r reproduce or come out below
+  published, never above; D/t reproduces. A row above on any of them is
+  parked and reported;
+- the six XS rows and the large-HSS misses are a database finding, listed
+  in data/README.md and the pull request, not asserted.
+
+As built (tests/test_tube.py): the round HSS rows pass in full, and the
+pipe rows pass on I, S, Z and r. Pipe area comes out above published on
+five rows under 12 in (Pipe3STD +0.64%, Pipe6XS +0.61%, Pipe5STD +0.48%,
+Pipe3-1/2XS +0.42%, Pipe4STD +0.37%) and pipe D/t misses on one (Pipe2XS:
+published 11.7, 2.375/0.204 = 11.64, below).
+
+Micah's second ruling (2026-10-10): both are accepted as database
+findings, listed in data/README.md with the others. The binding pipe test
+gains a guard in place of "reproduces or below" for the area: on pipe rows
+under 12 in, the formula's area is never more than 1% above published.
+Pipe D/t is not asserted.
+
+More changes to the snapshot rule were ruled the same day: the chord D/t
+draft row is a third intended change to existing calcs; stop-second-order's
+rail moved to Pipe20XS; and full-noncompact and full-noncompact-same, whose
+Pipe26STD rail the chord D/t limit refuses, were retired, with
+full-tube-noncompact-rail holding the noncompact branch and Eq. F8-2.
+
+**Two rulings after the build** (Micah, 2026-10-10), each an intended
+change to the printed calcs, beyond the three above. Both are recorded in
+docs/brief/welds.md, which governs.
+
+- **The directional strength increase is the engineer's election, off by
+  default** (W2 as revised; it changes S5-12 and the Check 7 joint's row
+  below from "applies" to "may be elected"). Built: a `[welds]
+  directional_increase` input. Cases 4, 5 and 7 and the example set it to
+  true and print as before, plus an echo line and the election line. Cases
+  1 to 3 and 6 and every second-tier calc are left at the default, so their
+  Check 7 runs on k_ds = 1.0: its ratio is 1.5 times what it was, and it
+  now fails in cases 1 and 2 (0.92 to 1.38) and in `full-post-pipe1-1_2`
+  and `full-weld-small-base`. None of those records a Check 7 value. Case
+  7's rough figure above ("k_ds = 1.5, about 0.67") holds because the case
+  elects the increase. Micah's word on both open points (2026-10-10):
+  cases 1 and 2 stay at the default, with Check 7 reading NG in their
+  printed calcs; and the key keeps the name `directional_increase`.
+- **Thin material at a weld: a warning when a part joined is thinner than
+  1/8 in** (raised by case 6's independent calc). Built, then parked: the
+  1/8 in limit is a drafted registry entry read at every weld, so it adds
+  one row to the draft list of every calc, where Micah expected a change
+  only in calcs with a thin part. Micah accepted that row the same day, as
+  with the chord D/t limit, and confirmed that the warning fires on any
+  part under 1/8 in nominal, database sections included (Pipe1/2STD,
+  Pipe3/4STD, HSS1.900X0.120). It is on the branch: the row
+  `aws.d1_1.thickness_min` in all 45 snapshotted calcs, and the warning
+  with its two further draft rows in the four second-tier calcs that have
+  a thin part. No number changed.
+
+One citation was corrected the same day, at Micah's instruction, also an
+intended change to the printed calcs: the fillet weld strength line
+(`aisc360.J2.4.fillet_strength`) cites "AISC 360-22 Eq. J2-4", read on page
+16.1-130 of the 360-22 text, in place of "§J2.4". It changes that line in
+Checks 3, 4b and 7 and the entry's row in "Draft code values", in all 45
+snapshotted calcs, and no number.
+
 **T4. Machinery tests** (same-author), for what cases 6 and 7 do not
 reach:
 
@@ -230,7 +299,7 @@ Check 7 joint (post on the baseplate; A36 plate is the only baseplate):
 
 | Post | Cell |
 | --- | --- |
-| AISC pipe, round HSS, custom round tube | allowed: welded all around; W2's directional increase applies |
+| AISC pipe, round HSS, custom round tube | allowed: welded all around; W2's directional increase may be elected by the engineer (as planned it applied automatically; revised 2026-10-10) |
 | Rectangular HSS, custom rectangular tube | stop: slice 6 (the weld pattern and the directional rule for rectangular HSS) |
 | Solid round bar, solid rectangular bar | stop: slice 7 |
 
@@ -470,7 +539,9 @@ clause (S5-3) and "(default)" on case 5's intermediate rail grade
     is applied. This planning session has read src/, so it must not write
     either (rule 6).
 11. **Micah's review** of both independent calcs and both PDFs against
-    the checklist. His recompute of case 6 is deferred (#18).
+    the checklist. His recompute of case 6 is deferred (#18). **Done:**
+    Micah reviewed the case 6 and 7 independent calcs and PDFs against the
+    checklist on 2026-10-10, with no changes.
 12. **Version 0.5.0** in pyproject.toml (#24), CHANGELOG, the
     calc-code-review skill, then the **pull request** to main.
 

@@ -40,7 +40,8 @@ Manual, 16th Edition, and the AISC Shapes Database v16.0. (Slice 1.)
   of the saddle form a flare-bevel joint.
 - Local strength of the rail wall at the post, and of the post wall at the
   intermediate rail (AISC 360-22 Chapter K chord limit states), is not
-  checked.
+  checked; the chord's D/t is limited to 50, the Chapter K limit of
+  applicability.
 - The component load's effect on the post is not checked.
 - Guard loads are not combined with floor or roof live load; wind, snow and
   ice are not considered.
@@ -94,11 +95,24 @@ Manual, 16th Edition, and the AISC Shapes Database v16.0. (Slice 1.)
 - The dimensions page shows each dimension as entered and normalized
   (72 → 6'-0"). Each derived length (h − t_p, Lc) prints the note, formula
   and value of the calc line that computed it. (Slices 1 and 2.)
+- Under the dimensions table, one line echoes the engineer's election of
+  the directional strength increase at the post to baseplate weld:
+  "elected by the engineer" or "not elected", with the input's value.
+  Where it is elected, Check 7 prints a line under k_ds saying the
+  increase is applied at the engineer's election, with its basis.
+  (Micah, 2026-10-10; welds.md, W2 as revised.)
 - The Check 5 envelope table has an αPr/Pe column, with "—" for the
   downward and upward cases, so the value is visible for every case the
   second-order stop checks; the printed sentence goes in the calc lines.
   Each capacity (Pc or Pt, and Mc) prints under its demand. The Check 5
   calc lines name the interaction equation used. (Slice 2, D1.)
+- A weld that joins a part thinner than 1/8 in prints a warning in a box
+  at the top of its check (Checks 3, 4b and 7): "THIN MATERIAL AT WELD",
+  the part and its thickness, that the material is below the AWS D1.1
+  thickness range and the welding procedure is the engineer's
+  responsibility, and the AWS D1.1 scope statement with its citation. It
+  is a warning, not a stop: the check's verdict and its summary row are
+  unchanged. (Micah, 2026-10-10; welds.md, "Thin material at a weld".)
 - Reaction tables (S4-7, Micah 2026-10-08). Each set prints V, N and M
   at 4 significant figures in lb and lb-in. N is signed in the
   anchor-software convention, with its sense in words: "N = +268 lb

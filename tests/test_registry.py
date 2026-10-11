@@ -6,11 +6,11 @@ from handrail.registry import REGISTRY_PATH, MissingEntry, Registry, RegistryErr
 
 
 def entry(id, status="drafted", by="", date="", **extra):
-    fields = dict(
-        id=id, value=1.67, unit="", cite="AISC 360-22 §F1",
-        document="AISC 360-22", edition="2022", section="§F1",
-        source="memory", status=status, verified_by=by, verified_date=date,
-    )
+    fields = {
+        "id": id, "value": 1.67, "unit": "", "cite": "AISC 360-22 §F1",
+        "document": "AISC 360-22", "edition": "2022", "section": "§F1",
+        "source": "memory", "status": status, "verified_by": by, "verified_date": date,
+    }
     fields.update(extra)
     lines = ["[[entry]]"] + [f"{k} = {v!r}".replace("'", '"') for k, v in fields.items()]
     lines.append("drafted_on = 2026-09-30")

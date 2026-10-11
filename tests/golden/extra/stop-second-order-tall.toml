@@ -1,0 +1,28 @@
+# Extra golden scenario stop-second-order-tall (tests/test_golden.py, the second tier).
+# The tool refuses this project; the error class and message are compared with stop-second-order-tall.stop.txt.
+# Inputs only: this file holds no value, and none is ever copied into a test case.
+
+[project]
+name = "char"
+
+[geometry]
+span = "6'-0\""
+post_height = "12'-0\""
+baseplate_thickness = "1/2"
+
+[top_rail]
+section = "Pipe2STD"
+
+[post]
+section = "Pipe1/2STD"
+
+[welds]
+rail_to_post = "1/8"
+post_to_baseplate = "1/4"
+
+[baseplate]
+B = 6
+N = 8
+
+[intermediate_rail]
+none = true

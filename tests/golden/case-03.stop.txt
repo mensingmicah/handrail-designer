@@ -1,0 +1,1 @@
+The post (Pipe2STD, OD 2.375 in) is wider than the top rail (Pipe1-1/2STD, OD 1.900 in). The coped post to rail underside detail requires post OD <= rail OD. Check the inputs.

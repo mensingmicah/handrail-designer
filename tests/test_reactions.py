@@ -8,7 +8,7 @@ the release review (ADR 0007).
 import pytest
 
 from handrail import shapes
-from handrail.checks import CONCENTRATED, DISTRIBUTED
+from handrail.directions import CONCENTRATED, DISTRIBUTED
 from handrail.demand import ASD, Given, demand
 from handrail.post import WORDING as CHECK_5_WORDING
 from handrail.project import NO_INTERMEDIATE, SAME_AS_TOP, Loads
@@ -17,7 +17,7 @@ from handrail.registry import Registry
 from handrail.units import Q_
 from test_intermediate import run
 
-P2, P125 = shapes.pipe("Pipe2STD"), shapes.pipe("Pipe1-1/4STD")
+P2, P125 = shapes.section("Pipe2STD"), shapes.section("Pipe1-1/4STD")
 RHO = 490.0 / 1728  # lb/in^3 (registry value, restated for the plain calc)
 H, TP, L = 42.0, 0.5, 72.0
 
@@ -59,9 +59,9 @@ def test_the_moment_arm_is_h_for_the_reactions_and_h_minus_tp_for_check_5():
     two arms: the lateral set's M with h and Check 5's with h - t_p."""
     res = run()
     project, loading, reg = res.project, res.loading, Registry()
-    h = Given("h", project.post_height.value, "arm", "Input")
-    hp = Given('L_"post"', loading.L_post, "arm", "Loading")
-    dead = Given("P_D", loading.P_D, "dead", "Loading")
+    h = Given("h", "h", project.post_height.value, "arm", "Input")
+    hp = Given("L_post", 'L_"post"', loading.L_post, "arm", "Loading")
+    dead = Given("P_D", "P_D", loading.P_D, "dead", "Loading")
     m_reaction = demand(reg, project, loading, "Lateral", CONCENTRATED, COMBINATIONS, WORDING, dead, h).M
     m_check5 = demand(reg, project, loading, "Outward", CONCENTRATED, ASD, CHECK_5_WORDING, dead, hp).M
     assert m_reaction.value.m_as("lbf*inch") == pytest.approx(1.6 * 200 * H, rel=1e-12)
