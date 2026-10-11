@@ -299,3 +299,32 @@ plan's decision numbers.
     and the faces of the base weld that see the moment in Check 7.
   - Slice 7 reuses the key for flat bar; slice 8 makes it a two-option
     picker in the form.
+- **Rectangular HSS grades: the slice 5 rulings carried over, and no
+  A1065.** (S6-5, Micah 2026-10-10.)
+  - Every AISC Manual Table 2-4 grade for rectangular HSS is offered,
+    each with its own Fy and Fu entries keyed to the rectangular shape:
+    A500 Gr B, A500 Gr C, A501 Gr A, A501 Gr B, A847 and A1085 Gr A.
+  - A618 Gr Ia, Ib, II and III reuse slice 5's entries by wall range and
+    its lookup, the nominal wall compared, the stop above 1-1/2 in
+    (S5-7).
+  - A1085 Gr A follows S5-6: a database section on its published
+    properties with the note; a custom tube on t_des = t_nom.
+  - A custom rectangular tube takes the rectangular HSS grades. A53 Gr B
+    is not offered for it: A53 is a pipe specification.
+  - Default for rectangular HSS and custom rectangular tube: A500 Gr B,
+    as for round HSS (S5-5). A defaulted grade prints "(default)"
+    (S5-10), and the intermediate rail's default follows S5-10.
+  - **A1065 is not offered in v1.** This replaces "A1065 moves to slice
+    6" (S5-6). From memory, unverified, A1065 Gr 50 is Fy = 50 and Fu =
+    60 ksi, so Fy/Fu = 0.83, over the 0.8 ductility limit of the Chapter
+    K tables (AISC 360-22 Table K4.2A, page 16.1-169, and the round
+    tables in issue #28), whose note excuses only A500 Gr C. Every member
+    in this tool is a chord or a branch at a Chapter K joint, so an A1065
+    member could not pass. It is also a product formed from plate in
+    large sizes, not made at guard sizes. The unsupported-grade stop
+    names it like any grade without entries.
+  - The registry's drafted rectangular grade list
+    (`material.grades.hss_rect`) is corrected in slice 6: A1065 Gr 50 and
+    "A1065 Gr 70" removed, and A618's grade names corrected to Ia, Ib, II
+    and III as in the round list.
+
