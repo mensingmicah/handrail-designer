@@ -1,0 +1,1 @@
+ProjectError: post Pipe2STD on top rail Pipe12STD: Db/D = 0.1863 <= 0.2. The width ratio of a round T-connection must be over 0.2 (AISC 360-22 Tables K3.1A and K4.1A; Engineering judgement (EOR): Chapter K limits of applicability are stops, at Check 3 only). The tool does not check a post this narrow against its rail.

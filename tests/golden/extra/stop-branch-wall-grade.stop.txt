@@ -1,0 +1,1 @@
+ProjectError: post Round tube 2.375 × 0.065 (custom), A500 Gr B: D/t = 39.29 > 0.05E/Fyb = 31.52, the limit of applicability for the branch of a round T-connection (AISC 360-22 Tables K3.1A and K4.1A; Engineering judgement (EOR): Chapter K limits of applicability are stops, at Check 3 only). The tool does not check this section as a branch on a round rail.

@@ -1,0 +1,29 @@
+# Extra golden scenario stop-branch-wall (tests/test_golden.py, the second tier).
+# The tool refuses this project; the error class and message are compared with stop-branch-wall.stop.txt.
+# Slice 6: a round post over D/t = 50 under a round rail, the Chapter K branch limit (S6-13). It replaces stop-chord-post: the post is no longer stopped as the chord at the intermediate rail (S6-16 item 8).
+# Inputs only: this file holds no value, and none is ever copied into a test case.
+
+[project]
+name = "char"
+
+[geometry]
+span = "6'-0\""
+post_height = 42
+baseplate_thickness = "1/2"
+
+[top_rail]
+section = "HSS6.000X0.250"
+
+[post]
+section = "HSS6.000X0.125"
+
+[welds]
+rail_to_post = "1/8"
+post_to_baseplate = "1/4"
+
+[baseplate]
+B = 12
+N = 12
+
+[intermediate_rail]
+same_as_top_rail = true

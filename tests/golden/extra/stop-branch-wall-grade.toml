@@ -1,0 +1,31 @@
+# Extra golden scenario stop-branch-wall-grade (tests/test_golden.py, the second tier).
+# The tool refuses this project; the error class and message are compared with stop-branch-wall-grade.stop.txt.
+# Slice 6: a round post over 0.05 E/Fyb under a round rail (S6-13): a 2.375 x 0.065 tube in A500 Gr B, D/t = 39.3 against 31.5.
+# Inputs only: this file holds no value, and none is ever copied into a test case.
+
+[project]
+name = "char"
+
+[geometry]
+span = "6'-0\""
+post_height = 42
+baseplate_thickness = "1/2"
+
+[top_rail]
+section = "Pipe2STD"
+
+[post]
+shape = "round tube"
+OD = 2.375
+wall_nominal = 0.065
+
+[welds]
+rail_to_post = "1/8"
+post_to_baseplate = "1/4"
+
+[baseplate]
+B = 6
+N = 8
+
+[intermediate_rail]
+none = true
