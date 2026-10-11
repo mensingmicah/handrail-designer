@@ -332,4 +332,47 @@ plan's decision numbers.
     0.5%. Larger rows are a reported database finding, not asserted. A
     row above published in the binding set stops the build and goes to
     Micah; the tolerance is never widened.
+- **Rectangular HSS flexure: §F7 in full, with Cb from the moment
+  diagram.** (S6-4, Micah 2026-10-10.) AISC 360-22 §F7, pages 16.1-62 to
+  16.1-65: yielding (Eq. F7-1), flange local buckling (Eq. F7-2 for a
+  noncompact flange), web local buckling (Eq. F7-6 for a noncompact web)
+  and lateral-torsional buckling (§F7.4, Eqs. F7-8 to F7-11), each about
+  the axis being bent. A slender flange or web stops, as for every
+  section (above).
+  - **Cb is computed now, not taken as 1.0.** Eq. F1-1 (§F1(c), page
+    16.1-52) from M_max and the quarter-point moments M_A, M_B and M_C of
+    each load case's own moment diagram on the simple-span rail: the
+    uniform dead load combined with the concentrated or the uniform guard
+    load, as that case combines them. Only for the axis that has an LTB
+    limit state. Lb = the span between posts. "Cb from the §F1 moment
+    diagram for each load case" (Flexural capacity, above) applies to
+    rectangular HSS from this slice.
+  - **Rectangular members are biaxial by Chapter H, not SRSS.** A case
+    with vertical and horizontal load bends both axes; each axis takes
+    its own diagram, its own §F7 strength and its own Cb, and the two
+    combine by AISC 360-22 §H1.1 (Eqs. H1-1a and H1-1b, page 16.1-82;
+    Eq. H1-1b with Pr = 0 for a rail). This is "All other sections use
+    the AISC 360-22 provisions for combined strong- and weak-axis
+    bending" (above), now built. Square HSS included; SRSS stays with
+    round sections.
+  - **Post: Cb = 1.0,** a cantilever with its free end unbraced (§F1(c),
+    page 16.1-52), printed with that reason. Lb = h (Flexural capacity,
+    above).
+  - **Printed:** M_max, M_A, M_B, M_C and Eq. F1-1, then the LTB strength
+    with Mn ≤ Mp. AISC 360-22 has no upper limit on Cb itself (the 3.0
+    limit of the 2005 edition is gone; read on page 16.1-52, Claude
+    2026-10-10); the only cap is Mn ≤ Mp in Eqs. F7-8 and F7-9.
+  - **Square sections and weak-axis bending have no LTB.** The calc
+    prints that line, citing the User Note to §F7.4 (page 16.1-65).
+  - **Cb is one shared function,** so slice 7's flat bar reuses it
+    unchanged.
+  - **J for a custom rectangular tube:** 4·Ap²·t/p on the wall's midline
+    with a midline corner radius of 1.5·t_des (Ap the area enclosed by
+    the midline, p its perimeter), the membrane-analogy form of the
+    Commentary to §H3 (page 16.1-415). It joins the S6-3 property-formula
+    test under the same rule. A database section uses its published J.
+  - Planning arithmetic (Claude, 2026-10-10; not test values), HSS2×1×1/8
+    on its strong axis at the drafted Fy = 46 ksi: Lp ≈ 33 in and Lr ≈
+    950 in, so a 6 ft rail and a 42 in post are both past Lp and Eq. F7-8
+    applies; the reduction before Cb is about 2% and 0.4%.
 
