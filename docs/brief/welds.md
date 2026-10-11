@@ -766,6 +766,7 @@ checks.md and inputs.md.
     a mixed pair: D/t ≤ 50 for a round chord (S5-3), and the
     corresponding Chapter K limit for a rectangular chord, B/t and H/t ≤
     35 (AISC 360-22 §K1.3, page 16.1-160; Table K4.2A, page 16.1-170).
+    At Check 3 only: S6-13 removes every applicability stop at Check 4b.
   - **Width rule** (W8 and S4-11 carried over): the branch's width across
     the chord face may not exceed the chord's width: Bb ≤ B for a
     rectangular chord, or ≤ D for a round chord; Db in place of Bb for a
@@ -887,4 +888,44 @@ checks.md and inputs.md.
   so first and lead with the leanest compliant option (a stated
   assumption, an applicability stop, or a conservative simplification);
   the full treatment is the alternative.
+- **The Chapter K limits of applicability are stops, at Check 3 only.**
+  (S6-13, Micah 2026-10-10.) Stops only, no flags: a connection outside
+  the limits "must be designed by rational analysis" (AISC 360-22 §K1,
+  page 16.1-157), which the tool cannot do. Each limit is a drafted
+  registry entry read from the 360-22 tables. This answers issue #28.
+  - **Check 3, round post on round rail** (the computed check, S6-10):
+    every T-connection limit of Tables K3.1A and K4.1A (pages 16.1-164
+    and 16.1-168):
+    - chord D/t ≤ 50 (today's stop, kept);
+    - branch Db/tb ≤ 50, and ≤ 0.05·E/Fyb;
+    - 0.2 < Db/D ≤ 1.0;
+    - Fy and Fyb ≤ 52 ksi;
+    - Fy/Fu and Fyb/Fub ≤ 0.8.
+  - **Check 3, a rectangular chord or a mixed pair** (the stated
+    assumption, S6-9 and S6-12): the chord's own limits only.
+    - Wall slenderness: D/t ≤ 50 for a round chord; B/t and H/t ≤ 35 for
+      a rectangular chord (§K1.3, page 16.1-160; Table K4.2A, page
+      16.1-170), on the outside dimensions and the design wall.
+    - Fy ≤ 52 ksi; Fy/Fu ≤ 0.8.
+    - Table K4.2A's branch slenderness, width ratio and aspect ratio
+      limits are not applied: they bound equations the tool does not
+      use. (The aspect limit, 0.5 ≤ H/B ≤ 2.0, would stop an HSS3×1
+      rail.)
+  - **Check 4b, every pair: no applicability stops.** Under S6-11 no
+    force is normal to the post wall, so no Chapter K check or assumption
+    is left for a limit to protect. Today's stop at post D/t > 50 with an
+    intermediate rail (S5-3) is removed.
+  - **A500 Gr C is a named exception to the Fy/Fu limit,** by the tables'
+    note ("ASTM A500/A500M Grade C is acceptable"): that grade passes
+    whatever its ratio. A registry entry holds the note (issue #28,
+    question 2).
+  - **End distance** (§K1.4, page 16.1-160; a 50% reduction near an
+    unreinforced chord end): nothing is added. The printed assumption
+    that the post is interior, with end posts and rail overhangs not
+    checked, already excludes it.
+  - On the drafted values every offered grade passes the Fy and Fy/Fu
+    limits (issue #28's table), so those stops are not expected to fire.
+  - Accepted: a thin custom rectangular rail with B/t between 35 and the
+    slender-flange limit (about 38 on the outside width) is refused
+    though its member checks would run.
 
