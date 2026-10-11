@@ -42,6 +42,10 @@ Manual, 16th Edition, and the AISC Shapes Database v16.0. (Slice 1.)
   intermediate rail (AISC 360-22 Chapter K chord limit states), is not
   checked; the chord's D/t is limited to 50, the Chapter K limit of
   applicability.
+- At a post to baseplate weld on one pair of faces, the post wall is
+  checked for the weld force along the post axis and for the force along
+  the face separately; the two are not combined, the force along the face
+  being small next to the other.
 - The component load's effect on the post is not checked.
 - Guard loads are not combined with floor or roof live load; wind, snow and
   ice are not considered.

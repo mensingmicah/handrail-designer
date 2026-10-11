@@ -14,7 +14,7 @@ import math
 
 import pytest
 
-from handrail import engine, project, shapes, weld_lines
+from handrail import engine, project, report, shapes, weld_lines
 from handrail.dimensions import parse
 from handrail.errors import InputError, SectionStop
 from handrail.orientation import post_axes
@@ -312,6 +312,13 @@ def test_the_post_wall_at_a_face_pair_is_checked_on_its_own_lines_not_combined()
     assert "Covered by Check 5" not in words.values()
     rule = next(ln for ln in out.lines if ln.kind == "decision" and ln.text == "Checked on its own lines")
     assert rule.note == reg.get("ej.weld.post_wall.face_pair").value
+
+
+def test_the_face_pair_assumption_is_printed_with_the_others_word_for_word():
+    """S6-7, Micah's addition: not combining the two components is a printed
+    simplification. The sentence in the "Stated assumptions" list is the
+    one Check 7 prints at the post wall lines, from the same registry entry."""
+    assert Registry().get("ej.weld.post_wall.face_pair").value in report.LOCKED_ASSUMPTIONS
 
 
 def test_the_force_along_the_face_is_the_shear_of_a_load_parallel_to_the_welded_faces():
