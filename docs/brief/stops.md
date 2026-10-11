@@ -76,9 +76,11 @@ A36 plate is the only baseplate (W12).
   branch-to-chord weld. The weld line is the pair's: the ring for round on
   round (W1), the effective weld of AISC 360-22 Table K5.1 for rectangular
   on rectangular (S6-8), and the branch's own outline where a round and a
-  rectangular member meet (S6-9). The chord wall's local strength is a
-  stated assumption, not a check (W7 as kept by S5-3; S6-9 and S6-12 for
-  a mixed pair and a rectangular chord).
+  rectangular member meet (S6-9). The chord wall's local strength: at the
+  rail to post joint it is checked for a round post on a round rail
+  (S6-10) and is a stated assumption, not a check, for a rectangular rail
+  or a mixed pair (S6-9, S6-12); at the intermediate rail to post joint
+  the chord limit states have no demand, for every pair (S6-11).
 - **Allowed, post on the baseplate.** A round post is welded all around,
   and W2's directional strength increase may be elected by the engineer
   for it, whatever its grade (S5-12; an election, off by default, since
