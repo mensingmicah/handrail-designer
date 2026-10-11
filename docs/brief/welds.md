@@ -480,10 +480,11 @@ plan's decision numbers.
   where the lines print, and what becomes of the D/t ≤ 50 stop (a limit
   of applicability still applies to a check made under Chapter K).
   - Reworded by slice 6's plan (Micah, 2026-10-10): the chord limit
-    states are computed at Check 3 only, for same-family pairs. At Check
-    4b they have no demand and the calc prints one line (S6-11, below).
-    At a mixed round and rectangular pair the chord wall stays a stated
-    assumption (S6-9, below).
+    states are computed at Check 3 only, for a round post on a round
+    rail (S6-10, below). At Check 4b they have no demand and the calc
+    prints one line (S6-11). At a mixed round and rectangular pair, and
+    at a rectangular chord, the chord wall stays a stated assumption
+    (S6-9, S6-12).
 - **ODs within 0.01 in are equal in the width comparisons.** (S5-4,
   Micah 2026-10-09.) W8 (post OD ≤ rail OD) and S4-11 (intermediate rail
   OD ≤ post OD) treat two outside diameters within 0.01 in of each other
@@ -592,6 +593,12 @@ checks.md and inputs.md.
   - Review. Micah's slice review of the chord checks is a cursory read
     of that table. The release recompute rule is unchanged (ADR 0006,
     S5-2): the governing limit state of each case.
+  - Amended by S6-12 (Micah, 2026-10-10): the "not checked" assumption
+    (W7) is retired for a round branch on a round chord only. A
+    rectangular chord and the mixed pairs keep it. So "Chapter K last,
+    round chords before rectangular chords" above is now the round chord
+    check alone, and the compact table prints at a round-on-round joint
+    only.
 - **The post to baseplate weld of a rectangular post: pattern, weld line
   and directional rule.** (S6-6, Micah 2026-10-10.)
   - **Input.** `base_pattern` under `[welds]`: `"all around"`, `"faces
@@ -731,7 +738,7 @@ checks.md and inputs.md.
   | Chord \ Branch | Round hollow | Rectangular hollow |
   | --- | --- | --- |
   | Round hollow | allowed (slice 5); chord wall checked | allowed, mixed; chord wall not checked |
-  | Rectangular hollow | allowed, mixed; chord wall not checked | allowed; chord wall checked |
+  | Rectangular hollow | allowed, mixed; chord wall not checked | allowed; chord wall not checked (S6-12) |
 
   - **Mixed pairs are allowed** (a rectangular branch on a round chord, a
     round branch on a rectangular chord), at both joints. Claude had
@@ -751,7 +758,8 @@ checks.md and inputs.md.
     at the post (AISC 360-22 Chapter K) is not checked", and its Check 4b
     counterpart), on the reasoning of S6-1: the branch forces are tens to
     hundreds of pounds against chord capacities in kips. So W7 is retired
-    for same-family pairs only. AISC 360-22 has no provision for either
+    for round on round only (S6-12, below, keeps it for a rectangular
+    chord too). AISC 360-22 has no provision for either
     mixed pair (Commentary to Chapter K, page 16.1-526); the Commentary's
     equivalent square branch of width π·Db/4 (page 16.1-538) is not used.
   - The chord's wall slenderness limit of applicability still applies at
@@ -831,8 +839,8 @@ checks.md and inputs.md.
     to the post wall (simple shear connection); the post wall's in-plane
     shear is checked by the base metal line above." Final wording on the
     branch.
-  - This retires the Check 4b half of W7 for same-family pairs with a
-    statement, not a calculation. The chord limit states are computed at
+  - This retires the Check 4b half of W7 with a statement, not a
+    calculation. The chord limit states are computed at
     Check 3 only (S5-3 and scope.md reworded).
   - **What it rests on.** No load case puts force along the intermediate
     rail's axis: the longitudinal guard load acts on the top rail, and
@@ -843,4 +851,40 @@ checks.md and inputs.md.
     (P_c·L/8) or the eccentricity R·D_post/2 for the chord wall alone,
     either of which would reverse the simple shear ruling for one check
     and not the other.
+- **A rectangular chord's limit states are not computed in v1.** (S6-12,
+  Micah 2026-10-10.) A rectangular chord is treated as the mixed pairs
+  of S6-9 are.
+  - Stated assumption: local strength of the rail wall at the post
+    (AISC 360-22 Chapter K and §J10 chord limit states) is not checked
+    for a rectangular chord, on the basis of S6-1: branch forces of tens
+    to hundreds of pounds against chord capacities in kips.
+  - The Chapter K limits of applicability for a rectangular chord are
+    applied as stops, taken from the 360-22 tables with their page
+    numbers: the wall slenderness, and the Fy and Fy/Fu limits (§K1.3,
+    page 16.1-160; Table K4.2A, page 16.1-170). Which limits, exactly,
+    is S6-13.
+  - The computed chord check (S6-10) stays for a round branch on a round
+    chord only.
+  - Why (Micah). AISC 360-22 is not self-contained for a rectangular
+    T-connection. Branch axial load goes to Chapter J and AISC Manual
+    Part 9 (User Note, page 16.1-164). Chord face plastification is a
+    yield-line check the Specification does not print (§J10.10, page
+    16.1-156). Table K4.2 (page 16.1-169) holds three equations only. The
+    full set would add 12 to 15 drafted entries, with Manual equations,
+    for a check that prints near 0.01; a partial set would look complete
+    when it is not.
+  - Claude had recommended the full set: sidewall local yielding and
+    crippling (§J10.2, §J10.3) and Eqs. K4-6 to K4-8 above β = 0.85,
+    yield-line plastification and punching (§J4.2 with Eq. K1-2) below
+    it, Eq. K4-9 interaction, Qf by Eq. K1-4. Recorded for a later
+    version. Not settled then: whether Eq. K4-6 carries a β condition on
+    the printed page.
+  - The weld at a rectangular branch on a rectangular chord still uses
+    Table K5.1 (S6-8). That is a weld strength provision, not a chord
+    limit state.
+- **For the rest of slice 6's planning** (Micah, 2026-10-10): where a
+  check or refinement is unlikely ever to govern a realistic guard, say
+  so first and lead with the leanest compliant option (a stated
+  assumption, an applicability stop, or a conservative simplification);
+  the full treatment is the alternative.
 
