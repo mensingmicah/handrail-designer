@@ -557,3 +557,30 @@ plan's decision numbers.
     (Accepted by Micah, 2026-10-10, as with the chord D/t limit.)
   - Not covered by this warning: local effects of the concentrated guard
     load on a thin tube wall (issue #28, for slice 6).
+
+## Hollow rectangular sections and the chord limit states (slice 6)
+
+Decided in planning slice 6 (docs/plans/slice-6.md); S6 numbers are that
+plan's decision numbers. Member rulings of the same slice are in
+checks.md and inputs.md.
+
+- **Slice 6 is one slice: rectangular sections and the Chapter K chord
+  limit states together.** (S6-1, Micah 2026-10-10.) The roadmap's
+  question of a split is answered: no split.
+  - Why. The chord limit states will essentially never govern a
+    realistic guard: the branch forces at both joints are tens to
+    hundreds of pounds, against chord capacities in kips. A split would
+    double the fixed cost of a slice (plan, independent calcs, code
+    review, pull request, close) for a check that does not decide
+    results.
+  - Build order. Rectangular members first. Chapter K last, round chords
+    before rectangular chords. Each of the three is a clean stopping
+    point.
+  - The chord checks print compactly. Per joint, one table: limit state,
+    ratio, OK or NG. Full calc lines print only for a limit state whose
+    ratio exceeds a threshold. The threshold is 0.5 (Micah's suggestion,
+    Claude's proposal; an engineering-judgement registry entry). This
+    follows the slice 5 ruling to keep the package lean.
+  - Review. Micah's slice review of the chord checks is a cursory read
+    of that table. The release recompute rule is unchanged (ADR 0006,
+    S5-2): the governing limit state of each case.

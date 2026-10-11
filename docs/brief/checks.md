@@ -290,3 +290,13 @@ plan's decision numbers, kept for the record.
   round HSS provisions" prints for an AISC pipe and for a custom A53
   tube. A round HSS, or a custom tube of an HSS grade, is round HSS and
   prints no such line.
+
+### Hollow rectangular sections (slice 6)
+
+Decided in planning slice 6 (docs/plans/slice-6.md); S6 numbers are that
+plan's decision numbers.
+
+- **Slice 6 is not split.** (S6-1, Micah 2026-10-10; welds.md, "Hollow
+  rectangular sections and the chord limit states (slice 6)".)
+  Rectangular members are built first, then the Chapter K chord limit
+  states, round chords before rectangular chords.
