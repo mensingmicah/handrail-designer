@@ -2,7 +2,7 @@
 
 ## v0.5.0 (2026-10-10)
 
-Slice 5: hollow round sections. Plan in docs/plans/slice-5.md.
+Slice 5: hollow round sections (pull request #30). Plan in docs/plans/slice-5.md.
 
 `uv run handrail calc` now prints the full package for a guard of round
 HSS from the Shapes Database and of custom round tubes entered by
@@ -157,19 +157,22 @@ matters for a custom tube entered with a database shape's dimensions.
 - Micah ruled on the open questions of both independent calcs: the post
   wall at the base weld (W5), the directional increase as an election
   (W2), and thin material at a weld. His review of both calcs and both
-  PDFs against the checklist is step 11 of the plan, ahead of the pull
-  request.
+  PDFs against the checklist (step 11 of the plan) was done on 2026-10-10,
+  with no changes.
 - Cases 1–5: every recorded value is unchanged. Cases 4 and 5 and the
   example gained `directional_increase = true`, an input only.
 - The property-formula test (above) checks the custom tube's formulas
   against AISC's published numbers, not against the tool's own.
-- At this entry: 2008 tests passed, 33 skipped (the deferred [hand]
+- At this entry: 2017 tests passed, 33 skipped (the deferred [hand]
   values).
 
 ### Deferred to the release review (issue #18)
 
 - Verification of the 43 slice 5 entries. Among them: the A500 Gr B and
-  Gr C round Fy and Fu, which the calcs of cases 6 and 7 rest on; and the
+  Gr C round Fy and Fu, which the calcs of cases 6 and 7 rest on (Micah
+  deferred them to the release review on 2026-10-10: a correction then
+  regenerates the affected case values in fresh independent-calc
+  sessions); and the
   two AWS D1.1 entries, drafted from memory, whose 2020 clause number and
   wording are not confirmed.
 - Micah's recompute of case 6's section properties and Check 1; those
