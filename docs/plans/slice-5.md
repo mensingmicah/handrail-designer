@@ -207,6 +207,29 @@ rail moved to Pipe20XS; and full-noncompact and full-noncompact-same, whose
 Pipe26STD rail the chord D/t limit refuses, were retired, with
 full-tube-noncompact-rail holding the noncompact branch and Eq. F8-2.
 
+**Two rulings after the build** (Micah, 2026-10-10), each an intended
+change to the printed calcs, beyond the three above. Both are recorded in
+docs/brief/welds.md, which governs.
+
+- **The directional strength increase is the engineer's election, off by
+  default** (W2 as revised; it changes S5-12 and the Check 7 joint's row
+  below from "applies" to "may be elected"). Built: a `[welds]
+  directional_increase` input. Cases 4, 5 and 7 and the example set it to
+  true and print as before, plus an echo line and the election line. Cases
+  1 to 3 and 6 and every second-tier calc are left at the default, so their
+  Check 7 runs on k_ds = 1.0: its ratio is 1.5 times what it was, and it
+  now fails in cases 1 and 2 (0.92 to 1.38) and in `full-post-pipe1-1_2`
+  and `full-weld-small-base`. None of those records a Check 7 value. Case
+  7's rough figure above ("k_ds = 1.5, about 0.67") holds because the case
+  elects the increase.
+- **Thin material at a weld: a warning when a part joined is thinner than
+  1/8 in** (raised by case 6's independent calc). Built and parked, not on
+  the branch: the 1/8 in limit is a drafted registry entry read at every
+  weld, so it adds one row to the draft list of every calc, where Micah
+  expected a change only in calcs with a thin part. It waits on his word
+  on that row. The patch is out/parked-ruling-2-thin-material.patch (not
+  in the repo).
+
 **T4. Machinery tests** (same-author), for what cases 6 and 7 do not
 reach:
 
@@ -263,7 +286,7 @@ Check 7 joint (post on the baseplate; A36 plate is the only baseplate):
 
 | Post | Cell |
 | --- | --- |
-| AISC pipe, round HSS, custom round tube | allowed: welded all around; W2's directional increase applies |
+| AISC pipe, round HSS, custom round tube | allowed: welded all around; W2's directional increase may be elected by the engineer (as planned it applied automatically; revised 2026-10-10) |
 | Rectangular HSS, custom rectangular tube | stop: slice 6 (the weld pattern and the directional rule for rectangular HSS) |
 | Solid round bar, solid rectangular bar | stop: slice 7 |
 
