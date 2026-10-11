@@ -435,3 +435,65 @@ def test_the_weld_checks_cite_a_custom_tubes_own_source():
     ring = next(ln for ln in res.check(7).controlling.lines if ln.key == "D")
     assert ring.cite == shapes.CUSTOM and ring.note.startswith("Round tube 2.375 × 0.154 (custom): outside diameter")
     assert PIPE != ROUND_HSS  # the families stay distinct names
+
+
+# ---------------------------------------------------------------------------
+# Thin material at a weld (Micah, 2026-10-10): a custom tube under 1/8 in
+# ---------------------------------------------------------------------------
+
+THIN = "THIN MATERIAL AT WELD: "
+
+
+def _thin(chk) -> list[str]:
+    return [f for f in chk.flags if f.startswith(THIN)]
+
+
+def test_a_custom_tube_rail_under_an_eighth_inch_prints_the_warning_at_its_weld():
+    res = _run(top_rail={**TUBE, "wall_nominal": 0.12})
+    [warning] = _thin(res.check(3))
+    assert warning.startswith(THIN + "Top rail nominal wall thickness, Round tube 2.375 × 0.12 (custom), 0.1200 in, "
+                              "is thinner than 0.1250 in: the joined material is below the AWS D1.1 thickness range")
+    assert "the welding procedure is the engineer's responsibility (for example AWS D1.3, sheet steel)" in warning
+    assert _thin(res.check(7)) == []  # the post is Pipe2STD, 0.154 in nominal
+    assert res.check(3).verdict == "OK"  # a warning, not a stop
+
+
+def test_a_custom_tube_at_exactly_an_eighth_inch_prints_no_warning():
+    """The design wall is 0.93 of it, under 1/8 in; the nominal wall is what is compared."""
+    res = _run(top_rail={**TUBE, "wall_nominal": "1/8"}, post={**TUBE, "wall_nominal": 0.125})
+    assert res.rail.tdes.m_as("inch") < 0.125 == res.rail.tnom.m_as("inch")
+    assert not any(_thin(chk) for chk in res.checks)
+
+
+def test_a_thin_custom_post_is_warned_of_at_both_of_its_welds():
+    res = _run(post={**TUBE, "wall_nominal": 0.12})
+    for number in (3, 7):
+        [warning] = _thin(res.check(number))
+        assert warning.startswith(THIN + "Post nominal wall thickness, Round tube 2.375 × 0.12 (custom), 0.1200 in")
+
+
+def test_the_warning_prints_for_the_intermediate_rail_weld_in_the_observation_state_too():
+    """Same as the top rail, Check 4b stands on an observation and is not
+    computed; the weld is still made, so the warning still prints, above it."""
+    tables = {"top_rail": {**TUBE, "wall_nominal": 0.12}, "intermediate_rail": {"same_as_top_rail": True}}
+    chk = _run(**tables).check("4b")
+    assert chk.result == "Controlled by Check 3" and not chk.cases
+    [warning] = _thin(chk)
+    assert warning.startswith(THIN + "Intermediate rail nominal wall thickness, Round tube 2.375 × 0.12 (custom)")
+    check_4b = _source(**tables).split("= Check 4b: Intermediate rail weld to post")[1].split("\n= ")[0]
+    assert check_4b.index('#flag("' + THIN) < check_4b.index("controlled by Check 3 by observation")
+
+
+def test_a_database_section_under_an_eighth_inch_is_warned_of_as_a_custom_tube_is():
+    """The rule is on the part's nominal thickness, not on how it was entered."""
+    res = _run(intermediate_rail={"same_as_top_rail": False, "section": "Pipe1/2STD"}, welds=OWN_WELDS)
+    [warning] = _thin(res.check("4b"))
+    assert warning.startswith(THIN + "Intermediate rail nominal wall thickness, Pipe1/2STD, 0.1090 in")
+
+
+def test_the_thin_material_warning_prints_in_a_box_at_the_top_of_its_check():
+    src = _source(top_rail={**TUBE, "wall_nominal": 0.12})
+    check_3 = src.split("= Check 3: Top rail weld to post")[1].split("\n= ")[0]
+    assert check_3.count('#flag("' + THIN) == 1
+    assert check_3.index('#flag("' + THIN) < check_3.index("== Envelope summary")
+    assert src.count('#flag("' + THIN) == 1  # nowhere else: no other weld of this guard has a thin part

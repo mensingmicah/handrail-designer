@@ -106,6 +106,13 @@ Manual, 16th Edition, and the AISC Shapes Database v16.0. (Slice 1.)
   second-order stop checks; the printed sentence goes in the calc lines.
   Each capacity (Pc or Pt, and Mc) prints under its demand. The Check 5
   calc lines name the interaction equation used. (Slice 2, D1.)
+- A weld that joins a part thinner than 1/8 in prints a warning in a box
+  at the top of its check (Checks 3, 4b and 7): "THIN MATERIAL AT WELD",
+  the part and its thickness, that the material is below the AWS D1.1
+  thickness range and the welding procedure is the engineer's
+  responsibility, and the AWS D1.1 scope statement with its citation. It
+  is a warning, not a stop: the check's verdict and its summary row are
+  unchanged. (Micah, 2026-10-10; welds.md, "Thin material at a weld".)
 - Reaction tables (S4-7, Micah 2026-10-08). Each set prints V, N and M
   at 4 significant figures in lb and lb-in. N is signed in the
   anchor-software convention, with its sense in words: "N = +268 lb

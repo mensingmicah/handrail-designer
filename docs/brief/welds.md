@@ -520,3 +520,33 @@ plan's decision numbers.
     A618) extends it by the same engineering judgement the entry already
     records for base moment, and its note says so. Checks 3 and 4b keep
     k_ds = 1.0.
+- **Thin material at a weld: a warning, not a stop.** (Micah, 2026-10-10;
+  raised by case 6's independent calc, a 1/8 in fillet on a 0.055 in wall.)
+  - When either part joined by a fillet weld is thinner than 1/8 in, the
+    calc prints a warning at that weld: the joined material is below the
+    AWS D1.1 thickness range, and the welding procedure is the engineer's
+    responsibility (for example AWS D1.3, sheet steel).
+  - The thickness compared is the one the Table J2.4 minimum size line
+    reads (W11): the nominal wall t_nom for a rail or post, the baseplate
+    thickness t_p as entered. A part at exactly 1/8 in is inside the range
+    and prints nothing.
+  - It prints at each weld that joins a thin part: Check 3 (top rail and
+    post), Check 4b (intermediate rail and post) and Check 7 (post and
+    baseplate). In Check 4b it prints in every state with an intermediate
+    rail, the same-as-top observation included: the weld is made whether
+    or not it is computed.
+  - The rule is on the part's thickness, not on how it was entered, so
+    three database sections trip it as well as thin custom tubes:
+    Pipe1/2STD (0.109 in), Pipe3/4STD (0.113 in) and HSS1.900X0.120.
+    (Confirmed by Micah, 2026-10-10: any part under 1/8 in nominal,
+    database sections included.)
+  - The check is still computed, and its ratio and verdict are unchanged.
+    Nothing prints in the summary table.
+  - The 1/8 in limit and the AWS D1.1 scope statement are registry
+    entries, drafted from memory (`aws.d1_1.thickness_min`,
+    `aws.d1_1.scope`); the warning's words are an engineering-judgement
+    entry (`ej.weld.thin_material`). The limit is read at every weld, so
+    every calc lists it under "Draft code values" while it is drafted.
+    (Accepted by Micah, 2026-10-10, as with the chord D/t limit.)
+  - Not covered by this warning: local effects of the concentrated guard
+    load on a thin tube wall (issue #28, for slice 6).

@@ -160,6 +160,10 @@ review = [
   "ej.grade.unusual_pairing",
   # Slice 5 rulings of 2026-10-10 (the directional increase by election), drafted 2026-10-10
   "aisc360.J2.4.kds_other",
+  # Slice 5 rulings of 2026-10-10 (thin material at a weld), drafted 2026-10-10
+  "aws.d1_1.thickness_min",
+  "aws.d1_1.scope",
+  "ej.weld.thin_material",
 ]
 
 # ---------------------------------------------------------------------------
@@ -3037,3 +3041,88 @@ elements of uniform stiffness, loaded through its center of gravity. A \
 ring is not a linear group. §J2.4(b) on page 16.1-132 gives Eq. J2-6 \
 for concentrically loaded groups of longitudinal and transverse \
 elements."""
+
+# --- Thin material at a weld (Micah's ruling of 2026-10-10) -----------------
+# docs/brief/welds.md, "Thin material at a weld". Raised by case 6's
+# independent calc: a 1/8 in fillet on a 0.055 in wall.
+
+[[entry]]
+id = "aws.d1_1.thickness_min"
+value = 0.125
+unit = "inch"
+cite = "AWS D1.1/D1.1M:2020, Clause 1"
+document = "AWS D1.1/D1.1M, Structural Welding Code - Steel"
+edition = "2020"
+section = "Clause 1, General Requirements: the limits of the code's application, steel 1/8 in [3 mm] or thicker. The subclause number in the 2020 edition is not confirmed"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-10-10
+verified_by = ""
+verified_date = ""
+note = """
+From memory; I do not have AWS D1.1 and did not open it. I am confident \
+of the 1/8 in [3 mm] lower limit and not of where the 2020 edition \
+states it: earlier editions gave it under a Limitations subclause of \
+Clause 1 (1.2 as I recall it), and the 2020 edition renumbered Clause 1. \
+The edition is the one AISC 360-22 references (§A2, page 16.1-6, read \
+2026-10-10, which lists AWS D1.1/D1.1M:2020 and AWS D1.3/D1.3M:2018). \
+360-22 §J2 (page 16.1-124) requires welding to conform to AWS D1.1 \
+except where the Specification differs. The tool compares each part a \
+fillet weld joins with this value, walls at their nominal thickness and \
+the baseplate as entered, and prints a warning for a part under it \
+(Micah, 2026-10-10; ej.weld.thin_material). A part at exactly 1/8 in \
+is inside the range. A warning, not a stop."""
+
+[[entry]]
+id = "aws.d1_1.scope"
+value = "AWS D1.1, Structural Welding Code - Steel, applies to carbon and low-alloy steel 1/8 in (3 mm) or thicker"
+unit = "provision"
+cite = "AWS D1.1/D1.1M:2020, Clause 1"
+document = "AWS D1.1/D1.1M, Structural Welding Code - Steel"
+edition = "2020"
+section = "Clause 1, General Requirements: scope and limitations of the code (base metal thickness and specified minimum yield strength). The subclause number in the 2020 edition is not confirmed"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-10-10
+verified_by = ""
+verified_date = ""
+note = """
+A paraphrase from memory, not the code's wording; I do not have AWS \
+D1.1 and I am not sure how the 2020 edition words it or which subclause \
+holds it. As I recall it, the code says it was developed for welded \
+structures of carbon and low-alloy steel 1/8 in [3 mm] or thicker with \
+a specified minimum yield strength of 100 ksi [690 MPa] or less, and \
+earlier editions pointed to AWS D1.3, Structural Welding Code - Sheet \
+Steel, for thinner base metal. I am not sure the 2020 edition still \
+makes that reference, so the value printed here does not claim it; the \
+D1.3 example is in the warning's own words (ej.weld.thin_material), \
+which are the engineer's. I recall AWS D1.3 as covering sheet steel up \
+to 3/16 in, unverified. The yield strength limit is not printed: every \
+grade the tool offers is far below it. Printed only inside the \
+thin-material warning. Confirm the wording and the clause."""
+
+[[entry]]
+id = "ej.weld.thin_material"
+value = "{part}, {t}, is thinner than {limit}: the joined material is below the AWS D1.1 thickness range, and the welding procedure is the engineer's responsibility (for example AWS D1.3, sheet steel)."
+unit = "text"
+cite = "Engineering judgement (EOR): thin material at a weld is warned of, not stopped"
+document = "Engineering decision of the engineer of record"
+edition = "docs/brief/welds.md, Thin material at a weld"
+section = "A part joined by a fillet weld that is thinner than 1/8 in (nominal): a warning at that weld"
+source = "engineer"
+status = "drafted"
+drafted_on = 2026-10-10
+verified_by = ""
+verified_date = ""
+note = """
+Micah, 2026-10-10, ruling on case 6's independent calc (a 1/8 in fillet \
+on a 0.055 in wall). When either part joined by a fillet weld is \
+thinner than 1/8 in, nominal, the calc prints this warning at that \
+weld: Check 3 (top rail and post), Check 4b (intermediate rail and \
+post, in every state that has an intermediate rail) and Check 7 (post \
+and baseplate). A warning, not a stop: the check is computed and its \
+verdict is unchanged. The wording is Claude's proposal for Micah to \
+accept or reword in the slice 5 pull request. The placeholders are the \
+part as the minimum size line names it, its thickness and the limit \
+(aws.d1_1.thickness_min); the scope statement (aws.d1_1.scope) and its \
+cite print after it."""

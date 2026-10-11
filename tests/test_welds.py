@@ -418,3 +418,59 @@ def test_table_j2_4_rows_include_their_upper_limit(t, w_min):
     limits = welds.size_limits(reg, rg.w, _parts(t, 1.0))
     printed = next(ln for ln in limits.lines if ln.symbol == 'w_"min"')
     assert printed.value.m_as("inch") == w_min
+
+
+# ---------------------------------------------------------------------------
+# Thin material at a weld: a warning, not a stop (Micah, 2026-10-10)
+# ---------------------------------------------------------------------------
+
+THIN = "THIN MATERIAL AT WELD: "
+
+
+def _thin(chk):
+    return [f for f in chk.flags if f.startswith(THIN)]
+
+
+def test_a_part_under_an_eighth_inch_is_warned_of_and_one_at_exactly_an_eighth_is_not():
+    reg = Registry()
+    assert welds.thin_material(reg, _parts(0.125, 0.5)) == []
+    [warning] = welds.thin_material(reg, _parts(0.1249, 0.5))
+    assert warning.startswith(
+        THIN + "Part 1, 0.1249 in, is thinner than 0.1250 in: the joined material is below the AWS D1.1 "
+        "thickness range, and the welding procedure is the engineer's responsibility (for example AWS D1.3, "
+        "sheet steel). ")
+    assert warning.endswith("applies to carbon and low-alloy steel 1/8 in (3 mm) or thicker "
+                            "(AWS D1.1/D1.1M:2020, Clause 1).")
+    both = welds.thin_material(reg, _parts(0.1, 0.11))
+    assert [w.split(",")[0] for w in both] == [THIN + "Part 1", THIN + "Part 2"]
+
+
+def test_the_thin_limit_is_read_for_every_weld_and_the_warnings_words_only_when_a_part_is_under_it():
+    reg = Registry()
+    assert welds.thin_material(reg, _parts(0.2, 0.5)) == []
+    used = {e.id for e in reg.used}
+    assert welds.THIN_LIMIT in used and not {welds.THIN_WARNING, welds.THIN_SCOPE} & used
+    welds.thin_material(reg, _parts(0.1, 0.5))
+    assert {welds.THIN_LIMIT, welds.THIN_WARNING, welds.THIN_SCOPE} <= {e.id for e in reg.used}
+
+
+def test_no_weld_of_pipe_2_std_on_a_half_inch_baseplate_is_warned_of():
+    res = engine.run(project(), Registry())
+    assert not any(_thin(res.check(n)) for n in (3, 7))
+
+
+def test_a_thin_baseplate_is_warned_of_at_the_post_to_baseplate_weld_only():
+    """Either part joined: the baseplate, as entered, counts as the walls do."""
+    res = engine.run(project(tp="3/32"), Registry())
+    [warning] = _thin(res.check(7))
+    assert warning.startswith(THIN + "Baseplate thickness, 0.09375 in, is thinner than 0.1250 in")
+    assert _thin(res.check(3)) == []
+
+
+def test_the_warning_is_not_a_failure():
+    """A warning, not a stop: the check is computed, and its verdict is the
+    ratio's and the minimum size line's, as without the warning."""
+    res = engine.run(project(tp="3/32"), Registry())
+    chk = res.check(7)
+    assert _thin(chk) and chk.cases and chk.summary_flag == ""
+    assert not any("THIN" in f for f in chk.failures)

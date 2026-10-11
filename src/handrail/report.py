@@ -285,13 +285,16 @@ def _check(chk: Check) -> str:
     if chk.bypassed:
         out.append("*Bypassed by engineer.* No calculation is shown.")
         return "\n\n".join(out)
+    # A flag prints whether the check is computed or stands on an
+    # observation: the thin-material warning belongs to the weld, which is
+    # made either way.
+    for f in chk.flags:
+        out.append(f"#flag({typst_str(f)})")
     if chk.observation:
         out.append(f"#{typst_str(chk.observation)}")
         if chk.observation_lines:
             out.append(_lines(chk.observation_lines))
         return "\n\n".join(out)
-    for f in chk.flags:
-        out.append(f"#flag({typst_str(f)})")
     out.append("== Envelope summary")
     if isinstance(chk.controlling, ComponentCase):
         out.append("Each limit state is computed in both directions of the component load. The full calculation "

@@ -23,6 +23,8 @@ branch and the post wall the chord.
   base metal is checked directly, with the intermediate rail wall's.
 - Minimum size per Table J2.4 on the thinner part joined, walls at their
   nominal thickness, is pass/fail; no maximum size is checked (W11).
+- A part joined that is thinner than the AWS D1.1 thickness range prints a
+  warning at its weld; it is not a stop (Micah, 2026-10-10).
 """
 
 from __future__ import annotations
@@ -33,7 +35,7 @@ from collections.abc import Callable
 
 from handrail import joints
 from handrail.calc import (PI, Line, Sheet, Sym, absolute, arccos, compare, fmt_quantity_plain, maximum, minimum,
-                           mtext, order, sin, sqrt, term)
+                           mtext, number, order, sin, sqrt, term)
 from handrail.demand import ASD, Given, Wording, demand
 from handrail.directions import (
     COMPONENT, COMPONENT_DIRECTIONS, DIRECTIONS, DISTRIBUTED, DOWNWARD, HORIZONTAL, LOAD_TYPES, Direction, Kind,
@@ -172,6 +174,37 @@ def size_limits(registry: Registry, w: Sym, parts: tuple[Part, Part]) -> SizeLim
     sh.decision(mtext("Maximum fillet size"), "Not applicable", not_applicable.value,
                 cite_ids=("aisc360.J2.2b.max_size_edges", not_applicable.id))
     return SizeLimits(lines=sh.lines, failure=failure)
+
+
+THIN_LIMIT = "aws.d1_1.thickness_min"
+THIN_SCOPE = "aws.d1_1.scope"
+THIN_WARNING = "ej.weld.thin_material"
+
+
+def thin_material(registry: Registry, parts: tuple[Part, Part]) -> list[str]:
+    """A warning for each part a fillet weld joins that is thinner than the
+    thickness range of AWS D1.1 (docs/brief/welds.md, "Thin material at a
+    weld"; Micah 2026-10-10). The parts are the ones the minimum size line
+    reads: walls at their nominal thickness, the baseplate as entered.
+
+    A warning, not a stop: the check is computed and its verdict is its
+    own. A part at exactly the limit is inside the range and prints nothing.
+
+    The limit is read for every weld, so every calc lists it while it is
+    drafted. The scope statement and the warning's words are read only when
+    a part is under the limit.
+    """
+    limit = registry.get(THIN_LIMIT)
+    warnings = []
+    for part in parts:
+        # One comparison decides and gives the two thicknesses the warning prints (ADR 0002).
+        under = compare(number(part.t, fmt_quantity_plain), "<", number(limit.quantity, fmt_quantity_plain))
+        if under:
+            words, scope = registry.get(THIN_WARNING), registry.get(THIN_SCOPE)
+            warnings.append("THIN MATERIAL AT WELD: "
+                            + words.value.format(part=part.note, t=under.left.text, limit=under.right.text)
+                            + f" {scope.value} ({scope.cite}).")
+    return warnings
 
 
 @dataclass
@@ -456,8 +489,9 @@ def _min_size(chk: WeldCheck, limits: SizeLimits) -> None:
 
 
 def _weld_check(chk: WeldCheck, registry: Registry, project: Project, loading: Loading, ws: WeldSetup,
-                limits: SizeLimits) -> WeldCheck:
+                limits: SizeLimits, parts: tuple[Part, Part]) -> WeldCheck:
     _min_size(chk, limits)
+    chk.flags.extend(thin_material(registry, parts))
     for direction in DIRECTIONS:
         for lt in LOAD_TYPES:
             if lt == DISTRIBUTED and loading.exempt:
@@ -484,7 +518,8 @@ def check_3(registry: Registry, project: Project, rail: Section, post: Section, 
     e = ecc.line("e", "e", d / 2, "Eccentricity: rail centerline to the weld plane at the rail underside",
                  cite_ids=("ej.weld.ring_model",), unit="inch")
     e_line = ecc.lines[-1]
-    limits = size_limits(registry, rg.w, (nominal_wall("rail", "Top rail", rail), nominal_wall("post", "Post", post)))
+    parts = (nominal_wall("rail", "Top rail", rail), nominal_wall("post", "Post", post))
+    limits = size_limits(registry, rg.w, parts)
     wm = weld_metal(registry, project.welds.electrode)
     kd = Sheet(registry)
     k_ds = kd.code_value("k_ds", 'k_"ds"', "ej.weld.branch_kds",
@@ -509,7 +544,7 @@ def check_3(registry: Registry, project: Project, rail: Section, post: Section, 
         base_note="Rail fusion face: in-plane shear only",
     )
     chk = WeldCheck(3, "Top rail weld to post", "f_r", "frac(R_n, Omega_w)", derived_lengths=[e_line])
-    return _weld_check(chk, registry, project, loading, ws, limits)
+    return _weld_check(chk, registry, project, loading, ws, limits, parts)
 
 
 # ---------------------------------------------------------------------------
@@ -535,7 +570,8 @@ def check_7(registry: Registry, project: Project, post: Section, loading: Loadin
                        "Moment arm, h - t_p: guard load at the top rail centerline, weld at the top of the baseplate",
                        "Loading")
     t_p = Part("t_p", "t_p", project.baseplate_thickness.value, "Baseplate thickness", "Input")
-    limits = size_limits(registry, rg.w, (nominal_wall("post", "Post", post), t_p))
+    parts = (nominal_wall("post", "Post", post), t_p)
+    limits = size_limits(registry, rg.w, parts)
     wm = weld_metal(registry, project.welds.electrode)
     grade = project.baseplate.grade
     kd_lines, k_ds = baseplate_k_ds(registry, project.welds.directional_increase)
@@ -552,7 +588,7 @@ def check_7(registry: Registry, project: Project, post: Section, loading: Loadin
         base_note="Baseplate fusion face: the resultant per inch",
     )
     chk = WeldCheck(7, "Post weld to baseplate", "f_r", "frac(R_n, Omega_w)")
-    return _weld_check(chk, registry, project, loading, ws, limits)
+    return _weld_check(chk, registry, project, loading, ws, limits, parts)
 
 
 # ---------------------------------------------------------------------------
@@ -616,6 +652,11 @@ def check_4b(registry: Registry, project: Project, post: Section, inter: Section
     inter = cast(Section, inter)
     int_member = cast(Member, project.intermediate_member)
     same = state == SAME_AS_TOP
+    # The parts this weld joins, at their nominal thickness. A part under the
+    # AWS D1.1 thickness range is warned of in every state with a weld, the
+    # observation included: the weld is made whether or not it is computed.
+    parts = (nominal_wall("int", "Intermediate rail", inter), nominal_wall("post", "Post", post))
+    thin = thin_material(registry, parts)
     head_guard: list[Line] = []
     if same:
         # R is the larger of the two cases (the downward one, R_D + P_c, always
@@ -642,6 +683,7 @@ def check_4b(registry: Registry, project: Project, post: Section, inter: Section
                                           t_post=fmt_quantity_plain(t_post), t_rail=fmt_quantity_plain(t_rail))
             chk.observation_lines = rsh.lines
             chk.result = "Controlled by Check 3"
+            chk.flags.extend(thin)
             return chk
         g = Sheet(registry)
         if not within_P:
@@ -668,8 +710,7 @@ def check_4b(registry: Registry, project: Project, post: Section, inter: Section
     # Its own section always has its own weld size (project.py requires it).
     size = project.welds.rail_to_post if same else cast(Dimension, project.welds.intermediate_rail_to_post)
     rg = ring(registry, inter, size, member="intermediate rail", symbol='D_"int"', bending=False)
-    limits = size_limits(registry, rg.w, (nominal_wall("int", "Intermediate rail", inter),
-                                          nominal_wall("post", "Post", post)))
+    limits = size_limits(registry, rg.w, parts)
     wm = weld_metal(registry, project.welds.electrode)
     kd = Sheet(registry)
     k_ds = kd.code_value("k_ds", 'k_"ds"', "ej.weld.branch_kds",
@@ -704,6 +745,7 @@ def check_4b(registry: Registry, project: Project, post: Section, inter: Section
         base_note=f"Base metal, {chk.base_governs} fusion face (governs): in-plane shear only",
     )
     _min_size(chk, limits)
+    chk.flags.extend(thin)
     for direction in COMPONENT_DIRECTIONS:
         dsh, R, label = _reaction_4b(registry, project, loading, direction)
         sh = Sheet(registry)
