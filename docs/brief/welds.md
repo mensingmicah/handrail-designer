@@ -587,3 +587,42 @@ checks.md and inputs.md.
   - Review. Micah's slice review of the chord checks is a cursory read
     of that table. The release recompute rule is unchanged (ADR 0006,
     S5-2): the governing limit state of each case.
+- **The post to baseplate weld of a rectangular post: pattern, weld line
+  and directional rule.** (S6-6, Micah 2026-10-10.)
+  - **Input.** `base_pattern` under `[welds]`: `"all around"`, `"faces
+    parallel to rail"` or `"faces perpendicular to rail"`, the words B, N
+    and the post's `long_side` use (S4-6, S6-2), so they also serve a
+    square post. Required, with no default, for a rectangular or square
+    post. A round post is welded all around: the key may be left out, and
+    a face pair given for a round post stops. It is echoed on the
+    dimensions page with the weld sizes. This settles "by the section's
+    width or depth faces" (inputs.md).
+  - **Weld line.** The elastic line method stays (W3), the line on the
+    post's outside surface.
+    - All around: the true rounded rectangle, straight runs on the flats
+      and quarter-circle arcs at the corners on the outside radius of
+      S6-3, 2·t_des.
+    - A face pair: two parallel straight lines, each the flat width of
+      its face (the outside dimension less 4·t_des), stopping at the
+      tangent points.
+    - All five direction cases run on either pattern (W10), the shear
+      taken as uniform over the total weld length (W3).
+  - **Directional increase.** k_ds = 1.0 for every rectangular post,
+    printed citing AISC 360-22 §J2.4(a) condition (2), page 16.1-130, and
+    the User Note to §K5, page 16.1-170 (where flexure puts the weld in
+    tension, the factor cannot exceed 1.0 in fillet welds to the end of a
+    rectangular HSS). `directional_increase = true` with a rectangular
+    post stops as a conflicting input; it is never silently ignored.
+    This settles W2's last bullet.
+  - Why the rounded line. Planning arithmetic (Claude, 2026-10-10; not
+    test values), HSS2×2×1/8 all around: S_w = 5.33 in² on a sharp-corner
+    rectangle (b·d + d²/3), 4.90 in² on the rounded rectangle, 3.68 in²
+    on the flats alone. Sharp corners are 9% unconservative and flats
+    alone 25% conservative, on a check that often governs and gets no
+    directional increase.
+  - Not chosen: flats only for both patterns; sharp corners; a default
+    of all around (a post welded on two faces, with the key forgotten,
+    would be checked with about twice its weld).
+  - Slice 7 reuses the key for a solid rectangular bar post, with sharp
+    corners.
+
