@@ -74,6 +74,23 @@ def properties(sh: Sheet, D: Sym, t_nom: Sym, t_des: Sym) -> Properties:
     return Properties(A=A, W=W, I=I, S=S, Z=Z, r=r, D_t=D_t)
 
 
+def walls(sh: Sheet, wall: Dimension, grade: str) -> tuple[Sym, Sym]:
+    """A custom tube's nominal wall as entered and its design wall, each a
+    calc line: 0.93 of the nominal wall, or the nominal wall itself for a
+    grade AISC 360-22 B4.2 gives the nominal wall to (A1085, S5-6). The
+    same rule for a round and a rectangular tube (S5-8)."""
+    as_entered = sh.registry.get(WALL_AS_ENTERED)
+    t_nom = sh.input("t_nom", 't_"nom"', wall.value, f"Nominal wall thickness ({wall.entered} as entered)",
+                     cite=f"Input; {as_entered.cite}")
+    if grade in NOMINAL_DESIGN_WALL:
+        t_des = sh.line("t_des", 't_"des"', t_nom, f"Design wall thickness: the nominal wall, {grade}",
+                        cite_ids=(NOMINAL_WALL,), unit="inch")
+    else:
+        t_des = sh.line("t_des", 't_"des"', sh.coeff(DESIGN_WALL_COEFF) * t_nom, "Design wall thickness",
+                        cite_ids=(DESIGN_WALL,), unit="inch")
+    return t_nom, t_des
+
+
 def round_tube(registry: Registry, OD: Dimension, wall: Dimension, grade: str) -> Section:
     """The section of a custom round tube in this grade. The wall entered is
     the nominal wall (S5-8); the design wall is 0.93 of it, or the nominal
@@ -83,15 +100,7 @@ def round_tube(registry: Registry, OD: Dimension, wall: Dimension, grade: str) -
     sh = Sheet(registry)
     name = label(OD, wall)
     D = sh.input("D", "D", OD.value, f"{name}: outside diameter ({OD.entered} as entered)")
-    as_entered = registry.get(WALL_AS_ENTERED)
-    t_nom = sh.input("t_nom", 't_"nom"', wall.value, f"Nominal wall thickness ({wall.entered} as entered)",
-                     cite=f"Input; {as_entered.cite}")
-    if grade in NOMINAL_DESIGN_WALL:
-        t_des = sh.line("t_des", 't_"des"', t_nom, f"Design wall thickness: the nominal wall, {grade}",
-                        cite_ids=(NOMINAL_WALL,), unit="inch")
-    else:
-        t_des = sh.line("t_des", 't_"des"', sh.coeff(DESIGN_WALL_COEFF) * t_nom, "Design wall thickness",
-                        cite_ids=(DESIGN_WALL,), unit="inch")
+    t_nom, t_des = walls(sh, wall, grade)
     p = properties(sh, D, t_nom, t_des)
     axis = Axis(I=p.I.value, S=p.S.value, Z=p.Z.value, r=p.r.value)  # a round section: x = y (S5-1)
     return Section(label=name, family=ROUND_TUBE, source=CUSTOM, W=p.W.value, A=p.A.value,

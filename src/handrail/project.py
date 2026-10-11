@@ -17,8 +17,9 @@ for inputs the engineer didn't intend:
 - the directional strength increase at the post to baseplate weld is the
   engineer's election, off unless the file sets it (docs/brief/welds.md, W2);
 - the baseplate's plan dimensions B and N are required, with no default (S4-6);
-- a member is a standard section (section) or a custom round tube (shape,
-  OD and wall_nominal), never both (S5-8);
+- a member is a standard section (section) or a custom tube, never both:
+  a round tube (shape, OD and wall_nominal; S5-8) or a rectangular tube
+  (shape, H, B and wall_nominal, with H the longer side; S6-14 item 6);
 - a rectangular member's orientation is its long_side, one of two words for
   a rail and two for a post (S6-2); whether the member needs one is known
   only once its section is (members.py);
@@ -69,13 +70,17 @@ class Member:
     here with ``grade_defaulted`` set; the engine fills it in by shape
     before anything reads it (materials.with_default_grades; S5-5, S5-10)."""
 
-    section: str  # AISC designation, e.g. "Pipe1-1/2STD"; blank for a custom round tube
+    section: str  # AISC designation, e.g. "Pipe1-1/2STD"; blank for a custom tube
     grade: str = ""
     grade_defaulted: bool = False
     # A custom round tube (S5-8): its outside diameter and its nominal wall,
     # in place of ``section``. The wall entered is always the nominal wall.
     OD: Dimension | None = None
     wall_nominal: Dimension | None = None
+    # A custom rectangular tube (S6-14 item 6): its outside dimensions, H the
+    # longer side and B the shorter, with ``wall_nominal``.
+    H: Dimension | None = None
+    B: Dimension | None = None
     # A rectangular member's orientation (S6-2): the direction of its longer
     # side, one of RAIL_LONG_SIDE or POST_LONG_SIDE. Blank when the file
     # leaves it out, which only a round or a square member may.
@@ -83,7 +88,7 @@ class Member:
 
     @property
     def custom(self) -> bool:
-        return self.OD is not None
+        return self.OD is not None or self.H is not None
 
 
 @dataclass(frozen=True)
@@ -184,11 +189,12 @@ SCHEMA = {
     "project": {"name": None, "phase": None, "description": None, "references": None, "assumptions": None},
     "geometry": {"span": None, "post_height": None, "baseplate_thickness": None},
     "top_rail": {"section": None, "grade": None, "shape": None, "OD": None, "wall_nominal": None,
-                 "long_side": None},
+                 "long_side": None, "H": None, "B": None},
     "post": {"section": None, "grade": None, "shape": None, "OD": None, "wall_nominal": None,
-             "long_side": None},
+             "long_side": None, "H": None, "B": None},
     "intermediate_rail": {"same_as_top_rail": None, "none": None, "section": None, "grade": None,
-                          "shape": None, "OD": None, "wall_nominal": None, "long_side": None},
+                          "shape": None, "OD": None, "wall_nominal": None, "long_side": None,
+                          "H": None, "B": None},
     "baseplate": {"B": None, "N": None, "grade": None},
     "welds": {"rail_to_post": None, "post_to_baseplate": None, "electrode": None,
               "intermediate_rail_to_post": None, "directional_increase": None},
@@ -282,35 +288,64 @@ def _grade(table: dict, where: str) -> tuple[str, bool]:
     return "", True
 
 
-# A custom round tube is entered with these keys in place of ``section`` (S5-8).
-CUSTOM_KEYS = ("shape", "OD", "wall_nominal")
+# A custom tube is entered with these keys in place of ``section``: a round
+# tube's OD (S5-8) or a rectangular tube's H and B (S6-14 item 6), each with
+# its shape and its nominal wall.
+CUSTOM_KEYS = ("shape", "OD", "wall_nominal", "H", "B")
 ROUND_TUBE_SHAPE = "round tube"
+RECT_TUBE_SHAPE = "rectangular tube"
+# The dimension keys of each custom shape, besides wall_nominal.
+SHAPE_KEYS = {ROUND_TUBE_SHAPE: ("OD",), RECT_TUBE_SHAPE: ("H", "B")}
 
 
-def _section_or_tube(t: dict, where: str) -> tuple[str, Dimension | None, Dimension | None]:
-    """The member's designation, or a custom round tube's outside diameter
-    and nominal wall. Both together stop, as conflicting inputs; so does a
-    shape other than a round tube, and a wall of half the OD or more."""
+def _section_or_tube(t: dict, where: str) -> dict[str, Any]:
+    """The member's designation, or a custom tube's dimensions, as the
+    fields of Member they fill. A designation and custom keys together
+    stop, as conflicting inputs; so does a shape the tool does not have, a
+    dimension that belongs to the other shape, a round tube's wall of half
+    the OD or more, and a rectangular tube whose H is less than its B."""
     custom = [key for key in CUSTOM_KEYS if key in t]
     if not custom:
-        return _str(_need(t, "section", where), f"{where}.section"), None, None
+        return {"section": _str(_need(t, "section", where), f"{where}.section")}
     if "section" in t:
+        # Named by the shape the keys describe: a rectangular tube's when
+        # its shape or one of its dimensions is given, otherwise a round one's.
+        if t.get("shape") == RECT_TUBE_SHAPE or any(key in t for key in SHAPE_KEYS[RECT_TUBE_SHAPE]):
+            tube = f"a custom rectangular tube (shape = \"{RECT_TUBE_SHAPE}\", H, B and wall_nominal)"
+        else:
+            tube = f"a custom round tube (shape = \"{ROUND_TUBE_SHAPE}\", OD and wall_nominal)"
         raise ProjectError(
             f"[{where}] section is given together with {', '.join(custom)}. A member is either a standard section "
-            f"(section) or a custom round tube (shape = \"{ROUND_TUBE_SHAPE}\", OD and wall_nominal), not both. "
+            f"(section) or {tube}, not both. "
             f"Remove one.", stop=Stop.MEMBER_SECTION_WITH_CUSTOM_DIMENSIONS)
     shape = _str(_need(t, "shape", where), f"{where}.shape")
-    if shape != ROUND_TUBE_SHAPE:
-        raise ProjectError(f"[{where}] shape {shape!r}: this version supports \"{ROUND_TUBE_SHAPE}\" only",
+    if shape not in SHAPE_KEYS:
+        shapes = " and ".join(f'"{name}"' for name in SHAPE_KEYS)
+        raise ProjectError(f"[{where}] shape {shape!r}: this version supports {shapes} only",
                            stop=Stop.MEMBER_SHAPE_UNSUPPORTED)
-    OD = _dimension(t, "OD", where)
-    wall = _dimension(t, "wall_nominal", where)
-    if not 2 * wall.value < OD.value:
+    other = [key for name, keys in SHAPE_KEYS.items() if name != shape for key in keys if key in t]
+    if other:
         raise ProjectError(
-            f"[{where}] wall_nominal ({wall.entered}) is half the OD ({OD.entered}) or more, which is not a tube. "
-            f"The wall entered is the nominal wall thickness. Check the inputs.",
-            stop=Stop.MEMBER_WALL_HALF_OD_OR_MORE)
-    return "", OD, wall
+            f"[{where}] {', '.join(other)} is given for shape = \"{shape}\", which takes "
+            f"{', '.join(SHAPE_KEYS[shape])} and wall_nominal. Remove it, or check the shape.",
+            stop=Stop.MEMBER_CUSTOM_KEYS_OF_ANOTHER_SHAPE)
+    if shape == ROUND_TUBE_SHAPE:
+        OD = _dimension(t, "OD", where)
+        wall = _dimension(t, "wall_nominal", where)
+        if not 2 * wall.value < OD.value:
+            raise ProjectError(
+                f"[{where}] wall_nominal ({wall.entered}) is half the OD ({OD.entered}) or more, which is not a tube. "
+                f"The wall entered is the nominal wall thickness. Check the inputs.",
+                stop=Stop.MEMBER_WALL_HALF_OD_OR_MORE)
+        return {"section": "", "OD": OD, "wall_nominal": wall}
+    H, B = _dimension(t, "H", where), _dimension(t, "B", where)
+    wall = _dimension(t, "wall_nominal", where)
+    if H.value < B.value:
+        raise ProjectError(
+            f"[{where}] H ({H.entered}) is less than B ({B.entered}). H is the longer side of a rectangular tube "
+            f"and B the shorter; long_side says which way round the member is built. Swap them.",
+            stop=Stop.MEMBER_RECT_H_LESS_THAN_B)
+    return {"section": "", "H": H, "B": B, "wall_nominal": wall}
 
 
 # A rectangular member's orientation is the direction of its longer side
@@ -338,9 +373,8 @@ def _long_side(t: dict, where: str, words: tuple[str, str]) -> str:
 def _member(raw: dict, where: str, long_side: tuple[str, str]) -> Member:
     t = _need(raw, where, "top level")
     grade, defaulted = _grade(t, where)
-    section, OD, wall = _section_or_tube(t, where)
-    return Member(section=section, grade=grade, grade_defaulted=defaulted, OD=OD, wall_nominal=wall,
-                  long_side=_long_side(t, where, long_side))
+    return Member(grade=grade, grade_defaulted=defaulted, long_side=_long_side(t, where, long_side),
+                  **_section_or_tube(t, where))
 
 
 def _given(table: dict, where: str, fields: dict) -> dict:
@@ -413,11 +447,10 @@ def _intermediate_rail(raw: dict, welds: Welds) -> IntermediateRail:
                            "has its own section (same_as_top_rail = false)",
                            stop=Stop.INTERMEDIATE_OWN_NEEDS_WELD_SIZE)
     grade, defaulted = _grade(t, w)  # a grade left out: S5-10, refining S4-1
-    section, OD, wall = _section_or_tube(t, w)
     return IntermediateRail(
         state=OWN_SECTION,
-        member=Member(section=section, grade=grade, grade_defaulted=defaulted, OD=OD, wall_nominal=wall,
-                      long_side=_long_side(t, w, RAIL_LONG_SIDE)),
+        member=Member(grade=grade, grade_defaulted=defaulted, long_side=_long_side(t, w, RAIL_LONG_SIDE),
+                      **_section_or_tube(t, w)),
         deflection=_deflection_limit(raw, "intermediate_rail", RAIL_DEFLECTION),
     )
 

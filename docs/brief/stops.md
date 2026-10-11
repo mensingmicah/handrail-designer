@@ -104,7 +104,7 @@ for inputs the engineer did not intend (src/handrail/project.py).
 | `file.invalid_toml` | The project file is not valid TOML. | Project file (output.md) | `test_stop_is_triggered[file.invalid_toml]` |
 | `file.unknown_key` | A table or key is not one the tool reads; a misspelled override would otherwise fall back silently to the code value. | Strict reader (slice 1) | `test_stop_is_triggered[file.unknown_key]` |
 | `file.not_a_table` | A value is given where a table is expected. | Strict reader (slice 1) | `test_stop_is_triggered[file.not_a_table]` |
-| `file.missing_key` | A required table or key is left out: the post, the weld sizes and the baseplate's B and N have no default, and neither have a custom round tube's `shape`, `OD` and `wall_nominal`. | D9 (slice 2); W12 (slice 3); S4-6; S5-8 | `test_stop_is_triggered[file.missing_key]` |
+| `file.missing_key` | A required table or key is left out: the post, the weld sizes and the baseplate's B and N have no default, and neither have a custom round tube's `shape`, `OD` and `wall_nominal`, or a custom rectangular tube's `shape`, `H`, `B` and `wall_nominal`. | D9 (slice 2); W12 (slice 3); S4-6; S5-8; S6-14 item 6 | `test_stop_is_triggered[file.missing_key]` |
 | `file.not_text` | A text field is not quoted text. | Strict reader (slice 1) | `test_stop_is_triggered[file.not_text]` |
 | `file.not_a_text_list` | References or assumptions are not a list of quoted text. | Strict reader (slice 1) | `test_stop_is_triggered[file.not_a_text_list]` |
 | `file.not_a_boolean` | A true or false field is quoted text; the text "false" must never read as true. | Strict reader (slice 1) | `test_stop_is_triggered[file.not_a_boolean]` |
@@ -114,8 +114,10 @@ for inputs the engineer did not intend (src/handrail/project.py).
 | `file.dimension_not_positive` | A dimension is zero. | Dimension entry (inputs.md); D9 for the baseplate thickness | `test_stop_is_triggered[file.dimension_not_positive]` |
 | `geometry.baseplate_thickness_not_below_post_height` | The baseplate thickness is not less than the post height h. | D9 (slice 2; inputs.md) | `test_stop_is_triggered[geometry.baseplate_thickness_not_below_post_height]` |
 | `loads.exemption_needs_statement` | The distributed-load exemption is ticked with no statement of why ASCE 7-22 §4.5.1.1 exempts the guard. | Distributed-load exemption (inputs.md) | `test_stop_is_triggered[loads.exemption_needs_statement]` |
-| `member.section_with_custom_dimensions` | A member gives `section` together with a custom round tube's `shape`, `OD` or `wall_nominal`: it is one or the other. | S5-8 (inputs.md); conflicting inputs | `test_stop_is_triggered[member.section_with_custom_dimensions]` |
-| `member.shape_unsupported` | A custom section's `shape` is not "round tube", the only custom shape so far. | S5-8; S5-1 (rectangular tubes arrive in slice 6) | `test_stop_is_triggered[member.shape_unsupported]` |
+| `member.section_with_custom_dimensions` | A member gives `section` together with a custom tube's `shape`, `OD`, `H`, `B` or `wall_nominal`: it is one or the other. | S5-8 (inputs.md); S6-14 item 6; conflicting inputs | `test_stop_is_triggered[member.section_with_custom_dimensions]` |
+| `member.shape_unsupported` | A custom section's `shape` is neither "round tube" nor "rectangular tube", the two custom shapes so far. | S5-8; S6-14 item 6; S5-1 (solid bars arrive in slice 7) | `test_stop_is_triggered[member.shape_unsupported]` |
+| `member.custom_keys_of_another_shape` | A custom tube gives a dimension that belongs to the other shape: `H` or `B` for a round tube, `OD` for a rectangular one. A conflicting input. | S5-8; S6-14 item 6 (checks.md) | `test_stop_is_triggered[member.custom_keys_of_another_shape]` |
+| `member.rect_H_less_than_B` | A custom rectangular tube's `H` is less than its `B`. H is the longer side, so `long_side` alone sets the orientation. | S6-14 item 6; S6-2 | `test_stop_is_triggered[member.rect_H_less_than_B]` |
 | `member.wall_half_od_or_more` | A custom round tube's nominal wall is half its OD or more: not a tube. | S5-8 (inputs.md) | `test_stop_is_triggered[member.wall_half_od_or_more]` |
 | `member.long_side_invalid` | A member's `long_side` is not one of its two words: "vertical" or "horizontal" for a rail, "perpendicular to rail" or "parallel to rail" for a post. | S6-2 (inputs.md) | `test_stop_is_triggered[member.long_side_invalid]` |
 | `intermediate.none_and_same` | The intermediate rail is both "none" and "same as the top rail". | S4-1; conflicting inputs (Micah, 2026-10-09) | `test_stop_is_triggered[intermediate.none_and_same]` |
@@ -142,15 +144,17 @@ the table and key it was typed under.
 ### Sections, grades and the baseplate
 
 Input validation: these run before anything is computed
-(src/handrail/validate.py). The two `long_side` stops are raised where each
-member's section is looked up (src/handrail/members.py), which validation
-and the checks both pass through, so they hold with or without validation.
+(src/handrail/validate.py). The two `long_side` stops and the custom
+rectangular tube's flat are raised where each member's section is looked up
+or computed (src/handrail/members.py), which validation and the checks both
+pass through, so they hold with or without validation.
 
 | Id | Stops when | Decision | Test |
 | --- | --- | --- | --- |
 | `section.not_found` | A section's designation is not in the shapes database file. | Standard sections (checks.md) | `test_stop_is_triggered[section.not_found]` |
 | `member.long_side_missing` | A rectangular member that is not square gives no `long_side`. The tool never assumes which way round a member is built. | S6-2 (inputs.md) | `test_stop_is_triggered[member.long_side_missing]` |
 | `member.long_side_not_applicable` | `long_side` is given for a round or a square member, which has no long side: a conflicting input. | S6-2 (inputs.md) | `test_stop_is_triggered[member.long_side_not_applicable]` |
+| `member.rect_wall_leaves_no_flat` | A custom rectangular tube's wall leaves no flat between the corners of its shorter side: B is not more than four design walls, the two outside corner radii. Raised where the tube's section is computed (src/handrail/rect_tube.py), since the design wall depends on the grade. | S6-14 item 6; S6-3 (checks.md) | `test_stop_is_triggered[member.rect_wall_leaves_no_flat]` |
 | `grade.unsupported` | A rail or post grade has no Fy and Fu registry entries for the member's shape. The message names the grade and the grades supported for that shape. | W12; S5-5 (inputs.md) | `test_stop_is_triggered[grade.unsupported]` |
 | `grade.wall_over_limit` | A member in A618 Gr Ia, Ib or II has a nominal wall over 1-1/2 in, where AISC Manual Table 2-4 gives no Fy and Fu. The message names the member, its wall, the grade and the limit. | S5-7 (inputs.md) | `test_stop_is_triggered[grade.wall_over_limit]` |
 | `grade.post_fu_fy_below_limit` | The post grade's Fu/Fy is below 1.20, so yielding no longer governs over rupture and Check 5 no longer covers the post wall at the weld. | W5 (welds.md); S5-13 | `test_stop_is_triggered[grade.post_fu_fy_below_limit]` |

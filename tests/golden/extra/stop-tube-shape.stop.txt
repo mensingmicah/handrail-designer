@@ -1,1 +1,1 @@
-ProjectError: [top_rail] shape 'rectangular tube': this version supports "round tube" only
+ProjectError: [top_rail] shape 'flat bar': this version supports "round tube" and "rectangular tube" only

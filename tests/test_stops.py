@@ -190,6 +190,26 @@ def _(tmp_path, monkeypatch):
     project.from_dict({**_raw(), "post": {**TUBE, "shape": "square tube"}})
 
 
+RECT_TUBE_KEYS = {"shape": "rectangular tube", "H": 3, "B": 2, "wall_nominal": 0.125, "long_side": "vertical"}
+
+
+@trigger(Stop.MEMBER_CUSTOM_KEYS_OF_ANOTHER_SHAPE)
+def _(tmp_path, monkeypatch):
+    project.from_dict({**_raw(), "top_rail": {**RECT_TUBE_KEYS, "OD": 2.375}})
+
+
+@trigger(Stop.MEMBER_RECT_H_LESS_THAN_B)
+def _(tmp_path, monkeypatch):
+    project.from_dict({**_raw(), "top_rail": {**RECT_TUBE_KEYS, "H": 2, "B": 3}})
+
+
+@trigger(Stop.MEMBER_RECT_WALL_LEAVES_NO_FLAT)
+def _(tmp_path, monkeypatch):
+    # B = 1 in against four design walls of 0.93 x 0.3 in: no flat is left.
+    members.resolve(project.from_dict({**_raw(), "top_rail": {**RECT_TUBE_KEYS, "B": 1, "wall_nominal": 0.3}}),
+                    Registry())
+
+
 @trigger(Stop.MEMBER_WALL_HALF_OD_OR_MORE)
 def _(tmp_path, monkeypatch):
     project.from_dict({**_raw(), "post": {**TUBE, "wall_nominal": 1.1875}})

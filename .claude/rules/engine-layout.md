@@ -19,6 +19,7 @@ convention below is held by a test, named beside it.
 | shapes.py | Section, the one type for every section (family, source, outline, both axes); the family names; the database lookup |
 | orientation.py | How a member is built into the guard: which axis each load bends, and its dimensions in the guard's directions (S6-2) |
 | tube.py | A custom round tube: its section computed from the dimensions entered, each property a calc line |
+| rect_tube.py | A custom rectangular tube, the same way: a rounded rectangle on AISC's corner radii (S6-3) |
 | joints.py | Which section families may meet at each joint, as data |
 | materials.py | Which registry entry holds Fy and Fu for a grade, shape and wall; the default grade by shape |
 | members.py | Each member as the checks read it: its section, and the project with every default grade filled in |

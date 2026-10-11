@@ -227,11 +227,13 @@ def test_a_wall_of_half_the_od_or_more_stops(wall):
     assert "is half the OD (2.375) or more, which is not a tube" in str(stopped.value)
 
 
-def test_a_custom_shape_other_than_a_round_tube_stops():
+def test_a_custom_shape_the_tool_does_not_have_stops():
+    """Slice 6 added the rectangular tube (S6-14 item 6); a flat bar is slice 7's."""
     with pytest.raises(ProjectError) as stopped:
-        project.from_dict(_raw(post={**TUBE, "shape": "rectangular tube"}))
+        project.from_dict(_raw(post={**TUBE, "shape": "flat bar"}))
     assert stopped.value.stop is Stop.MEMBER_SHAPE_UNSUPPORTED
-    assert str(stopped.value) == "[post] shape 'rectangular tube': this version supports \"round tube\" only"
+    assert str(stopped.value) == ("[post] shape 'flat bar': this version supports \"round tube\" and "
+                                  "\"rectangular tube\" only")
 
 
 def test_an_intermediate_rail_can_be_a_custom_tube_and_its_dimensions_conflict_with_the_other_states():

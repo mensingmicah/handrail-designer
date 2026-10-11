@@ -539,6 +539,11 @@ def build_source(results: Results, registry: Registry, stamp: Stamp) -> str:
         if member is not None and member.OD is not None and member.wall_nominal is not None:
             dims.append((f"{name}, custom round tube: outside diameter", member.OD))
             dims.append((f"{name}, custom round tube: nominal wall", member.wall_nominal))
+        # A custom rectangular tube's (S6-14 item 6).
+        if member is not None and member.H is not None and member.B is not None and member.wall_nominal is not None:
+            dims.append((f"{name}, custom rectangular tube: longer side H", member.H))
+            dims.append((f"{name}, custom rectangular tube: shorter side B", member.B))
+            dims.append((f"{name}, custom rectangular tube: nominal wall", member.wall_nominal))
     rows = [[label, d.entered, d.normalized, fmt_quantity_plain(d.value)] for label, d in dims]
     src.append(_table(["Dimension", "As entered", "Read as", "Inches"], rows, "(1fr, auto, auto, auto)"))
     # The engineer's election at the post to baseplate weld (W2, as revised

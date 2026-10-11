@@ -214,6 +214,24 @@ review = [
   "ej.section.orientation.post_perpendicular",
   "ej.section.orientation.post_parallel",
   "ej.section.orientation.square",
+  # Slice 6 step 4 (custom rectangular tubes), drafted 2026-10-11
+  "ej.section.rect_tube.corner_radius",
+  "ej.section.rect_tube.corner_radius.outside_coeff",
+  "ej.section.rect_tube.no_flat",
+  "geometry.rect_tube.inside_dimensions",
+  "geometry.rect_tube.A",
+  "geometry.rect_tube.corner_centroids",
+  "geometry.rect_tube.I",
+  "geometry.rect_tube.Z",
+  "geometry.rect_tube.S",
+  "geometry.rect_tube.r",
+  "geometry.rect_tube.weight",
+  "aisc360.B4.1b.d.width",
+  "aisc360.B4.1b.d.coeff",
+  "aisc360.CH3.midline_area",
+  "aisc360.CH3.midline_radius_coeff",
+  "ej.section.rect_tube.J",
+  "geometry.rect_tube.midline_perimeter",
 ]
 
 # ---------------------------------------------------------------------------
@@ -3972,3 +3990,319 @@ S6-2: long_side given on a square member stops as a conflicting input. \
 A square section's two axes are equal, so the names only tell the two \
 moments of a biaxial case apart. Wording proposed by Claude for the \
 slice 6 pull request."""
+
+# --- Step 4: custom rectangular tubes (S6-3, S6-4) --------------------------
+
+[[entry]]
+id = "ej.section.rect_tube.corner_radius"
+value = "A custom rectangular tube has no corner radius input. Its section properties are exact geometry on a rounded rectangle with an outside corner radius of twice the design wall and an inside corner radius of the design wall, the radii the Shapes Database's own properties are built on."
+unit = "provision"
+cite = "Engineering judgement (EOR): a custom rectangular tube's corners follow AISC's convention"
+document = "Engineering decision of the engineer of record"
+edition = "docs/brief/checks.md, S6-3"
+section = "A custom rectangular tube follows AISC's conventions, with no corner radius input: section properties"
+source = "engineer"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = """
+S6-3 (Micah, 2026-10-10). Not chosen: an entered corner radius (it could \
+be entered unconservatively) or sharp corners (3 to 5% high on area at \
+guard sizes). The outside coefficient is \
+ej.section.rect_tube.corner_radius.outside_coeff. The property-formula \
+test (tests/test_rect_tube.py; plan T4) runs these formulas on the \
+rectangular HSS rows of the Shapes Database: on the 208 rows with Ht of \
+8 in or less every property reproduces or comes out below published, \
+never above. The weight uses the same rule on the nominal wall (S5-8)."""
+
+[[entry]]
+id = "ej.section.rect_tube.corner_radius.outside_coeff"
+value = 2
+unit = ""
+cite = "Engineering judgement (EOR): a custom rectangular tube's corners follow AISC's convention"
+document = "Engineering decision of the engineer of record"
+edition = "docs/brief/checks.md, S6-3"
+section = "Outside corner radius of a custom rectangular tube, as a multiple of the wall thickness: 2"
+source = "engineer"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = """
+S6-3: the outside radius is 2 t_des for the properties and 2 t_nom for \
+the weight; the inside radius is the wall thickness itself. The \
+Commentary to AISC 360-22 H3 (page 16.1-414) assumes the same outside \
+radius of 2t for rectangular HSS. A wall that leaves no flat between \
+its corners (B not more than twice this radius) stops \
+(ej.section.rect_tube.no_flat)."""
+
+[[entry]]
+id = "ej.section.rect_tube.no_flat"
+value = "A custom rectangular tube whose shorter side is not more than twice its outside corner radius has no flat wall left between its corners, and is not a rectangular tube the tool can check."
+unit = "provision"
+cite = "Engineering judgement (EOR): a custom rectangular tube needs a flat on each wall"
+document = "Engineering decision of the engineer of record"
+edition = "docs/brief/checks.md, S6-14 item 6"
+section = "Custom rectangular tube input: a wall too thick to leave a flat (B <= 4 t_des) stops"
+source = "engineer"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = """
+S6-14 item 6 (Claude's, confirmed by Micah 2026-10-10). With the \
+outside radius at 2 t_des the flat width of the shorter wall is B - 4 \
+t_des; at zero or less the outline is no longer a rectangle with \
+rounded corners, and the wall slenderness, the face-pair weld line \
+(S6-6) and the property formulas all lose their meaning."""
+
+[[entry]]
+id = "geometry.rect_tube.inside_dimensions"
+value = "Inside dimensions of a rectangular tube: each outside dimension less twice the wall thickness"
+unit = "equation"
+cite = "AISC Manual Part 17, Properties of Geometric Sections"
+document = "AISC Steel Construction Manual"
+edition = "16th Edition"
+section = "Part 17, Properties of Geometric Sections, hollow rectangle (table number not recalled)"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = "Geometry. From memory; table number not recalled, as for the round tube entries."
+
+[[entry]]
+id = "geometry.rect_tube.A"
+value = "Area of a rectangle with rounded corners: the rectangle less, at each corner, a square of the corner radius less its quarter circle; the tube's area is the outside outline's less the inside outline's"
+unit = "equation"
+cite = "AISC Manual Part 17, Properties of Geometric Sections"
+document = "AISC Steel Construction Manual"
+edition = "16th Edition"
+section = "Part 17, Properties of Geometric Sections, rectangle and quarter circle (table number not recalled)"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = """
+Geometry: each corner removes R^2 - pi R^2/4 = (4 - pi) R^2 / 4, so an \
+outline of b by h is b h - (4 - pi) R^2. Compared with published values \
+by the property-formula test (plan T4): reproduces on all 208 binding \
+rows in the scratch trial."""
+
+[[entry]]
+id = "geometry.rect_tube.corner_centroids"
+value = "Distances from the axis of bending to the centroid of a corner square of the corner radius, and to the centroid of its quarter circle, which lies 4R/(3 pi) from the circle's center"
+unit = "equation"
+cite = "AISC Manual Part 17, Properties of Geometric Sections"
+document = "AISC Steel Construction Manual"
+edition = "16th Edition"
+section = "Part 17, Properties of Geometric Sections, quarter circle: centroid (table number not recalled)"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = """
+Geometry, from memory: a quarter circle's centroid is 4R/(3 pi) from \
+its center along each axis. For an outline of depth h in the direction \
+of bending, the corner square's centroid is h/2 - R/2 from the axis and \
+the quarter circle's is h/2 - R + 4R/(3 pi)."""
+
+[[entry]]
+id = "geometry.rect_tube.I"
+value = "Moment of inertia of a rectangle with rounded corners about a centroidal axis: the rectangle's, less at each corner the corner square's plus the quarter circle's, each by the parallel-axis theorem; the tube's is the outside outline's less the inside outline's"
+unit = "equation"
+cite = "AISC Manual Part 17, Properties of Geometric Sections"
+document = "AISC Steel Construction Manual"
+edition = "16th Edition"
+section = "Part 17, Properties of Geometric Sections, rectangle and quarter circle: moment of inertia (table number not recalled)"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = """
+Geometry, from memory: a square of side R has R^4/12 about its own \
+centroid; a quarter circle has (pi/16 - 4/(9 pi)) R^4 about its own \
+centroidal axis. Compared with published values by the \
+property-formula test (plan T4): reproduces or comes out below \
+published on every binding row, the worst 0.83% below, never above."""
+
+[[entry]]
+id = "geometry.rect_tube.Z"
+value = "Plastic section modulus of a rectangle with rounded corners about a centroidal axis: the rectangle's b h^2/4, less at each corner the first moment of the corner square less that of its quarter circle; the tube's is the outside outline's less the inside outline's"
+unit = "equation"
+cite = "AISC Manual Part 17, Properties of Geometric Sections"
+document = "AISC Steel Construction Manual"
+edition = "16th Edition"
+section = "Part 17, Properties of Geometric Sections, rectangle and quarter circle: first moment of area (table number not recalled)"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = "Geometry: the sum of the first moments of the areas each side of the axis. Compared with published values by the property-formula test (plan T4): reproduces on all 208 binding rows in the scratch trial."
+
+[[entry]]
+id = "geometry.rect_tube.S"
+value = "Elastic section modulus of a rectangular tube about an axis: the moment of inertia about that axis over the distance to the extreme fiber, half the outside dimension in the direction of bending"
+unit = "equation"
+cite = "AISC Manual Part 17, Properties of Geometric Sections"
+document = "AISC Steel Construction Manual"
+edition = "16th Edition"
+section = "Part 17, Properties of Geometric Sections: section modulus (table number not recalled)"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = "Geometry. Compared with published values by the property-formula test (plan T4): reproduces or below on every binding row."
+
+[[entry]]
+id = "geometry.rect_tube.r"
+value = "Radius of gyration about an axis: the square root of the moment of inertia about that axis over the area"
+unit = "equation"
+cite = "AISC Manual Part 17, Properties of Geometric Sections"
+document = "AISC Steel Construction Manual"
+edition = "16th Edition"
+section = "Part 17, Properties of Geometric Sections: radius of gyration (table number not recalled)"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = "Geometry. Compared with published values by the property-formula test (plan T4): reproduces or below on every binding row."
+
+[[entry]]
+id = "geometry.rect_tube.weight"
+value = "Weight per unit length of a custom rectangular tube: the steel unit weight times the area on the nominal wall, with the outside corner radius at twice the nominal wall"
+unit = "equation"
+cite = "Engineering judgement (EOR): a custom tube's weight is on its nominal wall"
+document = "Engineering decision of the engineer of record"
+edition = "docs/brief/checks.md, S6-3; docs/brief/inputs.md, S5-8"
+section = "Custom rectangular tube: weight on the nominal wall with a 2 t_nom outside radius"
+source = "engineer"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = """
+S6-3 and S5-8: weight on the nominal wall, strength on the design wall, \
+AISC's own convention. The unit weight is material.steel.density. The \
+property-formula test (plan T4) holds it within 0.5% of the published \
+weight on the binding rows; the scratch trial's worst was 0.26%."""
+
+[[entry]]
+id = "aisc360.B4.1b.d.width"
+value = "For flanges and webs of rectangular HSS, if the corner radius is not known, b and h are taken as the corresponding outside dimension minus three times the thickness. The thickness is the design wall thickness."
+unit = "provision"
+cite = "AISC 360-22 §B4.1b(d)"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§B4.1b(d), Stiffened Elements: width of flanges and webs of rectangular HSS, page 16.1-22"
+source = "AISC 360-22 text, read 2026-10-11"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = """
+Paraphrase of the last two sentences of item (d) as read in the 360-22 \
+text. S6-3: a custom rectangular tube's b/t and h/t use this rule, which \
+implies a 1.5 t outside radius; its section properties use 2 t \
+(ej.section.rect_tube.corner_radius). The two conventions differ on \
+purpose, as they do in the Shapes Database: the scratch trial reproduces \
+the published b/t and h/t on all 208 binding rows with this rule. The \
+coefficient is aisc360.B4.1b.d.coeff."""
+
+[[entry]]
+id = "aisc360.B4.1b.d.coeff"
+value = 3
+unit = ""
+cite = "AISC 360-22 §B4.1b(d)"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§B4.1b(d), page 16.1-22: the outside dimension minus three times the thickness"
+source = "AISC 360-22 text, read 2026-10-11"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = "Read in the 360-22 text."
+
+[[entry]]
+id = "aisc360.CH3.midline_area"
+value = "For rectangular HSS, the area bounded by the midline of the wall, with the midline corner radius of 1.5 t that follows from an outside corner radius of 2 t"
+unit = "equation"
+cite = "AISC 360-22 Commentary §H3, Eq. C-H3-2"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "Commentary §H3.1, Round and Rectangular HSS Subjected to Torsion, Equation C-H3-2, pages 16.1-414 and 16.1-415"
+source = "AISC 360-22 text, read 2026-10-11"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = """
+Read in the 360-22 text: 'Conservatively assuming an outside corner \
+radius of 2t, the midline radius is 1.5t and Ao = (B - t)(H - t) - 9 t^2 \
+(4 - pi)/4'. The tool writes the same area as (H - t)(B - t) - (4 - pi) \
+(1.5 t)^2, with the 1.5 as aisc360.CH3.midline_radius_coeff. The \
+Commentary uses Ao for the torsional shear constant C = 2 t Ao; S6-4 \
+uses the same midline for J (ej.section.rect_tube.J)."""
+
+[[entry]]
+id = "aisc360.CH3.midline_radius_coeff"
+value = 1.5
+unit = ""
+cite = "AISC 360-22 Commentary §H3"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "Commentary §H3.1, page 16.1-414: with an outside corner radius of 2t, the midline radius is 1.5t"
+source = "AISC 360-22 text, read 2026-10-11"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = "Read in the 360-22 text. The midline corner radius of a custom rectangular tube, as a multiple of the design wall (S6-4)."
+
+[[entry]]
+id = "ej.section.rect_tube.J"
+value = "Torsional constant of a custom rectangular tube: J = 4 Ao^2 t / p on the wall's midline, Ao the area the midline encloses and p its perimeter, with the midline corner radius of the Commentary to AISC 360-22 §H3"
+unit = "equation"
+cite = "Engineering judgement (EOR): J of a custom rectangular tube from its midline"
+document = "Engineering decision of the engineer of record"
+edition = "docs/brief/checks.md, S6-4"
+section = "J for a custom rectangular tube: 4 Ap^2 t / p on the wall's midline, midline corner radius 1.5 t_des"
+source = "engineer"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = """
+S6-4 (Micah, 2026-10-10). The thin-walled closed-section (membrane \
+analogy, Bredt) form. The Commentary to H3 prints the midline area \
+(aisc360.CH3.midline_area) and the torsional shear constant C = 2 t Ao; \
+it does not print J, so the formula is recorded as the engineer's \
+decision, not as a 360-22 equation. J enters only the \
+lateral-torsional limits Lp and Lr (Eqs. F7-10, F7-11). A database \
+section uses its published J. The property-formula test holds it at \
+the database's printed precision (S6-16 item 5): it reproduces on 207 \
+of the 208 binding rows; the one miss, HSS4X4X3/16 (published 10, \
+formula 9.96), is reported, not asserted."""
+
+[[entry]]
+id = "geometry.rect_tube.midline_perimeter"
+value = "Perimeter of the midline of a rectangular tube's wall: twice the sum of the two midline dimensions, less at each corner the difference between two radii and a quarter circle's arc"
+unit = "equation"
+cite = "AISC Manual Part 17, Properties of Geometric Sections"
+document = "AISC Steel Construction Manual"
+edition = "16th Edition"
+section = "Part 17, Properties of Geometric Sections: perimeter of a rectangle with rounded corners (table number not recalled)"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = "Geometry: each corner replaces 2 R of straight line with pi R/2 of arc, a loss of (4 - pi) R/2 a corner, so p = 2[(H - t) + (B - t)] - 2 (4 - pi) R with R the midline radius."

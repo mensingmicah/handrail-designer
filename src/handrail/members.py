@@ -3,8 +3,8 @@ and the project with every grade the file left out filled in.
 
 Validation and the checks both start here, so a member is turned into a
 section, and a blank grade into its shape's default, in one place. A
-standard section is looked up in the shapes database; a custom round tube
-is computed from the dimensions entered (tube.py). The grades are filled
+standard section is looked up in the shapes database; a custom tube is
+computed from the dimensions entered (tube.py, rect_tube.py). The grades are filled
 in between the two: a default needs only the member's family, and a custom
 tube's design wall needs its grade (AISC 360-22 B4.2).
 
@@ -21,7 +21,8 @@ from handrail import shapes
 from handrail.materials import with_default_grades
 from handrail.project import POST_LONG_SIDE, RAIL_LONG_SIDE, SAME_AS_TOP, Member, Project, ProjectError
 from handrail.registry import Registry
-from handrail.shapes import ROUND_TUBE, Section
+from handrail.rect_tube import rect_tube
+from handrail.shapes import RECT_TUBE, ROUND_TUBE, Section
 from handrail.stops import Stop
 from handrail.tube import round_tube
 
@@ -51,13 +52,20 @@ def _section(registry: Registry, member: Member, standard: Section | None) -> Se
     """The member's section: the one looked up, or the custom tube computed in its grade."""
     if standard is not None:
         return standard
-    if member.OD is None or member.wall_nominal is None:
-        raise ValueError(f"member {member!r} has neither a section nor a custom tube's dimensions")  # a bug: the reader requires one
-    return round_tube(registry, member.OD, member.wall_nominal, member.grade)
+    if member.wall_nominal is not None and member.OD is not None:
+        return round_tube(registry, member.OD, member.wall_nominal, member.grade)
+    if member.wall_nominal is not None and member.H is not None and member.B is not None:
+        return rect_tube(registry, member.H, member.B, member.wall_nominal, member.grade)
+    raise ValueError(f"member {member!r} has neither a section nor a custom tube's dimensions")  # a bug: the reader requires one
 
 
-def _family(standard: Section | None) -> str:
-    return ROUND_TUBE if standard is None else standard.family
+def _family(member: Member | None, standard: Section | None) -> str:
+    """The member's section family, known before a custom tube's section is
+    computed: its design wall needs the grade, and the default grade needs
+    the family."""
+    if standard is not None:
+        return standard.family
+    return RECT_TUBE if member is not None and member.H is not None else ROUND_TUBE
 
 
 def _require_long_side(member: Member, sec: Section, table: str, words: tuple[str, str]) -> None:
@@ -86,8 +94,8 @@ def resolve(project: Project, registry: Registry) -> Members:
     the database does not have."""
     own_member = project.intermediate_rail.member  # its own section, or None
     rail, post, own = _standard(project.top_rail), _standard(project.post), _standard(own_member)
-    project = with_default_grades(project, registry, _family(rail), _family(post),
-                                  None if own_member is None else _family(own))
+    project = with_default_grades(project, registry, _family(project.top_rail, rail), _family(project.post, post),
+                                  None if own_member is None else _family(own_member, own))
     own_member = project.intermediate_rail.member
     m = Members(project, _section(registry, project.top_rail, rail), _section(registry, project.post, post),
                 None if own_member is None else _section(registry, own_member, own))

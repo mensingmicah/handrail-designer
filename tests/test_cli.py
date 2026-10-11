@@ -237,7 +237,12 @@ def _full_project_files():
                                       ("intermediate_rail", "HSS2X1-1/2X1/8", "horizontal")):
         rect[table].update(section=section, long_side=long_side)
         del rect[table]["grade"]
-    return raw, none, tubes, rect
+    # A custom rectangular tube gives H, B and its nominal wall (S6-14 item 6): a fifth file.
+    rect_tubes = copy.deepcopy(rect)
+    for table, (H, B) in (("top_rail", (4, 2)), ("post", (3, 2)), ("intermediate_rail", (2, 1))):
+        del rect_tubes[table]["section"]
+        rect_tubes[table].update(shape="rectangular tube", H=H, B=B, wall_nominal="1/8")
+    return raw, none, tubes, rect, rect_tubes
 
 
 def test_the_parser_reads_every_key_schema_allows_and_no_other():

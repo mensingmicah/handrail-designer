@@ -46,6 +46,58 @@ nominal wall feeds Table J2.4's minimum fillet size, the A618 wall ranges
 and the thin-material warning, none of which has a limit between 0.1875 and
 0.188 in, so no calc changes with it.
 
+## Rectangular HSS: published properties against exact geometry
+
+Found by the property-formula test for custom rectangular tubes
+(docs/plans/slice-6.md, T4; tests/test_rect_tube.py), which runs the custom
+tube's formulas on each row's listed Ht, B, nominal wall and design wall
+and compares the results with the published values. The formulas are exact
+geometry on a rounded rectangle with an outside corner radius of twice the
+design wall and an inside radius of the design wall (docs/brief/checks.md,
+S6-3); J is the midline formula of S6-4; b/t and h/t are the outside
+dimension less three design walls (AISC 360-22 B4.1b(d)); the weight is the
+steel unit weight times the area on the nominal wall. Recorded 2026-10-11.
+The tool uses every database value exactly as published, so none of this
+changes a calc of a database section. It matters for a custom tube entered
+with the same dimensions as a database shape.
+
+**Where the formulas are held to the database (binding in the test).** The
+208 rows with Ht of 8 in or less. No property comes out above published on
+any of them.
+
+| Property | Rows that reproduce | Rows below published | Worst |
+| --- | --- | --- | --- |
+| A | 208 | 0 | — |
+| Zx, Zy | 208, 208 | 0, 0 | — |
+| Ix | 175 | 33 | −0.58% |
+| Iy | 159 | 49 | −0.83% |
+| Sx | 175 | 33 | −0.74% |
+| Sy | 154 | 54 | −0.74% |
+| rx | 194 | 14 | −0.52% |
+| ry | 171 | 37 | −0.50% |
+| b/t, h/t | 208, 208 | 0, 0 | — |
+
+The area and both plastic moduli reproduce on every row, which is what
+fixes the two corner radii as the ones the database's own properties are
+built on. The moments of inertia, and the section moduli and radii of
+gyration that follow from them, run slightly below published on the rows
+with the thickest walls for their size. A custom tube is therefore never
+stronger than the database shape of the same dimensions, and is at most
+about 1% weaker.
+
+**Weight.** Within 0.5% on every binding row (the worst is +0.26%): 181
+rows reproduce, and 15 of the other 27 come out above published, 12 below.
+
+**J misses on one row.** HSS4X4X3/16 is published as 10 in⁴; the midline
+formula gives 9.96 in⁴, below published. Reported, not asserted
+(docs/brief/checks.md, S6-16 item 5). The other 207 rows reproduce at the
+database's printed precision.
+
+**The 317 rows over 8 in: not asserted.** A few come out above published:
+Sx and Sy on one row each (by 0.22%), rx on four and ry on three (by up to
+0.13%), and the wall ratios on up to two (by 0.21%). No guard member is
+that large.
+
 ## Database findings: published properties against exact geometry
 
 Found by the property-formula test (docs/plans/slice-5.md, T3;
