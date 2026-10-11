@@ -205,6 +205,6 @@ def section(designation: str) -> Section:
                     y=Axis(I=q("Iy"), S=q("Sy"), Z=q("Zy"), r=q("ry")),
                 )
     raise ShapeNotFound(
-        f"{designation!r} is not an AISC pipe or round HSS in {_table(PIPE_TOML)['source_file']}",
+        f"{designation!r} is not an AISC pipe, round HSS or rectangular HSS in {_table(PIPE_TOML)['source_file']}",
         stop=Stop.SECTION_NOT_FOUND,
     )

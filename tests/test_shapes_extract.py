@@ -172,5 +172,5 @@ def test_one_row_lists_its_nominal_wall_to_three_decimals():
 
 
 def test_unknown_designation_is_named():
-    with pytest.raises(shapes.ShapeNotFound, match="'Pipe99STD' is not an AISC pipe or round HSS in"):
+    with pytest.raises(shapes.ShapeNotFound, match="'Pipe99STD' is not an AISC pipe, round HSS or rectangular HSS in"):
         shapes.section("Pipe99STD")
