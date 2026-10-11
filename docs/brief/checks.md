@@ -300,3 +300,36 @@ plan's decision numbers.
   rectangular sections and the chord limit states (slice 6)".)
   Rectangular members are built first, then the Chapter K chord limit
   states, round chords before rectangular chords.
+- **A custom rectangular tube follows AISC's conventions, with no corner
+  radius input.** (S6-3, Micah 2026-10-10.) It settles "Custom
+  rectangular tubes use the AISC corner-radius convention" above.
+  - Section properties (A, and I, S, Z and r about both axes): exact
+    geometry on a rounded rectangle with an outside corner radius of
+    2·t_des and an inside radius of t_des, the radius the Shapes
+    Database's own properties are built on.
+  - Wall slenderness (b/t and h/t for Table B4.1): the outside dimension
+    less 3·t_des, AISC 360-22 §B4.1b(d), page 16.1-22, the rule for a
+    corner radius that is not known. It implies a 1.5·t outside radius;
+    the two conventions differ on purpose, as they do in the database.
+  - Weight: the steel unit weight times the area on the nominal wall,
+    with a 2·t_nom outside radius (S5-8).
+  - The wall is always entered as the nominal wall, t_des per §B4.2 by
+    grade (S5-8, inputs.md).
+  - Not chosen: an entered corner radius (it could be entered
+    unconservatively, a small radius raising every property), or sharp
+    corners (3 to 5% high on area at guard sizes).
+  - Accepted: a custom tube entered with a database shape's dimensions
+    can differ from the database shape by up to about 1%, on the low
+    side, as for round tubes. Scratch trial (Claude, 2026-10-10; planning
+    arithmetic, not test values) on the 525 rectangular HSS rows: of the
+    208 rows with Ht ≤ 8 in, 103 reproduce A, Ix, Iy, Zx, Zy, Sx, Sy, rx
+    and ry to the printed digit, the worst miss is 0.93% below published
+    and none is above; over all rows 9 come out above, the worst by
+    0.22%; weight is within 0.25% on every row.
+  - The property-formula test (binding, as slice 5's T3 as ruled): on
+    the rows with Ht ≤ 8 in every property reproduces or comes out below
+    published, never above, and no more than 1% below; weight within
+    0.5%. Larger rows are a reported database finding, not asserted. A
+    row above published in the binding set stops the build and goes to
+    Micah; the tolerance is never widened.
+
