@@ -21,7 +21,7 @@ from handrail.calc import PI, Sheet, Sym, sqrt
 from handrail.dimensions import Dimension
 from handrail.materials import NOMINAL_DESIGN_WALL
 from handrail.registry import Registry
-from handrail.shapes import CUSTOM, ROUND_TUBE, Axis, Section
+from handrail.shapes import CUSTOM, ROUND_TUBE, Axis, Round, Section
 
 WALL_AS_ENTERED = "ej.section.custom_wall_nominal"
 DESIGN_WALL = "aisc360.B4.2.design_wall"
@@ -94,6 +94,7 @@ def round_tube(registry: Registry, OD: Dimension, wall: Dimension, grade: str) -
                         cite_ids=(DESIGN_WALL,), unit="inch")
     p = properties(sh, D, t_nom, t_des)
     axis = Axis(I=p.I.value, S=p.S.value, Z=p.Z.value, r=p.r.value)  # a round section: x = y (S5-1)
-    return Section(label=name, family=ROUND_TUBE, source=CUSTOM, W=p.W.value, A=p.A.value, OD=D.value,
-                   tnom=t_nom.value, tdes=t_des.value, D_t=p.D_t.value, x=axis, y=axis,
+    return Section(label=name, family=ROUND_TUBE, source=CUSTOM, W=p.W.value, A=p.A.value,
+                   outline=Round(OD=D.value, D_t=p.D_t.value),
+                   tnom=t_nom.value, tdes=t_des.value, x=axis, y=axis,
                    custom=True, computed=tuple(sh.lines))

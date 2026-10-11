@@ -21,6 +21,7 @@ from handrail.project import (
 )
 from handrail.registry import Registry
 from handrail.units import Q_
+import stand_ins
 
 E, FY = 29000.0, 35.0                 # ksi (registry values, restated for the plain calc)
 OM_B = OM_C = OM_T = 1.67
@@ -233,7 +234,7 @@ def test_slender_in_compression_is_a_hard_stop_naming_ratio_and_limit():
     # compression (lambda_r = 0.11 E/Fy = 91.1).
     reg = Registry()
     lr = reg.get("aisc360.B4.1a.round_hss.lambda_r")
-    fake = dataclasses.replace(shapes.section("Pipe2STD"), D_t=100, label="FakePipe")
+    fake = stand_ins.replace(shapes.section("Pipe2STD"), D_t=100, label="FakePipe")
     expected = (rf"FakePipe: wall is slender in compression, D/t = 100 > lambda_r = "
                 rf"{re.escape(str(lr.value))}E/Fy = {re.escape(fmt_sig(lr.value * E / FY))} "
                 rf"\({re.escape(lr.cite)}\)")

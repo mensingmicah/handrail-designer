@@ -4,8 +4,8 @@ Run from the repo root:
 
     uv run python -m handrail.shapes_extract
 
-The derived files (data/shapes-pipe.toml, data/shapes-hss-round.toml) are
-generated, never hand-edited. tests/test_shapes_extract.py re-reads the
+The derived files (data/shapes-pipe.toml, data/shapes-hss-round.toml,
+data/shapes-hss-rect.toml) are generated, never hand-edited. tests/test_shapes_extract.py re-reads the
 original .xlsx and confirms each derived file matches it row for row.
 """
 
@@ -68,6 +68,35 @@ ROUND_HSS_COLUMNS = {
     "C": "in^3",
 }
 
+# Columns extracted for rectangular and square HSS: the outside depth Ht and
+# width B in place of the outside diameter, the flat widths h and b the
+# database derives from them, and the two wall slenderness ratios in place
+# of D/t. The database lists every row with Ht >= B and x the strong axis.
+RECT_HSS_COLUMNS = {
+    "EDI_Std_Nomenclature": "",
+    "AISC_Manual_Label": "",
+    "W": "lbf/ft",
+    "A": "in^2",
+    "Ht": "in",
+    "h": "in",
+    "B": "in",
+    "b": "in",
+    "tnom": "in",
+    "tdes": "in",
+    "b/tdes": "",
+    "h/tdes": "",
+    "Ix": "in^4",
+    "Zx": "in^3",
+    "Sx": "in^3",
+    "rx": "in",
+    "Iy": "in^4",
+    "Zy": "in^3",
+    "Sy": "in^3",
+    "ry": "in",
+    "J": "in^4",
+    "C": "in^3",
+}
+
 
 def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
@@ -94,24 +123,32 @@ class Extract:
     columns: dict[str, str]    # column name -> unit ("" for text and plain ratios)
     rows_with: str             # the header comment's words for the rows it holds
     round_only: bool = False   # keep only rows with an outside diameter
+    rectangular_only: bool = False  # keep only rows without one
 
     def rows(self) -> tuple[list, list[tuple]]:
         """The imperial header and this extract's rows, in file order. The
         workbook lists rectangular and round HSS under one Type; a round one
-        is a row with an outside diameter."""
+        is a row with an outside diameter, a rectangular or square one a row
+        without."""
         header, rows = read_rows(self.shape_type)
+        od = header.index("OD")
         if self.round_only:
-            od = header.index("OD")
             rows = [r for r in rows if r[od] not in (EMPTY, None)]
+        if self.rectangular_only:
+            rows = [r for r in rows if r[od] in (EMPTY, None)]
         return header, rows
 
 
 PIPE_TOML = REPO / "data" / "shapes-pipe.toml"
 ROUND_HSS_TOML = REPO / "data" / "shapes-hss-round.toml"
+RECT_HSS_TOML = REPO / "data" / "shapes-hss-rect.toml"
 PIPE = Extract(PIPE_TOML, "PIPE", PIPE_COLUMNS, "rows with Type = PIPE,")
 ROUND_HSS = Extract(ROUND_HSS_TOML, "HSS", ROUND_HSS_COLUMNS,
                     "rows with Type = HSS and an outside diameter (round HSS),", round_only=True)
-EXTRACTS = (PIPE, ROUND_HSS)
+RECT_HSS = Extract(RECT_HSS_TOML, "HSS", RECT_HSS_COLUMNS,
+                   "rows with Type = HSS and no outside diameter (rectangular and square HSS),",
+                   rectangular_only=True)
+EXTRACTS = (PIPE, ROUND_HSS, RECT_HSS)
 
 
 def _toml_value(v) -> str:

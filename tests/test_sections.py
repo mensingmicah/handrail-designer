@@ -18,6 +18,7 @@ from handrail.project import ProjectError
 from handrail.registry import Registry
 from handrail.stops import Stop
 from handrail.units import Q_
+import stand_ins
 
 OD_TOLERANCE = "ej.section.od_tolerance"
 OWN_WELD = {"intermediate_rail_to_post": "1/8"}
@@ -47,7 +48,7 @@ def _with(monkeypatch, label: str, **changes) -> None:
 
     def section(designation: str) -> shapes.Section:
         sec = real(designation)
-        return dataclasses.replace(sec, **changes) if sec.label == label else sec
+        return stand_ins.replace(sec, **changes) if sec.label == label else sec
 
     monkeypatch.setattr(shapes, "section", section)
 

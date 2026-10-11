@@ -1,7 +1,8 @@
 """Each derived shapes file matches the unmodified AISC Shapes Database row for row.
 
-Two derived files: the PIPE rows (slice 1) and the round HSS rows (slice 5,
-step 3). The same four tests run on each.
+Three derived files: the PIPE rows (slice 1), the round HSS rows (slice 5,
+step 3) and the rectangular and square HSS rows (slice 6, step 1). The same
+four tests run on each.
 """
 
 import tomllib
@@ -9,7 +10,7 @@ import tomllib
 import pytest
 
 from handrail import shapes
-from handrail.shapes import PIPE, ROUND_HSS
+from handrail.shapes import PIPE, RECT_HSS, ROUND_HSS
 from handrail.shapes_extract import EMPTY, EXTRACTS, XLSX, render_pipe_toml, render_toml, sha256
 from handrail.shapes_extract import PIPE as PIPE_EXTRACT
 
@@ -98,6 +99,76 @@ def test_every_round_hss_has_the_same_properties_about_both_axes():
     for label in shapes.labels(ROUND_HSS):
         s = shapes.section(label)
         assert s.x == s.y, label
+
+
+def _inches(text: str) -> float:
+    """A designation's dimension as a number: "2-1/2" is 2.5, "1/8" is 0.125."""
+    whole, _, frac = text.rpartition("-") if "/" in text else (text, "", "")
+    if not frac:
+        return float(whole)
+    num, den = frac.split("/")
+    return (float(whole) if whole else 0.0) + float(num) / float(den)
+
+
+def test_rectangular_hss_rows_are_the_hss_rows_without_an_outside_diameter():
+    """The brief counts 525 rectangular rows, 126 of them square, every one
+    listed with Ht >= B and x the strong axis (inputs.md, S6-2), and with
+    Ht and B stored exactly as the designation reads (welds.md, S6-9), so
+    the width comparisons at a rectangular member need no tolerance."""
+    labels = shapes.labels(RECT_HSS)
+    assert len(labels) == 525 and len(set(labels)) == 525
+    assert not set(labels) & (set(shapes.labels(ROUND_HSS)) | set(shapes.labels(PIPE)))
+    square = 0
+    for label in labels:
+        s = shapes.section(label)
+        H, B = s.rect.H.m_as("inch"), s.rect.B.m_as("inch")
+        assert H >= B, label
+        assert s.x.I >= s.y.I and s.x.Z >= s.y.Z, label
+        h_text, b_text, _ = label.removeprefix("HSS").split("X")
+        assert (H, B) == (_inches(h_text), _inches(b_text)), label
+        square += s.rect.square
+        assert s.rect.square == (s.x == s.y), label
+    assert square == 126
+
+
+def test_lookup_finds_a_rectangular_hss_with_its_published_values():
+    s = shapes.section("hss4x2x1/8")
+    assert s.label == "HSS4X2X1/8" and s.family == RECT_HSS and s.source == shapes.DB
+    r = s.rect
+    assert (r.H.m_as("in"), r.B.m_as("in"), r.b_t, r.h_t, r.J.m_as("in^4")) == (4, 2, 14.2, 31.5, 2.2)
+    assert not r.square and not s.is_round
+    assert (s.tnom.m_as("in"), s.tdes.m_as("in")) == (0.125, 0.116)
+    assert (s.W.m_as("lbf/ft"), s.A.m_as("in^2")) == (4.75, 1.3)
+    assert (s.x.I.m_as("in^4"), s.x.S.m_as("in^3"), s.x.Z.m_as("in^3"), s.x.r.m_as("in")) == (2.65, 1.32, 1.66, 1.43)
+    assert (s.y.I.m_as("in^4"), s.y.S.m_as("in^3"), s.y.Z.m_as("in^3"), s.y.r.m_as("in")) == (0.898, 0.898, 1.02, 0.83)
+
+
+def test_a_square_hss_is_of_the_rectangular_family():
+    s = shapes.section("HSS2X2X1/8")
+    assert s.family == RECT_HSS and s.rect.square and s.x == s.y
+
+
+def test_each_outline_refuses_the_other_outlines_values():
+    """A check written for a round section must never compute on a
+    rectangular one's numbers, or the reverse: the value is refused, not
+    defaulted."""
+    with pytest.raises(TypeError, match="HSS2X2X1/8 .rectangular HSS. is not a round section"):
+        _ = shapes.section("HSS2X2X1/8").OD
+    with pytest.raises(TypeError, match="is not a round section"):
+        _ = shapes.section("HSS2X2X1/8").D_t
+    with pytest.raises(TypeError, match="Pipe2STD .AISC pipe. is not a rectangular section"):
+        _ = shapes.section("Pipe2STD").rect
+    assert shapes.section("Pipe2STD").is_round
+
+
+def test_one_row_lists_its_nominal_wall_to_three_decimals():
+    """A database finding (checks.md, S6-14 item 9; data/README.md):
+    HSS1-1/2X1-1/2X3/16 lists t_nom = 0.188 in where every other 3/16 in row
+    lists 0.1875 in. It is used as published (S5-4)."""
+    odd = [lb for lb in shapes.labels(RECT_HSS)
+           if lb.endswith("X3/16") and shapes.section(lb).tnom.m_as("inch") != 0.1875]
+    assert odd == ["HSS1-1/2X1-1/2X3/16"]
+    assert shapes.section(odd[0]).tnom.m_as("inch") == 0.188
 
 
 def test_unknown_designation_is_named():

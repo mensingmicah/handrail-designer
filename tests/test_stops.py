@@ -32,6 +32,7 @@ from handrail.shapes import PIPE, RECT_HSS, ROUND_HSS, ROUND_TUBE
 from handrail.stops import Stop
 from handrail.units import Q_
 from handrail.validate import validate
+import stand_ins
 from test_registry import entry, write
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -99,7 +100,7 @@ def _stand_in(monkeypatch, family, only=None):
 
 
 def _fake(D_t):
-    return dataclasses.replace(shapes.section("Pipe2STD"), D_t=D_t, label="FakePipe")
+    return stand_ins.replace(shapes.section("Pipe2STD"), D_t=D_t, label="FakePipe")
 
 
 # -- the project file -------------------------------------------------------

@@ -26,6 +26,8 @@ from handrail.registry import Registry
 from handrail.units import Q_
 from handrail.validate import validate
 
+import stand_ins
+
 # The project the direct scenarios start from: Pipe2STD rail and post over
 # 6'-0", h = 42 in, t_p = 1/2 in, no intermediate rail.
 BASE = {
@@ -45,7 +47,7 @@ def _project(**tables) -> project.Project:
 
 
 def _fake(base: str = "Pipe2STD", **changes) -> shapes.Section:
-    return dataclasses.replace(shapes.section(base), **changes)
+    return stand_ins.replace(shapes.section(base), **changes)
 
 
 def _stopped(fn: Callable[[], object]) -> str:

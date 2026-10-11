@@ -20,6 +20,7 @@ from handrail.project import (
 from handrail.registry import Registry
 from handrail.results import Case, Check
 from handrail.units import Q_
+import stand_ins
 
 E, FY, OMEGA = 29000.0, 35.0, 1.67  # ksi, ksi, - (registry values, restated for the plain calc)
 P, W_L = 200.0, 50.0 / 12  # lb, lb/in
@@ -153,7 +154,7 @@ def test_noncompact_section_uses_eq_F8_2_and_is_flagged():
 
 def _fake(D_t):
     s = shapes.section("Pipe2STD")
-    return dataclasses.replace(s, D_t=D_t, label="FakePipe")
+    return stand_ins.replace(s, D_t=D_t, label="FakePipe")
 
 
 def test_slender_wall_is_a_hard_stop_naming_ratio_and_limit():
