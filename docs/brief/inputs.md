@@ -317,7 +317,7 @@ plan's decision numbers.
   - **A1065 is not offered in v1.** This replaces "A1065 moves to slice
     6" (S5-6). From memory, unverified, A1065 Gr 50 is Fy = 50 and Fu =
     60 ksi, so Fy/Fu = 0.83, over the 0.8 ductility limit of the Chapter
-    K tables (AISC 360-22 Table K4.2A, page 16.1-169, and the round
+    K tables (AISC 360-22 Table K4.2A, page 16.1-170, and the round
     tables in issue #28), whose note excuses only A500 Gr C. Every member
     in this tool is a chord or a branch at a Chapter K joint, so an A1065
     member could not pass. It is also a product formed from plate in
