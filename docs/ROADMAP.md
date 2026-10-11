@@ -1,9 +1,9 @@
 # Roadmap: slices from v0.1.0 to v1
 
 Status: **accepted by Micah, 2026-09-30.** Slice 2 is the post (option A
-below). **Current status (2026-10-10):** slices 1–5 are done (v0.1.0 to
-v0.5.0; v0.4.0 was the first complete all-pipe package); slice 6 is next
-and needs its plan (slice 5's plan is docs/plans/slice-5.md, completed). Slices 5–7
+below). **Current status (2026-10-11):** slices 1–5 are done (v0.1.0 to
+v0.5.0; v0.4.0 was the first complete all-pipe package); slice 6 is
+planned (docs/plans/slice-6.md) and building on branch `slice-6`. Slices 5–7
 were regrouped by engineering on 2026-10-09 (Micah; S5-1 in
 docs/brief/checks.md): hollow round, then hollow rectangular, then every
 solid bar. What the tool must do is set by the brief
@@ -20,7 +20,7 @@ settles the slice's open questions, and it can reorder or split the slice.
 | 3 (done, v0.3.0) | Checks 3 and 7: both welds (pipe rail on pipe post) | 2 | M | 1 | — |
 | 4 (done, v0.4.0) | Check 4 (intermediate rail, 4a member and 4b weld) and the anchor reaction sets | 2 (3 for a full package) | M | 1 | #4 (closed) |
 | 5 (done, v0.5.0) | Hollow round sections: round HSS, custom round tube; the two-axis section type; the engine refactor (#21) | 4 | M–L | 2 | #3, #6, #7, #11, #21, #24 |
-| 6 | Hollow rectangular sections: rectangular HSS, custom rectangular tube; Chapter K chord limit states for round and rectangular chords | 5 | XL | 3–4 | — |
+| 6 (planned) | Hollow rectangular sections: rectangular HSS, custom rectangular tube, alone or mixed with round members; the Chapter K chord limit states of a round rail at a round post | 5 | XL | 2, and case 6 extended | #28 |
 | 7 | Solid bars: solid round bar and solid rectangular bar | 6 | L | 2–3 | — |
 | 8 | Input form and front-matter image | 7 | L | 0 | — |
 | 9 | v1 release | 8 | S code, L review | 0 | — |
@@ -301,7 +301,30 @@ something his arithmetic has not touched (S5-2). The weld envelope and
 load-at-centerline rulings are confirmed for every round hollow rail in
 the plan. **Plan:** docs/plans/slice-5.md, with test cases 6 and 7.
 
-### Slice 6: hollow rectangular sections
+### Slice 6: hollow rectangular sections (planned)
+
+**Settled** (Micah, 2026-10-10; S6-16 confirmed 2026-10-11): S6-1 to
+S6-16 in the brief. **Plan:** docs/plans/slice-6.md, with test cases 8
+and 9 and case 6 extended. What the rulings changed in the text below,
+which is kept as it stood before the plan:
+
+- The slice is not split (S6-1).
+- The chord limit states are computed for a round post on a round rail
+  only, in Check 3. At Check 4b they have no demand and the calc says so
+  in one line (S6-11). A rectangular chord and a mixed pair keep the
+  stated assumption, inside the Chapter K limits of applicability, which
+  are stops (S6-9, S6-12, S6-13). W7 is retired for the round pair only.
+- The axis is not an input: the orientation is, as `long_side`, and the
+  axes are derived (S6-2).
+- Round and rectangular members may be mixed at both rail to post joints
+  (S6-9).
+- The weld envelope and the load-at-centerline rulings are kept for
+  rectangular rails (S6-14 item 1).
+- Test cases: two new ones and case 6 extended, not three or four
+  (S6-15).
+- Registry entries: about 85 to 110, not 35 to 50; this registry stores
+  each coefficient as its own entry. Still a guess.
+- Seven points are open for Micah; the plan lists them.
 
 **Covers.** Rectangular HSS from the database and custom rectangular tubes
 (AISC corner-radius convention, §B4.2 design thickness). Table B4.1a/B4.1b

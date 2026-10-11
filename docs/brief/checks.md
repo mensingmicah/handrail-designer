@@ -436,8 +436,8 @@ plan's decision numbers.
     case for rectangular rails (item 1); a rectangular same-as-top
     observation for Check 4b with its own guards (item 5).
 - **Found when slice 6's rulings were checked against each other and
-  against slice 5's.** (S6-16; Claude's, 2026-10-10, awaiting Micah's
-  confirmation.)
+  against slice 5's.** (S6-16; Claude's, 2026-10-10; confirmed by Micah,
+  2026-10-11.)
   1. **The round chord table gets its own summary row and its own value
      keys.** This amends item 7 of S6-14. Test cases 4 to 7 record
      `check3.ratio` for each direction case as the weld check's ratio. If
