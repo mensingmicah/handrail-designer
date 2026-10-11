@@ -8,13 +8,14 @@
 # the rectangular HSS default applies (A500 Gr B, S6-5). L = 6'-0", h = 42
 # in, t_p = 1/2 in; baseplate B = 6 in (parallel to the rail) x N = 8 in
 # (perpendicular to the rail), A36. Fillet welds, E70XX: rail to post 1/8
-# in, intermediate rail to post 1/8 in, post to baseplate 3/16 in all
-# around. Default loads (P = 200 lb, w = 50 plf, 50 lb component load), no
+# in, intermediate rail to post 1/8 in, post to baseplate 3/16 in on
+# the faces parallel to the rail. Default loads (P = 200 lb, w = 50 plf, 50 lb component load), no
 # exemption; default deflection limits.
 #
-# The inputs are Claude's proposal (plan, open item 7): S6-15 fixes what
-# the case is, not its sections, weld sizes or pattern. Micah confirms or
-# changes them before the independent calc runs.
+# The inputs are Claude's proposal (plan, open item 7), accepted by Micah
+# on 2026-10-11 (S6-17), with the base weld on the faces parallel to the
+# rail, as S6-15 specified. Check 7 may print NG in the longitudinal case;
+# that is expected.
 #
 # Branches it reaches: `long_side` on a rail and on a post (S6-2); the
 # rail's weak axis under the horizontal guard load, where its 4 in wall is
@@ -23,8 +24,8 @@
 # diagram (Eq. F1-1, S6-4); the two axes combined by H1.1, not SRSS; a
 # post that is not square, bent about its weak axis in the transverse
 # cases (S6-14 item 2); Table K5.1's effective weld at both rail to post
-# joints, each at equal widths (S6-8); the post's rounded rectangle at the
-# baseplate (S6-6).
+# joints, each at equal widths (S6-8); the face-pair base weld, the post
+# wall checked on its own lines (S6-6, S6-7).
 #
 # What it covers ([verification] covers): every group, the rail's section,
 # the intermediate rail, the post, Checks 1 to 7 and the reaction sets.
@@ -51,7 +52,8 @@
 # Each ratio key is a placeholder, not a tool result. Check 1's names the
 # outward concentrated case, which the plan's planning arithmetic worked
 # (docs/plans/slice-6.md, T2). The plan names no case for Checks 3 and 7,
-# so theirs name the outward distributed case. Rename each key to the
+# so theirs name the outward distributed case (Check 7's governing case may
+# be the longitudinal one on a face pair). Rename each key to the
 # governing case of your recompute.
 #
 # The A500 Gr B rectangular Fy and Fu this case turns on are drafted
@@ -92,7 +94,7 @@ grade = "A36"
 rail_to_post = "1/8"
 intermediate_rail_to_post = "1/8"
 post_to_baseplate = "3/16"
-base_pattern = "all around"
+base_pattern = "faces parallel to rail"
 electrode = "E70XX"
 
 [deflection.rail]
