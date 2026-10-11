@@ -165,6 +165,46 @@ review = [
   "aws.d1_1.thickness_min",
   "aws.d1_1.scope",
   "ej.weld.thin_material",
+  # Slice 6 step 2 (rectangular members), drafted 2026-10-11
+  "material.A500_GrB.hss_rect.Fy",
+  "material.A500_GrB.hss_rect.Fu",
+  "material.A500_GrC.hss_rect.Fy",
+  "material.A500_GrC.hss_rect.Fu",
+  "material.A501_GrA.hss_rect.Fy",
+  "material.A501_GrA.hss_rect.Fu",
+  "material.A501_GrB.hss_rect.Fy",
+  "material.A501_GrB.hss_rect.Fu",
+  "material.A847.hss_rect.Fy",
+  "material.A847.hss_rect.Fu",
+  "material.A1085_GrA.hss_rect.Fy",
+  "material.A1085_GrA.hss_rect.Fu",
+  "aisc360.B4.1a.rect_hss.lambda_r",
+  "aisc360.B4.1b.rect_hss.flange.lambda_p",
+  "aisc360.B4.1b.rect_hss.flange.lambda_r",
+  "aisc360.B4.1b.rect_hss.web.lambda_p",
+  "aisc360.B4.1b.rect_hss.web.lambda_r",
+  "aisc360.F7.nominal_strength",
+  "aisc360.F7.compact_no_local_buckling",
+  "aisc360.eq.F7-1",
+  "aisc360.eq.F7-2",
+  "aisc360.eq.F7-6",
+  "aisc360.F7.4a.no_ltb_below_Lp",
+  "aisc360.eq.F7-8",
+  "aisc360.eq.F7-9",
+  "aisc360.eq.F7-9.coeff",
+  "aisc360.eq.F7-10",
+  "aisc360.eq.F7-10.coeff",
+  "aisc360.eq.F7-11",
+  "aisc360.eq.F7-11.coeff",
+  "aisc360.F7.4.inelastic_coeff",
+  "aisc360.F7.4.no_ltb_note",
+  "aisc360.eq.F1-1",
+  "aisc360.eq.F1-1.coeff_numerator",
+  "aisc360.eq.F1-1.coeff_max",
+  "aisc360.eq.F1-1.coeff_quarter",
+  "aisc360.eq.F1-1.coeff_center",
+  "aisc360.F1.c.cantilever_cb",
+  "ej.bending.biaxial_rect",
 ]
 
 # ---------------------------------------------------------------------------
@@ -289,7 +329,7 @@ warning (ej.grade.unusual_pairing) reads this list. Still from memory."""
 
 [[entry]]
 id = "material.grades.hss_rect"
-value = ["A500 Gr B", "A500 Gr C", "A501 Gr A", "A501 Gr B", "A618 Gr I", "A618 Gr II", "A618 Gr III", "A847", "A1085 Gr A", "A1065 Gr 50", "A1065 Gr 70"]
+value = ["A500 Gr B", "A500 Gr C", "A501 Gr A", "A501 Gr B", "A618 Gr Ia", "A618 Gr Ib", "A618 Gr II", "A618 Gr III", "A847", "A1085 Gr A"]
 unit = "list"
 cite = "AISC Manual Table 2-4"
 document = "AISC Steel Construction Manual"
@@ -309,7 +349,14 @@ Review 2026-09-30, Micah: Wrong. 'A500 gr. B differs from found to rectangular, 
 Decision 2026-09-30, Micah: leave drafted and settle in slice 5. Fy and Fu \
 for each grade belong in separate entries, not in this list. Which grades \
 the tool offers, and the default, are brief decisions; this entry only \
-mirrors the Table 2-4 column."""
+mirrors the Table 2-4 column. \
+Revised 2026-10-11 (slice 6, S6-5): A1065 Gr 50 and 'A1065 Gr 70' \
+removed (A1065 is not offered in v1), and A618's grade names corrected \
+to Ia, Ib, II and III as in the round list. Each grade now has its own \
+Fy and Fu entries (material.<grade>.hss_rect.* and material.A618_*). \
+The unusual-pairing warning (ej.grade.unusual_pairing) and the \
+intermediate rail's default grade (S5-10) read this list. Still from \
+memory."""
 
 # ---------------------------------------------------------------------------
 # ASCE 7-22 guard loads: distributed-load exemption (info box text)
@@ -3130,3 +3177,644 @@ accept or reword in the slice 5 pull request. The placeholders are the \
 part as the minimum size line names it, its thickness and the limit \
 (aws.d1_1.thickness_min); the scope statement (aws.d1_1.scope) and its \
 cite print after it."""
+
+# ---------------------------------------------------------------------------
+# Slice 6: hollow rectangular sections and the round chord check.
+# docs/plans/slice-6.md. Entries cited to AISC 360-22 were read in the
+# 360-22 text on the date in their source field; the rest are from memory.
+# ---------------------------------------------------------------------------
+
+# --- Step 2: Fy and Fu for rectangular HSS (S6-5) --------------------------
+
+[[entry]]
+id = "material.A500_GrB.hss_rect.Fy"
+value = 46
+unit = "ksi"
+cite = "AISC Manual Table 2-4"
+document = "AISC Steel Construction Manual"
+edition = "16th Edition"
+section = "Part 2, Table 2-4, Applicable ASTM Specifications for Various Structural Shapes, Rectangular HSS, ASTM A500 Gr B, minimum yield stress Fy"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = """
+CHECK THIS ONE FIRST among the rectangular grades. Drafted as 46 ksi, \
+the value I recall for shaped (rectangular) A500 Grade B, and the value \
+the slice 6 rulings' planning arithmetic used. Micah's review note of \
+2026-09-30 on material.grades.hss_rect reads 'Fy for round is 46 and Fy \
+for rectangular is 50': if the 16th Edition prints 50 ksi for \
+rectangular Grade B, this entry is wrong and test cases 8 and 9, which \
+leave every HSS grade at this default (S6-15), are redone from the \
+corrected value in fresh independent-calc sessions. The default grade \
+for rectangular HSS and custom rectangular tubes (S6-5)."""
+
+[[entry]]
+id = "material.A500_GrB.hss_rect.Fu"
+value = 58
+unit = "ksi"
+cite = "AISC Manual Table 2-4"
+document = "AISC Steel Construction Manual"
+edition = "16th Edition"
+section = "Part 2, Table 2-4, Rectangular HSS, ASTM A500 Gr B, minimum tensile strength Fu"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = """
+From memory, with the same caution as material.A500_GrB.hss_rect.Fy: \
+Micah's note of 2026-09-30 says the rectangular Fu differs from the \
+round one too. Fu/Fy = 58/46 = 1.26 on the drafted values, above the \
+1.20 guard on a post grade (W5, S6-14 item 4); Fy/Fu = 0.79, inside the \
+Chapter K ductility limit of 0.8 (S6-13)."""
+
+[[entry]]
+id = "material.A500_GrC.hss_rect.Fy"
+value = 50
+unit = "ksi"
+cite = "AISC Manual Table 2-4"
+document = "AISC Steel Construction Manual"
+edition = "16th Edition"
+section = "Part 2, Table 2-4, Rectangular HSS, ASTM A500 Gr C, minimum yield stress Fy"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = "From memory: 50 ksi for shaped A500 Grade C. Fy/Fu = 50/62 = 0.81, over the Chapter K ductility limit; the grade runs by the tables' named exception (S6-13)."
+
+[[entry]]
+id = "material.A500_GrC.hss_rect.Fu"
+value = 62
+unit = "ksi"
+cite = "AISC Manual Table 2-4"
+document = "AISC Steel Construction Manual"
+edition = "16th Edition"
+section = "Part 2, Table 2-4, Rectangular HSS, ASTM A500 Gr C, minimum tensile strength Fu"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = "From memory. Fu/Fy = 62/50 = 1.24, the lowest of the drafted rectangular grades and above the 1.20 guard on a post grade (S6-14 item 4)."
+
+[[entry]]
+id = "material.A501_GrA.hss_rect.Fy"
+value = 36
+unit = "ksi"
+cite = "AISC Manual Table 2-4"
+document = "AISC Steel Construction Manual"
+edition = "16th Edition"
+section = "Part 2, Table 2-4, Rectangular HSS, ASTM A501 Gr A, minimum yield stress Fy"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = "From memory; A501 is hot-formed and I recall one value for round and rectangular. Same value as material.A501_GrA.hss_round.Fy."
+
+[[entry]]
+id = "material.A501_GrA.hss_rect.Fu"
+value = 58
+unit = "ksi"
+cite = "AISC Manual Table 2-4"
+document = "AISC Steel Construction Manual"
+edition = "16th Edition"
+section = "Part 2, Table 2-4, Rectangular HSS, ASTM A501 Gr A, minimum tensile strength Fu"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = "From memory; same value as the round entry."
+
+[[entry]]
+id = "material.A501_GrB.hss_rect.Fy"
+value = 50
+unit = "ksi"
+cite = "AISC Manual Table 2-4"
+document = "AISC Steel Construction Manual"
+edition = "16th Edition"
+section = "Part 2, Table 2-4, Rectangular HSS, ASTM A501 Gr B, minimum yield stress Fy"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = "From memory; same value as the round entry."
+
+[[entry]]
+id = "material.A501_GrB.hss_rect.Fu"
+value = 70
+unit = "ksi"
+cite = "AISC Manual Table 2-4"
+document = "AISC Steel Construction Manual"
+edition = "16th Edition"
+section = "Part 2, Table 2-4, Rectangular HSS, ASTM A501 Gr B, minimum tensile strength Fu"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = "From memory; same value as the round entry."
+
+[[entry]]
+id = "material.A847.hss_rect.Fy"
+value = 50
+unit = "ksi"
+cite = "AISC Manual Table 2-4"
+document = "AISC Steel Construction Manual"
+edition = "16th Edition"
+section = "Part 2, Table 2-4, Rectangular HSS, ASTM A847, minimum yield stress Fy"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = "From memory; same value as the round entry."
+
+[[entry]]
+id = "material.A847.hss_rect.Fu"
+value = 70
+unit = "ksi"
+cite = "AISC Manual Table 2-4"
+document = "AISC Steel Construction Manual"
+edition = "16th Edition"
+section = "Part 2, Table 2-4, Rectangular HSS, ASTM A847, minimum tensile strength Fu"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = "From memory; same value as the round entry."
+
+[[entry]]
+id = "material.A1085_GrA.hss_rect.Fy"
+value = 50
+unit = "ksi"
+cite = "AISC Manual Table 2-4"
+document = "AISC Steel Construction Manual"
+edition = "16th Edition"
+section = "Part 2, Table 2-4, Rectangular HSS, ASTM A1085 Gr A, minimum yield stress Fy"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = "From memory; same value as the round entry. A1085 follows S5-6: a database section on its published properties with the printed note, a custom tube on t_des = t_nom."
+
+[[entry]]
+id = "material.A1085_GrA.hss_rect.Fu"
+value = 65
+unit = "ksi"
+cite = "AISC Manual Table 2-4"
+document = "AISC Steel Construction Manual"
+edition = "16th Edition"
+section = "Part 2, Table 2-4, Rectangular HSS, ASTM A1085 Gr A, minimum tensile strength Fu"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = "From memory; same value as the round entry."
+
+# --- Step 2: classification of rectangular HSS walls (S6-14 item 3) --------
+
+[[entry]]
+id = "aisc360.B4.1a.rect_hss.lambda_r"
+value = 1.40
+unit = ""
+cite = "AISC 360-22 Table B4.1a, Case 6"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "Table B4.1a, Width-to-Thickness Ratios: Compression Elements, Members Subjected to Axial Compression, page 16.1-21; Case 6, walls of rectangular HSS, b/t, limiting ratio lambda_r = 1.40 sqrt(E/Fy)"
+source = "AISC 360-22 text, read 2026-10-11"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = """
+Coefficient on sqrt(E/Fy). Read in the 360-22 text: Case 6, 'Walls of \
+rectangular HSS', b/t against 1.40 sqrt(E/Fy). Both walls of a \
+rectangular post are tested, each on its own ratio (S6-14 item 3, S6-7). \
+The text extraction of the table is ragged; confirm the case number and \
+the coefficient against the printed page."""
+
+[[entry]]
+id = "aisc360.B4.1b.rect_hss.flange.lambda_p"
+value = 1.12
+unit = ""
+cite = "AISC 360-22 Table B4.1b, Case 17"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "Table B4.1b, Width-to-Thickness Ratios: Compression Elements, Members Subjected to Flexure, page 16.1-23; Case 17, flanges of rectangular HSS, b/t, limiting ratio lambda_p = 1.12 sqrt(E/Fy)"
+source = "AISC 360-22 text, read 2026-10-11"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = """
+Coefficient on sqrt(E/Fy). Read in the 360-22 text; the case number \
+confirms the brief's (S6-14 item 3). The flange is the wall in \
+compression for the axis being bent, so each axis has its own flange."""
+
+[[entry]]
+id = "aisc360.B4.1b.rect_hss.flange.lambda_r"
+value = 1.40
+unit = ""
+cite = "AISC 360-22 Table B4.1b, Case 17"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "Table B4.1b, Members Subjected to Flexure, page 16.1-23; Case 17, flanges of rectangular HSS, b/t, limiting ratio lambda_r = 1.40 sqrt(E/Fy)"
+source = "AISC 360-22 text, read 2026-10-11"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = "Coefficient on sqrt(E/Fy). Read in the 360-22 text. A flange over this limit is slender, a hard stop."
+
+[[entry]]
+id = "aisc360.B4.1b.rect_hss.web.lambda_p"
+value = 2.42
+unit = ""
+cite = "AISC 360-22 Table B4.1b, Case 19"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "Table B4.1b, Members Subjected to Flexure, page 16.1-23; Case 19, webs of rectangular HSS and box sections, h/t, limiting ratio lambda_p = 2.42 sqrt(E/Fy)"
+source = "AISC 360-22 text, read 2026-10-11"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = "Coefficient on sqrt(E/Fy). Read in the 360-22 text; the case number confirms the brief's (S6-14 item 3). The web is the wall parallel to the load for the axis being bent."
+
+[[entry]]
+id = "aisc360.B4.1b.rect_hss.web.lambda_r"
+value = 5.70
+unit = ""
+cite = "AISC 360-22 Table B4.1b, Case 19"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "Table B4.1b, Members Subjected to Flexure, page 16.1-23; Case 19, webs of rectangular HSS and box sections, h/t, limiting ratio lambda_r = 5.70 sqrt(E/Fy)"
+source = "AISC 360-22 text, read 2026-10-11"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = "Coefficient on sqrt(E/Fy). Read in the 360-22 text. A web over this limit is slender, a hard stop; a User Note to F7.3 says no HSS has a slender web."
+
+# --- Step 2: flexure of rectangular HSS, AISC 360-22 F7 (S6-4) -------------
+
+[[entry]]
+id = "aisc360.F7.nominal_strength"
+value = "For square and rectangular HSS bent about either axis, Mn is the lowest value obtained from the limit states of yielding (plastic moment), flange local buckling, web local buckling and lateral-torsional buckling."
+unit = "provision"
+cite = "AISC 360-22 §F7"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§F7, Square and Rectangular HSS and Box Sections, introductory text, page 16.1-62"
+source = "AISC 360-22 text, read 2026-10-11"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = "Paraphrase of the section's second paragraph as read in the 360-22 text. Each limit state is taken about the axis being bent (S6-4)."
+
+[[entry]]
+id = "aisc360.F7.compact_no_local_buckling"
+value = "For compact sections, the limit states of flange local buckling and web local buckling do not apply."
+unit = "provision"
+cite = "AISC 360-22 §F7.2(a), §F7.3(a)"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§F7.2(a), Flange Local Buckling, compact sections, page 16.1-63; §F7.3(a), Web Local Buckling, compact sections, page 16.1-63"
+source = "AISC 360-22 text, read 2026-10-11"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = "The two provisions read the same for the flange and the web; one entry, printed beside whichever wall is compact."
+
+[[entry]]
+id = "aisc360.eq.F7-1"
+value = "Yielding: Mn = Mp, the plastic moment from Fy and the plastic section modulus about the axis of bending"
+unit = "equation"
+cite = "AISC 360-22 Eq. F7-1"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§F7.1, Yielding, Equation F7-1, page 16.1-63"
+source = "AISC 360-22 text, read 2026-10-11"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = "Read in the 360-22 text. Z is about the axis of bending."
+
+[[entry]]
+id = "aisc360.eq.F7-2"
+value = "Flange local buckling, sections with noncompact flanges: Mn reduced linearly from Mp toward Fy S as the flange's width-to-thickness ratio goes from lambda_p to lambda_r, not more than Mp"
+unit = "equation"
+cite = "AISC 360-22 Eq. F7-2"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§F7.2(b), Flange Local Buckling, sections with noncompact flanges, Equation F7-2, page 16.1-63"
+source = "AISC 360-22 text, read 2026-10-11"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = """
+Read in the 360-22 text, where the equation is written on lambda, \
+lambda_pf and lambda_rf (the Table B4.1b limits), with no numeric \
+coefficient of its own. The 2016 edition wrote it with 3.57 and 4.0; \
+the two forms give the same line. S is about the axis of bending and \
+lambda is b/t of the compression flange (S6-14 item 3)."""
+
+[[entry]]
+id = "aisc360.eq.F7-6"
+value = "Web local buckling, sections with noncompact webs: Mn reduced linearly from Mp toward Fy S as the web's width-to-thickness ratio goes from lambda_p to lambda_r, not more than Mp"
+unit = "equation"
+cite = "AISC 360-22 Eq. F7-6"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§F7.3(b), Web Local Buckling, sections with noncompact webs, Equation F7-6, pages 16.1-63 and 16.1-64"
+source = "AISC 360-22 text, read 2026-10-11"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = """
+Read in the 360-22 text, written on lambda, lambda_pw and lambda_rw with \
+no numeric coefficient of its own. No database HSS reaches it (h/t over \
+2.42 sqrt(E/Fy), about 61 at 46 ksi); a custom tube could. Tested by a \
+same-author test only (plan, known gaps)."""
+
+[[entry]]
+id = "aisc360.F7.4a.no_ltb_below_Lp"
+value = "When Lb does not exceed Lp, the limit state of lateral-torsional buckling does not apply."
+unit = "provision"
+cite = "AISC 360-22 §F7.4(a)"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§F7.4(a), Lateral-Torsional Buckling, page 16.1-64"
+source = "AISC 360-22 text, read 2026-10-11"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = "Read in the 360-22 text."
+
+[[entry]]
+id = "aisc360.eq.F7-8"
+value = "Lateral-torsional buckling when Lp < Lb <= Lr: Cb times a linear reduction from Mp toward 0.7 Fy Sx over Lp to Lr, not more than Mp"
+unit = "equation"
+cite = "AISC 360-22 Eq. F7-8"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§F7.4(b), Lateral-Torsional Buckling, Lp < Lb <= Lr, Equation F7-8, page 16.1-64"
+source = "AISC 360-22 text, read 2026-10-11"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = "Read in the 360-22 text. The 0.7 is aisc360.F7.4.inelastic_coeff. The only cap is Mn <= Mp: AISC 360-22 has no upper limit on Cb itself (S6-4)."
+
+[[entry]]
+id = "aisc360.eq.F7-9"
+value = "Lateral-torsional buckling when Lb > Lr: elastic buckling moment from E, Cb, J, Ag and Lb/ry, not more than Mp"
+unit = "equation"
+cite = "AISC 360-22 Eq. F7-9"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§F7.4(c), Lateral-Torsional Buckling, Lb > Lr, Equation F7-9, page 16.1-64"
+source = "AISC 360-22 text, read 2026-10-11"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = "Read in the 360-22 text. The coefficient is aisc360.eq.F7-9.coeff. No guard member reaches it (Lr is hundreds of inches); tested by a same-author test only (plan, known gaps)."
+
+[[entry]]
+id = "aisc360.eq.F7-9.coeff"
+value = 2
+unit = ""
+cite = "AISC 360-22 Eq. F7-9"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§F7.4(c), Equation F7-9, page 16.1-64: the coefficient 2 on E Cb sqrt(J Ag)"
+source = "AISC 360-22 text, read 2026-10-11"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = "Read in the 360-22 text."
+
+[[entry]]
+id = "aisc360.eq.F7-10"
+value = "Lp, the limiting laterally unbraced length for the limit state of yielding, from E, ry, J, Ag and Mp"
+unit = "equation"
+cite = "AISC 360-22 Eq. F7-10"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§F7.4, Equation F7-10, page 16.1-64"
+source = "AISC 360-22 text, read 2026-10-11"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = "Read in the 360-22 text. The coefficient is aisc360.eq.F7-10.coeff."
+
+[[entry]]
+id = "aisc360.eq.F7-10.coeff"
+value = 0.13
+unit = ""
+cite = "AISC 360-22 Eq. F7-10"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§F7.4, Equation F7-10, page 16.1-64: the coefficient 0.13 on E ry sqrt(J Ag) / Mp"
+source = "AISC 360-22 text, read 2026-10-11"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = "Read in the 360-22 text."
+
+[[entry]]
+id = "aisc360.eq.F7-11"
+value = "Lr, the limiting laterally unbraced length for the limit state of inelastic lateral-torsional buckling, from E, ry, J, Ag and 0.7 Fy Sx"
+unit = "equation"
+cite = "AISC 360-22 Eq. F7-11"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§F7.4, Equation F7-11, page 16.1-64"
+source = "AISC 360-22 text, read 2026-10-11"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = "Read in the 360-22 text. The coefficients are aisc360.eq.F7-11.coeff and aisc360.F7.4.inelastic_coeff."
+
+[[entry]]
+id = "aisc360.eq.F7-11.coeff"
+value = 2
+unit = ""
+cite = "AISC 360-22 Eq. F7-11"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§F7.4, Equation F7-11, page 16.1-64: the coefficient 2 on E ry sqrt(J Ag)"
+source = "AISC 360-22 text, read 2026-10-11"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = "Read in the 360-22 text."
+
+[[entry]]
+id = "aisc360.F7.4.inelastic_coeff"
+value = 0.7
+unit = ""
+cite = "AISC 360-22 §F7.4"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§F7.4, Equations F7-8 and F7-11, page 16.1-64: the coefficient 0.7 on Fy Sx"
+source = "AISC 360-22 text, read 2026-10-11"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = "Read in the 360-22 text. One entry for the 0.7 that appears in both equations."
+
+[[entry]]
+id = "aisc360.F7.4.no_ltb_note"
+value = "Lateral-torsional buckling will not occur in square sections or sections bending about their minor axis."
+unit = "provision"
+cite = "AISC 360-22 §F7.4, User Note"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§F7.4, Lateral-Torsional Buckling, User Note, page 16.1-65"
+source = "AISC 360-22 text, read 2026-10-11"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = "First sentence of the User Note as read in the 360-22 text. Printed where a square section, or a rectangular one bent about its minor axis, has no LTB limit state (S6-4)."
+
+# --- Step 2: Cb, AISC 360-22 F1 (S6-4) -------------------------------------
+
+[[entry]]
+id = "aisc360.eq.F1-1"
+value = "Lateral-torsional buckling modification factor Cb for a nonuniform moment diagram, from the maximum moment and the moments at the quarter point, centerline and three-quarter point of the unbraced segment"
+unit = "equation"
+cite = "AISC 360-22 Eq. F1-1"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§F1(c), General Provisions, Equation F1-1, page 16.1-52"
+source = "AISC 360-22 text, read 2026-10-11"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = """
+Read in the 360-22 text: 'when both ends of the segment are braced'. \
+Mmax, MA, MB and MC are absolute values. The four coefficients are \
+aisc360.eq.F1-1.coeff_*. The 360-22 text sets no upper limit on Cb \
+(S6-4). Computed from each load case's own moment diagram on the \
+simple-span rail, Lb = the span."""
+
+[[entry]]
+id = "aisc360.eq.F1-1.coeff_numerator"
+value = 12.5
+unit = ""
+cite = "AISC 360-22 Eq. F1-1"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§F1(c), Equation F1-1, page 16.1-52: the coefficient 12.5 on Mmax in the numerator"
+source = "AISC 360-22 text, read 2026-10-11"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = "Read in the 360-22 text."
+
+[[entry]]
+id = "aisc360.eq.F1-1.coeff_max"
+value = 2.5
+unit = ""
+cite = "AISC 360-22 Eq. F1-1"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§F1(c), Equation F1-1, page 16.1-52: the coefficient 2.5 on Mmax in the denominator"
+source = "AISC 360-22 text, read 2026-10-11"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = "Read in the 360-22 text."
+
+[[entry]]
+id = "aisc360.eq.F1-1.coeff_quarter"
+value = 3
+unit = ""
+cite = "AISC 360-22 Eq. F1-1"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§F1(c), Equation F1-1, page 16.1-52: the coefficient 3 on MA and on MC in the denominator"
+source = "AISC 360-22 text, read 2026-10-11"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = "Read in the 360-22 text. One entry for the 3 on the quarter-point moment and the 3 on the three-quarter-point moment."
+
+[[entry]]
+id = "aisc360.eq.F1-1.coeff_center"
+value = 4
+unit = ""
+cite = "AISC 360-22 Eq. F1-1"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§F1(c), Equation F1-1, page 16.1-52: the coefficient 4 on MB in the denominator"
+source = "AISC 360-22 text, read 2026-10-11"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = "Read in the 360-22 text."
+
+[[entry]]
+id = "aisc360.F1.c.cantilever_cb"
+value = 1.0
+unit = ""
+cite = "AISC 360-22 §F1(c)"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§F1(c), General Provisions, page 16.1-52: for cantilevers where warping is prevented at the support and where the free end is unbraced, Cb = 1.0"
+source = "AISC 360-22 text, read 2026-10-11"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = "Read in the 360-22 text. The post is a cantilever with its free end unbraced; Lb = h (S6-4; checks.md, Flexural capacity)."
+
+[[entry]]
+id = "ej.bending.biaxial_rect"
+value = "A rectangular member bent about both axes combines them by AISC 360-22 §H1.1: each axis takes its own moment and its own §F7 strength, and with no axial force the interaction is Mrx/Mcx + Mry/Mcy."
+unit = "text"
+cite = "Engineering judgement (EOR): rectangular members combine axes by §H1.1, not SRSS"
+document = "Engineering decision of the engineer of record"
+edition = "docs/brief/checks.md, S6-4"
+section = "Biaxial bending of a rectangular or square rail: AISC 360-22 §H1.1, Eq. H1-1b with Pr = 0, page 16.1-82"
+source = "engineer"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = """
+S6-4 (Micah, 2026-10-10): rectangular members are biaxial by Chapter H, \
+not SRSS; square HSS included; SRSS stays with round sections \
+(ej.bending.srss_round). The equation is aisc360.eq.H1-1b, whose axial \
+term is zero for a rail. This entry holds the decision and the words \
+printed beside the combination; the wording is Claude's proposal for \
+Micah to accept or reword in the slice 6 pull request."""

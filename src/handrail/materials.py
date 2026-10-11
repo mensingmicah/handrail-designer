@@ -22,7 +22,7 @@ from handrail.calc import Sheet, Sym, fmt_quantity_plain
 from handrail.errors import SectionStop
 from handrail.project import OWN_SECTION, Member, Project
 from handrail.registry import Registry
-from handrail.shapes import PIPE, ROUND_HSS, ROUND_TUBE, Section
+from handrail.shapes import PIPE, RECT_HSS, RECT_TUBE, ROUND_HSS, ROUND_TUBE, Section
 from handrail.stops import Stop
 from handrail.units import Q_
 
@@ -41,8 +41,12 @@ def _round_hss(name: str) -> Grade:
     return Grade(f"material.{name}.hss_round.Fy", f"material.{name}.hss_round.Fu")
 
 
+def _rect_hss(name: str) -> Grade:
+    return Grade(f"material.{name}.hss_rect.Fy", f"material.{name}.hss_rect.Fu")
+
+
 def _a618(name: str) -> Grade:
-    # Stored by wall range, not by shape: slice 6's rectangular A618 reads the same entries (S5-7).
+    # Stored by wall range, not by shape: rectangular A618 reads the same entries (S5-7, S6-5).
     return Grade(f"material.{name}.Fy", f"material.{name}.Fu", by_wall=True)
 
 
@@ -64,19 +68,39 @@ _ROUND_HOLLOW: dict[str, Grade] = {
     "A847": _round_hss("A847"),
     "A1085 Gr A": _round_hss("A1085_GrA"),
 }
+# Every grade a rectangular or square hollow section can take: the
+# rectangular HSS grades of AISC Manual Table 2-4, each with its own Fy and
+# Fu for the rectangular shape (S6-5). A618 reads the entries the round
+# shapes read. No A53 Gr B, a pipe specification, and no A1065, which is
+# not offered in v1.
+_RECT_HOLLOW: dict[str, Grade] = {
+    "A500 Gr B": _rect_hss("A500_GrB"),
+    "A500 Gr C": _rect_hss("A500_GrC"),
+    "A501 Gr A": _rect_hss("A501_GrA"),
+    "A501 Gr B": _rect_hss("A501_GrB"),
+    "A618 Gr Ia": _a618("A618_GrIa"),
+    "A618 Gr Ib": _a618("A618_GrIb"),
+    "A618 Gr II": _a618("A618_GrII"),
+    "A618 Gr III": Grade("material.A618_GrIII.Fy", "material.A618_GrIII.Fu"),
+    "A847": _rect_hss("A847"),
+    "A1085 Gr A": _rect_hss("A1085_GrA"),
+}
 # Grades by section family. A family with no table is one the tool has no
 # grades for yet (the per-joint tables stop it first, joints.py).
-GRADES: dict[str, dict[str, Grade]] = {PIPE: _ROUND_HOLLOW, ROUND_HSS: _ROUND_HOLLOW, ROUND_TUBE: _ROUND_HOLLOW}
+GRADES: dict[str, dict[str, Grade]] = {PIPE: _ROUND_HOLLOW, ROUND_HSS: _ROUND_HOLLOW, ROUND_TUBE: _ROUND_HOLLOW,
+                                       RECT_HSS: _RECT_HOLLOW, RECT_TUBE: _RECT_HOLLOW}
 
 # Grades whose design wall is the nominal wall under AISC 360-22 B4.2 (S5-6).
 # A database section in one still runs on its published properties, with a
 # printed note (properties.grade_notes).
 NOMINAL_DESIGN_WALL = ("A1085 Gr A",)
 
-# The grade a member takes when the project file leaves it out (S5-5).
-DEFAULT_GRADE = {PIPE: "A53 Gr B", ROUND_HSS: "A500 Gr B", ROUND_TUBE: "A500 Gr B"}
+# The grade a member takes when the project file leaves it out (S5-5, S6-5).
+DEFAULT_GRADE = {PIPE: "A53 Gr B", ROUND_HSS: "A500 Gr B", ROUND_TUBE: "A500 Gr B",
+                 RECT_HSS: "A500 Gr B", RECT_TUBE: "A500 Gr B"}
 # The entry listing the standard grades of each database shape (Table 2-4).
-STANDARD_GRADES = {PIPE: "material.grades.pipe", ROUND_HSS: "material.grades.hss_round"}
+STANDARD_GRADES = {PIPE: "material.grades.pipe", ROUND_HSS: "material.grades.hss_round",
+                   RECT_HSS: "material.grades.hss_rect"}
 
 # The two ranges of a by-wall-range entry, and the entries holding their limits.
 THIN, THICK = "up_to_thin_limit", "up_to_thick_limit"

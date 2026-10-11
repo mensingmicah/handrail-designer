@@ -7,10 +7,10 @@ from __future__ import annotations
 from handrail import materials
 from handrail.calc import Line, Sheet
 from handrail.registry import Registry
-from handrail.shapes import PIPE, ROUND_HSS, Section
+from handrail.shapes import PIPE, RECT_HSS, ROUND_HSS, Section
 
 # A database shape as the unusual-pairing warning names it.
-SHAPE_NAME = {PIPE: "pipe", ROUND_HSS: "round HSS"}
+SHAPE_NAME = {PIPE: "pipe", ROUND_HSS: "round HSS", RECT_HSS: "rectangular HSS"}
 UNUSUAL_PAIRING = "ej.grade.unusual_pairing"
 A1085_NOTE = "ej.grade.A1085_database_note"
 

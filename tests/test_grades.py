@@ -51,7 +51,8 @@ def test_a_grade_left_out_defaults_by_shape():
     m = _members(post={"section": "HSS2.375X0.125"})
     assert (m.project.top_rail.grade, m.project.top_rail.grade_defaulted) == ("A53 Gr B", True)   # AISC pipe
     assert (m.project.post.grade, m.project.post.grade_defaulted) == ("A500 Gr B", True)          # round HSS
-    assert materials.DEFAULT_GRADE == {PIPE: "A53 Gr B", ROUND_HSS: "A500 Gr B", ROUND_TUBE: "A500 Gr B"}
+    defaults = {family: materials.DEFAULT_GRADE[family] for family in (PIPE, ROUND_HSS, ROUND_TUBE)}
+    assert defaults == {PIPE: "A53 Gr B", ROUND_HSS: "A500 Gr B", ROUND_TUBE: "A500 Gr B"}
 
 
 def test_a_grade_entered_is_kept_and_not_marked_as_defaulted():
