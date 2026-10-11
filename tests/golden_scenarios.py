@@ -37,7 +37,7 @@ BASE = {
     "welds": {"rail_to_post": "1/8", "post_to_baseplate": "1/4"},
     "baseplate": {"B": 6, "N": 8}, "intermediate_rail": {"none": True},
 }
-RECTANGULAR = "rectangular HSS"  # a stand-in family: no project can enter one yet
+SOLID_BAR = "solid rectangular bar"  # a stand-in family: slice 7's, and no project can enter one yet
 
 
 def _project(**tables) -> project.Project:
@@ -87,14 +87,14 @@ def _h1_1a() -> str:
     return "\n".join(out)
 
 
-def _check_7_on_a_rectangular_post() -> None:
+def _check_7_on_a_solid_bar_post() -> None:
     """Check 7 past validation on a post of the stand-in family. The stop is
     the Check 7 joint's, made before the weld is computed, so it does not
     depend on the engineer's election of the directional increase."""
     reg = Registry()
     res = engine.compute(_project(), reg)
-    rect = _fake("Pipe1-1/2STD", family=RECTANGULAR, label="FakeTube")
-    welds.check_7(reg, res.project, rect, res.loading)
+    bar = _fake("Pipe1-1/2STD", family=SOLID_BAR, label="FakeBar")
+    welds.check_7(reg, res.project, bar, res.loading)
 
 
 def _ring_forces(sense: str, P: float, V: float | None, M: float | None) -> str:
@@ -118,14 +118,14 @@ def _size_limits(t1: float, t2: float, weld: str) -> str:
     return report._lines(limits.lines) + "\n" + limits.failure
 
 
-def _validate_with_a_rectangular(label: str) -> None:
+def _validate_with_a_solid_bar(label: str) -> None:
     """validate() on a three-section guard with the section of this label
     given the stand-in family: a stop cell of a joint's table."""
     real = shapes.section
 
     def stand_in(designation: str) -> shapes.Section:
         sec = real(designation)
-        return dataclasses.replace(sec, family=RECTANGULAR) if sec.label == label else sec
+        return dataclasses.replace(sec, family=SOLID_BAR) if sec.label == label else sec
 
     shapes.section = stand_in
     try:
@@ -155,7 +155,7 @@ DIRECT: dict[str, Callable[[], str]] = {
     "direct-comp-ok": lambda: _compression(50),
     "direct-comp-slender": lambda: _stopped(lambda: _compression(100)),
     "direct-h1a": _h1_1a,
-    "direct-dir-increase-stop": lambda: _stopped(_check_7_on_a_rectangular_post),
+    "direct-dir-increase-stop": lambda: _stopped(_check_7_on_a_solid_bar_post),
     # The weld ring: compression with moment and shear; tension with moment; axial only; no axial force.
     "direct-ring-comp": lambda: _ring_forces("compression", 30, 350, 14525),
     "direct-ring-tension": lambda: _ring_forces("tension", 30, None, 1000),
@@ -166,8 +166,8 @@ DIRECT: dict[str, Callable[[], str]] = {
     "direct-size-ng": lambda: _size_limits(0.3, 0.5, "1/8"),
     "direct-size-thick": lambda: _size_limits(0.8, 1.0, "1/4"),
     # A stop cell of the per-joint tables, for each member in turn; the Fu/Fy guard.
-    "direct-w7-rail": lambda: _stopped(lambda: _validate_with_a_rectangular("Pipe2STD")),
-    "direct-w7-post": lambda: _stopped(lambda: _validate_with_a_rectangular("Pipe1-1/2STD")),
-    "direct-w7-inter": lambda: _stopped(lambda: _validate_with_a_rectangular("Pipe1-1/4STD")),
+    "direct-w7-rail": lambda: _stopped(lambda: _validate_with_a_solid_bar("Pipe2STD")),
+    "direct-w7-post": lambda: _stopped(lambda: _validate_with_a_solid_bar("Pipe1-1/2STD")),
+    "direct-w7-inter": lambda: _stopped(lambda: _validate_with_a_solid_bar("Pipe1-1/4STD")),
     "direct-fu-fy": lambda: _stopped(_validate_with_a_low_fu),
 }

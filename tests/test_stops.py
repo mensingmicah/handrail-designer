@@ -28,7 +28,7 @@ from handrail.errors import InputError, SectionStop
 from handrail.joints import ALLOWED, CHECK_3, CHECK_4B, CHECK_7, GROUPS, JOINTS
 from handrail.project import ProjectError
 from handrail.registry import Registry
-from handrail.shapes import PIPE, RECT_HSS, ROUND_HSS, ROUND_TUBE
+from handrail.shapes import PIPE, RECT_BAR, RECT_HSS, RECT_TUBE, ROUND_HSS, ROUND_TUBE
 from handrail.stops import Stop
 from handrail.units import Q_
 from handrail.validate import validate
@@ -343,7 +343,7 @@ def _(tmp_path, monkeypatch):
 
 @trigger(Stop.JOINT_CHECK3_NOT_SUPPORTED)
 def _(tmp_path, monkeypatch):
-    _stand_in(monkeypatch, RECT_HSS)
+    _stand_in(monkeypatch, RECT_BAR)   # a solid bar: slice 7's, and no project can enter one yet
     _run()
 
 
@@ -355,7 +355,7 @@ def _(tmp_path, monkeypatch):
 
 @trigger(Stop.JOINT_CHECK4B_NOT_SUPPORTED)
 def _(tmp_path, monkeypatch):
-    _stand_in(monkeypatch, RECT_HSS, only="Pipe1-1/4STD")
+    _stand_in(monkeypatch, RECT_BAR, only="Pipe1-1/4STD")
     _run(intermediate_rail=OWN, welds=OWN_WELD)
 
 
@@ -375,7 +375,58 @@ def _check_7_on(family):
 
 @trigger(Stop.JOINT_CHECK7_NOT_SUPPORTED)
 def _(tmp_path, monkeypatch):
-    _check_7_on(RECT_HSS)
+    _check_7_on(RECT_BAR)
+
+
+# -- the base weld pattern and the Chapter K limits (slice 6) -----------------
+
+SQUARE_POST = {"section": "HSS2X2X1/8"}
+
+
+@trigger(Stop.WELD_BASE_PATTERN_INVALID)
+def _(tmp_path, monkeypatch):
+    _load(welds={"base_pattern": "three sides"})
+
+
+@trigger(Stop.WELD_BASE_PATTERN_MISSING)
+def _(tmp_path, monkeypatch):
+    _run(post=SQUARE_POST)
+
+
+@trigger(Stop.WELD_BASE_PATTERN_ON_ROUND_POST)
+def _(tmp_path, monkeypatch):
+    _run(welds={"base_pattern": "faces parallel to rail"})
+
+
+@trigger(Stop.WELD_DIRECTIONAL_INCREASE_ON_RECTANGULAR_POST)
+def _(tmp_path, monkeypatch):
+    _run(post=SQUARE_POST, welds={"base_pattern": "all around", "directional_increase": True})
+
+
+@trigger(Stop.SECTION_CHORD_WALL_OVER_LIMIT)
+def _(tmp_path, monkeypatch):
+    # HSS5X2X1/8 on edge: H/t = 5/0.116 = 43, over the Chapter K limit of 35.
+    _run(top_rail={"section": "HSS5X2X1/8", "long_side": "vertical"}, post={"section": "Pipe1-1/2STD"})
+
+
+def _run_with_rail_stress(which: str, value: float):
+    """A square HSS rail over the pipe post, with a stand-in Fy or Fu for
+    its grade: every offered grade is inside the Chapter K material limits
+    on the drafted values, so no project file reaches these two stops."""
+    reg = Registry()
+    e = reg.entries[f"material.A500_GrB.hss_rect.{which}"]
+    reg.entries[e.id] = dataclasses.replace(e, value=value)
+    engine.run(_load(top_rail={"section": "HSS3X3X1/8"}), reg)
+
+
+@trigger(Stop.JOINT_CHECK3_FY_OVER_LIMIT)
+def _(tmp_path, monkeypatch):
+    _run_with_rail_stress("Fy", 55)
+
+
+@trigger(Stop.JOINT_CHECK3_FY_FU_OVER_LIMIT)
+def _(tmp_path, monkeypatch):
+    _run_with_rail_stress("Fu", 50)   # 46/50 = 0.92, over 0.8
 
 
 @trigger(Stop.JOINT_CHECK7_NO_CELL)
@@ -600,39 +651,40 @@ def test_families_printed_in_one_group_share_every_cell():
     assert set(CHECK_7.table) == set(families)
 
 
-def test_the_allowed_pairs_are_the_round_hollow_families_and_nothing_else():
-    """Slice 5: every pair of AISC pipe, round HSS and custom round tube is
-    allowed at the chord and branch joints, and each as a post on the
-    baseplate (S5-3, S5-12). Every other cell is a stop."""
-    round_hollow = {PIPE, ROUND_HSS, ROUND_TUBE}
+def test_the_allowed_pairs_are_the_hollow_families_and_nothing_else():
+    """Slice 6: every pair of the hollow families, round (AISC pipe, round
+    HSS, custom round tube) and rectangular (rectangular HSS, custom
+    rectangular tube), is allowed at the chord and branch joints, a round
+    member with a rectangular one included, and each as a post on the
+    baseplate (S6-9, S6-6). Every other cell is a stop."""
+    hollow = {PIPE, ROUND_HSS, ROUND_TUBE, RECT_HSS, RECT_TUBE}
     for joint in (CHECK_3, CHECK_4B):
         assert {pair for pair, cell in joint.table.items() if cell.allowed} == {
-            (chord, branch) for chord in round_hollow for branch in round_hollow}
-        assert all(joint.cell(chord, branch) is ALLOWED for chord in round_hollow for branch in round_hollow)
-    assert {family for family, cell in CHECK_7.table.items() if cell.allowed} == round_hollow
+            (chord, branch) for chord in hollow for branch in hollow}
+        assert all(joint.cell(chord, branch) is ALLOWED for chord in hollow for branch in hollow)
+    assert {family for family, cell in CHECK_7.table.items() if cell.allowed} == hollow
 
 
 def test_a_stop_cell_names_the_member_whose_family_brings_the_stop(monkeypatch):
-    """The messages W7 and S4-12 have given since slices 3 and 4, word for
-    word, followed by the joint, both families and the slice (S5-1)."""
-    w7 = ("is not a round hollow section. The stated assumption that the rail wall's local strength at the post "
-          "is not checked has been decided only for a round hollow rail on a round hollow post, not for this "
-          "section.")
+    """The message names the member that is not hollow, then the joint,
+    both families and the slice (S5-1). Since slice 6 the only stop cells
+    are the solid bars'."""
+    w7 = ("is not a hollow section. The rail to post welds and the wall they land on have been decided only for round and rectangular hollow members, not for this section.")
     cases = [  # (the section given the stand-in family, the project, the message)
         ("Pipe2STD", {"post": {"section": "Pipe1-1/2STD"}},
-         (f"top rail Pipe2STD (rectangular HSS) {w7} Check 3 joint (top rail as chord, post as branch): rectangular "
-          f"HSS as the chord with AISC pipe as the branch is not supported until slice 6 (S5-1).")),
+         (f"top rail Pipe2STD (solid rectangular bar) {w7} Check 3 joint (top rail as chord, post as branch): solid "
+          f"rectangular bar as the chord with AISC pipe as the branch is not supported until slice 7 (S5-1).")),
         ("Pipe1-1/2STD", {"post": {"section": "Pipe1-1/2STD"}},
-         (f"post Pipe1-1/2STD (rectangular HSS) {w7} Check 3 joint (top rail as chord, post as branch): AISC pipe "
-          f"as the chord with rectangular HSS as the branch is not supported until slice 6 (S5-1).")),
+         (f"post Pipe1-1/2STD (solid rectangular bar) {w7} Check 3 joint (top rail as chord, post as branch): AISC "
+          f"pipe as the chord with solid rectangular bar as the branch is not supported until slice 7 (S5-1).")),
         ("Pipe1-1/4STD", {"intermediate_rail": OWN, "welds": OWN_WELD},
-         (f"intermediate rail Pipe1-1/4STD (rectangular HSS) {w7} Check 4b joint (post as chord, intermediate rail "
-          f"as branch): AISC pipe as the chord with rectangular HSS as the branch is not supported until slice 6 "
-          f"(S5-1).")),
+         (f"intermediate rail Pipe1-1/4STD (solid rectangular bar) {w7} Check 4b joint (post as chord, intermediate "
+          f"rail as branch): AISC pipe as the chord with solid rectangular bar as the branch is not supported until "
+          f"slice 7 (S5-1).")),
     ]
     for label, tables, message in cases:
         with monkeypatch.context() as m:
-            _stand_in(m, RECT_HSS, only=label)
+            _stand_in(m, RECT_BAR, only=label)
             with pytest.raises(ProjectError) as stopped:
                 _run(**tables)
         assert str(stopped.value) == message
@@ -711,8 +763,9 @@ def test_a_dimension_stop_keeps_its_own_id_through_the_project_file():
     assert str(through_file.value) == f"[geometry] span: {direct.value}"
 
 
-def test_no_cell_names_slice_5_any_more():
-    """Step 5 of slice 5 set the last "stop: slice 5" cells to allowed."""
-    assert "stop: slice 5" not in _stops_md()
+def test_no_cell_names_a_slice_that_has_landed():
+    """Slice 5 set the last "stop: slice 5" cells to allowed, and slice 6
+    the last "stop: slice 6" ones: only the solid bars, slice 7's, stop."""
+    assert "stop: slice 5" not in _stops_md() and "stop: slice 6" not in _stops_md()
     cells = [*CHECK_3.table.values(), *CHECK_7.table.values()]
-    assert {cell.slice for cell in cells if not cell.allowed} == {6, 7}
+    assert {cell.slice for cell in cells if not cell.allowed} == {7}

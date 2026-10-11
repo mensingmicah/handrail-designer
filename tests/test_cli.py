@@ -237,6 +237,7 @@ def _full_project_files():
                                       ("intermediate_rail", "HSS2X1-1/2X1/8", "horizontal")):
         rect[table].update(section=section, long_side=long_side)
         del rect[table]["grade"]
+    rect["welds"]["base_pattern"] = "all around"   # a rectangular post names its base weld (S6-6)
     # A custom rectangular tube gives H, B and its nominal wall (S6-14 item 6): a fifth file.
     rect_tubes = copy.deepcopy(rect)
     for table, (H, B) in (("top_rail", (4, 2)), ("post", (3, 2)), ("intermediate_rail", (2, 1))):
@@ -386,12 +387,12 @@ def _validate_with(monkeypatch, *, family=None, fu=None):
     validate(project.load(EXAMPLE), reg)
 
 
-def test_a_section_that_is_not_round_hollow_stops(monkeypatch):
-    # W7, with a stand-in family: only pipe can be entered today.
+def test_a_section_that_is_not_hollow_stops(monkeypatch):
+    # With a stand-in family: a solid bar is slice 7's, and no project can enter one.
     with pytest.raises(project.ProjectError,
-                       match=r"top rail Pipe2STD \(rectangular HSS\) is not a round hollow section.*"
-                             r"rail wall's local strength at the post is not checked"):
-        _validate_with(monkeypatch, family="rectangular HSS")
+                       match=r"top rail Pipe2STD \(solid rectangular bar\) is not a hollow section.*"
+                             r"decided only for round and rectangular hollow members"):
+        _validate_with(monkeypatch, family="solid rectangular bar")
 
 
 def test_a_post_grade_below_the_fu_fy_limit_stops(monkeypatch):
@@ -555,13 +556,13 @@ def test_a_baseplate_smaller_than_the_post_od_stops(name, other):
     _validate(_example_raw(baseplate={name: 2.375, other: 8}))  # equal to the OD passes
 
 
-def test_a_non_round_intermediate_rail_stops(monkeypatch):
-    # W7 extended (S4-12), with a stand-in family on the intermediate section only.
+def test_an_intermediate_rail_that_is_not_hollow_stops(monkeypatch):
+    # With a stand-in family on the intermediate section only (a solid bar, slice 7's).
     real = shapes.section
-    monkeypatch.setattr(shapes, "section", lambda d: dataclasses.replace(real(d), family="rectangular HSS")
+    monkeypatch.setattr(shapes, "section", lambda d: dataclasses.replace(real(d), family="solid rectangular bar")
                         if d == "Pipe1-1/4STD" else real(d))
     with pytest.raises(project.ProjectError,
-                       match=r"intermediate rail Pipe1-1/4STD \(rectangular HSS\) is not a round hollow section"):
+                       match=r"intermediate rail Pipe1-1/4STD \(solid rectangular bar\) is not a hollow section"):
         _validate(_own())
 
 

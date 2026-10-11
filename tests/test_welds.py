@@ -330,16 +330,16 @@ def test_check_7_theta_is_computed_at_the_governing_point():
 
 
 @pytest.mark.parametrize("elected", [False, True])
-def test_check_7_stops_on_a_post_that_is_not_round(elected):
+def test_check_7_stops_on_a_post_that_is_not_hollow(elected):
     """The Check 7 joint's table inside the weld code, past validation:
-    Check 7 on a post of a stand-in family stops before the weld is
-    computed, whether or not the increase is elected."""
+    Check 7 on a post of a stand-in family (a solid bar, slice 7's) stops
+    before the weld is computed, whether or not the increase is elected."""
     reg = Registry()
     res = engine.compute(project(elected=elected), reg)
-    rectangular = dataclasses.replace(res.post, family="rectangular HSS", label="FakeTube")
-    with pytest.raises(SectionStop, match=r"FakeTube \(rectangular HSS\): the directional strength increase "
-                                          r"rule for this section family has not been drafted"):
-        welds.check_7(reg, res.project, rectangular, res.loading)
+    bar = dataclasses.replace(res.post, family="solid rectangular bar", label="FakeBar")
+    with pytest.raises(SectionStop, match=r"FakeBar \(solid rectangular bar\): the post to baseplate weld of this "
+                                          r"section family has not been decided"):
+        welds.check_7(reg, res.project, bar, res.loading)
 
 
 def test_both_weld_checks_run_in_check_number_order():

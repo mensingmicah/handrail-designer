@@ -18,7 +18,7 @@ from handrail.intermediate import ComponentCase
 from handrail.post import PostCase
 from handrail.rail import BiaxialCase
 from handrail.dimensions import Dimension
-from handrail.project import OWN_SECTION, SAME_AS_TOP, Member
+from handrail.project import ALL_AROUND, OWN_SECTION, SAME_AS_TOP, Member
 from handrail.directions import LATERAL
 from handrail.reactions import Reactions, ReactionSet
 from handrail.registry import Registry
@@ -312,7 +312,9 @@ def _governing_by_limit_state(chk: Check) -> list[ComponentCase]:
 def _weld_capacities(c: WeldCase) -> str:
     """Weld metal, and base metal where the fusion face carries force in the case."""
     base = f"Base {fmt_quantity_plain(c.base_allow)}" if c.base_demand is not None else "Base —"
-    return f"Weld {fmt_quantity_plain(c.weld_allow)}\n{base}"
+    # A face-pair base weld (S6-7): the post wall's allowable along the post axis.
+    wall = f"\nWall {fmt_quantity_plain(c.wall_allow)}" if c.wall_allow is not None else ""
+    return f"Weld {fmt_quantity_plain(c.weld_allow)}\n{base}{wall}"
 
 
 def _check(chk: Check) -> str:
@@ -552,6 +554,11 @@ def build_source(results: Results, registry: Registry, stamp: Stamp) -> str:
     election = ("elected by the engineer (directional_increase = true)" if elected
                 else "not elected (directional_increase = false)")
     src.append(f"#text({typst_str(f'Directional strength increase at the post to baseplate weld: {election}.')})")
+    # The pattern of a rectangular post's base weld (S6-6), echoed with the
+    # weld sizes. A round post is welded all around and prints nothing here.
+    if not results.post.is_round:
+        pattern = proj.welds.base_pattern
+        src.append(f"#text({typst_str(f'Post to baseplate weld pattern: {pattern} (base_pattern).')})")
     src.append("Derived lengths, each computed in the calc where it is used:")
     src.append(_derived_lengths(results))
 
@@ -578,7 +585,12 @@ def build_source(results: Results, registry: Registry, stamp: Stamp) -> str:
         src.append(f"#text({typst_str('Intermediate rail: same section and grade as the top rail.')})")
     else:
         src.append(f"#text({typst_str('Intermediate rail: none.')})")
-    materials = f"Baseplate: {proj.baseplate.grade}. Welds: fillet, all around, electrode {proj.welds.electrode}."
+    if results.post.is_round or proj.welds.base_pattern == ALL_AROUND:
+        materials = f"Baseplate: {proj.baseplate.grade}. Welds: fillet, all around, electrode {proj.welds.electrode}."
+    else:
+        # A face-pair base weld is not all around (S6-6); the rail welds are.
+        materials = (f"Baseplate: {proj.baseplate.grade}. Welds: fillet, electrode {proj.welds.electrode}; all around "
+                     f"at the rails, and at the baseplate on the {proj.welds.base_pattern}.")
     src.append(f"#text({typst_str(materials)})")
 
     # Loading

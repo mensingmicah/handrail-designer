@@ -10,11 +10,13 @@ from handrail import joints, materials, members
 from handrail.calc import compare, fmt_g, fmt_quantity_plain, fmt_sig, number
 from handrail.joints import JointMember
 from handrail.materials import BASEPLATE_GRADES, FEXX_ENTRY
+from handrail.orientation import post_axes, rail_axes
 from handrail.project import SAME_AS_TOP, Member, Project, ProjectError
 from handrail.registry import Registry
 from handrail.shapes import Section
 from handrail.stops import Stop
 from handrail.units import Q_
+from handrail.welds import base_pattern
 
 
 def require_supported_grade(registry: Registry, member: Member, sec: Section, name: str) -> None:
@@ -61,6 +63,64 @@ def require_chord_within_limit(registry: Registry, sec: Section, name: str, wall
             f"The tool does not check this section as a chord.",
             stop=Stop.SECTION_CHORD_D_T_OVER_LIMIT
         )
+
+
+CHORD_WALL_LIMIT = "aisc360.K1.3.rect_chord.wall_max"
+FY_LIMIT, FY_FU_LIMIT, FY_FU_EXCEPTION = "aisc360.K1.3.Fy_max", "aisc360.K1.3.Fy_Fu_max", "aisc360.K1.3.A500_GrC_note"
+LIMITS_STOP = "ej.weld.chord_limits_stop"
+WIDTH_RULE = "ej.weld.width_rule"
+
+
+def require_rect_chord_within_limit(registry: Registry, sec: Section, name: str) -> None:
+    """Refuse a rectangular chord whose B/t or H/t is over the Chapter K
+    limit of applicability (S6-13), on the outside dimensions and the
+    design wall. The chord wall's local strength is a stated assumption
+    there (S6-12), made only up to the limit."""
+    limit = registry.get(CHORD_WALL_LIMIT)
+    r = sec.rect
+    for letter, side in (("B", r.B), ("H", r.H)):
+        ratio = (side / sec.tdes).m_as("dimensionless")
+        over = compare(number(ratio, fmt_sig), ">", number(limit.value))
+        if over:
+            rule = registry.get(LIMITS_STOP)
+            raise ProjectError(
+                f"{name} {sec.label}: {letter}/t = {over.left.text} {over.op} {over.right.text}, the limit of "
+                f"applicability for the chord of a rectangular HSS connection ({limit.cite}), on the outside "
+                f"dimension {fmt_quantity_plain(side)} and the design wall {fmt_quantity_plain(sec.tdes)}. The local "
+                f"strength of the rail wall at the post is a stated assumption, not a check, and it is not assumed "
+                f"for a chord over the limit ({rule.cite}). The tool does not check this section as a chord.",
+                stop=Stop.SECTION_CHORD_WALL_OVER_LIMIT
+            )
+
+
+def require_material_within_limits(registry: Registry, member: Member, sec: Section, name: str) -> None:
+    """Refuse a member at the rail to post joint whose grade is outside the
+    Chapter K material limits (S6-13): Fy over 52 ksi, or Fy/Fu over 0.8.
+    ASTM A500 Grade C is the tables' named exception to the second: it
+    passes whatever its ratio."""
+    Fy = materials.yield_stress(registry, member.grade, sec).quantity(registry)
+    Fu = materials.tensile_strength(registry, member.grade, sec).quantity(registry)
+    fy_max = registry.get(FY_LIMIT)
+    over = compare(number(Fy, fmt_quantity_plain), ">", number(fy_max.quantity, fmt_quantity_plain))
+    if over:
+        rule = registry.get(LIMITS_STOP)
+        raise ProjectError(
+            f"{name} {sec.label}, {member.grade}: Fy = {over.left.text} {over.op} {over.right.text}, the limit of "
+            f"applicability for an HSS connection ({fy_max.cite}; {rule.cite}). The tool does not check this "
+            f"grade at the rail to post joint.", stop=Stop.JOINT_CHECK3_FY_OVER_LIMIT)
+    ratio_max = registry.get(FY_FU_LIMIT)
+    ratio = (Fy / Fu).m_as("dimensionless")
+    over = compare(number(ratio, fmt_sig), ">", number(ratio_max.value))
+    if over:
+        # Read only when the ratio is over: the exception decides nothing else.
+        exception = registry.get(FY_FU_EXCEPTION)
+        if member.grade in exception.value:
+            return
+        rule = registry.get(LIMITS_STOP)
+        raise ProjectError(
+            f"{name} {sec.label}, {member.grade}: Fy/Fu = {over.left.text} {over.op} {over.right.text}, the "
+            f"ductility limit of applicability for an HSS connection ({ratio_max.cite}; {rule.cite}). The tool "
+            f"does not check this grade at the rail to post joint.", stop=Stop.JOINT_CHECK3_FY_FU_OVER_LIMIT)
 
 
 def wider(registry: Registry, a: Q_, b: Q_) -> bool:
@@ -116,12 +176,18 @@ def validate(project: Project, registry: Registry) -> None:
         branch = rail if same else cast(Section, inter)
         joints.CHECK_4B.require(chord=at_post, branch=JointMember("intermediate rail", branch), error=ProjectError)
     joints.CHECK_7.require(at_post, error=ProjectError)
+    # The post to baseplate weld's pattern (S6-6): the same test Check 7 makes.
+    base_pattern(registry, project, post, error=ProjectError)
 
     # The chords (S5-3), beside W7's stop on a section that is not round
     # hollow: the top rail in Check 3, and the post in Check 4b whenever
-    # there is an intermediate rail.
-    require_chord_within_limit(registry, rail, "top rail", "the rail wall at the post")
-    if project.intermediate_member is not None:
+    # there is an intermediate rail. A rectangular rail has its own wall
+    # limit (S6-13).
+    if rail.is_round:
+        require_chord_within_limit(registry, rail, "top rail", "the rail wall at the post")
+    else:
+        require_rect_chord_within_limit(registry, rail, "top rail")
+    if project.intermediate_member is not None and post.is_round:
         require_chord_within_limit(registry, post, "post", "the post wall at the intermediate rail")
 
     require_supported_grade(registry, project.top_rail, rail, "top rail")
@@ -137,12 +203,32 @@ def validate(project: Project, registry: Registry) -> None:
         raise ProjectError(f"[baseplate] grade {project.baseplate.grade!r}: this version supports "
                            f"{', '.join(BASEPLATE_GRADES)} only", stop=Stop.BASEPLATE_GRADE_UNSUPPORTED)
 
-    D_rail, D_post = rail.OD, post.OD
-    if wider(registry, D_post, D_rail):
+    # Where the chord wall at the rail to post joint is a stated assumption
+    # (a rectangular rail, or a round and a rectangular member meeting), the
+    # chord's own material limits apply (S6-13).
+    round_on_round = rail.is_round and post.is_round
+    if not round_on_round:
+        require_material_within_limits(registry, project.top_rail, rail, "top rail")
+
+    # The width rule (W8, S6-9): the post no wider across the rail than the
+    # rail itself. Exact where either is rectangular; two round members
+    # within the OD tolerance are equal (S5-4).
+    rail_ax, post_ax = rail_axes(rail, project.top_rail.long_side), post_axes(post, project.post.long_side)
+    if round_on_round:
+        D_rail, D_post = rail.OD, post.OD
+        if wider(registry, D_post, D_rail):
+            raise ProjectError(
+                f"The post ({post.label}, OD {fmt_quantity_plain(D_post)}) is wider than the top rail "
+                f"({rail.label}, OD {fmt_quantity_plain(D_rail)}). The coped post to rail underside detail "
+                f"requires post OD <= rail OD. Check the inputs.", stop=Stop.SECTION_POST_WIDER_THAN_RAIL
+            )
+    elif post_ax.perpendicular > rail_ax.width:
+        rule = registry.get(WIDTH_RULE)
         raise ProjectError(
-            f"The post ({post.label}, OD {fmt_quantity_plain(D_post)}) is wider than the top rail "
-            f"({rail.label}, OD {fmt_quantity_plain(D_rail)}). The coped post to rail underside detail "
-            f"requires post OD <= rail OD. Check the inputs.", stop=Stop.SECTION_POST_WIDER_THAN_RAIL
+            f"The post ({post.label}, {fmt_quantity_plain(post_ax.perpendicular)} perpendicular to the rail) is "
+            f"wider than the top rail ({rail.label}, {fmt_quantity_plain(rail_ax.width)} wide). The post is welded "
+            f"to the rail's underside, and a branch may not be wider than its chord ({rule.cite}). Check the "
+            f"sections and their long_side.", stop=Stop.SECTION_POST_WIDER_THAN_RAIL
         )
 
     grade = project.post.grade
@@ -161,22 +247,39 @@ def validate(project: Project, registry: Registry) -> None:
     if member is not None:
         same = project.intermediate_rail.state == SAME_AS_TOP
         sec = rail if same else cast(Section, inter)
-        if wider(registry, sec.OD, D_post):
-            how = ("With same_as_top_rail = true it takes the top rail's section: uncheck same_as_top_rail and "
-                   "enter a section no wider than the post." if same else
-                   "Enter a section no wider than the post.")
-            raise ProjectError(
-                f"The intermediate rail ({sec.label}, OD {fmt_quantity_plain(sec.OD)}) is wider than the post "
-                f"({post.label}, OD {fmt_quantity_plain(D_post)}). Its end is coped to the side of the post, "
-                f"which requires intermediate rail OD <= post OD. {how}",
-                stop=Stop.SECTION_INTERMEDIATE_WIDER_THAN_POST
-            )
+        how = ("With same_as_top_rail = true it takes the top rail's section: uncheck same_as_top_rail and "
+               "enter a section no wider than the post." if same else
+               "Enter a section no wider than the post.")
+        if sec.is_round and post.is_round:
+            if wider(registry, sec.OD, post.OD):
+                raise ProjectError(
+                    f"The intermediate rail ({sec.label}, OD {fmt_quantity_plain(sec.OD)}) is wider than the post "
+                    f"({post.label}, OD {fmt_quantity_plain(post.OD)}). Its end is coped to the side of the post, "
+                    f"which requires intermediate rail OD <= post OD. {how}",
+                    stop=Stop.SECTION_INTERMEDIATE_WIDER_THAN_POST
+                )
+        else:
+            # The width rule at the post face (S4-11, S6-9), exact.
+            width = rail_axes(sec, member.long_side).width
+            if width > post_ax.perpendicular:
+                rule = registry.get(WIDTH_RULE)
+                raise ProjectError(
+                    f"The intermediate rail ({sec.label}, {fmt_quantity_plain(width)} wide) is wider than the post "
+                    f"({post.label}, {fmt_quantity_plain(post_ax.perpendicular)} perpendicular to the rail). Its end "
+                    f"is welded to the side of the post, and a branch may not be wider than its chord "
+                    f"({rule.cite}). {how}",
+                    stop=Stop.SECTION_INTERMEDIATE_WIDER_THAN_POST
+                )
 
-    for name, d, orientation in (("B", project.baseplate.B, "parallel to the rail"),
-                                 ("N", project.baseplate.N, "perpendicular to the rail")):
-        if d.value < D_post:
+    # The baseplate no smaller in plan than the post, in each direction
+    # (S4-6; S6-14 item 8): B against the post's dimension parallel to the
+    # rail, N against the one perpendicular to it. A round post has one.
+    for name, d, orientation, side in (("B", project.baseplate.B, "parallel to the rail", post_ax.parallel),
+                                       ("N", project.baseplate.N, "perpendicular to the rail", post_ax.perpendicular)):
+        if d.value < side:
+            what = "OD" if post.is_round else f"dimension {orientation}"
             raise ProjectError(
-                f"[baseplate] {name} = {d.entered} ({orientation}) is smaller than the post OD "
-                f"({post.label}, {fmt_quantity_plain(D_post)}). Check the inputs.",
+                f"[baseplate] {name} = {d.entered} ({orientation}) is smaller than the post {what} "
+                f"({post.label}, {fmt_quantity_plain(side)}). Check the inputs.",
                 stop=Stop.BASEPLATE_SMALLER_THAN_POST
             )

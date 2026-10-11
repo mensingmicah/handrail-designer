@@ -28,19 +28,22 @@ either "allowed" or a stop naming the slice that brings the family.
 joint's table stops the calc, with a message naming the joint and both
 families. Nothing unlisted is ever computed. (Binding; Micah, 2026-10-09.)
 
-Slice 5 allows every pair of the three round hollow families: AISC pipe,
-round HSS and custom round tube (docs/plans/slice-5.md, "Supported
-combinations"). "Allowed" is subject to the dimension stops listed under
-"Sections, grades and the baseplate".
+Slice 6 allows every pair of the hollow families: the round ones (AISC
+pipe, round HSS, custom round tube) and the rectangular ones (rectangular
+and square HSS, custom rectangular tube), a round member with a
+rectangular one included (S6-9, docs/brief/welds.md; docs/plans/slice-6.md,
+"Supported combinations"). "Allowed" is subject to the width rule, the
+Chapter K limits and the other stops listed under "Sections, grades and
+the baseplate".
 
 ### Check 3 joint (top rail as chord, post as branch)
 
 | Chord \ Branch | AISC pipe | round HSS | custom round tube | rectangular HSS, custom rectangular tube | solid round bar, solid rectangular bar |
 | --- | --- | --- | --- | --- | --- |
-| AISC pipe | allowed | allowed | allowed | stop: slice 6 | stop: slice 7 |
-| round HSS | allowed | allowed | allowed | stop: slice 6 | stop: slice 7 |
-| custom round tube | allowed | allowed | allowed | stop: slice 6 | stop: slice 7 |
-| rectangular HSS, custom rectangular tube | stop: slice 6 | stop: slice 6 | stop: slice 6 | stop: slice 6 | stop: slice 7 |
+| AISC pipe | allowed | allowed | allowed | allowed | stop: slice 7 |
+| round HSS | allowed | allowed | allowed | allowed | stop: slice 7 |
+| custom round tube | allowed | allowed | allowed | allowed | stop: slice 7 |
+| rectangular HSS, custom rectangular tube | allowed | allowed | allowed | allowed | stop: slice 7 |
 | solid round bar, solid rectangular bar | stop: slice 7 | stop: slice 7 | stop: slice 7 | stop: slice 7 | stop: slice 7 |
 
 ### Check 4b joint (post as chord, intermediate rail as branch)
@@ -49,10 +52,10 @@ The same table as the Check 3 joint.
 
 | Chord \ Branch | AISC pipe | round HSS | custom round tube | rectangular HSS, custom rectangular tube | solid round bar, solid rectangular bar |
 | --- | --- | --- | --- | --- | --- |
-| AISC pipe | allowed | allowed | allowed | stop: slice 6 | stop: slice 7 |
-| round HSS | allowed | allowed | allowed | stop: slice 6 | stop: slice 7 |
-| custom round tube | allowed | allowed | allowed | stop: slice 6 | stop: slice 7 |
-| rectangular HSS, custom rectangular tube | stop: slice 6 | stop: slice 6 | stop: slice 6 | stop: slice 6 | stop: slice 7 |
+| AISC pipe | allowed | allowed | allowed | allowed | stop: slice 7 |
+| round HSS | allowed | allowed | allowed | allowed | stop: slice 7 |
+| custom round tube | allowed | allowed | allowed | allowed | stop: slice 7 |
+| rectangular HSS, custom rectangular tube | allowed | allowed | allowed | allowed | stop: slice 7 |
 | solid round bar, solid rectangular bar | stop: slice 7 | stop: slice 7 | stop: slice 7 | stop: slice 7 | stop: slice 7 |
 
 ### Check 7 joint (post on the baseplate)
@@ -64,26 +67,29 @@ A36 plate is the only baseplate (W12).
 | AISC pipe | allowed |
 | round HSS | allowed |
 | custom round tube | allowed |
-| rectangular HSS, custom rectangular tube | stop: slice 6 |
+| rectangular HSS, custom rectangular tube | allowed |
 | solid round bar, solid rectangular bar | stop: slice 7 |
 
 ### What each cell cites
 
-- **Allowed, chord and branch.** W7 as kept for slice 5 by S5-3: the chord
-  wall's local strength is a stated assumption, not a check. W2's branch
-  rule: k_ds = 1.0 at a branch-to-chord weld. Both hold for every round
-  hollow section (S5-12).
-- **Allowed, post on the baseplate.** Welded all around; W2's directional
-  strength increase may be elected by the engineer, for every round hollow
-  post whatever its grade (S5-12; an election, off by default, since W2's
-  revision of 2026-10-10).
+- **Allowed, chord and branch.** W2's branch rule: k_ds = 1.0 at a
+  branch-to-chord weld. The weld line is the pair's: the ring for round on
+  round (W1), the effective weld of AISC 360-22 Table K5.1 for rectangular
+  on rectangular (S6-8), and the branch's own outline where a round and a
+  rectangular member meet (S6-9). The chord wall's local strength is a
+  stated assumption, not a check (W7 as kept by S5-3; S6-9 and S6-12 for
+  a mixed pair and a rectangular chord).
+- **Allowed, post on the baseplate.** A round post is welded all around,
+  and W2's directional strength increase may be elected by the engineer
+  for it, whatever its grade (S5-12; an election, off by default, since
+  W2's revision of 2026-10-10). A rectangular post is welded all around or
+  on one pair of faces, as `base_pattern` says, with k_ds = 1.0 (S6-6).
 - **Stop.** The family is not supported until the slice named, by S5-1,
   which regrouped slices 5 to 7 by engineering: 5 hollow round, 6 hollow
-  rectangular, 7 every solid bar. Until then W7 and W2 have been decided
-  for round hollow sections only. In the chord and branch tables the
+  rectangular, 7 every solid bar. The welds and the wall they land on have
+  been decided for hollow members only. In the chord and branch tables the
   message names the member whose family brings the stop, then the joint,
-  both families and the slice. Its first sentences are the wording the
-  stop has had since slices 3 and 4.
+  both families and the slice.
 - **No cell.** S5-9. The message names the joint and both families.
 
 ## Every stop
@@ -119,6 +125,7 @@ for inputs the engineer did not intend (src/handrail/project.py).
 | `member.custom_keys_of_another_shape` | A custom tube gives a dimension that belongs to the other shape: `H` or `B` for a round tube, `OD` for a rectangular one. A conflicting input. | S5-8; S6-14 item 6 (checks.md) | `test_stop_is_triggered[member.custom_keys_of_another_shape]` |
 | `member.rect_H_less_than_B` | A custom rectangular tube's `H` is less than its `B`. H is the longer side, so `long_side` alone sets the orientation. | S6-14 item 6; S6-2 | `test_stop_is_triggered[member.rect_H_less_than_B]` |
 | `member.wall_half_od_or_more` | A custom round tube's nominal wall is half its OD or more: not a tube. | S5-8 (inputs.md) | `test_stop_is_triggered[member.wall_half_od_or_more]` |
+| `weld.base_pattern_invalid` | `[welds] base_pattern` is not one of its three phrases: "all around", "faces parallel to rail" or "faces perpendicular to rail". | S6-6 (welds.md) | `test_stop_is_triggered[weld.base_pattern_invalid]` |
 | `member.long_side_invalid` | A member's `long_side` is not one of its two words: "vertical" or "horizontal" for a rail, "perpendicular to rail" or "parallel to rail" for a post. | S6-2 (inputs.md) | `test_stop_is_triggered[member.long_side_invalid]` |
 | `intermediate.none_and_same` | The intermediate rail is both "none" and "same as the top rail". | S4-1; conflicting inputs (Micah, 2026-10-09) | `test_stop_is_triggered[intermediate.none_and_same]` |
 | `intermediate.none_with_inputs` | "None", with a section, a grade, an intermediate weld size or an intermediate deflection limit given. | S4-1; conflicting inputs (Micah, 2026-10-09) | `test_stop_is_triggered[intermediate.none_with_inputs]` |
@@ -159,11 +166,17 @@ pass through, so they hold with or without validation.
 | `grade.wall_over_limit` | A member in A618 Gr Ia, Ib or II has a nominal wall over 1-1/2 in, where AISC Manual Table 2-4 gives no Fy and Fu. The message names the member, its wall, the grade and the limit. | S5-7 (inputs.md) | `test_stop_is_triggered[grade.wall_over_limit]` |
 | `grade.post_fu_fy_below_limit` | The post grade's Fu/Fy is below 1.20, so yielding no longer governs over rupture and Check 5 no longer covers the post wall at the weld. | W5 (welds.md); S5-13 | `test_stop_is_triggered[grade.post_fu_fy_below_limit]` |
 | `weld.electrode_unsupported` | The electrode is not E70XX. | W12 | `test_stop_is_triggered[weld.electrode_unsupported]` |
+| `weld.base_pattern_missing` | The post is rectangular or square and `[welds] base_pattern` is left out. It has no default: a post welded on two faces, with the key forgotten, would be checked with about twice its weld. Check 7 makes the same test. | S6-6 (welds.md) | `test_stop_is_triggered[weld.base_pattern_missing]` |
+| `weld.base_pattern_on_round_post` | A face pair is given for a round post, which is welded all around: a conflicting input. | S6-6 | `test_stop_is_triggered[weld.base_pattern_on_round_post]` |
+| `weld.directional_increase_on_rectangular_post` | `directional_increase = true` with a rectangular post: the increase cannot be taken in fillet welds to the end of a rectangular HSS (AISC 360-22 §J2.4(a)(2); User Note to §K5). A conflicting input, never silently ignored. | S6-6; W2 | `test_stop_is_triggered[weld.directional_increase_on_rectangular_post]` |
 | `baseplate.grade_unsupported` | The baseplate grade is not A36. | W12 | `test_stop_is_triggered[baseplate.grade_unsupported]` |
-| `baseplate.smaller_than_post` | B or N is smaller than the post OD. | S4-6 | `test_stop_is_triggered[baseplate.smaller_than_post]` |
+| `baseplate.smaller_than_post` | B is smaller than the post's dimension parallel to the rail, or N than the one perpendicular to it; for a round post both are its OD. | S4-6; S6-14 item 8 | `test_stop_is_triggered[baseplate.smaller_than_post]` |
 | `section.chord_D_t_over_limit` | A chord's D/t is over 50, the AISC 360-22 Chapter K limit of applicability for the chord of a round T-connection: the top rail (Check 3), or the post when there is an intermediate rail (Check 4b). D/t is the value the section's classification uses. The message names the member, its D/t, the limit and W7. | S5-3 (welds.md); W7 | `test_stop_is_triggered[section.chord_D_t_over_limit]` |
-| `section.post_wider_than_rail` | The post OD is greater than the top rail OD: the coped post to rail underside detail requires post OD ≤ rail OD. Equal ODs are allowed, and ODs within 0.01 in of each other are equal. | W8; S5-4 (welds.md) | `test_stop_is_triggered[section.post_wider_than_rail]` |
-| `section.intermediate_wider_than_post` | The intermediate rail OD is greater than the post OD: its end is coped to the side of the post. Equal ODs are allowed, and ODs within 0.01 in of each other are equal. | S4-11; S5-4 (welds.md) | `test_stop_is_triggered[section.intermediate_wider_than_post]` |
+| `section.chord_wall_over_limit` | A rectangular top rail's B/t or H/t is over 35, the AISC 360-22 Chapter K limit of applicability for the chord of a rectangular HSS connection (§K1.3; Table K4.2A), on the outside dimension and the design wall. The chord wall there is a stated assumption, made only up to the limit. | S6-13; S6-12 (welds.md) | `test_stop_is_triggered[section.chord_wall_over_limit]` |
+| `joint.check3.Fy_over_limit` | At a rail to post joint where the chord wall is a stated assumption (a rectangular rail, or a round and a rectangular member meeting), the top rail's Fy is over 52 ksi, the Chapter K limit of applicability. | S6-13 (welds.md) | `test_stop_is_triggered[joint.check3.Fy_over_limit]` |
+| `joint.check3.Fy_Fu_over_limit` | At the same joints, the top rail's Fy/Fu is over 0.8, the Chapter K ductility limit. ASTM A500 Grade C is the tables' named exception and passes whatever its ratio. | S6-13 (welds.md) | `test_stop_is_triggered[joint.check3.Fy_Fu_over_limit]` |
+| `section.post_wider_than_rail` | The post is wider across the rail than the top rail: its OD, or for a rectangular post its dimension perpendicular to the rail, against the rail's OD or horizontal dimension. A branch may not be wider than its chord; equal widths are allowed. Exact where either member is rectangular; two round members within 0.01 in of each other are equal. | W8; S5-4; S6-9 (welds.md) | `test_stop_is_triggered[section.post_wider_than_rail]` |
+| `section.intermediate_wider_than_post` | The intermediate rail is wider than the post: its OD or horizontal dimension against the post's OD or dimension perpendicular to the rail. Its end is welded to the side of the post. Equal widths are allowed, exact where either is rectangular, and two round members within 0.01 in of each other are equal. | S4-11; S5-4; S6-9 (welds.md) | `test_stop_is_triggered[section.intermediate_wider_than_post]` |
 
 ### Section families at a joint
 
@@ -175,11 +188,11 @@ computed without validation still never computes an unlisted post.
 
 | Id | Stops when | Decision | Test |
 | --- | --- | --- | --- |
-| `joint.check3.not_supported` | The top rail and post families meet at a stop cell of the Check 3 joint's table. | S5-9; S5-1; W7 as kept by S5-3 | `test_stop_is_triggered[joint.check3.not_supported]` |
+| `joint.check3.not_supported` | The top rail and post families meet at a stop cell of the Check 3 joint's table. | S5-9; S5-1; S6-9 | `test_stop_is_triggered[joint.check3.not_supported]` |
 | `joint.check3.no_cell` | The top rail and post families have no cell in the Check 3 joint's table. | S5-9 (binding) | `test_stop_is_triggered[joint.check3.no_cell]` |
-| `joint.check4b.not_supported` | The post and intermediate rail families meet at a stop cell of the Check 4b joint's table. | S5-9; S5-1; W7 extended by S4-12 | `test_stop_is_triggered[joint.check4b.not_supported]` |
+| `joint.check4b.not_supported` | The post and intermediate rail families meet at a stop cell of the Check 4b joint's table. | S5-9; S5-1; S6-9 | `test_stop_is_triggered[joint.check4b.not_supported]` |
 | `joint.check4b.no_cell` | The post and intermediate rail families have no cell in the Check 4b joint's table. | S5-9 (binding) | `test_stop_is_triggered[joint.check4b.no_cell]` |
-| `joint.check7.not_supported` | The post's family is a stop cell of the Check 7 joint's table. | S5-9; S5-1; W2 | `test_stop_is_triggered[joint.check7.not_supported]` |
+| `joint.check7.not_supported` | The post's family is a stop cell of the Check 7 joint's table. | S5-9; S5-1; S6-6 | `test_stop_is_triggered[joint.check7.not_supported]` |
 | `joint.check7.no_cell` | The post's family has no cell in the Check 7 joint's table. | S5-9 (binding) | `test_stop_is_triggered[joint.check7.no_cell]` |
 
 ### A section the checks will not check
@@ -189,8 +202,8 @@ Raised inside the checks. Each names the ratio and the limit.
 | Id | Stops when | Decision | Test |
 | --- | --- | --- | --- |
 | `section.beyond_F8_limit` | A round section's D/t is not less than 0.45E/Fy, the AISC 360-22 §F8 limit of applicability. | Flexural capacity (checks.md) | `test_stop_is_triggered[section.beyond_F8_limit]` |
-| `section.slender_in_flexure` | The wall is slender in flexure: D/t above λr of Table B4.1b. | Section classification (checks.md); scope.md | `test_stop_is_triggered[section.slender_in_flexure]` |
-| `section.slender_in_compression` | The post wall is slender in compression: D/t above λr of Table B4.1a. | Classification in compression (checks.md); scope.md | `test_stop_is_triggered[section.slender_in_compression]` |
+| `section.slender_in_flexure` | The wall is slender in flexure: a round section's D/t above λr of Table B4.1b, or a rectangular section's flange or web, about the axis being bent, above its λr (Cases 17 and 19). | Section classification (checks.md); S6-14 item 3; scope.md | `test_stop_is_triggered[section.slender_in_flexure]` |
+| `section.slender_in_compression` | The post wall is slender in compression: a round post's D/t above λr of Table B4.1a, or either wall of a rectangular post above its λr (Case 6). This is also what keeps a face-pair base weld off a slender wall (S6-7). | Classification in compression (checks.md); S6-14 item 3; S6-7; scope.md | `test_stop_is_triggered[section.slender_in_compression]` |
 | `check5.second_order_not_negligible` | αPr/Pe is above the limit in a moment case of Check 5. The tool does not amplify for second-order effects. | Second-order effects: a ratio and a stop (checks.md; slice 2, D1) | `test_stop_is_triggered[check5.second_order_not_negligible]` |
 
 ### The code-value registry

@@ -16,6 +16,8 @@ for inputs the engineer didn't intend:
 - both weld sizes are required, with no default (docs/brief/inputs.md);
 - the directional strength increase at the post to baseplate weld is the
   engineer's election, off unless the file sets it (docs/brief/welds.md, W2);
+- the post to baseplate weld's pattern is one of three phrases (S6-6);
+  whether the post needs one is known only once its section is (welds.py);
 - the baseplate's plan dimensions B and N are required, with no default (S4-6);
 - a member is a standard section (section) or a custom tube, never both:
   a round tube (shape, OD and wall_nominal; S5-8) or a rectangular tube
@@ -117,6 +119,10 @@ class Welds:
     # as revised 2026-10-10). The rail to post welds take k_ds = 1.0 whatever
     # this says.
     directional_increase: bool = False
+    # The post to baseplate weld's pattern (S6-6): one of BASE_PATTERNS,
+    # required with no default for a rectangular post. Blank when the file
+    # leaves it out, which only a round post, welded all around, may.
+    base_pattern: str = ""
 
 
 @dataclass(frozen=True)
@@ -197,7 +203,7 @@ SCHEMA = {
                           "H": None, "B": None},
     "baseplate": {"B": None, "N": None, "grade": None},
     "welds": {"rail_to_post": None, "post_to_baseplate": None, "electrode": None,
-              "intermediate_rail_to_post": None, "directional_increase": None},
+              "intermediate_rail_to_post": None, "directional_increase": None, "base_pattern": None},
     "loads": {"concentrated_lb": None, "uniform_plf": None, "component_lb": None,
               "uniform_exemption": {"applies": None, "statement": None}},
     "deflection": {"rail": {"limit_L_over": None, "bypass": None},
@@ -370,6 +376,23 @@ def _long_side(t: dict, where: str, words: tuple[str, str]) -> str:
     return value
 
 
+# The post to baseplate weld's pattern (S6-6): all around, or one pair of
+# opposite faces, named by the words the post's long_side and the
+# baseplate's B and N use, so they also serve a square post.
+ALL_AROUND = "all around"
+FACES_PARALLEL, FACES_PERPENDICULAR = "faces parallel to rail", "faces perpendicular to rail"
+BASE_PATTERNS = (ALL_AROUND, FACES_PARALLEL, FACES_PERPENDICULAR)
+
+
+def _base_pattern(value, name: str) -> str:
+    value = _str(value, name)
+    if value not in BASE_PATTERNS:
+        choices = ", ".join(f'"{p}"' for p in BASE_PATTERNS)
+        raise ProjectError(f"[welds] base_pattern {value!r}: give one of {choices}",
+                           stop=Stop.WELD_BASE_PATTERN_INVALID)
+    return value
+
+
 def _member(raw: dict, where: str, long_side: tuple[str, str]) -> Member:
     t = _need(raw, where, "top level")
     grade, defaulted = _grade(t, where)
@@ -499,7 +522,8 @@ def from_dict(raw: dict) -> Project:
         rail_to_post=_dimension(wt, "rail_to_post", "welds"),
         post_to_baseplate=_dimension(wt, "post_to_baseplate", "welds"),
         **_given(wt, "welds", {"electrode": ("electrode", _str),
-                               "directional_increase": ("directional_increase", _bool)}),
+                               "directional_increase": ("directional_increase", _bool),
+                               "base_pattern": ("base_pattern", _base_pattern)}),
         **intermediate_weld,
     )
     bt = _need(raw, "baseplate", "top level")

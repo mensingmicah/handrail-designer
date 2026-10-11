@@ -13,18 +13,19 @@ The joints:
   branch. Same table as the Check 3 joint.
 - Check 7 joint: the post on the baseplate (A36 plate, the only baseplate).
 
-An allowed chord and branch pair rests on W7, kept for slice 5 by S5-3 (the
-chord wall's local strength is a stated assumption, not a check), and on
-W2's branch rule (k_ds = 1.0). An allowed post on the baseplate is welded
-all around, and the engineer may elect W2's directional increase for it
-(off by default; W2 as revised 2026-10-10). A stop cell names the slice
-that brings its family (S5-1).
+An allowed chord and branch pair rests on W2's branch rule (k_ds = 1.0) and
+on the weld line of its pair (W1 for round on round, Table K5.1 for
+rectangular on rectangular, the branch's outline where the two are mixed;
+S6-8, S6-9). An allowed post on the baseplate is welded all around, or, a
+rectangular post, on the pattern entered (S6-6); the engineer may elect
+W2's directional increase for a round post only. A stop cell names the
+slice that brings its family (S5-1).
 
-Slice 5 allows every pair of the three round hollow families (AISC pipe,
-round HSS, custom round tube) at the chord and branch joints, and each of
-them as a post on the baseplate (S5-3, S5-12). Rules about dimensions, not
-families, are ordinary stops in validate.py: the width comparisons and the
-chord D/t limit.
+Slice 6 allows every pair of the hollow families, round and rectangular,
+at the chord and branch joints, a round member with a rectangular one
+included (S6-9), and each of them as a post on the baseplate. Rules about
+dimensions and grades, not families, are ordinary stops in validate.py:
+the width rule and the Chapter K limits of applicability.
 """
 
 from __future__ import annotations
@@ -59,14 +60,14 @@ class Cell:
 
 ALLOWED = Cell(True)
 
-# W7 (extended to the intermediate rail by S4-12): the wording the stop has
-# had since slice 3.
-_NOT_ROUND_HOLLOW = ("{member} {label} ({family}) is not a round hollow section. The stated assumption that the rail "
-                     "wall's local strength at the post is not checked has been decided only for a round hollow "
-                     "rail on a round hollow post, not for this section.")
-# W2 at the post to baseplate weld: the wording the stop has had since slice 3.
-_NO_DIRECTIONAL_RULE = ("{label} ({family}): the directional strength increase rule for this section family has not "
-                        "been drafted. The tool applies the increase only to round hollow sections.")
+# The rail to post joints are decided for hollow members, round and
+# rectangular and the two mixed (W1 to W10, S6-8, S6-9); a member with no
+# wall is slice 7's.
+_NOT_HOLLOW = ("{member} {label} ({family}) is not a hollow section. The rail to post welds and the wall they land on "
+               "have been decided only for round and rectangular hollow members, not for this section.")
+# The post to baseplate weld likewise (W2, S6-6).
+_NO_BASE_WELD_RULE = ("{label} ({family}): the post to baseplate weld of this section family has not been decided. "
+                      "The tool checks it only for round and rectangular hollow posts.")
 
 
 def _stop(slice: int, message: str) -> Cell:
@@ -84,27 +85,28 @@ def _by_family(rows: dict[str, list[Cell]]) -> dict[tuple[str, str], Cell]:
     return table
 
 
-_S6, _S7 = _stop(6, _NOT_ROUND_HOLLOW), _stop(7, _NOT_ROUND_HOLLOW)
+_S7 = _stop(7, _NOT_HOLLOW)
 
 # Chord (row) and branch (column), in GROUPS order: AISC pipe; round HSS;
 # custom round tube; rectangular HSS and custom rectangular tube; solid
-# round bar and solid rectangular bar.
+# round bar and solid rectangular bar. Every pair of hollow families may
+# meet, a round member with a rectangular one included (S6-9).
 CHORD_AND_BRANCH = _by_family({
-    "AISC pipe":         [ALLOWED, ALLOWED, ALLOWED, _S6, _S7],
-    "round HSS":         [ALLOWED, ALLOWED, ALLOWED, _S6, _S7],
-    "custom round tube": [ALLOWED, ALLOWED, ALLOWED, _S6, _S7],
-    "rectangular":       [_S6,     _S6,     _S6,     _S6, _S7],
-    "solid bar":         [_S7,     _S7,     _S7,     _S7, _S7],
+    "AISC pipe":         [ALLOWED, ALLOWED, ALLOWED, ALLOWED, _S7],
+    "round HSS":         [ALLOWED, ALLOWED, ALLOWED, ALLOWED, _S7],
+    "custom round tube": [ALLOWED, ALLOWED, ALLOWED, ALLOWED, _S7],
+    "rectangular":       [ALLOWED, ALLOWED, ALLOWED, ALLOWED, _S7],
+    "solid bar":         [_S7,     _S7,     _S7,     _S7,     _S7],
 })
 
 POST_ON_BASEPLATE: dict[str, Cell] = {
     PIPE: ALLOWED,
     ROUND_HSS: ALLOWED,
     ROUND_TUBE: ALLOWED,
-    RECT_HSS: _stop(6, _NO_DIRECTIONAL_RULE),
-    RECT_TUBE: _stop(6, _NO_DIRECTIONAL_RULE),
-    ROUND_BAR: _stop(7, _NO_DIRECTIONAL_RULE),
-    RECT_BAR: _stop(7, _NO_DIRECTIONAL_RULE),
+    RECT_HSS: ALLOWED,
+    RECT_TUBE: ALLOWED,
+    ROUND_BAR: _stop(7, _NO_BASE_WELD_RULE),
+    RECT_BAR: _stop(7, _NO_BASE_WELD_RULE),
 }
 
 LISTED_ONLY = "The tool computes only the combinations listed as allowed (S5-9)."

@@ -232,6 +232,39 @@ review = [
   "aisc360.CH3.midline_radius_coeff",
   "ej.section.rect_tube.J",
   "geometry.rect_tube.midline_perimeter",
+  # Slice 6 step 5 (welds at rectangular and mixed joints), drafted 2026-10-11
+  "ej.weld.base_pattern",
+  "ej.weld.line.rounded_rectangle",
+  "ej.weld.line.face_pair",
+  "aisc360.J2.4.kds_rect_hss",
+  "aisc360.K5.user_note.rect_hss_kds",
+  "ej.weld.post_wall.face_pair",
+  "aisc360.eq.J4-1",
+  "aisc360.J4.1.omega_yield",
+  "aisc360.eq.J4-2",
+  "aisc360.J4.1.omega_rupture",
+  "aisc360.K5.nonuniform",
+  "aisc360.eq.K1-1",
+  "aisc360.eq.K1-1.coeff",
+  "aisc360.K5.1.Be_cap",
+  "aisc360.eq.K5-5",
+  "aisc360.eq.K5-6",
+  "aisc360.eq.K5-7",
+  "ej.weld.k5.case_mapping",
+  "ej.weld.equal_width_fillet",
+  "ej.weld.line.outline_model",
+  "ej.weld.chord_wall.rect",
+  "ej.weld.chord_wall.mixed",
+  "ej.weld.check4b.no_chord_demand",
+  "aisc360.K1.3.rect_chord.wall_max",
+  "aisc360.K1.3.Fy_max",
+  "aisc360.K1.3.Fy_Fu_max",
+  "aisc360.K1.3.A500_GrC_note",
+  "ej.weld.chord_limits_stop",
+  "ej.weld.width_rule",
+  "ej.weld.intermediate.rect_full",
+  "ej.weld.line.corner_radius_coeff",
+  "ej.weld.intermediate_line_model",
 ]
 
 # ---------------------------------------------------------------------------
@@ -4306,3 +4339,613 @@ drafted_on = 2026-10-11
 verified_by = ""
 verified_date = ""
 note = "Geometry: each corner replaces 2 R of straight line with pi R/2 of arc, a loss of (4 - pi) R/2 a corner, so p = 2[(H - t) + (B - t)] - 2 (4 - pi) R with R the midline radius."
+
+# --- Step 5: welds at rectangular and mixed joints (S6-6 to S6-9, S6-11 to S6-14) ---
+
+[[entry]]
+id = "ej.weld.base_pattern"
+value = "The post to baseplate weld of a rectangular post is all around or on one pair of opposite faces, as the engineer enters it. All around, the weld line is the post's rounded rectangle on its outside surface; on a face pair, it is two parallel straight lines, each the flat width of its face. The elastic weld-as-a-line method runs on either in all five direction cases, with the shear taken as uniform over the weld length."
+unit = "provision"
+cite = "Engineering judgement (EOR): post to baseplate weld pattern of a rectangular post"
+document = "Engineering decision of the engineer of record"
+edition = "docs/brief/welds.md, S6-6"
+section = "The post to baseplate weld of a rectangular post: pattern, weld line and directional rule"
+source = "engineer"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = """
+S6-6 (Micah, 2026-10-10). The input is base_pattern under [welds]: \
+'all around', 'faces parallel to rail' or 'faces perpendicular to \
+rail'; required, with no default, for a rectangular or square post. A \
+round post is welded all around. Not chosen: flats only for both \
+patterns, sharp corners, or a default of all around. No bearing credit \
+(W10) and the line method (W3) carry over unchanged."""
+
+[[entry]]
+id = "ej.weld.line.rounded_rectangle"
+value = "Line properties of a weld all around a rectangular member: straight runs on the flats and quarter-circle arcs at the corners, on the member's outside surface with its outside corner radius; the length is the outline's perimeter and the section modulus is the line's moment of inertia about the axis of bending over half the member's dimension in the direction of bending"
+unit = "equation"
+cite = "Engineering judgement (EOR): weld line on the true rounded rectangle"
+document = "Engineering decision of the engineer of record"
+edition = "docs/brief/welds.md, S6-6"
+section = "Weld line, all around: the true rounded rectangle, straight runs on the flats and quarter-circle arcs at the corners on the outside radius of S6-3"
+source = "engineer"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = """
+S6-6. For an outline a by b bent about the axis parallel to a, with \
+corner radius R and y_c = b/2 - R the height of the arc centers: \
+I = 2 (a - 2R)(b/2)^2 + (b - 2R)^3/6 + 2 pi R y_c^2 + 8 y_c R^2 + pi R^3 \
+and S = I/(b/2); a quarter-circle arc's own terms come from integrating \
+(y_c + R sin t)^2 R dt over a quarter turn. Planning arithmetic in \
+welds.md for HSS2X2X1/8: 4.90 in^2, against 5.33 on sharp corners (9% \
+unconservative) and 3.68 on the flats alone (25% conservative). The \
+same line is the weld at a rectangular branch on a round chord \
+(ej.weld.line.outline_model)."""
+
+[[entry]]
+id = "ej.weld.line.face_pair"
+value = "Line properties of a weld on one pair of opposite faces of a rectangular post: two parallel straight lines, each the flat width of its face (the outside dimension less the two outside corner radii), stopping at the tangent points; bent about the axis parallel to the lines the section modulus is the line length times the distance between the lines, and about the other axis it is the line length squared over three"
+unit = "equation"
+cite = "Engineering judgement (EOR): weld line on a pair of faces, flats only"
+document = "Engineering decision of the engineer of record"
+edition = "docs/brief/welds.md, S6-6"
+section = "Weld line, a face pair: two parallel straight lines, each the flat width of its face, stopping at the tangent points"
+source = "engineer"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = """
+S6-6. With line length l and spacing d: about the axis parallel to the \
+lines I = 2 l (d/2)^2 and S = l d; about the axis across them each line \
+bends about its own middle, I = 2 l^3/12 and S = l^2/3. The second is \
+small: in the direction that bends the lines about their own length a \
+face pair reads far above 1.0 at guard loads (plan, open item 7). All \
+five direction cases run on it all the same (S6-6)."""
+
+[[entry]]
+id = "aisc360.J2.4.kds_rect_hss"
+value = 1.0
+unit = ""
+cite = "AISC 360-22 §J2.4(a)(2)"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§J2.4(a), condition (2), page 16.1-130: for fillet welds to the ends of rectangular HSS loaded in tension, kds = 1.0"
+source = "AISC 360-22 text, read 2026-10-11"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = """
+Read in the 360-22 text. S6-6: k_ds = 1.0 for every rectangular post, \
+printed with this citation and the User Note to K5 \
+(aisc360.K5.user_note.rect_hss_kds), which extends it to flexure. \
+directional_increase = true with a rectangular post stops as a \
+conflicting input."""
+
+[[entry]]
+id = "aisc360.K5.user_note.rect_hss_kds"
+value = "Where flexure results in tension in the weld in any load case, the directional strength increase factor cannot exceed 1.0 in fillet welds to the end of rectangular HSS."
+unit = "provision"
+cite = "AISC 360-22 §K5, User Note"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§K5, Welds of Plates and Branches to HSS, User Note, page 16.1-170"
+source = "AISC 360-22 text, read 2026-10-11"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = "Paraphrase of the User Note as read in the 360-22 text. Printed with aisc360.J2.4.kds_rect_hss at a rectangular post's base weld (S6-6)."
+
+[[entry]]
+id = "ej.weld.post_wall.face_pair"
+value = "At a post to baseplate weld on one pair of faces, the post wall is checked for the weld force along the post axis and for the force along the face separately; the two are not combined, the force along the face being small next to the other."
+unit = "text"
+cite = "Engineering judgement (EOR): post wall at a face-pair base weld checked on its own lines"
+document = "Engineering decision of the engineer of record"
+edition = "docs/brief/welds.md, S6-7"
+section = "The post wall at a face-pair base weld is checked on its own lines; all around stays covered by Check 5"
+source = "engineer"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = """
+S6-7 (Micah, 2026-10-10). With two faces welded and no bearing credit, \
+the base moment enters the post through two walls alone, and Check 5 on \
+the full section does not describe them. Per inch of weld at the \
+governing point: the force along the post axis against the lower of \
+tensile yielding and tensile rupture of the wall (J4.1), and the force \
+along the face against shear rupture (J4.2(b), as W6); the larger ratio \
+is the post wall's. The value is the sentence S6-7 proposes for the \
+'Stated assumptions' list, printed there and at the lines in Check 7. \
+A slender welded wall never reaches Check 7: the compression \
+classification stops it (Table B4.1a Case 6). OPEN (plan, open item 3): \
+a shear normal to the welded faces is neither along the post axis nor \
+along the face; the tool follows the ruling's words and puts it in \
+neither post wall line."""
+
+[[entry]]
+id = "aisc360.eq.J4-1"
+value = "Tensile yielding of connecting elements: nominal strength from Fy and the gross area"
+unit = "equation"
+cite = "AISC 360-22 Eq. J4-1"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§J4.1(a), Strength of Elements in Tension, tensile yielding, Equation J4-1, page 16.1-145"
+source = "AISC 360-22 text, read 2026-10-11"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = "Read in the 360-22 text. Per inch of weld the gross area is the post's design wall (S6-7)."
+
+[[entry]]
+id = "aisc360.J4.1.omega_yield"
+value = 1.67
+unit = ""
+cite = "AISC 360-22 §J4.1(a)"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§J4.1(a), tensile yielding of connecting elements: Omega = 1.67 (ASD), page 16.1-145"
+source = "AISC 360-22 text, read 2026-10-11"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = "Read in the 360-22 text."
+
+[[entry]]
+id = "aisc360.eq.J4-2"
+value = "Tensile rupture of connecting elements: nominal strength from Fu and the effective net area"
+unit = "equation"
+cite = "AISC 360-22 Eq. J4-2"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§J4.1(b), Strength of Elements in Tension, tensile rupture, Equation J4-2, page 16.1-145"
+source = "AISC 360-22 text, read 2026-10-11"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = "Read in the 360-22 text. Per inch of weld the effective net area is the post's design wall: the wall is welded along the whole line, with no holes (S6-7)."
+
+[[entry]]
+id = "aisc360.J4.1.omega_rupture"
+value = 2.00
+unit = ""
+cite = "AISC 360-22 §J4.1(b)"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§J4.1(b), tensile rupture of connecting elements: Omega = 2.00 (ASD), page 16.1-145"
+source = "AISC 360-22 text, read 2026-10-11"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = "Read in the 360-22 text."
+
+[[entry]]
+id = "aisc360.K5.nonuniform"
+value = "The available strength of branch connections shall be determined considering the nonuniformity of load transfer along the line of weld, due to differences in relative stiffness of HSS walls, with effective weld properties from Tables K5.1 and K5.2."
+unit = "provision"
+cite = "AISC 360-22 §K5"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§K5, Welds of Plates and Branches to HSS, first paragraph and Equations K5-1 to K5-3, pages 16.1-168 and 16.1-170"
+source = "AISC 360-22 text, read 2026-10-11"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = """
+Paraphrase as read in the 360-22 text. S6-8: at a rectangular branch on \
+a rectangular chord the elastic weld-as-a-line method runs on Table \
+K5.1's effective properties. The round ring model stands: Table K5.2 \
+covers branch axial load only, with 0.1 <= beta <= 0.5, and does not \
+reach the tool's round joints (see ej.weld.ring_model). Not chosen: \
+sizing the weld to develop the branch wall, which K5 accepts in place \
+of the check."""
+
+[[entry]]
+id = "aisc360.eq.K1-1"
+value = "Effective width of a rectangular HSS branch perpendicular to the axis of a rectangular HSS chord, for local yielding of transverse elements: from the chord's width-to-thickness ratio, the ratio of chord to branch yield force per unit width, and the branch width; not more than the branch width"
+unit = "equation"
+cite = "AISC 360-22 Eq. K1-1"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§K1.2a, Effective Width for Connections to Rectangular HSS, Equation K1-1, page 16.1-159"
+source = "AISC 360-22 text, read 2026-10-11"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = """
+Read in the 360-22 text: Be = [10/(B/t)] [Fy t/(Fyb tb)] Bb <= Bb, with \
+B and t the chord's width and wall, Fy the chord's yield stress, and \
+Fyb, tb and Bb the branch's. The extraction of the equation is ragged; \
+confirm its form against the printed page. The coefficient is \
+aisc360.eq.K1-1.coeff. B is the width of the chord face the branch \
+lands on; walls are design walls."""
+
+[[entry]]
+id = "aisc360.eq.K1-1.coeff"
+value = 10
+unit = ""
+cite = "AISC 360-22 Eq. K1-1"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§K1.2a, Equation K1-1, page 16.1-159: the coefficient 10 over B/t"
+source = "AISC 360-22 text, read 2026-10-11"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = "Read in the 360-22 text."
+
+[[entry]]
+id = "aisc360.K5.1.Be_cap"
+value = "When beta > 0.85 or theta > 50 degrees, Be/2 shall not exceed Bb/4."
+unit = "provision"
+cite = "AISC 360-22 Table K5.1"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "Table K5.1, Effective Weld Properties for Connections to Rectangular HSS: T-, Y- and cross-connections under branch axial load or bending, page 16.1-171"
+source = "AISC 360-22 text, read 2026-10-11"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = """
+Read in the 360-22 text, as printed: 'When beta > 0.85 or theta > 50 \
+degrees, Be/2 shall not exceed Bb/4.' OPEN FOR MICAH (plan, open item \
+1): the brief's S6-8 paraphrases this as 'when beta > 0.85'. Every \
+branch in this tool is at 90 degrees, so as printed the cap applies at \
+every joint; the tool applies it as printed. The two readings differ \
+only where beta <= 0.85 and Eq. K1-1 gives more than Bb/2, a stocky \
+chord. The extraction lost the symbols; confirm 'or' and the two \
+thresholds against the printed page."""
+
+[[entry]]
+id = "aisc360.eq.K5-5"
+value = "Total effective weld length for a rectangular HSS T-, Y- or cross-connection under branch axial load or bending: twice the branch depth along the chord over sin theta, plus twice the effective width"
+unit = "equation"
+cite = "AISC 360-22 Eq. K5-5"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "Table K5.1, T-, Y- and cross-connections under branch axial load or bending, Equation K5-5, page 16.1-171"
+source = "AISC 360-22 text, read 2026-10-11"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = "Read in the 360-22 text: le = 2Hb/sin(theta) + 2Be. At theta = 90 degrees, le = 2Hb + 2Be. Hb and Bb are the branch's outside dimensions, as the equations are written: no rounded-corner correction (S6-8)."
+
+[[entry]]
+id = "aisc360.eq.K5-6"
+value = "Effective elastic section modulus of the weld for in-plane bending, rectangular HSS T-, Y- or cross-connection"
+unit = "equation"
+cite = "AISC 360-22 Eq. K5-6"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "Table K5.1, T-, Y- and cross-connections under branch axial load or bending, Equation K5-6, page 16.1-171"
+source = "AISC 360-22 text, read 2026-10-11"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = """
+Read in the 360-22 text: Sip = (tw/3)(Hb/sin theta)^2 + tw Be (Hb/sin \
+theta). The tool works per unit throat (weld as a line), so its line \
+modulus is Sip/tw = Hb^2/3 + Be Hb at 90 degrees, in in^2. The \
+extraction of the table is ragged; confirm the form against the page."""
+
+[[entry]]
+id = "aisc360.eq.K5-7"
+value = "Effective elastic section modulus of the weld for out-of-plane bending, rectangular HSS T-, Y- or cross-connection"
+unit = "equation"
+cite = "AISC 360-22 Eq. K5-7"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "Table K5.1, T-, Y- and cross-connections under branch axial load or bending, Equation K5-7, page 16.1-171"
+source = "AISC 360-22 text, read 2026-10-11"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = """
+Read in the 360-22 text: Sop = tw (Hb/sin theta) Bb + (tw/3) Bb^2 - \
+(tw/3)(Bb - Be)^3/Bb. Per unit throat at 90 degrees: Hb Bb + Bb^2/3 - \
+(Bb - Be)^3/(3 Bb), in in^2. The extraction is ragged, this equation \
+most of all; confirm the form against the page."""
+
+[[entry]]
+id = "ej.weld.k5.case_mapping"
+value = "At a rectangular branch on a rectangular chord the weld is the effective weld of AISC 360-22 Table K5.1, a flat line at the chord face; at the rail to post weld the horizontal load at the rail centerline acts on it at an eccentricity of half the rail depth. The longitudinal case is in-plane bending of the branch, the transverse cases out-of-plane bending, and the vertical cases branch axial load; shear in the chord face is taken as uniform over the effective length; the components combine by vector sum at the governing point, against the fillet strength with k_ds = 1.0."
+unit = "equation"
+cite = "Engineering judgement (EOR): elastic weld as a line on Table K5.1's effective properties"
+document = "Engineering decision of the engineer of record"
+edition = "docs/brief/welds.md, S6-8"
+section = "Rail to post welds at a rectangular chord use AISC 360-22 Table K5.1: case mapping, shear and combination"
+source = "engineer"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = """
+S6-8 (Micah, 2026-10-10). The line method (W3), no bearing credit \
+(W10) and the branch rule k_ds = 1.0 (W2) carry over; only the line \
+properties change. At Check 4b, a simple shear connection, only the \
+effective length is used. Not chosen: the full branch perimeter for \
+rectangular chords too."""
+
+[[entry]]
+id = "ej.weld.equal_width_fillet"
+value = "At equal widths the side welds of a rectangular branch land on the chord's rounded corner and are flare-bevel welds; the fillet model of the entered size all around is kept."
+unit = "text"
+cite = "Engineering judgement (EOR): fillet model kept at equal widths"
+document = "Engineering decision of the engineer of record"
+edition = "docs/brief/welds.md, S6-8; W9"
+section = "Equal widths: the side welds are flare-bevel welds (User Note to AISC 360-22 §K5, page 16.1-170); the fillet model all around is kept, a stated assumption"
+source = "engineer"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = """
+S6-8, as W9 does for round. The User Note to K5 (page 16.1-170) asks \
+for special attention at equal-width or near-equal-width connections \
+to rectangular HSS, which combine partial-joint-penetration groove \
+welds along the matched edges with fillet welds across the chord face. \
+Part of the reworded weld-model assumptions (S6-14 item 10; plan C6)."""
+
+[[entry]]
+id = "ej.weld.line.outline_model"
+value = "Where a round and a rectangular member meet, the weld is a flat line of the branch's own outline at the chord face: the rounded rectangle for a rectangular branch, the ring for a round branch. The eccentricity is half the chord's depth at the rail to post weld. The saddle of the cope is ignored, which is conservative."
+unit = "equation"
+cite = "Engineering judgement (EOR): weld on the branch's outline where a round and a rectangular member meet"
+document = "Engineering decision of the engineer of record"
+edition = "docs/brief/welds.md, S6-9"
+section = "Weld at a mixed pair: the W1 convention on the branch's own shape"
+source = "engineer"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = """
+S6-9 (Micah, 2026-10-10): mixed pairs are allowed at both joints; a \
+square post under a pipe rail is a common detail. k_ds = 1.0, elastic \
+line method (W3). Table K5.1 is for a rectangular branch on a \
+rectangular chord and is not used here. AISC 360-22 has no provision \
+for either mixed pair (Commentary to Chapter K, page 16.1-526)."""
+
+[[entry]]
+id = "ej.weld.chord_wall.rect"
+value = "Rail wall, force normal to the wall: the chord limit states of a rectangular chord (AISC 360-22 Chapter K and §J10) are not computed; not checked (stated assumption). The rail is held to the Chapter K limits of applicability."
+unit = "text"
+cite = "Engineering judgement (EOR): a rectangular chord's limit states not checked"
+document = "Engineering decision of the engineer of record"
+edition = "docs/brief/welds.md, S6-12"
+section = "A rectangular chord's limit states are not computed in v1"
+source = "engineer"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = """
+S6-12 (Micah, 2026-10-10), on the basis of S6-1: branch forces of tens \
+to hundreds of pounds against chord capacities in kips. AISC 360-22 is \
+not self-contained for a rectangular T-connection (branch axial load \
+goes to Chapter J and Manual Part 9; chord face plastification is a \
+yield-line check the Specification does not print). Printed in Check 3 \
+where the top rail is rectangular and the post is rectangular too. \
+Wording proposed by Claude for the slice 6 pull request."""
+
+[[entry]]
+id = "ej.weld.chord_wall.mixed"
+value = "Rail wall, force normal to the wall: AISC 360-22 has no chord limit states for a round member meeting a rectangular one; not checked (stated assumption). The rail is held to the Chapter K limits of applicability for its own wall."
+unit = "text"
+cite = "Engineering judgement (EOR): chord wall not checked where a round and a rectangular member meet"
+document = "Engineering decision of the engineer of record"
+edition = "docs/brief/welds.md, S6-9"
+section = "Chord wall at a mixed pair: not checked"
+source = "engineer"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = """
+S6-9 (Micah, 2026-10-10), on the reasoning of S6-1. The Commentary to \
+Chapter K has no provision for either mixed pair (page 16.1-526); its \
+equivalent square branch of width pi Db/4 (page 16.1-538) is not used. \
+Printed in Check 3 at a mixed pair. Wording proposed by Claude for the \
+slice 6 pull request."""
+
+[[entry]]
+id = "ej.weld.check4b.no_chord_demand"
+value = "Chapter K chord limit states: the intermediate rail delivers no axial force or moment to the post wall (simple shear connection); the post wall's in-plane shear is checked by the base metal line above."
+unit = "text"
+cite = "Engineering judgement (EOR): no chord limit state demand at the intermediate rail"
+document = "Engineering decision of the engineer of record"
+edition = "docs/brief/welds.md, S6-11"
+section = "At Check 4b the chord limit states have no demand; the calc says so in one line"
+source = "engineer"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = """
+S6-11 (Micah, 2026-10-10), for every pair, mixed pairs included (S6-16 \
+item 2). Chapter K's T-connection limit states are written for branch \
+axial force and branch moment; the intermediate rail delivers neither, \
+so Pr = Mr-ip = Mr-op = 0. It rests on no load case putting force along \
+the intermediate rail's axis: if a later slice adds one, the Check 4b \
+chord check comes back. The value is the brief's rough wording, for \
+Micah to accept or reword in the slice 6 pull request."""
+
+[[entry]]
+id = "aisc360.K1.3.rect_chord.wall_max"
+value = 35
+unit = ""
+cite = "AISC 360-22 §K1.3"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§K1.3, Chord-Stress Interaction Parameter, limits of applicability, page 16.1-160: B/t and H/t <= 35 for rectangular HSS gapped K-connections and T-, Y- and cross-connections; Table K4.2A, page 16.1-170"
+source = "AISC 360-22 text, read 2026-10-11"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = """
+Read in the 360-22 text. S6-13: a stop at Check 3 for a rectangular \
+top rail, on the outside dimensions and the design wall. Accepted: a \
+thin custom rectangular rail with B/t between 35 and the slender-flange \
+limit is refused though its member checks would run."""
+
+[[entry]]
+id = "aisc360.K1.3.Fy_max"
+value = 52
+unit = "ksi"
+cite = "AISC 360-22 §K1.3"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§K1.3, limits of applicability, page 16.1-160: Fy <= 52 ksi; the same in Tables K3.1A (page 16.1-164), K4.1A (page 16.1-168) and K4.2A (page 16.1-170) for the chord and the branch"
+source = "AISC 360-22 text, read 2026-10-11"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = "Read in the 360-22 text. S6-13: a stop at Check 3; on the drafted values every offered grade passes, so it is not expected to fire."
+
+[[entry]]
+id = "aisc360.K1.3.Fy_Fu_max"
+value = 0.8
+unit = ""
+cite = "AISC 360-22 §K1.3"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§K1.3, limits of applicability, page 16.1-160: Fy/Fu <= 0.8; the same in Tables K3.1A, K4.1A and K4.2A for the chord and the branch"
+source = "AISC 360-22 text, read 2026-10-11"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = "Read in the 360-22 text. S6-13: a stop at Check 3, with ASTM A500 Grade C the named exception (aisc360.K1.3.A500_GrC_note). A500 Gr B is at 46/58 = 0.79 on the drafted values."
+
+[[entry]]
+id = "aisc360.K1.3.A500_GrC_note"
+value = ["A500 Gr C"]
+unit = "list"
+cite = "AISC 360-22 §K1.3, Note"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§K1.3, limits of applicability, page 16.1-160: 'Fy/Fu <= 0.8 (Note: ASTM A500/A500M Grade C is acceptable.)'; the same note in Tables K3.1A, K4.1A and K4.2A"
+source = "AISC 360-22 text, read 2026-10-11"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = "Read in the 360-22 text. S6-13: a named exception, not a general rule: that grade passes the ductility limit whatever its ratio (issue #28, question 2). The list holds the grade as the tool names it."
+
+[[entry]]
+id = "ej.weld.chord_limits_stop"
+value = "A connection outside the Chapter K limits of applicability must be designed by rational analysis, which the tool cannot do: each limit is a stop, at the rail to post joint (Check 3) only. Where the chord wall is a stated assumption (a rectangular chord, or a round and a rectangular member meeting), the chord's own limits apply: its wall slenderness, Fy and Fy/Fu."
+unit = "provision"
+cite = "Engineering judgement (EOR): Chapter K limits of applicability are stops, at Check 3 only"
+document = "Engineering decision of the engineer of record"
+edition = "docs/brief/welds.md, S6-13"
+section = "The Chapter K limits of applicability are stops, at Check 3 only"
+source = "engineer"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = """
+S6-13 (Micah, 2026-10-10); AISC 360-22 K1, page 16.1-157. Stops only, \
+no flags. Table K4.2A's branch slenderness, width ratio and aspect \
+ratio limits are not applied: they bound equations the tool does not \
+use. Check 4b has no applicability stops: under S6-11 no force is \
+normal to the post wall. End distance (K1.4): nothing is added; the \
+interior-post assumption already excludes it. This answers issue #28."""
+
+[[entry]]
+id = "ej.weld.width_rule"
+value = "The branch's width across the chord face may not exceed the chord's width; equal widths are allowed. At the rail to post weld the branch width is the post's dimension perpendicular to the rail and the chord width the rail's horizontal dimension; at the intermediate rail to post weld, the intermediate rail's horizontal dimension against the post's dimension perpendicular to the rail."
+unit = "provision"
+cite = "Engineering judgement (EOR): a branch no wider than its chord"
+document = "Engineering decision of the engineer of record"
+edition = "docs/brief/welds.md, S6-9; W8; S4-11"
+section = "Width rule (W8 and S4-11 carried over to rectangular members and mixed pairs)"
+source = "engineer"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = """
+S6-9. A round member's width is its outside diameter. The comparison \
+is exact where either member is rectangular: the Shapes Database stores \
+Ht and B of every rectangular HSS exactly as the designation reads. The \
+0.01 in tolerance of S5-4 (ej.section.od_tolerance) applies only where \
+both members are round. Read only when it stops."""
+
+[[entry]]
+id = "ej.weld.intermediate.rect_full"
+value = "A joint with a rectangular member runs the full Check 4b: the effective weld length of AISC 360-22 Table K5.1 depends on the chord wall, so the comparison with Check 3 is no longer true by inspection."
+unit = "text"
+cite = "Engineering judgement (EOR): Check 4b computed in full at a joint with a rectangular member"
+document = "Engineering decision of the engineer of record"
+edition = "docs/brief/checks.md, S6-14 item 5"
+section = "Same-as-top observations: Check 4b's 'controlled by Check 3' is used for a round post with a round rail only"
+source = "engineer"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = "S6-14 item 5 (Claude's, confirmed by Micah 2026-10-10). Check 4a's observation is kept for rectangular rails. Not chosen: a rectangular same-as-top observation for Check 4b with its own guards."
+
+[[entry]]
+id = "ej.weld.line.corner_radius_coeff"
+value = 2
+unit = ""
+cite = "Engineering judgement (EOR): weld line on the true rounded rectangle"
+document = "Engineering decision of the engineer of record"
+edition = "docs/brief/welds.md, S6-6"
+section = "Outside corner radius of a rectangular member at its weld line, as a multiple of the design wall: 2, the outside radius of S6-3"
+source = "engineer"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = """
+S6-6: the weld line of a rectangular member is on its outside surface, \
+with the outside corner radius of S6-3, twice the design wall, for a \
+database section as for a custom tube. A face pair's lines stop at the \
+tangent points, so each is its face's outside width less two of these \
+radii (four design walls). The same value as \
+ej.section.rect_tube.corner_radius.outside_coeff, held separately \
+because it is read for database sections too."""
+
+[[entry]]
+id = "ej.weld.intermediate_line_model"
+value = "The intermediate rail to post weld of a rectangular intermediate rail is a flat line at the post face: the intermediate rail's outline on a round post, or the effective weld of AISC 360-22 Table K5.1 on a rectangular one. It is a simple shear connection: the end reaction acts at the weld, with no eccentricity and no end moment. The component load is placed adjacent to the post, so the weld takes the full P_c with the dead-load end reaction, through the intermediate rail's centerline (no torsion)"
+unit = "equation"
+cite = "Engineering judgement (EOR): weld line at the post face, simple shear, P_c at the post"
+document = "Engineering decision of the engineer of record"
+edition = "docs/brief/welds.md, S4-8, S4-9, S6-8, S6-9"
+section = "Intermediate rail weld to post (Check 4b) for a rectangular intermediate rail: the weld line, the simple shear connection and the load position"
+source = "engineer"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = """
+The rulings behind ej.weld.intermediate_ring_model (S4-8, S4-9 and the \
+simple shear connection, Micah 2026-10-09), carried to a rectangular \
+intermediate rail by S6-8 and S6-9. Only the weld line differs; the \
+load position and the connection model are the same decisions."""

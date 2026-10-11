@@ -25,6 +25,15 @@ branch and the post wall the chord.
   nominal thickness, is pass/fail; no maximum size is checked (W11).
 - A part joined that is thinner than the AWS D1.1 thickness range prints a
   warning at its weld; it is not a stop (Micah, 2026-10-10).
+
+Rectangular members (slice 6). The method is the same on a different line
+(weld_lines.py): the rounded rectangle of a rectangular member's outline,
+the two lines of a face-pair base weld, or the effective weld of AISC
+360-22 Table K5.1 where a rectangular branch lands on a rectangular chord
+(S6-6, S6-8, S6-9). Such a line has two section moduli, and each
+direction case takes the one it bends. A rectangular post's base weld takes
+k_ds = 1.0, and welded on a face pair its wall is checked on its own lines
+in place of "covered by Check 5" (S6-7).
 """
 
 from __future__ import annotations
@@ -34,7 +43,7 @@ from typing import Any, cast
 from collections.abc import Callable
 
 from handrail import joints
-from handrail.calc import (PI, Line, Sheet, Sym, absolute, arccos, compare, fmt_quantity_plain, maximum, minimum,
+from handrail.calc import (Line, Sheet, Sym, absolute, arccos, compare, fmt_quantity_plain, maximum, minimum,
                            mtext, number, order, sin, sqrt, term)
 from handrail.demand import ASD, Given, Wording, demand
 from handrail.directions import (
@@ -46,16 +55,23 @@ from handrail.errors import SectionStop
 from handrail.intermediate import NONE_TEXT
 from handrail.joints import JointMember
 from handrail.loading import COMBO, combo_text, exempt_case
-from handrail.materials import FEXX_ENTRY, Stress, baseplate_tensile_strength, tensile_strength
-from handrail.project import NO_INTERMEDIATE, SAME_AS_TOP, Member, Project
+from handrail.errors import InputError
+from handrail.materials import FEXX_ENTRY, Stress, baseplate_tensile_strength, tensile_strength, yield_stress
+from handrail.orientation import post_axes, rail_axes
+from handrail.project import (ALL_AROUND, FACES_PARALLEL, FACES_PERPENDICULAR, NO_INTERMEDIATE, SAME_AS_TOP, Member,
+                              Project)
 from handrail.registry import Registry
 from handrail.results import Case, Check, Loading
 from handrail.shapes import Section
+from handrail.stops import Stop
 from handrail.units import Q_
+from handrail.weld_lines import (K5_MAPPING, LINE_METHOD, Ring, Side, face_pair, ring, rounded_rectangle,
+                                 table_k5_1)
 
-LINE_METHOD = "ej.weld.line_method"
 NO_BEARING = "ej.weld.no_bearing"
 PER_INCH = "lbf/inch"
+OUTLINE_MODEL = "ej.weld.line.outline_model"
+RING_MODEL = "ej.weld.ring_model"
 
 
 @dataclass
@@ -76,7 +92,10 @@ class WeldCase(Case):
     base_demand: Any = None  # force per inch on the base metal line; None when the face sees none
     weld_ratio: float | None = None
     base_ratio: float | None = None  # None when the fusion face sees no force in this case
-    governs: str = ""          # the line demand, capacity and ratio come from: "weld metal" or "base metal"
+    governs: str = ""          # the line demand, capacity and ratio come from: "weld metal", "base metal" or "post wall"
+    # A face-pair base weld (S6-7): the post wall's own lines.
+    wall_allow: Any = None  # allowable force along the post axis per inch
+    wall_ratio: float | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -90,34 +109,6 @@ class WeldCheck(Check):
 
     min_size_ok: bool = True
     base_governs: str = ""  # Check 4b's governing fusion face: "post wall" or "intermediate rail wall"
-
-
-@dataclass
-class Ring:
-    w: Sym
-    L_w: Sym
-    S_w: Sym | None  # None where the ring carries no moment (Check 4b, a simple shear connection)
-    t_e: Sym
-    lines: list[Line]
-
-
-def ring(registry: Registry, sec: Section, size: Dimension, member: str = "post", symbol: str = "D",
-         bending: bool = True) -> Ring:
-    """Line properties of a fillet weld all around a round member (W3): the
-    post for Checks 3 and 7, the intermediate rail for Check 4b. Without
-    bending (Check 4b) the section modulus S_w is not needed or printed."""
-    sh = Sheet(registry)
-    sh.heading("Weld properties")
-    D = sh.given("D", symbol, sec.OD, f"{sec.label}: outside diameter; the weld ring is the {member} perimeter", sec.source)
-    w = sh.given("w", "w", size.value, f"Fillet weld leg size, all around ({size.entered} as entered)", "Input")
-    L_w = sh.line("L_w", "L_w", PI * D, f"Weld length: the {member} perimeter", cite_ids=(LINE_METHOD,), unit="inch")
-    S_w = None
-    if bending:
-        S_w = sh.line("S_w", "S_w", PI * D**2 / 4, "Section modulus of the ring as a line", cite_ids=(LINE_METHOD,),
-                      unit="inch**2")
-    t_e = sh.line("t_e", "t_e", sh.coeff("aisc360.J2.2a.throat.coeff") * w, "Effective throat, equal-leg fillet",
-                  cite_ids=("aisc360.J2.2a.throat",), unit="inch")
-    return Ring(w=w, L_w=L_w, S_w=S_w, t_e=t_e, lines=sh.lines)
 
 
 @dataclass
@@ -274,22 +265,28 @@ class RingForces:
 SIDE = {"compression": '"c"', "tension": '"t"'}
 
 
-def ring_forces(sh: Sheet, rg: Ring, P: Sym, sense: str, V: Sym | None = None, M: Sym | None = None) -> RingForces:
-    """Forces per inch of weld at the governing point of the ring (W3, W10).
+def ring_forces(sh: Sheet, rg: Ring, P: Sym, sense: str, V: Sym | None = None, M: Sym | None = None,
+                S: Sym | None = None) -> RingForces:
+    """Forces per inch of weld at the governing point of the weld line (W3, W10).
 
     P is the axial force's magnitude and ``sense`` its direction. With a
     moment, the side of bending whose stress has the same sense as P adds
     to it; the other side subtracts. Both are printed and the larger governs.
+    ``S`` is the section modulus the moment acts on, for a line that has
+    one for each direction of bending; a ring has one, its own.
     """
-    f_a = sh.line("f_a", "f_a", P / rg.L_w, f"Axial force per inch of weld, {sense}, uniform around the ring",
+    f_a = sh.line("f_a", "f_a", P / rg.L_w, f"Axial force per inch of weld, {sense}, {rg.uniform}",
                   cite_ids=(LINE_METHOD,), unit=PER_INCH)
     f_b = None
     if M is None:
-        f_n = sh.line("f_n", "f_n", f_a, "Normal force per inch: no moment, the same at every point of the ring",
+        f_n = sh.line("f_n", "f_n", f_a, f"Normal force per inch: no moment, the same {rg.every_point}",
                       cite_ids=(NO_BEARING,), unit=PER_INCH)
         fiber = "uniform"
     else:
-        f_b = sh.line("f_b", "f_b", M / rg.S_w, "Bending force per inch at the extreme fiber", cite_ids=(LINE_METHOD,),
+        modulus = rg.S_w if S is None else S
+        if modulus is None:
+            raise ValueError("a moment at a weld line that was built without a section modulus")  # a bug in the tool
+        f_b = sh.line("f_b", "f_b", M / modulus, "Bending force per inch at the extreme fiber", cite_ids=(LINE_METHOD,),
                       unit=PER_INCH)
         other = "tension" if sense == "compression" else "compression"
         add = sh.line(f"f_n_{sense}", f"f_(n,{SIDE[sense]})", f_a + f_b, f"Normal force per inch, {sense} side of bending: "
@@ -312,7 +309,7 @@ def ring_forces(sh: Sheet, rg: Ring, P: Sym, sense: str, V: Sym | None = None, M
         f_v = None
         f_r = sh.line("f_r", "f_r", f_n, "Resultant per inch: normal force only", cite_ids=(LINE_METHOD,), unit=PER_INCH)
     else:
-        f_v = sh.line("f_v", "f_v", V / rg.L_w, "Shear per inch of weld, taken as uniform around the ring",
+        f_v = sh.line("f_v", "f_v", V / rg.L_w, f"Shear per inch of weld, taken as {rg.uniform}",
                       cite_ids=(LINE_METHOD,), unit=PER_INCH)
         f_r = sh.line("f_r", "f_r", sqrt(f_n**2 + f_v**2), "Resultant per inch at the governing fiber: vector sum",
                       cite_ids=(LINE_METHOD,), unit=PER_INCH)
@@ -323,7 +320,7 @@ def shear_only(sh: Sheet, rg: Ring, V: Sym) -> RingForces:
     """Forces per inch of weld for a simple shear connection (Check 4b,
     Micah 2026-10-09): the reaction in the ring's plane, taken as uniform
     around the ring (W3); no axial force and no moment."""
-    f_v = sh.line("f_v", "f_v", V / rg.L_w, "Shear per inch of weld, taken as uniform around the ring",
+    f_v = sh.line("f_v", "f_v", V / rg.L_w, f"Shear per inch of weld, taken as {rg.uniform}",
                   cite_ids=(LINE_METHOD,), unit=PER_INCH)
     f_r = sh.line("f_r", "f_r", f_v, "Resultant per inch: shear only, no axial force and no moment",
                   cite_ids=(LINE_METHOD,), unit=PER_INCH)
@@ -380,9 +377,12 @@ class Strength:
 
 
 def strength(sh: Sheet, rg: Ring, wm: WeldMetal, k_ds: Sym, f_r: Sym, base: BaseMetal,
-             base_demand: Sym | None, base_note: str) -> Strength:
+             base_demand: Sym | None, base_note: str, wall: Callable[[], Sym] | None = None) -> Strength:
     """Weld metal and base metal ratios; the check ratio is the larger.
-    ``base_demand`` is None when the fusion face sees no force in the case."""
+    ``base_demand`` is None when the fusion face sees no force in the case.
+    ``wall`` prints the post wall's lines at a face-pair base weld (S6-7),
+    after the base metal's, and returns its ratio; the check ratio is then
+    the largest of the three. A base weld always has a base metal demand."""
     R = sh.line("R_n", "R_n", wm.Fnw * rg.t_e * k_ds, "Nominal fillet weld strength per inch",
                 cite_ids=("aisc360.J2.4.fillet_strength",), unit=PER_INCH)
     allow = sh.line("R_n_over_Omega_w", "frac(R_n, Omega_w)", R / wm.Om, "Allowable weld metal strength per inch",
@@ -394,6 +394,10 @@ def strength(sh: Sheet, rg: Ring, wm: WeldMetal, k_ds: Sym, f_r: Sym, base: Base
                         cite_ids=("aisc360.eq.B3-2",), ratio=True)
         return Strength(weld_allow=allow, weld_ratio=r_w, base_ratio=None, ratio=ratio)
     r_bm = sh.line("Ratio_BM", '"Ratio"_"BM"', base_demand / base.allow, base_note, cite_ids=("aisc360.eq.B3-2",), ratio=True)
+    if wall is not None:
+        ratio = sh.line("Ratio", '"Ratio"', maximum(r_w, r_bm, wall()), "The largest of weld metal, base metal and post wall",
+                        cite_ids=("aisc360.eq.B3-2",), ratio=True)
+        return Strength(weld_allow=allow, weld_ratio=r_w, base_ratio=r_bm, ratio=ratio)
     ratio = sh.line("Ratio", '"Ratio"', maximum(r_w, r_bm), "The larger of weld metal and base metal",
                     cite_ids=("aisc360.eq.B3-2",), ratio=True)
     return Strength(weld_allow=allow, weld_ratio=r_w, base_ratio=r_bm, ratio=ratio)
@@ -419,7 +423,7 @@ def weld_wording(where: str, moment_note: str, moment_cite: str) -> Wording:
     )
 
 
-@dataclass
+@dataclass(kw_only=True)
 class WeldLines:
     """What a weld check's strength lines need: the ring, the weld metal and
     base metal, and how k_ds and the base metal demand are found. Checks 3,
@@ -432,9 +436,12 @@ class WeldLines:
     k_ds: Callable[[Sheet, Sym], tuple[Sym | None, Sym]]  # (theta or None, k_ds) at the governing point
     base_demand: Callable[[RingForces], Sym | None]       # the force on the base metal line, or None
     base_note: str
+    # A face-pair base weld (S6-7): the post wall's own lines for a case,
+    # returning its ratio and the allowable along the post axis. None elsewhere.
+    wall: Callable[[Sheet, RingForces, Direction], tuple[Sym, Sym]] | None = None
 
 
-@dataclass
+@dataclass(kw_only=True)
 class WeldSetup(WeldLines):
     """Checks 3 and 7: the weld lines plus the guard-load envelope's demand."""
 
@@ -451,7 +458,7 @@ def _weld_case(registry: Registry, project: Project, loading: Loading, ws: WeldS
     sh = Sheet(registry)
     sh.lines.extend(ws.head)
     sh.lines.extend(d.lines)
-    f = ring_forces(sh, ws.rg, d.P, d.sense, d.V, d.M)
+    f = ring_forces(sh, ws.rg, d.P, d.sense, d.V, d.M, ws.rg.S_for(direction))
     return _weld_result(sh, ws, f, direction, load_type, d.label, d.sense)
 
 
@@ -462,12 +469,25 @@ def _weld_result(sh: Sheet, ws: WeldLines, f: RingForces, direction: Direction, 
     metal, as the printed max() does."""
     theta, k_ds = ws.k_ds(sh, f.f_r)
     bd = ws.base_demand(f)
-    s = strength(sh, ws.rg, ws.wm, k_ds, f.f_r, ws.base, bd, ws.base_note)
+    # The post wall's lines print after the base metal's, inside strength();
+    # what they found is kept here for the case.
+    found: list[tuple[Sym, Sym]] = []
+
+    def wall_ratio() -> Sym:
+        found.append(cast(Callable[[Sheet, RingForces, Direction], tuple[Sym, Sym]], ws.wall)(sh, f, direction))
+        return found[0][0]
+
+    s = strength(sh, ws.rg, ws.wm, k_ds, f.f_r, ws.base, bd, ws.base_note, None if ws.wall is None else wall_ratio)
+    wall = found[0] if found else None
     if s.base_ratio is not None and s.base_ratio.value > s.weld_ratio.value:
         # A base metal ratio means the face has a demand.
         governs, demand_value, capacity_value = "base metal", cast(Sym, bd).value, ws.base.allow.value
     else:
         governs, demand_value, capacity_value = "weld metal", f.f_r.value, s.weld_allow.value
+    if wall is not None and wall[0].value > max(s.weld_ratio.value, s.base_ratio.value if s.base_ratio else 0.0):
+        # The post wall governs on the force along the post axis, which a
+        # welded wall always carries; a tie stays with the weld or the base metal.
+        governs, demand_value, capacity_value = "post wall", cast(Sym, f.f_n).value, wall[1].value
     return WeldCase(direction, load_type, "checked", label,
                     demand=demand_value, capacity=capacity_value, ratio=s.ratio.value, lines=sh.lines,
                     sense=sense, f_a=f.f_a.value if f.f_a else None, f_b=f.f_b.value if f.f_b else None,
@@ -476,7 +496,9 @@ def _weld_result(sh: Sheet, ws: WeldLines, f: RingForces, direction: Direction, 
                     theta=theta.value if theta else None, k_ds=k_ds.value, weld_allow=s.weld_allow.value,
                     base_allow=ws.base.allow.value, base_demand=bd.value if bd else None,
                     weld_ratio=s.weld_ratio.value,
-                    base_ratio=s.base_ratio.value if s.base_ratio else None, governs=governs)
+                    base_ratio=s.base_ratio.value if s.base_ratio else None, governs=governs,
+                    wall_allow=None if wall is None else wall[1].value,
+                    wall_ratio=None if wall is None else wall[0].value)
 
 
 def _min_size(chk: WeldCheck, limits: SizeLimits) -> None:
@@ -506,17 +528,60 @@ def _weld_check(chk: WeldCheck, registry: Registry, project: Project, loading: L
 # ---------------------------------------------------------------------------
 
 
+def _equal_widths(registry: Registry, branch_width: Q_, chord_width: Q_, what: str) -> list[Line]:
+    """Where a rectangular branch is as wide as its rectangular chord, the
+    side welds land on the chord's rounded corner: the line that says the
+    fillet model is kept (S6-8, as W9 for round)."""
+    equal = order(term('B_"b"', branch_width), term("B", chord_width))
+    if equal.op != "=":
+        return []
+    sh = Sheet(registry)
+    kept = registry.get("ej.weld.equal_width_fillet")
+    sh.decision(equal, "Fillet model kept", f"{what}: {kept.value}", cite_ids=(kept.id,))
+    return sh.lines
+
+
 def check_3(registry: Registry, project: Project, rail: Section, post: Section, loading: Loading) -> Check:
-    """The rail to post weld: a flat ring of the post perimeter at the rail's
-    underside, loaded at e = d_rail/2 (W1); k_ds = 1.0 (W2); base metal on
-    the rail side, in-plane force only (W6); the rail wall's normal force is
-    not checked (W7)."""
-    rg = ring(registry, post, project.welds.rail_to_post)
+    """The rail to post weld: a flat line at the rail's underside, loaded at
+    e = d_rail/2 (W1); k_ds = 1.0 (W2); base metal on the rail side,
+    in-plane force only (W6); the rail wall's normal force is not checked
+    (W7; S6-9 and S6-12 for a rectangular or a mixed joint).
+
+    The line is the post's: a ring for a round post, on any rail (W1,
+    S6-9); the post's rounded rectangle on a round rail (S6-9); and on a
+    rectangular rail the effective weld of Table K5.1 (S6-8)."""
+    rail_ax = rail_axes(rail, project.top_rail.long_side)
+    post_ax = post_axes(post, project.post.long_side)
+    size = project.welds.rail_to_post
+    equal: list[Line] = []
+    if post.is_round:
+        rg = ring(registry, post, size)
+        model = RING_MODEL if rail.is_round else OUTLINE_MODEL
+    elif rail.is_round:
+        rg = rounded_rectangle(
+            registry, post, size, "post",
+            along=Side("a_par", 'a_"par"', post_ax.parallel, "outside dimension parallel to the rail"),
+            across=Side("a_perp", 'a_"perp"', post_ax.perpendicular, "Outside dimension perpendicular to the rail"))
+        model = OUTLINE_MODEL
+    else:
+        rg = table_k5_1(
+            registry, size, rail, project.top_rail.grade, "Top rail",
+            Side("B_chord", "B", rail_ax.width, "width of the chord face, the rail's horizontal dimension"),
+            post, project.post.grade, "Post",
+            Side("H_b", "H_b", post_ax.parallel, "branch dimension along the chord, the post's dimension parallel to the rail"),
+            Side("B_b", "B_b", post_ax.perpendicular, "Branch width across the chord face, the post's dimension "
+                 "perpendicular to the rail"))
+        model = K5_MAPPING
+        equal = _equal_widths(registry, post_ax.perpendicular, rail_ax.width, "Post as wide as the rail")
     ecc = Sheet(registry)
     ecc.heading("Eccentricity")
-    d = ecc.given("d_rail", 'd_"rail"', rail.OD, f"{rail.label}: outside diameter, the rail depth", rail.source)
+    if rail.is_round:
+        d = ecc.given("d_rail", 'd_"rail"', rail.OD, f"{rail.label}: outside diameter, the rail depth", rail.source)
+    else:
+        d = ecc.given("d_rail", 'd_"rail"', rail_ax.depth, f"{rail.label}: outside dimension in the vertical direction, "
+                      "the rail depth", rail.source)
     e = ecc.line("e", "e", d / 2, "Eccentricity: rail centerline to the weld plane at the rail underside",
-                 cite_ids=("ej.weld.ring_model",), unit="inch")
+                 cite_ids=(model,), unit="inch")
     e_line = ecc.lines[-1]
     parts = (nominal_wall("rail", "Top rail", rail), nominal_wall("post", "Post", post))
     limits = size_limits(registry, rg.w, parts)
@@ -527,15 +592,23 @@ def check_3(registry: Registry, project: Project, rail: Section, post: Section, 
     grade = project.top_rail.grade
     t_rail = Part("t_rail", 't_"rail"', rail.tdes, f"Top rail design wall thickness, {rail.label}", rail.source)  # W4
     base = base_metal(registry, "Base metal: rail fusion face", tensile_strength(registry, grade, rail), t_rail)
-    normal = registry.get("ej.weld.rail_wall_normal")
+    # The rail wall under the force normal to it: a stated assumption, in
+    # the words of the pair that meets (W7; S6-12 for a rectangular chord,
+    # S6-9 where a round and a rectangular member meet).
+    if rail.is_round and post.is_round:
+        normal = registry.get("ej.weld.rail_wall_normal")
+    elif rail.is_round or post.is_round:
+        normal = registry.get("ej.weld.chord_wall.mixed")
+    else:
+        normal = registry.get("ej.weld.chord_wall.rect")
     walls = Sheet(registry)
     walls.decision(mtext("Rail wall, normal force"), "Not checked", normal.value, cite_ids=(normal.id,))
-    head = (rg.lines + ecc.lines + limits.lines + wm.lines + kd.lines + base.lines + walls.lines
+    head = (rg.lines + equal + ecc.lines + limits.lines + wm.lines + kd.lines + base.lines + walls.lines
             + post_wall_covered(registry))
     ws = WeldSetup(
         rg=rg, wm=wm, base=base, head=head,
         wording=weld_wording("on the rail at the post", "Moment at the weld plane: V at the rail centerline, arm e",
-                             "ej.weld.ring_model"),
+                             model),
         dead=Given("D_rail", 'D_"rail"', loading.D_rail,
                    "Top rail dead load at the weld: w_D over the span (the tributary length)", "Loading"),
         arm=e,
@@ -552,18 +625,153 @@ def check_3(registry: Registry, project: Project, rail: Section, post: Section, 
 # ---------------------------------------------------------------------------
 
 
+def base_pattern(registry: Registry, project: Project, post: Section,
+                 error: type[InputError] = SectionStop) -> str:
+    """The post to baseplate weld's pattern (S6-6). A round post is welded
+    all around: its key may be left out, and a face pair given for it stops.
+    A rectangular post needs the key, with no default: a post welded on two
+    faces, with the key forgotten, would be checked with about twice its
+    weld. Electing the directional increase for a rectangular post stops,
+    as a conflicting input; it is never silently ignored."""
+    given = project.welds.base_pattern
+    if post.is_round:
+        if given and given != ALL_AROUND:
+            raise error(
+                f"[welds] base_pattern = {given!r} is given, but the post {post.label} is round and is welded all "
+                f"around. A face pair is for a rectangular post. Remove base_pattern, or check the post.",
+                stop=Stop.WELD_BASE_PATTERN_ON_ROUND_POST)
+        return ALL_AROUND
+    if not given:
+        raise error(
+            f"[welds] is missing 'base_pattern': the post {post.label} is rectangular, and the tool never assumes "
+            f'how it is welded to the baseplate. Give base_pattern = "{ALL_AROUND}", "{FACES_PARALLEL}" or '
+            f'"{FACES_PERPENDICULAR}".', stop=Stop.WELD_BASE_PATTERN_MISSING)
+    if project.welds.directional_increase:
+        # The provisions behind the stop are read only when it stops.
+        rule = f"{registry.get(RECT_KDS).cite}; {registry.get(RECT_KDS_NOTE).cite}"
+        raise error(
+            f"[welds] directional_increase = true, but the post {post.label} is rectangular: the directional "
+            f"strength increase cannot be taken in fillet welds to the end of a rectangular HSS ({rule}). "
+            f"Set directional_increase = false, or remove it.",
+            stop=Stop.WELD_DIRECTIONAL_INCREASE_ON_RECTANGULAR_POST)
+    return given
+
+
+RECT_KDS, RECT_KDS_NOTE = "aisc360.J2.4.kds_rect_hss", "aisc360.K5.user_note.rect_hss_kds"
+
+
+def rect_k_ds(registry: Registry) -> tuple[list[Line], Callable[[Sheet, Sym], tuple[Sym | None, Sym]]]:
+    """k_ds at the base weld of a rectangular post: 1.0, whatever the load
+    case (S6-6). One line in the head, and the User Note that carries the
+    rule from tension to flexure."""
+    sh = Sheet(registry)
+    k_ds = sh.code_value("k_ds", 'k_"ds"', RECT_KDS,
+                         "No directional strength increase at the base weld of a rectangular post")
+    note = registry.get(RECT_KDS_NOTE)
+    sh.decision(mtext("Rectangular HSS, weld in flexure"), "No directional increase", note.value, cite_ids=(note.id,))
+    return sh.lines, lambda _sh, _f_r: (None, k_ds)
+
+
+WALL = "ej.weld.post_wall.face_pair"
+
+
+@dataclass
+class PostWall:
+    """The post wall at a face-pair base weld (S6-7): its allowable force
+    per inch along the post axis and along the face, and the lines that
+    computed them."""
+
+    axial: Sym
+    face: Sym
+    lines: list[Line]
+
+
+def post_wall(registry: Registry, project: Project, post: Section) -> PostWall:
+    """The wall of a post welded to the baseplate on one pair of faces, per
+    inch of weld (S6-7). Along the post axis: the lower of tensile yielding
+    and tensile rupture (AISC 360-22 J4.1), the yielding limit standing for
+    the compression side too, since a slender wall never reaches this check
+    (Table B4.1a). Along the face: shear rupture (J4.2(b), as W6)."""
+    sh = Sheet(registry)
+    sh.heading("Post wall at the welded faces")
+    rule = registry.get(WALL)
+    sh.decision(mtext("Post wall at the weld"), "Checked on its own lines", rule.value, cite_ids=(rule.id,))
+    grade = project.post.grade
+    Fy = yield_stress(registry, grade, post).line(sh, "F_y_wall", "F_y")
+    Fu = tensile_strength(registry, grade, post).line(sh, "F_u_wall", "F_u")
+    t = sh.given("t_wall", 't_"wall"', post.tdes, f"Post design wall thickness, {post.label}", post.source)  # W4
+    R_y = sh.line("R_n_wall_y", 'R_("n,y")', Fy * t, "Yielding of the wall under the force along the post axis, per inch of weld",
+                  cite_ids=("aisc360.eq.J4-1",), unit=PER_INCH)
+    Om_y = sh.code_value("Omega_wall_y", "Omega_y", "aisc360.J4.1.omega_yield", "Safety factor, yielding (ASD)")
+    R_u = sh.line("R_n_wall_u", 'R_("n,u")', Fu * t, "Rupture of the wall under the force along the post axis, per inch of weld",
+                  cite_ids=("aisc360.eq.J4-2",), unit=PER_INCH)
+    Om_u = sh.code_value("Omega_wall_u", "Omega_u", "aisc360.J4.1.omega_rupture", "Safety factor, rupture (ASD)")
+    axial = sh.line("R_wall_axial", 'R_("wall,a")', minimum(R_y / Om_y, R_u / Om_u),
+                    "Allowable force along the post axis per inch: the lower of yielding and rupture",
+                    cite_ids=("aisc360.eq.B3-2",), unit=PER_INCH)
+    R_v = sh.line("R_n_wall_v", 'R_("n,v")', sh.coeff("aisc360.eq.J4-4.coeff") * Fu * t,
+                  "Shear rupture of the wall under the force along the face, per inch of weld",
+                  cite_ids=("aisc360.eq.J4-4", "aisc_manual.part9.base_metal"), unit=PER_INCH)
+    Om_v = sh.code_value("Omega_wall_v", "Omega_v", "aisc360.J4.2.omega_rupture", "Safety factor, shear rupture (ASD)")
+    face = sh.line("R_wall_face", 'R_("wall,f")', R_v / Om_v, "Allowable force along the face per inch",
+                   cite_ids=("aisc360.eq.B3-2",), unit=PER_INCH)
+    return PostWall(axial=axial, face=face, lines=sh.lines)
+
+
+def _wall_ratio(pw: PostWall, pattern: str) -> Callable[[Sheet, RingForces, Direction], tuple[Sym, Sym]]:
+    """How a case finds the post wall's ratio at a face-pair weld (S6-7):
+    the force along the post axis against its allowable, and the force
+    along the face against its own; the larger is the wall's, and the two
+    are not combined. The shear lies along the welded faces when the load
+    is parallel to them, and across them otherwise."""
+    along = (Direction.LONGITUDINAL,) if pattern == FACES_PARALLEL else (Direction.OUTWARD, Direction.INWARD)
+
+    def ratio(sh: Sheet, f: RingForces, direction: Direction) -> tuple[Sym, Sym]:
+        f_n = cast(Sym, f.f_n)  # Check 7 always has a normal force
+        r_a = sh.line("Ratio_wall_axial", '"Ratio"_("wall,a")', f_n / pw.axial,
+                      "Post wall: force along the post axis / allowable", cite_ids=("aisc360.eq.B3-2",), ratio=True)
+        if f.f_v is not None and direction in along:
+            r_f = sh.line("Ratio_wall_face", '"Ratio"_("wall,f")', f.f_v / pw.face,
+                          "Post wall: force along the face / allowable", cite_ids=("aisc360.eq.B3-2",), ratio=True)
+            r = sh.line("Ratio_wall", '"Ratio"_"wall"', maximum(r_a, r_f),
+                        "Post wall: the larger of the two, not combined", cite_ids=(WALL,), ratio=True)
+            return r, pw.axial
+        why = ("no horizontal force in this case" if f.f_v is None else
+               "the horizontal force is across the welded faces, not along them")
+        r = sh.line("Ratio_wall", '"Ratio"_"wall"', r_a, f"Post wall: no force along the face, {why}",
+                    cite_ids=(WALL,), ratio=True)
+        return r, pw.axial
+
+    return ratio
+
+
 def check_7(registry: Registry, project: Project, post: Section, loading: Loading) -> Check:
-    """The post to baseplate weld: a ring of the post perimeter at the top of
-    the baseplate, moment arm h - t_p; k_ds = 1.0, or from theta at the
+    """The post to baseplate weld: the post's weld line at the top of the
+    baseplate, moment arm h - t_p; base metal on the baseplate side against
+    the resultant (W5).
+
+    A round post: a ring of its perimeter; k_ds = 1.0, or from theta at the
     governing point where the engineer elects the directional increase (W2,
-    as revised 2026-10-10); base metal on the baseplate side against the
-    resultant (W5).
+    as revised 2026-10-10). A rectangular post: its rounded rectangle all
+    around, or the two lines of a face pair, as entered (S6-6); k_ds = 1.0;
+    on a face pair the post wall is checked on its own lines (S6-7).
 
     Stops on a post the Check 7 joint's table does not list as allowed
-    (joints.py): validation makes the same test, and this one holds when a
-    calc is computed without it."""
+    (joints.py), and on a base pattern its post cannot take: validation
+    makes the same tests, and these hold when a calc is computed without it."""
     joints.CHECK_7.require(JointMember("post", post), error=SectionStop)
-    rg = ring(registry, post, project.welds.post_to_baseplate)
+    pattern = base_pattern(registry, project, post)
+    size = project.welds.post_to_baseplate
+    if post.is_round:
+        rg = ring(registry, post, size)
+    elif pattern == ALL_AROUND:
+        ax = post_axes(post, project.post.long_side)
+        rg = rounded_rectangle(
+            registry, post, size, "post",
+            along=Side("a_par", 'a_"par"', ax.parallel, "outside dimension parallel to the rail"),
+            across=Side("a_perp", 'a_"perp"', ax.perpendicular, "Outside dimension perpendicular to the rail"))
+    else:
+        rg = face_pair(registry, post, size, pattern, post_axes(post, project.post.long_side))
     arm = Sheet(registry)
     arm.heading("Moment arm")
     L_post = arm.given("L_post", 'L_"post"', loading.L_post,
@@ -574,9 +782,20 @@ def check_7(registry: Registry, project: Project, post: Section, loading: Loadin
     limits = size_limits(registry, rg.w, parts)
     wm = weld_metal(registry, project.welds.electrode)
     grade = project.baseplate.grade
-    kd_lines, k_ds = baseplate_k_ds(registry, project.welds.directional_increase)
+    if post.is_round:
+        kd_lines, k_ds = baseplate_k_ds(registry, project.welds.directional_increase)
+    else:
+        kd_lines, k_ds = rect_k_ds(registry)
     base = base_metal(registry, "Base metal: baseplate fusion face", baseplate_tensile_strength(grade), t_p)
-    head = rg.lines + arm.lines + limits.lines + wm.lines + kd_lines + base.lines + post_wall_covered(registry)
+    # The post wall at the weld: covered by Check 5 where the weld is all
+    # around (W5), and checked on its own lines at a face pair (S6-7).
+    wall = None
+    if post.is_round or pattern == ALL_AROUND:
+        wall_lines = post_wall_covered(registry)
+    else:
+        pw = post_wall(registry, project, post)
+        wall_lines, wall = pw.lines, _wall_ratio(pw, pattern)
+    head = rg.lines + arm.lines + limits.lines + wm.lines + kd_lines + base.lines + wall_lines
     ws = WeldSetup(
         rg=rg, wm=wm, base=base, head=head,
         wording=weld_wording("at the top of the post", "Moment at the top of the baseplate",
@@ -586,6 +805,7 @@ def check_7(registry: Registry, project: Project, post: Section, loading: Loadin
         k_ds=k_ds,
         base_demand=lambda f: f.f_r,
         base_note="Baseplate fusion face: the resultant per inch",
+        wall=wall,
     )
     chk = WeldCheck(7, "Post weld to baseplate", "f_r", "frac(R_n, Omega_w)")
     return _weld_check(chk, registry, project, loading, ws, limits, parts)
@@ -596,14 +816,18 @@ def check_7(registry: Registry, project: Project, post: Section, loading: Loadin
 # ---------------------------------------------------------------------------
 
 INT_RING = "ej.weld.intermediate_ring_model"
+INT_LINE = "ej.weld.intermediate_line_model"
 
 
-def _reaction_4b(registry: Registry, project: Project, loading: Loading, direction: Direction
-                 ) -> tuple[Sheet, Sym, str]:
+def _reaction_4b(registry: Registry, project: Project, loading: Loading, direction: Direction,
+                 model: str = INT_RING) -> tuple[Sheet, Sym, str]:
     """The weld reaction R (S4-9): the component load adjacent to the post,
     so this end takes the full P_c, with the intermediate rail's dead-load
     end reaction; ASD D + L, the component load as L. Returns the demand
-    lines, R and the combination label."""
+    lines, R and the combination label. ``model`` is the entry that records
+    the weld's model and the load's position: the ring's for a round
+    intermediate rail, the line's for a rectangular one."""
+    plane = "the ring's plane" if model == INT_RING else "the plane of the weld"
     sh = Sheet(registry)
     sh.heading(f"Demand: {direction.lower()}, component load")
     combo, down = registry.get(COMBO), registry.get("ej.component.downward")
@@ -612,15 +836,15 @@ def _reaction_4b(registry: Registry, project: Project, loading: Loading, directi
     RD = sh.line("R_D", "R_D", wD * L / 2, "Dead-load end reaction at the post", cite_ids=("aisc_manual.t3-23.case1.R",),
                  unit="lbf")
     Pc = sh.given("P_c", "P_c", loading.P_c, "Component load adjacent to the post: the full P_c to this end",
-                  registry.get(INT_RING).cite)
+                  registry.get(model).cite)
     gD, gL = sh.factor(combo.id, "D"), sh.factor(combo.id, "L")
     if direction == DOWNWARD:
         R = sh.line("R", "R", gD * RD + gL * Pc, "Weld reaction: dead and component loads in the same (vertical) "
-                    "direction, in the ring's plane", cite_ids=(INT_RING, down.id), unit="lbf")
+                    f"direction, in {plane}", cite_ids=(model, down.id), unit="lbf")
         label = f"{combo_text(combo)}, vertical\n{combo.cite}; {down.cite}"
     elif direction == HORIZONTAL:
         R = sh.line("R", "R", sqrt((gL * Pc) ** 2 + (gD * RD) ** 2), "Weld reaction: horizontal component load and "
-                    "vertical dead-load reaction at right angles, both in the ring's plane", cite_ids=(INT_RING,),
+                    f"vertical dead-load reaction at right angles, both in {plane}", cite_ids=(model,),
                     unit="lbf")
         label = f"{combo_text(combo, {'D': 'vertical', 'L': 'horizontal'}, ', ')}, vector sum\n{combo.cite}"
     else:
@@ -658,7 +882,16 @@ def check_4b(registry: Registry, project: Project, post: Section, inter: Section
     parts = (nominal_wall("int", "Intermediate rail", inter), nominal_wall("post", "Post", post))
     thin = thin_material(registry, parts)
     head_guard: list[Line] = []
-    if same:
+    both_round = post.is_round and inter.is_round
+    model_id = INT_RING if inter.is_round else INT_LINE
+    if same and not both_round:
+        # The observation is for a round post with a round rail only (S6-14
+        # item 5): with a rectangular member the full check runs, and says why.
+        full = registry.get("ej.weld.intermediate.rect_full")
+        g = Sheet(registry)
+        g.decision(mtext("Same section as the top rail"), "Computed in full", full.value, cite_ids=(full.id,))
+        head_guard = g.lines
+    elif same:
         # R is the larger of the two cases (the downward one, R_D + P_c, always
         # is); its lines print under the observation, so R can be traced.
         reactions = [_reaction_4b(registry, project, loading, direction) for direction in COMPONENT_DIRECTIONS]
@@ -706,10 +939,38 @@ def check_4b(registry: Registry, project: Project, post: Section, inter: Section
     model.heading("Connection model")
     simple = registry.get("ej.weld.intermediate_simple_shear")
     model.decision(mtext("Intermediate rail to post weld"), "Simple shear connection", simple.value,
-                   cite_ids=(simple.id, INT_RING))
+                   cite_ids=(simple.id, model_id))
     # Its own section always has its own weld size (project.py requires it).
     size = project.welds.rail_to_post if same else cast(Dimension, project.welds.intermediate_rail_to_post)
-    rg = ring(registry, inter, size, member="intermediate rail", symbol='D_"int"', bending=False)
+    equal: list[Line] = []
+    if inter.is_round:
+        # A round intermediate rail: its ring, on a round post or a rectangular one (S6-9).
+        rg = ring(registry, inter, size, member="intermediate rail", symbol='D_"int"', bending=False)
+    else:
+        int_ax = rail_axes(inter, int_member.long_side)
+        post_ax = post_axes(post, project.post.long_side)
+        if post.is_round:
+            # A rectangular intermediate rail on a round post: its own outline (S6-9).
+            rg = rounded_rectangle(
+                registry, inter, size, "intermediate rail",
+                along=Side("a_h", 'a_"h"', int_ax.width, "outside dimension in the horizontal direction"),
+                across=Side("a_v", 'a_"v"', int_ax.depth, "Outside dimension in the vertical direction"),
+                bending=False)
+        else:
+            # Both rectangular: the effective weld of Table K5.1 (S6-8). The
+            # post is the chord, so its axis is vertical: the branch's depth
+            # along it is the intermediate rail's vertical dimension.
+            rg = table_k5_1(
+                registry, size, post, project.post.grade, "Post",
+                Side("B_chord", "B", post_ax.perpendicular, "width of the chord face, the post's dimension "
+                     "perpendicular to the rail"),
+                inter, int_member.grade, "Intermediate rail",
+                Side("H_b", "H_b", int_ax.depth, "branch dimension along the chord, the intermediate rail's vertical "
+                     "dimension"),
+                Side("B_b", "B_b", int_ax.width, "Branch width across the chord face, the intermediate rail's "
+                     "horizontal dimension"),
+                bending=False)
+            equal = _equal_widths(registry, int_ax.width, post_ax.perpendicular, "Intermediate rail as wide as the post")
     limits = size_limits(registry, rg.w, parts)
     wm = weld_metal(registry, project.welds.electrode)
     kd = Sheet(registry)
@@ -733,10 +994,16 @@ def check_4b(registry: Registry, project: Project, post: Section, inter: Section
     else:
         base, chk.base_governs = base_post, "post wall"
     gov.decision(lower, f"{chk.base_governs.capitalize()} governs", both.value, cite_ids=(both.id,))
-    chord = registry.get("ej.weld.post_wall_chord_intermediate")
     walls = Sheet(registry)
-    walls.decision(mtext("Post wall, chord limit states"), "Not checked", chord.value, cite_ids=(chord.id,))
-    head = (head_guard + rg.lines + model.lines + limits.lines + wm.lines + kd.lines + base_post.lines
+    if both_round:
+        chord = registry.get("ej.weld.post_wall_chord_intermediate")
+        walls.decision(mtext("Post wall, chord limit states"), "Not checked", chord.value, cite_ids=(chord.id,))
+    else:
+        # A simple shear connection puts no force normal to the post wall,
+        # whatever the two families are (S6-11, S6-16 item 2).
+        chord = registry.get("ej.weld.check4b.no_chord_demand")
+        walls.decision(mtext("Post wall, chord limit states"), "No demand", chord.value, cite_ids=(chord.id,))
+    head = (head_guard + rg.lines + equal + model.lines + limits.lines + wm.lines + kd.lines + base_post.lines
             + base_int.lines + gov.lines + walls.lines)
     ws = WeldLines(
         rg=rg, wm=wm, base=base, head=head,
@@ -747,7 +1014,7 @@ def check_4b(registry: Registry, project: Project, post: Section, inter: Section
     _min_size(chk, limits)
     chk.flags.extend(thin)
     for direction in COMPONENT_DIRECTIONS:
-        dsh, R, label = _reaction_4b(registry, project, loading, direction)
+        dsh, R, label = _reaction_4b(registry, project, loading, direction, model_id)
         sh = Sheet(registry)
         sh.lines.extend(ws.head)
         sh.lines.extend(dsh.lines)

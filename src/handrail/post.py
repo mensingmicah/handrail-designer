@@ -263,6 +263,9 @@ def _rect_capacity(registry: Registry, project: Project, post: Section) -> Capac
     each axis a lateral case bends, with Cb = 1.0 and Lb = h (S6-4)."""
     grade = project.post.grade
     axes = post_axes(post, project.post.long_side)
+    # Compression first: the post is classified in compression before
+    # anything else is asked of it, so a slender wall stops there (S6-7).
+    comp = compression_capacity(registry, project, post)
     flags: list[str] = []
     about: dict[str, tuple[list[Line], Sym]] = {}
     for name in dict.fromkeys((axes.transverse, axes.longitudinal)):
@@ -271,7 +274,6 @@ def _rect_capacity(registry: Registry, project: Project, post: Section) -> Capac
         h = Sym("h", project.post_height.value)
         unbraced = Unbraced(h, "Laterally unbraced length: the post height h, a cantilever", cb.cantilever)
         about[name] = (sh.lines, rect_axis_capacity(sh, lim, post, name, unbraced, flags))
-    comp = compression_capacity(registry, project, post)
     cache: list[Tension] = []
 
     def tension() -> Tension:

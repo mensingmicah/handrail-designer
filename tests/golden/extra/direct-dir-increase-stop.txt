@@ -1,1 +1,1 @@
-SectionStop: FakeTube (rectangular HSS): the directional strength increase rule for this section family has not been drafted. The tool applies the increase only to round hollow sections. Check 7 joint (post on the baseplate): a rectangular HSS post is not supported until slice 6 (S5-1).
+SectionStop: FakeBar (solid rectangular bar): the post to baseplate weld of this section family has not been decided. The tool checks it only for round and rectangular hollow posts. Check 7 joint (post on the baseplate): a solid rectangular bar post is not supported until slice 7 (S5-1).

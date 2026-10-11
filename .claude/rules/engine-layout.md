@@ -31,6 +31,7 @@ convention below is held by a test, named beside it.
 | rail.py | Checks 1 and 2 |
 | intermediate.py | Check 4a |
 | post.py | Checks 5 and 6 |
+| weld_lines.py | The line a weld is checked on: the ring, the rounded rectangle, the face pair, Table K5.1 (S6-6, S6-8) |
 | welds.py | Checks 3, 4b and 7 |
 | demand.py, reactions.py | The shared per-direction demand; the anchor reaction sets |
 | validate.py, engine.py | Input validation; compute() and run() |
