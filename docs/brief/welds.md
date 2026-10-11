@@ -625,4 +625,53 @@ checks.md and inputs.md.
     would be checked with about twice its weld).
   - Slice 7 reuses the key for a solid rectangular bar post, with sharp
     corners.
+- **The post wall at a face-pair base weld is checked on its own lines;
+  all around stays "covered by Check 5".** (S6-7, Micah 2026-10-10.)
+  - Why. W5's line "post wall covered by Check 5" rests on the weld
+    delivering force to the whole post section. With two faces welded
+    and no bearing credit (W10), the base moment enters the post through
+    two walls alone, and Check 5 on the full section does not describe
+    them.
+  - For a face pair, per inch of weld at the governing point, following
+    the direction of the force as W5 does:
+    - force along the post axis, against the wall per AISC 360-22 §J4.1:
+      the lower of yielding, Fy·t_des/1.67, and rupture, Fu·t_des/2.00;
+    - force along the face, against shear rupture, 0.6·Fu·t_des/2.00
+      (§J4.2(b), as W6).
+    - Each component has its own ratio; the larger is the post wall's.
+      They are not combined.
+  - **Compression side.** (Micah's addition.) The yielding limit applies
+    to the wall on the compression side only if the welded wall is
+    nonslender in compression: b/t ≤ 1.40√(E/Fy), AISC 360-22 Table
+    B4.1a Case 6, walls of rectangular HSS, page 16.1-21. A slender
+    welded wall stops, naming the post, its b/t and the limit. The limit
+    is a drafted registry entry and the stop is tested.
+    - Claude's note for Micah to confirm: the post is already classified
+      in compression before any check, and a slender wall is a hard stop
+      there (`section.slender_in_compression`, stops.md; checks.md, "The
+      post"). Slice 6 extends that stop to both walls of a rectangular
+      post under the same Case 6 limit. So no post with a slender wall
+      reaches Check 7, and this condition is met by the existing stop;
+      the slice adds a test that a face-pair weld on such a post stops,
+      rather than a second stop.
+  - **Not combining the two components is a printed simplification,**
+    not only a brief note. (Micah's addition.) Proposed text for the
+    "Stated assumptions" list (output.md, changed on the calc branch in
+    the commit that prints it): "At a post to baseplate weld on one pair
+    of faces, the post wall is checked for the weld force along the post
+    axis and for the force along the face separately; the two are not
+    combined, the force along the face being small next to the other."
+    The list prints word for word in every calc, so this is an intended
+    change to every golden snapshot. The same sentence prints at the
+    lines in Check 7.
+  - All around, on a rectangular post as on a round one: "post wall
+    covered by Check 5" (W5), with the Fu/Fy ≥ 1.20 guard on the post
+    grade.
+  - Planning arithmetic (Claude, 2026-10-10; not test values): an
+    HSS2×2×1/8 post, 42 in, 200 lb at the top, welded on the faces
+    parallel to the rail with 3/16 in fillets, at the drafted 46 and 58
+    ksi. f ≈ 2.70 kip/in; weld metal 2.78 kip/in (0.97); post wall
+    yielding 3.20 kip/in (0.84). Against shear rupture on the resultant,
+    the alternative not chosen, 2.02 kip/in (1.34).
+  - Slice 7 decides the same question for a solid bar post.
 
