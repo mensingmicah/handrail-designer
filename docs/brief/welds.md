@@ -479,6 +479,11 @@ plan's decision numbers.
   that lands. Slice 6's plan settles which limit states, the interaction,
   where the lines print, and what becomes of the D/t ≤ 50 stop (a limit
   of applicability still applies to a check made under Chapter K).
+  - Reworded by slice 6's plan (Micah, 2026-10-10): the chord limit
+    states are computed at Check 3 only, for same-family pairs. At Check
+    4b they have no demand and the calc prints one line (S6-11, below).
+    At a mixed round and rectangular pair the chord wall stays a stated
+    assumption (S6-9, below).
 - **ODs within 0.01 in are equal in the width comparisons.** (S5-4,
   Micah 2026-10-09.) W8 (post OD ≤ rail OD) and S4-11 (intermediate rail
   OD ≤ post OD) treat two outside diameters within 0.01 in of each other
@@ -810,4 +815,32 @@ checks.md and inputs.md.
     Pn of Eq. K3-2 ≈ 4.6 kips (2.75 kips allowable), Mn-op of Eq. K4-3 ≈
     4.9 kip-in (2.9 allowable); the outward case interacts at about 0.12
     with Qf = 1.
+- **At Check 4b the chord limit states have no demand; the calc says so
+  in one line.** (S6-11, Micah 2026-10-10.)
+  - Check 4b is a simple shear connection (Micah, 2026-10-09): the end
+    reaction R acts at the weld with e = 0 and no end moment. Both load
+    cases put R in the plane of the weld, tangent to the post wall: the
+    horizontal component load across the post face, and the dead load
+    with the downward component load along the post's axis.
+  - Chapter K's T-connection limit states are written for branch axial
+    force and branch moment (AISC 360-22 Tables K3.1, K4.1 and K4.2). The
+    intermediate rail delivers neither, so Pr = Mr-ip = Mr-op = 0 in the
+    interaction.
+  - Check 4b prints one line and no table, roughly: "Chapter K chord
+    limit states: the intermediate rail delivers no axial force or moment
+    to the post wall (simple shear connection); the post wall's in-plane
+    shear is checked by the base metal line above." Final wording on the
+    branch.
+  - This retires the Check 4b half of W7 for same-family pairs with a
+    statement, not a calculation. The chord limit states are computed at
+    Check 3 only (S5-3 and scope.md reworded).
+  - **What it rests on.** No load case puts force along the intermediate
+    rail's axis: the longitudinal guard load acts on the top rail, and
+    the component load acts across the guard. If a later slice adds such
+    a load, the Check 4b chord check comes back.
+  - The welded joint's rotational restraint stays unmodeled, as ruled for
+    the weld (Micah, 2026-10-09). Not chosen: a bounding end moment
+    (P_c·L/8) or the eccentricity R·D_post/2 for the chord wall alone,
+    either of which would reverse the simple shear ruling for one check
+    and not the other.
 

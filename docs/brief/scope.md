@@ -32,12 +32,16 @@ In scope:
 - ASD member checks
 - ASCE 7-22 guard loading, with an option to exempt the occupancies where the
   distributed load need not be considered
-- The AISC 360-22 Chapter K chord limit states at the two HSS-to-HSS
-  joints: the rail wall at the post (Check 3) and the post wall at the
-  intermediate rail (Check 4b), for round and rectangular chords. A scope
-  addition (Micah, 2026-10-09; S5-3, welds.md), built in slice 6. Until
-  then they are a stated assumption, not checked, and the tool stops when
-  a chord's D/t exceeds 50.
+- The AISC 360-22 Chapter K chord limit states of the rail wall at the
+  post (Check 3), for a round rail on a round post and a rectangular rail
+  on a rectangular post. A scope addition (Micah, 2026-10-09; S5-3,
+  welds.md), built in slice 6. Until then they are a stated assumption,
+  not checked, and the tool stops when a chord's D/t exceeds 50. As
+  settled in slice 6's plan (Micah, 2026-10-10; welds.md): at the post
+  wall at the intermediate rail (Check 4b) the limit states have no
+  demand under the simple shear connection, and the calc says so in one
+  line (S6-11); at a joint between a round and a rectangular member the
+  chord wall stays a stated assumption, not checked (S6-9).
 - Dead load of rails, post and baseplate: the AISC tabulated weight for
   database shapes, computed from area and steel density (a registry entry)
   for sections defined by dimensions and for the baseplate. A custom tube's
