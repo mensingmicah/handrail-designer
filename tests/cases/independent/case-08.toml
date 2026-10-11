@@ -41,565 +41,565 @@
 #   the transverse cases (outward, inward) and S_w_l for the longitudinal.
 
 [provenance]
-calc = "pending"           # "tests/cases/independent/case-08.md"
-written_on = "pending"     # a TOML date, no quotes, e.g. 2026-10-03
-model = "pending"          # model id
-commit = "pending"         # the commit the calc ran on
+calc = "tests/cases/independent/case-08.md"
+written_on = 2026-10-11
+model = "Claude, fresh independent-calc session (model id given in the session report to Micah, not recorded in repo files)"
+commit = "33daa9a6a0d40a93ef3ae44821d8e8136ceb3e86"
 
 [independent.section]
-H_in = "pending"
-B_in = "pending"
-tdes_in = "pending"
-A_in2 = "pending"
-b_t = "pending"
-h_t = "pending"
-Ix_in4 = "pending"
-Sx_in3 = "pending"
-Zx_in3 = "pending"
-rx_in = "pending"
-Iy_in4 = "pending"
-Sy_in3 = "pending"
-Zy_in3 = "pending"
-ry_in = "pending"
-J_in4 = "pending"
-w_D_plf = "pending"
+H_in = 4.0
+B_in = 2.0
+tdes_in = 0.116
+A_in2 = 1.3
+b_t = 14.2
+h_t = 31.5
+Ix_in4 = 2.65
+Sx_in3 = 1.32
+Zx_in3 = 1.66
+rx_in = 1.43
+Iy_in4 = 0.898
+Sy_in3 = 0.898
+Zy_in3 = 1.02
+ry_in = 0.83
+J_in4 = 2.2
+w_D_plf = 4.75
 
 [independent.check1]
-Mpx_lbin = "pending"
-Mpy_lbin = "pending"
-Lp_in = "pending"
-Lr_in = "pending"
-controlling = "pending"  # text, in quotes
+Mpx_lbin = 76360.0
+Mpy_lbin = 46920.0
+Lp_in = 69.3
+Lr_in = 1915.0
+controlling = "outward, concentrated"
 
 [independent.check1.Mrx_lbin]
-downward_concentrated = "pending"
-downward_distributed = "pending"
-outward_concentrated = "pending"
-outward_distributed = "pending"
-inward_concentrated = "pending"
-inward_distributed = "pending"
-upward_concentrated = "pending"
-upward_distributed = "pending"
+downward_concentrated = 3856.0
+downward_distributed = 2956.0
+outward_concentrated = 256.5
+outward_distributed = 256.5
+inward_concentrated = 256.5
+inward_distributed = 256.5
+upward_concentrated = 3446.0
+upward_distributed = 2546.0
 
 [independent.check1.Mcx_lbin]
-downward_concentrated = "pending"
-downward_distributed = "pending"
-outward_concentrated = "pending"
-outward_distributed = "pending"
-inward_concentrated = "pending"
-inward_distributed = "pending"
-upward_concentrated = "pending"
-upward_distributed = "pending"
+downward_concentrated = 45720.0
+downward_distributed = 45720.0
+outward_concentrated = 45720.0
+outward_distributed = 45720.0
+inward_concentrated = 45720.0
+inward_distributed = 45720.0
+upward_concentrated = 45720.0
+upward_distributed = 45720.0
 
 [independent.check1.Cb]
-downward_concentrated = "pending"
-downward_distributed = "pending"
-outward_concentrated = "pending"
-outward_distributed = "pending"
-inward_concentrated = "pending"
-inward_distributed = "pending"
-upward_concentrated = "pending"
-upward_distributed = "pending"
+downward_concentrated = 1.302
+downward_distributed = 1.136
+outward_concentrated = 1.136
+outward_distributed = 1.136
+inward_concentrated = 1.136
+inward_distributed = 1.136
+upward_concentrated = 1.325
+upward_distributed = 1.136
 
 [independent.check1.ratio]
-downward_concentrated = "pending"
-downward_distributed = "pending"
-outward_concentrated = "pending"
-outward_distributed = "pending"
-inward_concentrated = "pending"
-inward_distributed = "pending"
-upward_concentrated = "pending"
-upward_distributed = "pending"
+downward_concentrated = 0.08434
+downward_distributed = 0.06466
+outward_concentrated = 0.1416
+outward_distributed = 0.1076
+inward_concentrated = 0.1416
+inward_distributed = 0.1076
+upward_concentrated = 0.07537
+upward_distributed = 0.05568
 
 [independent.check1.Mry_lbin]
-outward_concentrated = "pending"
-outward_distributed = "pending"
-inward_concentrated = "pending"
-inward_distributed = "pending"
+outward_concentrated = 3600.0
+outward_distributed = 2700.0
+inward_concentrated = 3600.0
+inward_distributed = 2700.0
 
 [independent.check1.Mcy_lbin]
-outward_concentrated = "pending"
-outward_distributed = "pending"
-inward_concentrated = "pending"
-inward_distributed = "pending"
+outward_concentrated = 26480.0
+outward_distributed = 26480.0
+inward_concentrated = 26480.0
+inward_distributed = 26480.0
 
 [independent.check2]
-Delta_allow_in = "pending"
-controlling = "pending"  # text, in quotes
+Delta_allow_in = 0.6
+controlling = "outward, concentrated"
 
 [independent.check2.deflection_in]
-downward_concentrated = "pending"
-downward_distributed = "pending"
-outward_concentrated = "pending"
-outward_distributed = "pending"
-inward_concentrated = "pending"
-inward_distributed = "pending"
-upward_concentrated = "pending"
-upward_distributed = "pending"
+downward_concentrated = 0.02204
+downward_distributed = 0.02077
+outward_concentrated = 0.05972
+outward_distributed = 0.05599
+inward_concentrated = 0.05972
+inward_distributed = 0.05599
+upward_concentrated = 0.02024
+upward_distributed = 0.01897
 
 [independent.check2.ratio]
-downward_concentrated = "pending"
-downward_distributed = "pending"
-outward_concentrated = "pending"
-outward_distributed = "pending"
-inward_concentrated = "pending"
-inward_distributed = "pending"
-upward_concentrated = "pending"
-upward_distributed = "pending"
+downward_concentrated = 0.03673
+downward_distributed = 0.03462
+outward_concentrated = 0.09953
+outward_distributed = 0.09331
+inward_concentrated = 0.09953
+inward_distributed = 0.09331
+upward_concentrated = 0.03373
+upward_distributed = 0.03162
 
 [independent.post]
-H_in = "pending"
-B_in = "pending"
-tdes_in = "pending"
-A_in2 = "pending"
-b_t = "pending"
-h_t = "pending"
-Ix_in4 = "pending"
-Sx_in3 = "pending"
-Zx_in3 = "pending"
-rx_in = "pending"
-Iy_in4 = "pending"
-Sy_in3 = "pending"
-Zy_in3 = "pending"
-ry_in = "pending"
-J_in4 = "pending"
-W_plf = "pending"
-D_post_lb = "pending"
-P_D_lb = "pending"
+H_in = 3.0
+B_in = 2.0
+tdes_in = 0.116
+A_in2 = 1.07
+b_t = 14.2
+h_t = 22.9
+Ix_in4 = 1.3
+Sx_in3 = 0.867
+Zx_in3 = 1.06
+rx_in = 1.1
+Iy_in4 = 0.692
+Sy_in3 = 0.692
+Zy_in3 = 0.803
+ry_in = 0.804
+J_in4 = 1.47
+W_plf = 3.9
+D_post_lb = 13.49
+P_D_lb = 57.77
 
 [independent.check5]
-Lc_in = "pending"
-Lc_over_r = "pending"
-Fe_ksi = "pending"
-Fcr_ksi = "pending"
-Fcr_equation = "pending"  # text, in quotes
-Pn_lb = "pending"
-Pc_lb = "pending"
-Mnx_lbin = "pending"
-Mcx_lbin = "pending"
-Mny_lbin = "pending"
-Mcy_lbin = "pending"
-Pt_lb = "pending"
-controlling = "pending"  # text, in quotes
+Lc_in = 88.2
+Lc_over_r = 109.7
+Fe_ksi = 23.78
+Fcr_ksi = 20.47
+Fcr_equation = "E3-2"
+Pn_lb = 21910.0
+Pc_lb = 13120.0
+Mnx_lbin = 48760.0
+Mcx_lbin = 29200.0
+Mny_lbin = 36940.0
+Mcy_lbin = 22120.0
+Pt_lb = 29470.0
+controlling = "outward, distributed"
 
 [independent.check5.Pr_lb]
-downward_concentrated = "pending"
-downward_distributed = "pending"
-outward_concentrated = "pending"
-outward_distributed = "pending"
-inward_concentrated = "pending"
-inward_distributed = "pending"
-upward_concentrated = "pending"
-upward_distributed = "pending"
-longitudinal_concentrated = "pending"
-longitudinal_distributed = "pending"
+downward_concentrated = 257.8
+downward_distributed = 357.8
+outward_concentrated = 57.77
+outward_distributed = 57.77
+inward_concentrated = 57.77
+inward_distributed = 57.77
+upward_concentrated = 165.3
+upward_distributed = 265.3
+longitudinal_concentrated = 57.77
+longitudinal_distributed = 57.77
 
 [independent.check5.equation]
-downward_concentrated = "pending"  # text, in quotes
-downward_distributed = "pending"  # text, in quotes
-outward_concentrated = "pending"  # text, in quotes
-outward_distributed = "pending"  # text, in quotes
-inward_concentrated = "pending"  # text, in quotes
-inward_distributed = "pending"  # text, in quotes
-upward_concentrated = "pending"  # text, in quotes
-upward_distributed = "pending"  # text, in quotes
-longitudinal_concentrated = "pending"  # text, in quotes
-longitudinal_distributed = "pending"  # text, in quotes
+downward_concentrated = "Pr/Pc"
+downward_distributed = "Pr/Pc"
+outward_concentrated = "H1-1b"
+outward_distributed = "H1-1b"
+inward_concentrated = "H1-1b"
+inward_distributed = "H1-1b"
+upward_concentrated = "Pr/Pt"
+upward_distributed = "Pr/Pt"
+longitudinal_concentrated = "H1-1b"
+longitudinal_distributed = "H1-1b"
 
 [independent.check5.ratio]
-downward_concentrated = "pending"
-downward_distributed = "pending"
-outward_concentrated = "pending"
-outward_distributed = "pending"
-inward_concentrated = "pending"
-inward_distributed = "pending"
-upward_concentrated = "pending"
-upward_distributed = "pending"
-longitudinal_concentrated = "pending"
-longitudinal_distributed = "pending"
+downward_concentrated = 0.01965
+downward_distributed = 0.02727
+outward_concentrated = 0.3775
+outward_distributed = 0.5651
+inward_concentrated = 0.3775
+inward_distributed = 0.5651
+upward_concentrated = 0.00561
+upward_distributed = 0.009003
+longitudinal_concentrated = 0.2865
+longitudinal_distributed = 0.4286
 
 [independent.check5.Mr_lbin]
-outward_concentrated = "pending"
-outward_distributed = "pending"
-inward_concentrated = "pending"
-inward_distributed = "pending"
-longitudinal_concentrated = "pending"
-longitudinal_distributed = "pending"
+outward_concentrated = 8300.0
+outward_distributed = 12450.0
+inward_concentrated = 8300.0
+inward_distributed = 12450.0
+longitudinal_concentrated = 8300.0
+longitudinal_distributed = 12450.0
 
 [independent.check5.alpha_Pr_over_Pe]
-outward_concentrated = "pending"
-outward_distributed = "pending"
-inward_concentrated = "pending"
-inward_distributed = "pending"
-longitudinal_concentrated = "pending"
-longitudinal_distributed = "pending"
+outward_concentrated = 0.00363
+outward_distributed = 0.00363
+inward_concentrated = 0.00363
+inward_distributed = 0.00363
+longitudinal_concentrated = 0.001932
+longitudinal_distributed = 0.001932
 
 [independent.check6]
-Delta_allow_in = "pending"
-controlling = "pending"  # text, in quotes
+Delta_allow_in = 0.6917
+controlling = "outward, distributed"
 
 [independent.check6.deflection_in]
-outward_concentrated = "pending"
-outward_distributed = "pending"
-inward_concentrated = "pending"
-inward_distributed = "pending"
-longitudinal_concentrated = "pending"
-longitudinal_distributed = "pending"
+outward_concentrated = 0.2374
+outward_distributed = 0.3562
+inward_concentrated = 0.2374
+inward_distributed = 0.3562
+longitudinal_concentrated = 0.1264
+longitudinal_distributed = 0.1896
 
 [independent.check6.ratio]
-outward_concentrated = "pending"
-outward_distributed = "pending"
-inward_concentrated = "pending"
-inward_distributed = "pending"
-longitudinal_concentrated = "pending"
-longitudinal_distributed = "pending"
+outward_concentrated = 0.3433
+outward_distributed = 0.5149
+inward_concentrated = 0.3433
+inward_distributed = 0.5149
+longitudinal_concentrated = 0.1827
+longitudinal_distributed = 0.2741
 
 [independent.check3]
-L_w_in = "pending"
-B_e_in = "pending"
-S_w_t_in2 = "pending"
-S_w_l_in2 = "pending"
-throat_in = "pending"
-t_min_in = "pending"
-w_min_in = "pending"
-min_size = "pending"  # text, in quotes
-Fnw_ksi = "pending"
-base_allow_lbpin = "pending"
-e_in = "pending"
-weld_allow_lbpin = "pending"
-controlling = "pending"  # text, in quotes
+L_w_in = 8.0
+B_e_in = 1.0
+S_w_t_in2 = 7.167
+S_w_l_in2 = 6.0
+throat_in = 0.08837
+t_min_in = 0.125
+w_min_in = 0.125
+min_size = "OK"
+Fnw_ksi = 42.0
+base_allow_lbpin = 2018.0
+e_in = 2.0
+weld_allow_lbpin = 1856.0
+controlling = "longitudinal, distributed"
 
 [independent.check3.f_a_lbpin]
-downward_concentrated = "pending"
-downward_distributed = "pending"
-outward_concentrated = "pending"
-outward_distributed = "pending"
-inward_concentrated = "pending"
-inward_distributed = "pending"
-upward_concentrated = "pending"
-upward_distributed = "pending"
-longitudinal_concentrated = "pending"
-longitudinal_distributed = "pending"
+downward_concentrated = 28.56
+downward_distributed = 41.06
+outward_concentrated = 3.562
+outward_distributed = 3.562
+inward_concentrated = 3.562
+inward_distributed = 3.562
+upward_concentrated = 22.86
+upward_distributed = 35.36
+longitudinal_concentrated = 3.562
+longitudinal_distributed = 3.562
 
 [independent.check3.f_n_lbpin]
-downward_concentrated = "pending"
-downward_distributed = "pending"
-outward_concentrated = "pending"
-outward_distributed = "pending"
-inward_concentrated = "pending"
-inward_distributed = "pending"
-upward_concentrated = "pending"
-upward_distributed = "pending"
-longitudinal_concentrated = "pending"
-longitudinal_distributed = "pending"
+downward_concentrated = 28.56
+downward_distributed = 41.06
+outward_concentrated = 59.38
+outward_distributed = 87.28
+inward_concentrated = 59.38
+inward_distributed = 87.28
+upward_concentrated = 22.86
+upward_distributed = 35.36
+longitudinal_concentrated = 70.23
+longitudinal_distributed = 103.6
 
 [independent.check3.f_r_lbpin]
-downward_concentrated = "pending"
-downward_distributed = "pending"
-outward_concentrated = "pending"
-outward_distributed = "pending"
-inward_concentrated = "pending"
-inward_distributed = "pending"
-upward_concentrated = "pending"
-upward_distributed = "pending"
-longitudinal_concentrated = "pending"
-longitudinal_distributed = "pending"
+downward_concentrated = 28.56
+downward_distributed = 41.06
+outward_concentrated = 64.42
+outward_distributed = 95.0
+inward_concentrated = 64.42
+inward_distributed = 95.0
+upward_concentrated = 22.86
+upward_distributed = 35.36
+longitudinal_concentrated = 74.55
+longitudinal_distributed = 110.1
 
 [independent.check3.fiber]
-downward_concentrated = "pending"  # text, in quotes
-downward_distributed = "pending"  # text, in quotes
-outward_concentrated = "pending"  # text, in quotes
-outward_distributed = "pending"  # text, in quotes
-inward_concentrated = "pending"  # text, in quotes
-inward_distributed = "pending"  # text, in quotes
-upward_concentrated = "pending"  # text, in quotes
-upward_distributed = "pending"  # text, in quotes
-longitudinal_concentrated = "pending"  # text, in quotes
-longitudinal_distributed = "pending"  # text, in quotes
+downward_concentrated = "uniform"
+downward_distributed = "uniform"
+outward_concentrated = "compression side"
+outward_distributed = "compression side"
+inward_concentrated = "compression side"
+inward_distributed = "compression side"
+upward_concentrated = "uniform"
+upward_distributed = "uniform"
+longitudinal_concentrated = "compression side"
+longitudinal_distributed = "compression side"
 
 [independent.check3.ratio_weld]
-downward_concentrated = "pending"
-downward_distributed = "pending"
-outward_concentrated = "pending"
-outward_distributed = "pending"
-inward_concentrated = "pending"
-inward_distributed = "pending"
-upward_concentrated = "pending"
-upward_distributed = "pending"
-longitudinal_concentrated = "pending"
-longitudinal_distributed = "pending"
+downward_concentrated = 0.01539
+downward_distributed = 0.02213
+outward_concentrated = 0.03471
+outward_distributed = 0.05119
+inward_concentrated = 0.03471
+inward_distributed = 0.05119
+upward_concentrated = 0.01232
+upward_distributed = 0.01905
+longitudinal_concentrated = 0.04017
+longitudinal_distributed = 0.05935
 
 [independent.check3.ratio]
-downward_concentrated = "pending"
-downward_distributed = "pending"
-outward_concentrated = "pending"
-outward_distributed = "pending"
-inward_concentrated = "pending"
-inward_distributed = "pending"
-upward_concentrated = "pending"
-upward_distributed = "pending"
-longitudinal_concentrated = "pending"
-longitudinal_distributed = "pending"
+downward_concentrated = 0.01539
+downward_distributed = 0.02213
+outward_concentrated = 0.03471
+outward_distributed = 0.05119
+inward_concentrated = 0.03471
+inward_distributed = 0.05119
+upward_concentrated = 0.01232
+upward_distributed = 0.01905
+longitudinal_concentrated = 0.04017
+longitudinal_distributed = 0.05935
 
 [independent.check3.f_b_lbpin]
-outward_concentrated = "pending"
-outward_distributed = "pending"
-inward_concentrated = "pending"
-inward_distributed = "pending"
-longitudinal_concentrated = "pending"
-longitudinal_distributed = "pending"
+outward_concentrated = 55.81
+outward_distributed = 83.72
+inward_concentrated = 55.81
+inward_distributed = 83.72
+longitudinal_concentrated = 66.67
+longitudinal_distributed = 100.0
 
 [independent.check3.f_v_lbpin]
-outward_concentrated = "pending"
-outward_distributed = "pending"
-inward_concentrated = "pending"
-inward_distributed = "pending"
-longitudinal_concentrated = "pending"
-longitudinal_distributed = "pending"
+outward_concentrated = 25.0
+outward_distributed = 37.5
+inward_concentrated = 25.0
+inward_distributed = 37.5
+longitudinal_concentrated = 25.0
+longitudinal_distributed = 37.5
 
 [independent.check3.ratio_base]
-outward_concentrated = "pending"
-outward_distributed = "pending"
-inward_concentrated = "pending"
-inward_distributed = "pending"
-longitudinal_concentrated = "pending"
-longitudinal_distributed = "pending"
+outward_concentrated = 0.01239
+outward_distributed = 0.01858
+inward_concentrated = 0.01239
+inward_distributed = 0.01858
+longitudinal_concentrated = 0.01239
+longitudinal_distributed = 0.01858
 
 [independent.check7]
-L_w_in = "pending"
-S_w_t_in2 = "pending"
-S_w_l_in2 = "pending"
-throat_in = "pending"
-t_min_in = "pending"
-w_min_in = "pending"
-min_size = "pending"  # text, in quotes
-Fnw_ksi = "pending"
-base_allow_lbpin = "pending"
-wall_axial_allow_lbpin = "pending"
-wall_face_allow_lbpin = "pending"
-arm_in = "pending"
-controlling = "pending"  # text, in quotes
+L_w_in = 5.072
+S_w_t_in2 = 5.072
+S_w_l_in2 = 2.144
+throat_in = 0.1326
+t_min_in = 0.125
+w_min_in = 0.125
+min_size = "OK"
+Fnw_ksi = 42.0
+base_allow_lbpin = 8700.0
+wall_axial_allow_lbpin = 3195.0
+wall_face_allow_lbpin = 2018.0
+arm_in = 41.5
+controlling = "longitudinal, distributed"
 
 [independent.check7.f_a_lbpin]
-downward_concentrated = "pending"
-downward_distributed = "pending"
-outward_concentrated = "pending"
-outward_distributed = "pending"
-inward_concentrated = "pending"
-inward_distributed = "pending"
-upward_concentrated = "pending"
-upward_distributed = "pending"
-longitudinal_concentrated = "pending"
-longitudinal_distributed = "pending"
+downward_concentrated = 50.82
+downward_distributed = 70.54
+outward_concentrated = 11.39
+outward_distributed = 11.39
+inward_concentrated = 11.39
+inward_distributed = 11.39
+upward_concentrated = 32.6
+upward_distributed = 52.31
+longitudinal_concentrated = 11.39
+longitudinal_distributed = 11.39
 
 [independent.check7.f_n_lbpin]
-downward_concentrated = "pending"
-downward_distributed = "pending"
-outward_concentrated = "pending"
-outward_distributed = "pending"
-inward_concentrated = "pending"
-inward_distributed = "pending"
-upward_concentrated = "pending"
-upward_distributed = "pending"
-longitudinal_concentrated = "pending"
-longitudinal_distributed = "pending"
+downward_concentrated = 50.82
+downward_distributed = 70.54
+outward_concentrated = 1648.0
+outward_distributed = 2466.0
+inward_concentrated = 1648.0
+inward_distributed = 2466.0
+upward_concentrated = 32.6
+upward_distributed = 52.31
+longitudinal_concentrated = 3883.0
+longitudinal_distributed = 5819.0
 
 [independent.check7.f_r_lbpin]
-downward_concentrated = "pending"
-downward_distributed = "pending"
-outward_concentrated = "pending"
-outward_distributed = "pending"
-inward_concentrated = "pending"
-inward_distributed = "pending"
-upward_concentrated = "pending"
-upward_distributed = "pending"
-longitudinal_concentrated = "pending"
-longitudinal_distributed = "pending"
+downward_concentrated = 50.82
+downward_distributed = 70.54
+outward_concentrated = 1648.0
+outward_distributed = 2467.0
+inward_concentrated = 1648.0
+inward_distributed = 2467.0
+upward_concentrated = 32.6
+upward_distributed = 52.31
+longitudinal_concentrated = 3883.0
+longitudinal_distributed = 5819.0
 
 [independent.check7.fiber]
-downward_concentrated = "pending"  # text, in quotes
-downward_distributed = "pending"  # text, in quotes
-outward_concentrated = "pending"  # text, in quotes
-outward_distributed = "pending"  # text, in quotes
-inward_concentrated = "pending"  # text, in quotes
-inward_distributed = "pending"  # text, in quotes
-upward_concentrated = "pending"  # text, in quotes
-upward_distributed = "pending"  # text, in quotes
-longitudinal_concentrated = "pending"  # text, in quotes
-longitudinal_distributed = "pending"  # text, in quotes
+downward_concentrated = "uniform"
+downward_distributed = "uniform"
+outward_concentrated = "compression side"
+outward_distributed = "compression side"
+inward_concentrated = "compression side"
+inward_distributed = "compression side"
+upward_concentrated = "uniform"
+upward_distributed = "uniform"
+longitudinal_concentrated = "compression side"
+longitudinal_distributed = "compression side"
 
 [independent.check7.ratio_weld]
-downward_concentrated = "pending"
-downward_distributed = "pending"
-outward_concentrated = "pending"
-outward_distributed = "pending"
-inward_concentrated = "pending"
-inward_distributed = "pending"
-upward_concentrated = "pending"
-upward_distributed = "pending"
-longitudinal_concentrated = "pending"
-longitudinal_distributed = "pending"
+downward_concentrated = 0.01826
+downward_distributed = 0.02534
+outward_concentrated = 0.5921
+outward_distributed = 0.8861
+inward_concentrated = 0.5921
+inward_distributed = 0.8861
+upward_concentrated = 0.01171
+upward_distributed = 0.01879
+longitudinal_concentrated = 1.395
+longitudinal_distributed = 2.09
 
 [independent.check7.ratio_base]
-downward_concentrated = "pending"
-downward_distributed = "pending"
-outward_concentrated = "pending"
-outward_distributed = "pending"
-inward_concentrated = "pending"
-inward_distributed = "pending"
-upward_concentrated = "pending"
-upward_distributed = "pending"
-longitudinal_concentrated = "pending"
-longitudinal_distributed = "pending"
+downward_concentrated = 0.005842
+downward_distributed = 0.008108
+outward_concentrated = 0.1895
+outward_distributed = 0.2835
+inward_concentrated = 0.1895
+inward_distributed = 0.2835
+upward_concentrated = 0.003747
+upward_distributed = 0.006013
+longitudinal_concentrated = 0.4464
+longitudinal_distributed = 0.6689
 
 [independent.check7.ratio_wall_axial]
-downward_concentrated = "pending"
-downward_distributed = "pending"
-outward_concentrated = "pending"
-outward_distributed = "pending"
-inward_concentrated = "pending"
-inward_distributed = "pending"
-upward_concentrated = "pending"
-upward_distributed = "pending"
-longitudinal_concentrated = "pending"
-longitudinal_distributed = "pending"
+downward_concentrated = 0.01591
+downward_distributed = 0.02208
+outward_concentrated = 0.5157
+outward_distributed = 0.7718
+inward_concentrated = 0.5157
+inward_distributed = 0.7718
+upward_concentrated = 0.0102
+upward_distributed = 0.01637
+longitudinal_concentrated = 1.215
+longitudinal_distributed = 1.821
 
 [independent.check7.ratio]
-downward_concentrated = "pending"
-downward_distributed = "pending"
-outward_concentrated = "pending"
-outward_distributed = "pending"
-inward_concentrated = "pending"
-inward_distributed = "pending"
-upward_concentrated = "pending"
-upward_distributed = "pending"
-longitudinal_concentrated = "pending"
-longitudinal_distributed = "pending"
+downward_concentrated = 0.01826
+downward_distributed = 0.02534
+outward_concentrated = 0.5921
+outward_distributed = 0.8861
+inward_concentrated = 0.5921
+inward_distributed = 0.8861
+upward_concentrated = 0.01171
+upward_distributed = 0.01879
+longitudinal_concentrated = 1.395
+longitudinal_distributed = 2.09
 
 [independent.check7.f_b_lbpin]
-outward_concentrated = "pending"
-outward_distributed = "pending"
-inward_concentrated = "pending"
-inward_distributed = "pending"
-longitudinal_concentrated = "pending"
-longitudinal_distributed = "pending"
+outward_concentrated = 1636.0
+outward_distributed = 2455.0
+inward_concentrated = 1636.0
+inward_distributed = 2455.0
+longitudinal_concentrated = 3872.0
+longitudinal_distributed = 5808.0
 
 [independent.check7.f_v_lbpin]
-outward_concentrated = "pending"
-outward_distributed = "pending"
-inward_concentrated = "pending"
-inward_distributed = "pending"
-longitudinal_concentrated = "pending"
-longitudinal_distributed = "pending"
+outward_concentrated = 39.43
+outward_distributed = 59.15
+inward_concentrated = 39.43
+inward_distributed = 59.15
+longitudinal_concentrated = 39.43
+longitudinal_distributed = 59.15
 
 [independent.check7.ratio_wall_face]
-outward_concentrated = "pending"
-outward_distributed = "pending"
-inward_concentrated = "pending"
-inward_distributed = "pending"
-longitudinal_concentrated = "pending"
-longitudinal_distributed = "pending"
+outward_concentrated = 0.01954
+outward_distributed = 0.0293
+inward_concentrated = 0.01954
+inward_distributed = 0.0293
+longitudinal_concentrated = 0.01954
+longitudinal_distributed = 0.0293
 
 [independent.intermediate]
-H_in = "pending"
-B_in = "pending"
-tdes_in = "pending"
-A_in2 = "pending"
-b_t = "pending"
-h_t = "pending"
-Ix_in4 = "pending"
-Sx_in3 = "pending"
-Zx_in3 = "pending"
-rx_in = "pending"
-Iy_in4 = "pending"
-Sy_in3 = "pending"
-Zy_in3 = "pending"
-ry_in = "pending"
-J_in4 = "pending"
-tnom_in = "pending"
-w_D_plf = "pending"
-D_int_lb = "pending"
-P_c_lb = "pending"
+H_in = 2.0
+B_in = 1.5
+tdes_in = 0.116
+A_in2 = 0.724
+b_t = 9.93
+h_t = 14.2
+Ix_in4 = 0.383
+Sx_in3 = 0.383
+Zx_in3 = 0.475
+rx_in = 0.728
+Iy_in4 = 0.244
+Sy_in3 = 0.325
+Zy_in3 = 0.389
+ry_in = 0.581
+J_in4 = 0.496
+tnom_in = 0.125
+w_D_plf = 2.63
+D_int_lb = 15.78
+P_c_lb = 50.0
 
 [independent.check4a]
-Mpx_lbin = "pending"
-Mpy_lbin = "pending"
-Lp_in = "pending"
-Lr_in = "pending"
-Delta_allow_in = "pending"
-controlling = "pending"  # text, in quotes
+Mpx_lbin = 21850.0
+Mpy_lbin = 17890.0
+Lp_in = 60.07
+Lr_in = 1637.0
+Delta_allow_in = 0.6
+controlling = "downward, deflection"
 
 [independent.check4a.moment_lbin]
-downward = "pending"
-horizontal = "pending"
+downward = 1042.0
+horizontal = 900.0
 
 [independent.check4a.Mc_lbin]
-downward = "pending"
-horizontal = "pending"
+downward = 10710.0
+horizontal = 13080.0
 
 [independent.check4a.ratio]
-downward_bending = "pending"
-horizontal_bending = "pending"
-downward_deflection = "pending"
-horizontal_deflection = "pending"
+downward_bending = 0.09725
+horizontal_bending = 0.06879
+downward_deflection = 0.1096
+horizontal_deflection = 0.05834
 
 [independent.check4a.Cb]
-horizontal = "pending"
+horizontal = 1.316
 
 [independent.check4a.deflection_in]
-downward = "pending"
-horizontal = "pending"
+downward = 0.06578
+horizontal = 0.035
 
 [independent.check4b]
-R_D_lb = "pending"
-L_w_in = "pending"
-B_e_in = "pending"
-throat_in = "pending"
-t_min_in = "pending"
-w_min_in = "pending"
-min_size = "pending"  # text, in quotes
-Fnw_ksi = "pending"
-weld_allow_lbpin = "pending"
-base_allow_post_lbpin = "pending"
-base_allow_int_lbpin = "pending"
-base_governs = "pending"  # text, in quotes
-controlling = "pending"  # text, in quotes
+R_D_lb = 7.89
+L_w_in = 5.0
+B_e_in = 1.0
+throat_in = 0.08837
+t_min_in = 0.125
+w_min_in = 0.125
+min_size = "OK"
+Fnw_ksi = 42.0
+weld_allow_lbpin = 1856.0
+base_allow_post_lbpin = 2018.0
+base_allow_int_lbpin = 2018.0
+base_governs = "post wall"
+controlling = "downward, component"
 
 [independent.check4b.R_lb]
-downward_component = "pending"
-horizontal_component = "pending"
+downward_component = 57.89
+horizontal_component = 50.62
 
 [independent.check4b.f_v_lbpin]
-downward_component = "pending"
-horizontal_component = "pending"
+downward_component = 11.58
+horizontal_component = 10.12
 
 [independent.check4b.f_r_lbpin]
-downward_component = "pending"
-horizontal_component = "pending"
+downward_component = 11.58
+horizontal_component = 10.12
 
 [independent.check4b.ratio_weld]
-downward_component = "pending"
-horizontal_component = "pending"
+downward_component = 0.006239
+horizontal_component = 0.005455
 
 [independent.check4b.ratio_base]
-downward_component = "pending"
-horizontal_component = "pending"
+downward_component = 0.005736
+horizontal_component = 0.005016
 
 [independent.check4b.ratio]
-downward_component = "pending"
-horizontal_component = "pending"
+downward_component = 0.006239
+horizontal_component = 0.005455
 
 [independent.reactions]
-W_bp_lb = "pending"
-D_lb = "pending"
-load_type = "pending"  # text, in quotes
+W_bp_lb = 6.806
+D_lb = 64.57
+load_type = "distributed"
 
 [independent.reactions.lateral]
-V_lb = "pending"
-N_lb = "pending"
-M_lbin = "pending"
+V_lb = 480.0
+N_lb = -58.12
+M_lbin = 20160.0
 
 [independent.reactions.upward]
-V_lb = "pending"
-N_lb = "pending"
-M_lbin = "pending"
+V_lb = 0
+N_lb = 421.9
+M_lbin = 0
