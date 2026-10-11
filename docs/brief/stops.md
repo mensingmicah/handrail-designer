@@ -117,6 +117,7 @@ for inputs the engineer did not intend (src/handrail/project.py).
 | `member.section_with_custom_dimensions` | A member gives `section` together with a custom round tube's `shape`, `OD` or `wall_nominal`: it is one or the other. | S5-8 (inputs.md); conflicting inputs | `test_stop_is_triggered[member.section_with_custom_dimensions]` |
 | `member.shape_unsupported` | A custom section's `shape` is not "round tube", the only custom shape so far. | S5-8; S5-1 (rectangular tubes arrive in slice 6) | `test_stop_is_triggered[member.shape_unsupported]` |
 | `member.wall_half_od_or_more` | A custom round tube's nominal wall is half its OD or more: not a tube. | S5-8 (inputs.md) | `test_stop_is_triggered[member.wall_half_od_or_more]` |
+| `member.long_side_invalid` | A member's `long_side` is not one of its two words: "vertical" or "horizontal" for a rail, "perpendicular to rail" or "parallel to rail" for a post. | S6-2 (inputs.md) | `test_stop_is_triggered[member.long_side_invalid]` |
 | `intermediate.none_and_same` | The intermediate rail is both "none" and "same as the top rail". | S4-1; conflicting inputs (Micah, 2026-10-09) | `test_stop_is_triggered[intermediate.none_and_same]` |
 | `intermediate.none_with_inputs` | "None", with a section, a grade, an intermediate weld size or an intermediate deflection limit given. | S4-1; conflicting inputs (Micah, 2026-10-09) | `test_stop_is_triggered[intermediate.none_with_inputs]` |
 | `intermediate.same_with_inputs` | "Same as the top rail", with a section, a grade, an intermediate weld size or an intermediate deflection limit given. | S4-1; conflicting inputs (Micah, 2026-10-09) | `test_stop_is_triggered[intermediate.same_with_inputs]` |
@@ -141,11 +142,15 @@ the table and key it was typed under.
 ### Sections, grades and the baseplate
 
 Input validation: these run before anything is computed
-(src/handrail/validate.py).
+(src/handrail/validate.py). The two `long_side` stops are raised where each
+member's section is looked up (src/handrail/members.py), which validation
+and the checks both pass through, so they hold with or without validation.
 
 | Id | Stops when | Decision | Test |
 | --- | --- | --- | --- |
 | `section.not_found` | A section's designation is not in the shapes database file. | Standard sections (checks.md) | `test_stop_is_triggered[section.not_found]` |
+| `member.long_side_missing` | A rectangular member that is not square gives no `long_side`. The tool never assumes which way round a member is built. | S6-2 (inputs.md) | `test_stop_is_triggered[member.long_side_missing]` |
+| `member.long_side_not_applicable` | `long_side` is given for a round or a square member, which has no long side: a conflicting input. | S6-2 (inputs.md) | `test_stop_is_triggered[member.long_side_not_applicable]` |
 | `grade.unsupported` | A rail or post grade has no Fy and Fu registry entries for the member's shape. The message names the grade and the grades supported for that shape. | W12; S5-5 (inputs.md) | `test_stop_is_triggered[grade.unsupported]` |
 | `grade.wall_over_limit` | A member in A618 Gr Ia, Ib or II has a nominal wall over 1-1/2 in, where AISC Manual Table 2-4 gives no Fy and Fu. The message names the member, its wall, the grade and the limit. | S5-7 (inputs.md) | `test_stop_is_triggered[grade.wall_over_limit]` |
 | `grade.post_fu_fy_below_limit` | The post grade's Fu/Fy is below 1.20, so yielding no longer governs over rupture and Check 5 no longer covers the post wall at the weld. | W5 (welds.md); S5-13 | `test_stop_is_triggered[grade.post_fu_fy_below_limit]` |

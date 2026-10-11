@@ -195,6 +195,21 @@ def _(tmp_path, monkeypatch):
     project.from_dict({**_raw(), "post": {**TUBE, "wall_nominal": 1.1875}})
 
 
+@trigger(Stop.MEMBER_LONG_SIDE_INVALID)
+def _(tmp_path, monkeypatch):
+    _load(top_rail={"section": "HSS4X2X1/8", "long_side": "on edge"})
+
+
+@trigger(Stop.MEMBER_LONG_SIDE_MISSING)
+def _(tmp_path, monkeypatch):
+    _run(top_rail={"section": "HSS4X2X1/8"})
+
+
+@trigger(Stop.MEMBER_LONG_SIDE_NOT_APPLICABLE)
+def _(tmp_path, monkeypatch):
+    _run(top_rail={"long_side": "vertical"})  # the base project's rail is a pipe
+
+
 @trigger(Stop.INTERMEDIATE_NONE_AND_SAME)
 def _(tmp_path, monkeypatch):
     _load(intermediate_rail={"none": True, "same_as_top_rail": True})

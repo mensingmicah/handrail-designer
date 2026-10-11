@@ -19,6 +19,9 @@ for inputs the engineer didn't intend:
 - the baseplate's plan dimensions B and N are required, with no default (S4-6);
 - a member is a standard section (section) or a custom round tube (shape,
   OD and wall_nominal), never both (S5-8);
+- a rectangular member's orientation is its long_side, one of two words for
+  a rail and two for a post (S6-2); whether the member needs one is known
+  only once its section is (members.py);
 - the intermediate rail is in one of three states (S4-1): same as the top
   rail (the default), its own section, or none. Inputs that conflict with
   the state stop the calc, never silently ignored (docs/plans/slice-4.md):
@@ -73,6 +76,10 @@ class Member:
     # in place of ``section``. The wall entered is always the nominal wall.
     OD: Dimension | None = None
     wall_nominal: Dimension | None = None
+    # A rectangular member's orientation (S6-2): the direction of its longer
+    # side, one of RAIL_LONG_SIDE or POST_LONG_SIDE. Blank when the file
+    # leaves it out, which only a round or a square member may.
+    long_side: str = ""
 
     @property
     def custom(self) -> bool:
@@ -176,10 +183,12 @@ class Project:
 SCHEMA = {
     "project": {"name": None, "phase": None, "description": None, "references": None, "assumptions": None},
     "geometry": {"span": None, "post_height": None, "baseplate_thickness": None},
-    "top_rail": {"section": None, "grade": None, "shape": None, "OD": None, "wall_nominal": None},
-    "post": {"section": None, "grade": None, "shape": None, "OD": None, "wall_nominal": None},
+    "top_rail": {"section": None, "grade": None, "shape": None, "OD": None, "wall_nominal": None,
+                 "long_side": None},
+    "post": {"section": None, "grade": None, "shape": None, "OD": None, "wall_nominal": None,
+             "long_side": None},
     "intermediate_rail": {"same_as_top_rail": None, "none": None, "section": None, "grade": None,
-                          "shape": None, "OD": None, "wall_nominal": None},
+                          "shape": None, "OD": None, "wall_nominal": None, "long_side": None},
     "baseplate": {"B": None, "N": None, "grade": None},
     "welds": {"rail_to_post": None, "post_to_baseplate": None, "electrode": None,
               "intermediate_rail_to_post": None, "directional_increase": None},
@@ -304,11 +313,34 @@ def _section_or_tube(t: dict, where: str) -> tuple[str, Dimension | None, Dimens
     return "", OD, wall
 
 
-def _member(raw: dict, where: str) -> Member:
+# A rectangular member's orientation is the direction of its longer side
+# (S6-2): two words for a rail, and for a post the two the baseplate's N and
+# B use (S4-6).
+VERTICAL, HORIZONTAL = "vertical", "horizontal"
+PERPENDICULAR, PARALLEL = "perpendicular to rail", "parallel to rail"
+RAIL_LONG_SIDE = (VERTICAL, HORIZONTAL)
+POST_LONG_SIDE = (PERPENDICULAR, PARALLEL)
+
+
+def _long_side(t: dict, where: str, words: tuple[str, str]) -> str:
+    """The member's long_side as entered, blank when left out. Whether the
+    member needs one depends on its section, which is not known here
+    (members.resolve)."""
+    if "long_side" not in t:
+        return ""
+    value = _str(t["long_side"], f"{where}.long_side")
+    if value not in words:
+        raise ProjectError(f'[{where}] long_side {value!r}: give "{words[0]}" or "{words[1]}"',
+                           stop=Stop.MEMBER_LONG_SIDE_INVALID)
+    return value
+
+
+def _member(raw: dict, where: str, long_side: tuple[str, str]) -> Member:
     t = _need(raw, where, "top level")
     grade, defaulted = _grade(t, where)
     section, OD, wall = _section_or_tube(t, where)
-    return Member(section=section, grade=grade, grade_defaulted=defaulted, OD=OD, wall_nominal=wall)
+    return Member(section=section, grade=grade, grade_defaulted=defaulted, OD=OD, wall_nominal=wall,
+                  long_side=_long_side(t, where, long_side))
 
 
 def _given(table: dict, where: str, fields: dict) -> dict:
@@ -349,6 +381,7 @@ def _intermediate_rail(raw: dict, welds: Welds) -> IntermediateRail:
         ("[intermediate_rail] section", "section" in t),
         *((f"[intermediate_rail] {key}", key in t) for key in CUSTOM_KEYS),
         ("[intermediate_rail] grade", grade_given),
+        ("[intermediate_rail] long_side", "long_side" in t),
         ("[welds] intermediate_rail_to_post", welds.intermediate_rail_to_post is not None),
         ("[deflection.intermediate_rail]", "intermediate_rail" in raw.get("deflection", {})),
     ) if given]
@@ -383,7 +416,8 @@ def _intermediate_rail(raw: dict, welds: Welds) -> IntermediateRail:
     section, OD, wall = _section_or_tube(t, w)
     return IntermediateRail(
         state=OWN_SECTION,
-        member=Member(section=section, grade=grade, grade_defaulted=defaulted, OD=OD, wall_nominal=wall),
+        member=Member(section=section, grade=grade, grade_defaulted=defaulted, OD=OD, wall_nominal=wall,
+                      long_side=_long_side(t, w, RAIL_LONG_SIDE)),
         deflection=_deflection_limit(raw, "intermediate_rail", RAIL_DEFLECTION),
     )
 
@@ -421,8 +455,8 @@ def from_dict(raw: dict) -> Project:
             f"post_height ({h.entered})", stop=Stop.GEOMETRY_BASEPLATE_NOT_BELOW_POST_HEIGHT
         )
 
-    top_rail = _member(raw, "top_rail")
-    post = _member(raw, "post")
+    top_rail = _member(raw, "top_rail", RAIL_LONG_SIDE)
+    post = _member(raw, "post", POST_LONG_SIDE)
 
     wt = _need(raw, "welds", "top level")
     intermediate_weld: dict[str, Any] = (

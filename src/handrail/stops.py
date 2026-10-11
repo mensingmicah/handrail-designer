@@ -37,6 +37,7 @@ class Stop(StrEnum):
     MEMBER_SECTION_WITH_CUSTOM_DIMENSIONS = "member.section_with_custom_dimensions"
     MEMBER_SHAPE_UNSUPPORTED = "member.shape_unsupported"
     MEMBER_WALL_HALF_OD_OR_MORE = "member.wall_half_od_or_more"
+    MEMBER_LONG_SIDE_INVALID = "member.long_side_invalid"
     INTERMEDIATE_NONE_AND_SAME = "intermediate.none_and_same"
     INTERMEDIATE_NONE_WITH_INPUTS = "intermediate.none_with_inputs"
     INTERMEDIATE_SAME_WITH_INPUTS = "intermediate.same_with_inputs"
@@ -50,8 +51,10 @@ class Stop(StrEnum):
     DIMENSION_ZERO_DENOMINATOR = "dimension.zero_denominator"
     DIMENSION_INCHES_12_OR_MORE = "dimension.inches_12_or_more"
 
-    # -- sections, grades and the baseplate (shapes.py, validate.py) -----
+    # -- sections, grades and the baseplate (shapes.py, members.py, validate.py)
     SECTION_NOT_FOUND = "section.not_found"
+    MEMBER_LONG_SIDE_MISSING = "member.long_side_missing"
+    MEMBER_LONG_SIDE_NOT_APPLICABLE = "member.long_side_not_applicable"
     GRADE_UNSUPPORTED = "grade.unsupported"
     GRADE_WALL_OVER_LIMIT = "grade.wall_over_limit"
     GRADE_POST_FU_FY_BELOW_LIMIT = "grade.post_fu_fy_below_limit"

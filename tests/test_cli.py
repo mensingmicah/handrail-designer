@@ -230,7 +230,14 @@ def _full_project_files():
     for table, od in (("top_rail", 2.375), ("post", 2.375), ("intermediate_rail", 1.66)):
         del tubes[table]["section"]
         tubes[table].update(shape="round tube", OD=od, wall_nominal="1/8")
-    return raw, none, tubes
+    # A rectangular member that is not square gives its orientation (S6-2): a fourth file.
+    rect = copy.deepcopy(raw)
+    for table, section, long_side in (("top_rail", "HSS4X2X1/8", "vertical"),
+                                      ("post", "HSS3X2X1/8", "parallel to rail"),
+                                      ("intermediate_rail", "HSS2X1-1/2X1/8", "horizontal")):
+        rect[table].update(section=section, long_side=long_side)
+        del rect[table]["grade"]
+    return raw, none, tubes, rect
 
 
 def test_the_parser_reads_every_key_schema_allows_and_no_other():
