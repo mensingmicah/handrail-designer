@@ -26,18 +26,23 @@ Manual, 16th Edition, and the AISC Shapes Database v16.0. (Slice 1.)
   reactions are neglected (engineering judgement).
 - The top rail runs continuously over the post; the post is coped and
   welded to its underside. The rail is designed as a simple span.
-- The rail to post weld is modeled as a flat ring of the post's perimeter
-  at the underside of the rail, with eccentricity e = half the rail depth
-  from the rail centerline; this is conservative against the saddle
-  centroid (2R/π for equal round diameters). It is modeled as a fillet of
-  the entered size all around, although at equal diameters the sides of
-  the saddle form a flare-bevel joint.
-- The intermediate rail to post weld is modeled as a flat ring of the
-  intermediate rail's perimeter at the post face, a simple shear
+- The rail to post weld is modeled as a flat line at the underside of the
+  rail, with eccentricity e = half the rail depth from the rail
+  centerline: the post's own outline (a ring of its perimeter for a round
+  post, its rounded rectangle for a rectangular post under a round rail),
+  or, where post and rail are both rectangular, the effective weld of
+  AISC 360-22 Table K5.1. For a round member the saddle of the cope is
+  ignored, which is conservative (the saddle centroid is at 2R/π for
+  equal round diameters). It is modeled as a fillet of the entered size
+  all around, although at equal widths the sides form a flare-bevel
+  joint.
+- The intermediate rail to post weld is modeled the same way at the post
+  face, on the intermediate rail's outline or, where both are
+  rectangular, the effective weld of Table K5.1. It is a simple shear
   connection consistent with the simple-span intermediate rail: the end
   reaction acts at the weld with no end moment. It is modeled as a fillet
-  of the entered size all around, although at equal diameters the sides
-  of the saddle form a flare-bevel joint.
+  of the entered size all around, although at equal widths the sides form
+  a flare-bevel joint.
 - Local strength of the rail wall at the post, and of the post wall at the
   intermediate rail (AISC 360-22 Chapter K chord limit states), is not
   checked; the chord's D/t is limited to 50, the Chapter K limit of
