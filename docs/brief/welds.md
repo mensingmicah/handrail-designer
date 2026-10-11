@@ -715,4 +715,60 @@ checks.md and inputs.md.
     (it ignores a table that applies directly); sizing the weld to
     develop the branch wall, which §K5 accepts in place of the check.
   - Slice 7 decides this for a solid bar branch or chord.
+- **Which families may meet at the rail to post joints, and the width
+  rule.** (S6-9, Micah 2026-10-10.) The same table for the Check 3 joint
+  (top rail as chord, post as branch) and the Check 4b joint (post as
+  chord, intermediate rail as branch). "Round hollow" is AISC pipe, round
+  HSS and custom round tube; "rectangular hollow" is rectangular and
+  square HSS and custom rectangular tube. Solid bars stay "stop: slice
+  7".
+
+  | Chord \ Branch | Round hollow | Rectangular hollow |
+  | --- | --- | --- |
+  | Round hollow | allowed (slice 5); chord wall checked | allowed, mixed; chord wall not checked |
+  | Rectangular hollow | allowed, mixed; chord wall not checked | allowed; chord wall checked |
+
+  - **Mixed pairs are allowed** (a rectangular branch on a round chord, a
+    round branch on a rectangular chord), at both joints. Claude had
+    recommended stopping them; Micah's ruling: a square post under a pipe
+    rail is a common detail and must run in v1.
+  - **Weld at a mixed pair:** the W1 convention on the branch's own
+    shape. A flat line of the branch's outline at the chord face: the
+    rounded rectangle of S6-6 for a rectangular branch, the ring for a
+    round branch. e = half the chord's depth in Check 3 (e = 0 in Check
+    4b, the simple shear connection). k_ds = 1.0, elastic line method
+    (W3). The saddle cope is ignored, conservatively, as in W1, and that
+    is printed as a stated assumption. Table K5.1 (S6-8) is for a
+    rectangular branch on a rectangular chord and is not used at a mixed
+    pair.
+  - **Chord wall at a mixed pair: not checked.** The pre-slice-6 stated
+    assumption is kept for these pairs ("local strength of the rail wall
+    at the post (AISC 360-22 Chapter K) is not checked", and its Check 4b
+    counterpart), on the reasoning of S6-1: the branch forces are tens to
+    hundreds of pounds against chord capacities in kips. So W7 is retired
+    for same-family pairs only. AISC 360-22 has no provision for either
+    mixed pair (Commentary to Chapter K, page 16.1-526); the Commentary's
+    equivalent square branch of width π·Db/4 (page 16.1-538) is not used.
+  - The chord's wall slenderness limit of applicability still applies at
+    a mixed pair: D/t ≤ 50 for a round chord (S5-3), and the
+    corresponding Chapter K limit for a rectangular chord, B/t and H/t ≤
+    35 (AISC 360-22 §K1.3, page 16.1-160; Table K4.2A, page 16.1-170).
+  - **Width rule** (W8 and S4-11 carried over): the branch's width across
+    the chord face may not exceed the chord's width: Bb ≤ B for a
+    rectangular chord, or ≤ D for a round chord; Db in place of Bb for a
+    round branch. Equal widths are allowed. In Check 3 the branch width
+    is the post's dimension perpendicular to the rail and the chord width
+    the rail's horizontal dimension; in Check 4b, the intermediate rail's
+    horizontal dimension against the post's dimension perpendicular to
+    the rail.
+  - The comparison is exact. The 0.01 in tolerance of S5-4 applies only
+    where both members are round, as now. The Shapes Database stores Ht
+    and B of every rectangular HSS exactly as the designation reads (525
+    rows checked, Claude 2026-10-10).
+  - The same-as-top state is buildable only when those two widths are
+    equal, as for round (S4-11).
+  - Proposed assumption texts (the saddle cope at a mixed pair; the chord
+    wall at a mixed pair) are Claude's to draft on the branch and Micah's
+    to accept in the pull request; output.md changes in the commit that
+    prints them.
 
