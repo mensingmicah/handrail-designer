@@ -1526,20 +1526,23 @@ note = "Same confidence as aisc360.J2.5.fnw."
 id = "aisc360.J2.4.fillet_strength"
 value = "Nominal strength of a fillet weld: nominal weld metal stress on the effective area, times the directional strength increase where it applies"
 unit = "equation"
-cite = "AISC 360-22 §J2.4"
+cite = "AISC 360-22 Eq. J2-4"
 document = "AISC 360-22, Specification for Structural Steel Buildings"
 edition = "2022"
-section = "§J2.4, Strength, fillet welds (R_n = F_nw A_we k_ds)"
+section = "§J2.4(a), Strength, fillet welds: Eq. J2-4 (R_n = F_nw A_we k_ds)"
 source = "memory"
 status = "drafted"
 drafted_on = 2026-10-08
 verified_by = ""
 verified_date = ""
 note = """
-From memory. The tool works per inch of weld, so A_we is the effective \
-throat times 1 in and R_n prints in lb/in. I am not sure of the 360-22 \
-equation number in §J2.4 for this one, so the cite names the section; \
-confirm and add the equation number."""
+Drafted from memory. The tool works per inch of weld, so A_we is the \
+effective throat times 1 in and R_n prints in lb/in. Until 2026-10-10 \
+the cite named the section, §J2.4, because the equation number was not \
+certain. It was then read in the 360-22 text (Claude, at Micah's \
+instruction): §J2.4(a), page 16.1-130, "For fillet welds", Eq. J2-4, \
+R_n = F_nw A_we k_ds. The value's wording is still the paraphrase \
+drafted from memory, so the source stays "memory"."""
 
 [[entry]]
 id = "aisc360.J2.5.omega_w"
