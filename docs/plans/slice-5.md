@@ -1,12 +1,13 @@
 # Slice 5 plan: hollow round sections (round HSS and custom round tubes)
 
-Status: **planned** 2026-10-09, from Micah's rulings S5-1 to S5-14 in the
-planning interview of that date. Nothing is open. The build starts on the
-`slice-5` branch with step 1.
+Status: **completed** 2026-10-10 (slice 5 merged to main as PR #30, tagged
+v0.5.0). Planned 2026-10-09, from Micah's rulings S5-1 to S5-14 in the
+planning interview of that date. Every binding engineering decision of the
+slice, including the rulings made during the build, is in the brief.
 
-> This plan is a record of what slice 5 sets out to build and why. The
-> binding engineering decisions (S5-1 to S5-14) were recorded in the brief
-> as they were made: docs/brief/checks.md ("Section families"),
+> This plan is a record of what slice 5 set out to build and why. The
+> binding engineering decisions (S5-1 to S5-14) are in the brief:
+> docs/brief/checks.md ("Section families"),
 > docs/brief/verification.md, docs/brief/welds.md ("Hollow round sections
 > (slice 5)"), docs/brief/inputs.md (grades, custom round tube input,
 > stops) and docs/brief/scope.md. Where this plan differs from

@@ -79,6 +79,13 @@ plan's decision numbers, kept for the record.
       as its basis.
     - Either way the input is echoed on the dimensions page, with the weld
       sizes.
+  - Test cases (Micah, 2026-10-10). Cases 4, 5 and 7 and the example elect
+    the increase and print as before. Cases 1 to 3 and 6 stay at the
+    default, k_ds = 1.0, so their Check 7 ratios are 1.5 times what the
+    automatic rule gave, and Check 7 reads NG in the printed calcs of
+    cases 1 and 2 (0.92 to 1.38). That is accepted: no case records a
+    Check 7 value that depends on it, and the key keeps the name
+    `directional_increase`.
   - Why it is an election (Micah, 2026-10-10). AISC 360-22 handles strain
     compatibility explicitly only for in-plane eccentric weld groups (the
     instantaneous center method) and for concentric groups mixing

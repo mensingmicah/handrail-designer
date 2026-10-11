@@ -66,6 +66,18 @@ loads-and-envelope.md).
   the AISC corner-radius convention, a registry entry. Custom tubes convert
   nominal to design wall thickness per AISC 360-22 §B4.2, a registry entry.
   A1085 is the first grade both rules meet: S5-6, inputs.md.
+- **Custom round tube formulas are exact geometry on the §B4.2 design
+  wall.** (Micah, 2026-10-10, ruling on the pipe-row report of the
+  property-formula test, slice 5 plan T3.) A, I, S, Z, r and D/t come from
+  OD and t_des as a hollow circle, and weight from the steel unit weight
+  times the area on the nominal wall. They are not forced to match the
+  database. The test holds them to the 67 round HSS rows of 10 in OD or
+  less in full, and to the pipe rows under 12 in OD on I, S, Z, r and
+  weight, with the area never more than 1% above published. Six XS pipe
+  rows (14 to 26 in), five pipe areas above published and one pipe D/t
+  are accepted database findings, listed in data/README.md, not asserted.
+  A custom tube entered with a database shape's dimensions can therefore
+  differ from the database shape by those amounts.
 - Custom tube thickness: the wall entered is always the nominal wall
   (S5-8, inputs.md; Micah 2026-10-09, replacing the nominal/design
   choice). Dead weight uses the nominal wall. Strength and section
