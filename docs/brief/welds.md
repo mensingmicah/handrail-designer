@@ -646,7 +646,7 @@ checks.md and inputs.md.
     B4.1a Case 6, walls of rectangular HSS, page 16.1-21. A slender
     welded wall stops, naming the post, its b/t and the limit. The limit
     is a drafted registry entry and the stop is tested.
-    - Claude's note for Micah to confirm: the post is already classified
+    - Confirmed by Micah (2026-10-10): no separate stop. The post is already classified
       in compression before any check, and a slender wall is a hard stop
       there (`section.slender_in_compression`, stops.md; checks.md, "The
       post"). Slice 6 extends that stop to both walls of a rectangular
@@ -674,4 +674,45 @@ checks.md and inputs.md.
     yielding 3.20 kip/in (0.84). Against shear rupture on the resultant,
     the alternative not chosen, 2.02 kip/in (1.34).
   - Slice 7 decides the same question for a solid bar post.
+- **Rail to post welds at a rectangular chord use AISC 360-22 Table K5.1;
+  the round ring model stands.** (S6-8, Micah 2026-10-10.) AISC 360-22
+  §K5, page 16.1-168, had not been read into the brief before slice 6:
+  the strength of a branch weld "shall be determined considering the
+  nonuniformity of load transfer along the line of weld", with effective
+  weld properties in Table K5.1 (rectangular HSS, page 16.1-171) and
+  Table K5.2 (round HSS, page 16.1-173).
+  - **Rectangular chord** (Check 3 with a rectangular rail, Check 4b with
+    a rectangular post). The elastic weld-as-a-line method stays (W3),
+    on Table K5.1's effective properties for T-connections under branch
+    axial load or bending, at θ = 90°:
+    - effective length le = 2·Hb + 2·Be (Eq. K5-5);
+    - S_ip and S_op per Eqs. K5-6 and K5-7;
+    - Be per Eq. K1-1 (page 16.1-159), and Be/2 not over Bb/4 when
+      β > 0.85 (Table K5.1);
+    - Hb and Bb are the branch's outside dimensions, as the equations are
+      written: no rounded-corner correction.
+    - Case mapping: the longitudinal case is in-plane bending, the
+      transverse cases out-of-plane bending, the vertical cases branch
+      axial load. Shear in the chord face is taken as uniform over le.
+    - The components combine by vector sum at the governing point,
+      against the fillet strength at Ω = 2.00 with k_ds = 1.0 (W2's
+      branch rule), as for round.
+  - **Equal widths.** The side welds then land on the chord's rounded
+    corner and are flare-bevel welds (User Note to §K5, page 16.1-170).
+    The fillet model all around is kept, a stated assumption, as W9 does
+    for round; the assumption text is proposed on the branch.
+  - **Round chord.** The existing ring model (W1, W3) stands as
+    engineering judgement. Table K5.2 covers branch axial load only, with
+    0.1 ≤ β ≤ 0.5; the tool's round joints are at or near β = 1 and loaded
+    in bending, so it gives them no effective length. The ring model's
+    registry entry gains a note that §K5 and Table K5.2 were read and do
+    not reach this joint. No printed number changes.
+  - Planning arithmetic (Claude, 2026-10-10; not test values), an
+    HSS2×2×1/8 post under an HSS2×2×1/8 rail: Be = 0.5·Bb, le = 6 in
+    against a full perimeter of 8 in, S_op 3% and S_ip 37% below the
+    full-perimeter values; the Check 3 ratio stays near 0.02.
+  - Not chosen: the full branch perimeter for rectangular chords too
+    (it ignores a table that applies directly); sizing the weld to
+    develop the branch wall, which §K5 accepts in place of the check.
+  - Slice 7 decides this for a solid bar branch or chord.
 
