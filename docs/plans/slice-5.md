@@ -223,12 +223,16 @@ docs/brief/welds.md, which governs.
   7's rough figure above ("k_ds = 1.5, about 0.67") holds because the case
   elects the increase.
 - **Thin material at a weld: a warning when a part joined is thinner than
-  1/8 in** (raised by case 6's independent calc). Built and parked, not on
-  the branch: the 1/8 in limit is a drafted registry entry read at every
-  weld, so it adds one row to the draft list of every calc, where Micah
-  expected a change only in calcs with a thin part. It waits on his word
-  on that row. The patch is out/parked-ruling-2-thin-material.patch (not
-  in the repo).
+  1/8 in** (raised by case 6's independent calc). Built, then parked: the
+  1/8 in limit is a drafted registry entry read at every weld, so it adds
+  one row to the draft list of every calc, where Micah expected a change
+  only in calcs with a thin part. Micah accepted that row the same day, as
+  with the chord D/t limit, and confirmed that the warning fires on any
+  part under 1/8 in nominal, database sections included (Pipe1/2STD,
+  Pipe3/4STD, HSS1.900X0.120). It is on the branch: the row
+  `aws.d1_1.thickness_min` in all 45 snapshotted calcs, and the warning
+  with its two further draft rows in the four second-tier calcs that have
+  a thin part. No number changed.
 
 **T4. Machinery tests** (same-author), for what cases 6 and 7 do not
 reach:
