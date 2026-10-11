@@ -49,9 +49,11 @@
 # Text values, in quotes:
 #   checkN.controlling     direction, comma, load type, e.g. "outward, distributed"
 #
-# Each ratio key names the case the plan's planning arithmetic worked
-# (docs/plans/slice-6.md, T3), not a tool result. If your recompute finds
-# another case governs, rename the key to that case.
+# Each ratio key is a placeholder, not a tool result. Check 7's names the
+# longitudinal distributed case, which the plan's planning arithmetic
+# worked (docs/plans/slice-6.md, T3). The plan names no case for Check 5,
+# so its key names the outward distributed case. Rename each key to the
+# governing case of your recompute.
 #
 # The A500 Gr B rectangular Fy and Fu this case turns on are drafted
 # registry entries, which Micah verifies at the release review.
