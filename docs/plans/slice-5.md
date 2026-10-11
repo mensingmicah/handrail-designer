@@ -221,7 +221,9 @@ docs/brief/welds.md, which governs.
   now fails in cases 1 and 2 (0.92 to 1.38) and in `full-post-pipe1-1_2`
   and `full-weld-small-base`. None of those records a Check 7 value. Case
   7's rough figure above ("k_ds = 1.5, about 0.67") holds because the case
-  elects the increase.
+  elects the increase. Micah's word on both open points (2026-10-10):
+  cases 1 and 2 stay at the default, with Check 7 reading NG in their
+  printed calcs; and the key keeps the name `directional_increase`.
 - **Thin material at a weld: a warning when a part joined is thinner than
   1/8 in** (raised by case 6's independent calc). Built, then parked: the
   1/8 in limit is a drafted registry entry read at every weld, so it adds
@@ -233,6 +235,13 @@ docs/brief/welds.md, which governs.
   `aws.d1_1.thickness_min` in all 45 snapshotted calcs, and the warning
   with its two further draft rows in the four second-tier calcs that have
   a thin part. No number changed.
+
+One citation was corrected the same day, at Micah's instruction, also an
+intended change to the printed calcs: the fillet weld strength line
+(`aisc360.J2.4.fillet_strength`) cites "AISC 360-22 Eq. J2-4", read on page
+16.1-130 of the 360-22 text, in place of "§J2.4". It changes that line in
+Checks 3, 4b and 7 and the entry's row in "Draft code values", in all 45
+snapshotted calcs, and no number.
 
 **T4. Machinery tests** (same-author), for what cases 6 and 7 do not
 reach:
