@@ -771,4 +771,43 @@ checks.md and inputs.md.
     wall at a mixed pair) are Claude's to draft on the branch and Micah's
     to accept in the pull request; output.md changes in the commit that
     prints them.
+- **The chord limit states of a round rail at a round post (Check 3).**
+  (S6-10, Micah 2026-10-10.) AISC 360-22 Tables K3.1 (page 16.1-163) and
+  K4.1 (page 16.1-167), T-connection, θ = 90°. This retires W7 for the
+  round pair.
+
+  | Guard load case | Branch action on the rail wall | Chord plastification, Ω = 1.67 | Shear yielding (punching), Ω = 1.58 |
+  | --- | --- | --- | --- |
+  | Downward, upward | axial: D + L, or L − 0.6D | Eq. K3-2 | Eq. K3-1 |
+  | Outward, inward | out-of-plane moment V·e, with axial D | Eq. K4-3 | Eq. K4-4 |
+  | Longitudinal | in-plane moment V·e, with axial D | Eq. K4-1 | Eq. K4-2 |
+
+  - e = D_rail/2, as in the weld (W1). The loads and combinations are
+    those of the weld envelope (W10).
+  - Punching is checked only when Db < D − 2t (the tables' condition). At
+    equal diameters it does not apply, and its table row says so.
+  - Each case combines by Eq. K4-5: Pr/Pc + (Mr-ip/Mc-ip)² + Mr-op/Mc-op
+    ≤ 1.0.
+  - **Qf** (§K1.3, Eq. K1-3, pages 16.1-159 and 16.1-160) uses the rail's
+    Check 1 required moment as Mro, with Pro = 0: a conservative bound on
+    the continuous rail's hogging moment at the post (w·L²/8 against
+    w·L²/12; P·L/4 against 3·P·L/16). The tool's own model, a simple
+    span, has no rail moment at the post. Only the moment that stresses
+    the connecting surface, the rail's underside, is used:
+    - downward case: the vertical-plane moment of that case; the
+      underside is in compression; Qf per Eq. K1-3;
+    - outward, inward and longitudinal cases: the vertical dead-load
+      moment only (the horizontal live-load moment leaves the underside
+      on its neutral axis); Qf per Eq. K1-3 on that;
+    - upward case: the underside is in tension; Qf = 1.0.
+  - The calc prints why a rail moment is used at the post under the
+    simple-span model (a bound on the continuity hogging moment), and
+    which moment component each case used.
+  - Not chosen: Qf = 1.0 (unconservative for the real continuous rail);
+    a continuous-beam support moment (the continuity analysis left out of
+    v1, issue #29).
+  - Planning arithmetic (Claude, 2026-10-10; not test values), case 6:
+    Pn of Eq. K3-2 ≈ 4.6 kips (2.75 kips allowable), Mn-op of Eq. K4-3 ≈
+    4.9 kip-in (2.9 allowable); the outward case interacts at about 0.12
+    with Qf = 1.
 
