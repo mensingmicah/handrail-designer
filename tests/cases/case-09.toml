@@ -1,6 +1,6 @@
 # Test case 9 (docs/plans/slice-6.md, T3; S6-15): the mixed case. A square
 # HSS post under a pipe rail, with a rectangular HSS intermediate rail and
-# the post welded to the baseplate on one pair of faces.
+# the post welded to the baseplate all around.
 #
 # Top rail: Pipe2STD. Post: HSS2X2X1/8. Intermediate rail: its own section,
 # HSS2X1X1/8, long side horizontal. Every grade is left out of this file on
@@ -8,23 +8,19 @@
 # rectangular HSS; S5-5, S6-5). L = 6'-0", h = 42 in, t_p = 1/2 in;
 # baseplate B = 6 in (parallel to the rail) x N = 8 in (perpendicular to
 # the rail), A36. Fillet welds, E70XX: rail to post 1/8 in, intermediate
-# rail to post 1/8 in, post to baseplate 3/16 in on the faces parallel to
-# the rail. Default loads (P = 200 lb, w = 50 plf, 50 lb component load),
+# rail to post 1/8 in, post to baseplate 3/16 in all around. Default loads (P = 200 lb, w = 50 plf, 50 lb component load),
 # no exemption; default deflection limits.
 #
-# The inputs are Claude's proposal (plan, open item 7): S6-15 fixes what
-# the case is, not its sections, weld sizes or pattern. Micah confirms or
-# changes them before the independent calc runs. One consequence to
-# confirm with them: the plan's planning arithmetic has this face-pair
-# weld over 1.00 in Check 7, in the direction that bends the two weld
-# lines about their own length, so the case as proposed prints Check 7 NG.
+# The inputs are Claude's proposal (plan, open item 7), accepted by Micah
+# on 2026-10-11 (S6-17), with the base weld all around, as S6-15 specified,
+# not on a pair of faces.
 #
 # Branches it reaches: a rectangular post on a round rail, the weld on the
 # post's own rounded rectangle (S6-9); a rectangular post in Checks 5 and
 # 6 (S6-14 item 2); a rectangular intermediate rail in Check 4a (S6-16
 # item 3) and on a rectangular post in Check 4b (Table K5.1, S6-8); the
-# face-pair base weld with the post wall checked on its own lines (S6-6,
-# S6-7).
+# all-around base weld on the post's own rounded rectangle (S6-6), the post
+# wall then covered by Check 5 (S6-7).
 #
 # What it covers ([verification] covers): the post group, the intermediate
 # rail, Checks 3, 4a, 4b, 5, 6 and 7, and the reaction sets. The top
@@ -51,9 +47,10 @@
 #
 # Each ratio key is a placeholder, not a tool result. Check 7's names the
 # longitudinal distributed case, which the plan's planning arithmetic
-# worked (docs/plans/slice-6.md, T3). The plan names no case for Check 5,
-# so its key names the outward distributed case. Rename each key to the
-# governing case of your recompute.
+# worked on a face pair (docs/plans/slice-6.md, T3); the base weld is now
+# all around, so that case need not govern. The plan names no case for
+# Check 5, so its key names the outward distributed case. Rename each key
+# to the governing case of your recompute.
 #
 # The A500 Gr B rectangular Fy and Fu this case turns on are drafted
 # registry entries, which Micah verifies at the release review.
@@ -64,7 +61,7 @@
 [project]
 name = "Test case 9"
 phase = "Verification"
-description = "Mixed: HSS2X2X1/8 post under a Pipe2STD rail, HSS2X1X1/8 intermediate rail, face-pair base weld"
+description = "Mixed: HSS2X2X1/8 post under a Pipe2STD rail, HSS2X1X1/8 intermediate rail, base weld all around"
 
 [geometry]
 span = "6'-0\""
@@ -91,7 +88,7 @@ grade = "A36"
 rail_to_post = "1/8"
 intermediate_rail_to_post = "1/8"
 post_to_baseplate = "3/16"
-base_pattern = "faces parallel to rail"
+base_pattern = "all around"
 electrode = "E70XX"
 
 [deflection.rail]

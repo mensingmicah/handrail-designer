@@ -1084,11 +1084,12 @@ def test_a_rectangular_member_reports_per_axis_keys(runs):
             "check1.Mcy_lbin.outward_concentrated", "check1.Cb.outward_concentrated"} <= set(values)
     assert {"check5.Mcx_lbin", "check5.Mcy_lbin", "check3.B_e_in", "check3.S_w_t_in2", "check7.S_w_l_in2"} <= set(values)
     assert "check3.S_w_in2" not in values and "check5.Mc_lbin" not in values
-    # Case 9: a round rail keeps the round keys beside a rectangular post's, and the face pair adds the wall's.
+    # Case 9: a round rail keeps the round keys beside a rectangular post's. The base weld is all around
+    # (S6-17 item 2), so the post wall is covered by Check 5 and Check 7 has no wall keys.
     _, mixed = runs(_case_file("case-09.toml"))
     values = tool_values(mixed)
-    assert {"section.D_in", "check1.Mn_lbin", "post.H_in", "check7.wall_axial_allow_lbpin",
-            "check7.ratio_wall_axial.outward_distributed"} <= set(values)
+    assert {"section.D_in", "check1.Mn_lbin", "post.H_in"} <= set(values)
+    assert not any(k.startswith(("check7.wall_", "check7.ratio_wall")) for k in values)
 
 
 def test_add_appends_pending_keys_and_changes_nothing_else(tmp_path, capsys):
