@@ -1,9 +1,9 @@
 # Roadmap: slices from v0.1.0 to v1
 
 Status: **accepted by Micah, 2026-09-30.** Slice 2 is the post (option A
-below). **Current status (2026-10-09):** slices 1–4 are done (v0.1.0 to
-v0.4.0, the first complete all-pipe package); slice 5 is next and is
-planned (docs/plans/slice-5.md). Slices 5–7
+below). **Current status (2026-10-10):** slices 1–5 are done (v0.1.0 to
+v0.5.0; v0.4.0 was the first complete all-pipe package); slice 6 is next
+and needs its plan (slice 5's plan is docs/plans/slice-5.md, completed). Slices 5–7
 were regrouped by engineering on 2026-10-09 (Micah; S5-1 in
 docs/brief/checks.md): hollow round, then hollow rectangular, then every
 solid bar. What the tool must do is set by the brief
@@ -19,7 +19,7 @@ settles the slice's open questions, and it can reorder or split the slice.
 | 2 (done, v0.2.0) | Checks 5–6: the post (pipe) | 1 | M | 2 | — |
 | 3 (done, v0.3.0) | Checks 3 and 7: both welds (pipe rail on pipe post) | 2 | M | 1 | — |
 | 4 (done, v0.4.0) | Check 4 (intermediate rail, 4a member and 4b weld) and the anchor reaction sets | 2 (3 for a full package) | M | 1 | #4 (closed) |
-| 5 (planned) | Hollow round sections: round HSS, custom round tube; the two-axis section type; the engine refactor (#21) | 4 | M–L | 2 | #3, #6, #7, #11, #21, #24 |
+| 5 (done, v0.5.0) | Hollow round sections: round HSS, custom round tube; the two-axis section type; the engine refactor (#21) | 4 | M–L | 2 | #3, #6, #7, #11, #21, #24 |
 | 6 | Hollow rectangular sections: rectangular HSS, custom rectangular tube; Chapter K chord limit states for round and rectangular chords | 5 | XL | 3–4 | — |
 | 7 | Solid bars: solid round bar and solid rectangular bar | 6 | L | 2–3 | — |
 | 8 | Input form and front-matter image | 7 | L | 0 | — |
@@ -259,7 +259,7 @@ About 10–12 registry entries. Micah's release recompute now covers the
 reaction sets (ADR 0007). **Plan:** docs/plans/slice-4.md, with test
 case 5.
 
-### Slice 5: hollow round sections
+### Slice 5: hollow round sections (done, v0.5.0)
 
 Regrouped 2026-10-09 (Micah; S5-1, docs/brief/checks.md): solid round bar
 moved to slice 7, so every section in this slice has a wall and uses the
