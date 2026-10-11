@@ -375,4 +375,64 @@ plan's decision numbers.
     on its strong axis at the drafted Fy = 46 ksi: Lp ≈ 33 in and Lr ≈
     950 in, so a 6 ft rail and a 42 in post are both past Lp and Eq. F7-8
     applies; the reduction before Cb is about 2% and 0.4%.
+- **Carry-overs for rectangular sections.** (S6-14; Claude's, confirmed
+  by Micah 2026-10-10, with his clarification to item 3.) None is
+  expected to change which check governs a realistic guard; each extends
+  an existing ruling or is a conservative simplification.
+  1. **Weld envelope and load at the centerline** (welds.md, W1 and
+     W10). Both rulings hold for rectangular rails and for the mixed
+     pairs: no inclined guard load case, no torsion on the Check 3 weld,
+     no added eccentricity for a load at the rail's surface. Planning
+     arithmetic (not test values): an HSS4×2 rail on edge over an
+     HSS2×2×1/8 post with a 1/8 in fillet gives Check 3 about 0.05;
+     doubling e for a load at the rail's top surface gives about 0.09.
+  2. **Check 5 on a rectangular post.** Compression uses the smaller
+     radius of gyration with K = 2.1, in every case. Each lateral case
+     bends one axis only (the transverse cases one, the longitudinal case
+     the other), so §H1.1 takes one moment per case and the post has no
+     biaxial case. αPr/Pe and Check 6 use I about the axis that case
+     bends.
+  3. **Classification.** Flexure is classified for each bent axis by
+     AISC 360-22 Table B4.1b (page 16.1-23): the wall in compression is
+     the flange (Case 17) and the other wall the web (Case 19; case
+     numbers confirmed when drafted). Compression: Table B4.1a Case 6,
+     both walls (page 16.1-21). A noncompact wall in flexure takes its
+     reduced strength, not only a flag (Micah's clarification): flange
+     local buckling per §F7.2(b), Eq. F7-2, and web local buckling per
+     §F7.3(b), Eq. F7-6, the rectangular counterpart of the round Eq.
+     F8-2 path. A slender wall stops, as now. A test case or a
+     same-author test must reach the noncompact flange branch.
+  4. **The Fu/Fy ≥ 1.20 guard on the post grade** (S5-13) carries to the
+     rectangular grades; the lowest drafted is A500 Gr C at 62/50 = 1.24.
+  5. **Same-as-top observations.** Check 4b's "controlled by Check 3"
+     (welds.md, S4-8) is used for a round post with a round rail only.
+     Any joint with a rectangular member runs the full Check 4b: Table
+     K5.1's effective length depends on the chord wall (S6-8), so the
+     comparison is no longer true by inspection. Check 4a's "controlled
+     by Checks 1 and 2" (S4-2) is kept for rectangular rails: the
+     intermediate rail takes the top rail's section, grade and
+     orientation.
+  6. **Custom rectangular tube input.** `shape = "rectangular tube"`,
+     `H`, `B` and `wall_nominal` in place of `section`. H ≥ B is
+     required, so `long_side` alone sets the orientation (S6-2). A wall
+     too thick to leave a flat (B ≤ 4·t_des) stops. The label reads like
+     "Rect. tube 2 × 1 × 0.083 (custom)". Exact wording on the branch.
+  7. **Where the round chord table prints.** Inside Check 3, after the
+     weld lines (welds.md, S6-1 and S6-10). Check 3 keeps one summary
+     row: it reports the largest ratio among its lines (weld metal, base
+     metal, chord interaction) and names which governs. No new summary
+     row.
+  8. **Baseplate size stop.** B must be at least the post's dimension
+     parallel to the rail and N at least the one perpendicular to it:
+     the existing "smaller than the post OD" stop, per direction.
+  9. **Database finding.** HSS1-1/2X1-1/2X3/16 lists t_nom = 0.188 in
+     where every other 3/16 in row lists 0.1875 in. It is used as
+     published (S5-4) and listed in data/README.md.
+  10. **Assumption wording.** The printed assumptions that say "ring",
+      "saddle" and "equal round diameters" get rectangular and mixed-pair
+      wording, drafted by Claude on the branch for Micah's acceptance in
+      the pull request; output.md changes in the commit that prints it.
+  - Not chosen, recorded as the fuller alternatives: an inclined-load
+    case for rectangular rails (item 1); a rectangular same-as-top
+    observation for Check 4b with its own guards (item 5).
 
