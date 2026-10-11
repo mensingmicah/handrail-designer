@@ -318,12 +318,14 @@ def test_the_chord_limit_is_read_for_every_calc_and_the_decision_only_when_it_st
     assert CHORD_LIMIT in used and "ej.weld.chord_D_over_t_stop" not in used
 
 
-def test_the_stated_assumption_names_the_limit_the_stop_enforces():
-    """The W7 assumption says the chord's D/t is limited (S5-3). Its text is
-    the brief's, word for word (tests/test_report.py holds it to
-    output.md), so the number in it is typed there; this holds that number
-    to the registry entry the stop reads, so the two cannot drift apart."""
-    limit = Registry().entries[CHORD_LIMIT].value
-    w7 = [a for a in report.LOCKED_ASSUMPTIONS if "Chapter K chord limit states" in a]
-    assert len(w7) == 1
-    assert w7[0].endswith(f"is not checked; the chord's D/t is limited to {limit}, the Chapter K limit of applicability.")
+def test_one_stated_assumption_covers_the_rail_wall_and_names_no_limit():
+    """One sentence replaces W7's (S6-16 item 4). The list prints word for
+    word in every calc, so the sentence covers every pair and types no
+    limit of its own: the limits are the registry's, read by the stops
+    (S6-13), and cannot drift from a number printed here."""
+    wall = [a for a in report.LOCKED_ASSUMPTIONS if "chord limit states" in a]
+    assert len(wall) == 1
+    assert "is checked for a round post on a round rail" in wall[0]
+    assert wall[0].endswith("the rail is then held to the Chapter K limits of applicability.")
+    assert "post wall at the intermediate rail" not in wall[0]  # Check 4b has its own line (S6-11)
+    assert str(Registry().entries[CHORD_LIMIT].value) not in wall[0]

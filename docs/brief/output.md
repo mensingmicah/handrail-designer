@@ -43,10 +43,11 @@ Manual, 16th Edition, and the AISC Shapes Database v16.0. (Slice 1.)
   reaction acts at the weld with no end moment. It is modeled as a fillet
   of the entered size all around, although at equal widths the sides form
   a flare-bevel joint.
-- Local strength of the rail wall at the post, and of the post wall at the
-  intermediate rail (AISC 360-22 Chapter K chord limit states), is not
-  checked; the chord's D/t is limited to 50, the Chapter K limit of
-  applicability.
+- Local strength of the rail wall at the post (AISC 360-22 Chapter K and
+  §J10 chord limit states) is checked for a round post on a round rail. It
+  is not checked where the rail is rectangular or where a round and a
+  rectangular member meet; the rail is then held to the Chapter K limits
+  of applicability.
 - At a post to baseplate weld on one pair of faces, the post wall is
   checked for the weld force along the post axis and for the force along
   the face separately; the two are not combined, the force along the face
