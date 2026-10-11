@@ -217,3 +217,78 @@ inward_concentrated = 0.0281746
 inward_distributed = 0.0422619
 longitudinal_concentrated = 0.0281746
 longitudinal_distributed = 0.0422619
+
+# Added by tests/independent_template.py --add: values the case has come to
+# cover since this file was written, each "pending" until an independent
+# calc fills it. Nothing above this line was changed.
+
+[independent.check3_chord]
+beta = "pending"
+gamma = "pending"
+e_in = "pending"
+punching = "pending"  # text, in quotes
+controlling = "pending"  # text, in quotes
+
+[independent.check3_chord.Pr_lb]
+downward_concentrated = "pending"
+downward_distributed = "pending"
+outward_concentrated = "pending"
+outward_distributed = "pending"
+inward_concentrated = "pending"
+inward_distributed = "pending"
+upward_concentrated = "pending"
+upward_distributed = "pending"
+longitudinal_concentrated = "pending"
+longitudinal_distributed = "pending"
+
+[independent.check3_chord.Qf]
+downward_concentrated = "pending"
+downward_distributed = "pending"
+outward_concentrated = "pending"
+outward_distributed = "pending"
+inward_concentrated = "pending"
+inward_distributed = "pending"
+upward_concentrated = "pending"
+upward_distributed = "pending"
+longitudinal_concentrated = "pending"
+longitudinal_distributed = "pending"
+
+[independent.check3_chord.Pc_lb]
+downward_concentrated = "pending"
+downward_distributed = "pending"
+outward_concentrated = "pending"
+outward_distributed = "pending"
+inward_concentrated = "pending"
+inward_distributed = "pending"
+upward_concentrated = "pending"
+upward_distributed = "pending"
+longitudinal_concentrated = "pending"
+longitudinal_distributed = "pending"
+
+[independent.check3_chord.ratio]
+downward_concentrated = "pending"
+downward_distributed = "pending"
+outward_concentrated = "pending"
+outward_distributed = "pending"
+inward_concentrated = "pending"
+inward_distributed = "pending"
+upward_concentrated = "pending"
+upward_distributed = "pending"
+longitudinal_concentrated = "pending"
+longitudinal_distributed = "pending"
+
+[independent.check3_chord.Mr_lbin]
+outward_concentrated = "pending"
+outward_distributed = "pending"
+inward_concentrated = "pending"
+inward_distributed = "pending"
+longitudinal_concentrated = "pending"
+longitudinal_distributed = "pending"
+
+[independent.check3_chord.Mc_lbin]
+outward_concentrated = "pending"
+outward_distributed = "pending"
+inward_concentrated = "pending"
+inward_distributed = "pending"
+longitudinal_concentrated = "pending"
+longitudinal_distributed = "pending"

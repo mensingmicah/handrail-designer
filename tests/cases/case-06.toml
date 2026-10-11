@@ -23,6 +23,13 @@
 # computed weight flows into the post's dead load, a quantity the rail's
 # family changes (S5-2). Checks 5 to 7 and the reactions are not covered.
 #
+# Slice 6 (docs/plans/slice-6.md, T1; S6-15): the case also covers the
+# chord check of Check 3, the rail wall at the post by AISC 360-22 Chapter
+# K (S6-10), under its own group, check3_chord, so Check 3's values keep
+# their meaning (S6-16 item 1). No input changed and no value recorded
+# before slice 6 was touched. The case runs under the Chapter K limits of
+# applicability only by the A500 Gr C exception (S6-16 item 7).
+#
 # Values: an independent-calc case (docs/brief/verification.md). The
 # independent calc records every value the test compares in
 # tests/cases/independent/case-06.toml, written up beside it as case-06.md,
@@ -30,8 +37,9 @@
 # value there is "pending" until that session fills it.
 #
 # [hand] below holds Micah's governing-case values for what is new to his
-# arithmetic ([verification] recompute; S5-2): the custom tube's section
-# properties and Check 1. He follows the tool's printed controlling case and
+# arithmetic ([verification] recompute; S5-2, S6-15): the custom tube's
+# section properties, Check 1, and the governing chord limit state of
+# Check 3. He follows the tool's printed controlling case and
 # recomputes it line by line; each value is his own result, never copied
 # from the PDF (CLAUDE.md rule 5).
 #
@@ -41,10 +49,14 @@
 #
 # Text values, in quotes:
 #   check1.controlling     direction, comma, load type, e.g. "downward, concentrated"
+#   check3_chord.controlling   the same, for the chord check
 #
 # The ratio key names the downward concentrated case, which the planning
 # arithmetic expects to govern. If your recompute finds another case
 # governs, rename the key to that case (e.g. outward_concentrated).
+# The chord check's ratio key names the outward distributed case, the one
+# the plan's planning arithmetic worked (docs/plans/slice-6.md, T1), not a
+# tool result; rename it the same way.
 #
 # The A500 Gr C round Fy and Fu this case turns on are drafted registry
 # entries, which Micah verifies at the release review.
@@ -95,8 +107,8 @@ bypass = false
 
 [verification]
 kind = "independent-calc"
-covers = ["section", "check1", "check2", "check3", "post"]
-recompute = ["section", "check1"]
+covers = ["section", "check1", "check2", "check3", "check3_chord", "post"]
+recompute = ["section", "check1", "check3_chord"]
 
 # ---------------------------------------------------------------------------
 # Hand values: Micah's recompute of the custom tube's section properties and
@@ -116,3 +128,12 @@ controlling = "deferred"      # e.g. "downward, concentrated"
 
 [hand.check1.ratio]
 downward_concentrated = "deferred"
+
+# Slice 6: the governing chord limit state of Check 3 (deferred to the
+# release review).
+
+[hand.check3_chord]
+controlling = "deferred"      # e.g. "outward, distributed"
+
+[hand.check3_chord.ratio]
+outward_distributed = "deferred"

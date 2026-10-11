@@ -82,7 +82,7 @@ from test_report import CLEAN
 ROOT = Path(__file__).resolve().parents[1]
 GOLDEN_DIR = ROOT / "tests" / "golden"
 EXTRA_DIR = GOLDEN_DIR / "extra"
-CASES = sorted((ROOT / "tests" / "cases").glob("case-0[1-7].toml"))
+CASES = sorted((ROOT / "tests" / "cases").glob("case-0[1-9].toml"))
 EXAMPLE = ROOT / "examples" / "slice-1.toml"
 EXTRA_CALCS = sorted(EXTRA_DIR.glob("full-*.toml"))
 EXTRA_STOPS = sorted(EXTRA_DIR.glob("stop-*.toml"))

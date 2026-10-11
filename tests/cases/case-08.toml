@@ -1,0 +1,135 @@
+# Test case 8 (docs/plans/slice-6.md, T2; S6-15): the all-rectangular case.
+# A rectangular HSS rail on edge, a rectangular HSS post and a rectangular
+# HSS intermediate rail, every one from the Shapes Database.
+#
+# Top rail: HSS4X2X1/8, long side vertical. Post: HSS3X2X1/8, long side
+# parallel to the rail. Intermediate rail: its own section, HSS2X1-1/2X1/8,
+# long side horizontal. Every grade is left out of this file on purpose, so
+# the rectangular HSS default applies (A500 Gr B, S6-5). L = 6'-0", h = 42
+# in, t_p = 1/2 in; baseplate B = 6 in (parallel to the rail) x N = 8 in
+# (perpendicular to the rail), A36. Fillet welds, E70XX: rail to post 1/8
+# in, intermediate rail to post 1/8 in, post to baseplate 3/16 in all
+# around. Default loads (P = 200 lb, w = 50 plf, 50 lb component load), no
+# exemption; default deflection limits.
+#
+# The inputs are Claude's proposal (plan, open item 7): S6-15 fixes what
+# the case is, not its sections, weld sizes or pattern. Micah confirms or
+# changes them before the independent calc runs.
+#
+# Branches it reaches: `long_side` on a rail and on a post (S6-2); the
+# rail's weak axis under the horizontal guard load, where its 4 in wall is
+# a noncompact flange (AISC 360-22 Eq. F7-2); the dead load on the strong
+# axis with lateral-torsional buckling and Cb from the case's own moment
+# diagram (Eq. F1-1, S6-4); the two axes combined by H1.1, not SRSS; a
+# post that is not square, bent about its weak axis in the transverse
+# cases (S6-14 item 2); Table K5.1's effective weld at both rail to post
+# joints, each at equal widths (S6-8); the post's rounded rectangle at the
+# baseplate (S6-6).
+#
+# What it covers ([verification] covers): every group, the rail's section,
+# the intermediate rail, the post, Checks 1 to 7 and the reaction sets.
+#
+# Values: an independent-calc case (docs/brief/verification.md). The
+# independent calc records every value the test compares in
+# tests/cases/independent/case-08.toml, written up beside it as case-08.md,
+# in a fresh session by the independent-calc skill (CLAUDE.md rule 6). Every
+# value there is "pending" until that session fills it.
+#
+# [hand] below holds Micah's governing-case values for what is new to his
+# arithmetic ([verification] recompute; S6-15): Checks 1, 3 and 7. He
+# follows the tool's printed controlling case and recomputes it line by
+# line; each value is his own result, never copied from the PDF (CLAUDE.md
+# rule 5).
+#
+# Each [hand] value is "deferred" to the release review (ADR 0006; issue
+# #18). At that review, replace each "deferred" with the recomputed value,
+# in the unit named by the key's suffix, to 4 significant figures.
+#
+# Text values, in quotes:
+#   checkN.controlling     direction, comma, load type, e.g. "outward, concentrated"
+#
+# Each ratio key names the case the plan's planning arithmetic worked
+# (docs/plans/slice-6.md, T2), not a tool result. If your recompute finds
+# another case governs, rename the key to that case.
+#
+# The A500 Gr B rectangular Fy and Fu this case turns on are drafted
+# registry entries, which Micah verifies at the release review.
+#
+# A mismatch fails and, per CLAUDE.md rule 2, stops the work: neither side
+# is changed until we know which one is wrong.
+
+[project]
+name = "Test case 8"
+phase = "Verification"
+description = "All rectangular: HSS4X2X1/8 rail on edge, HSS3X2X1/8 post, HSS2X1-1/2X1/8 intermediate rail"
+
+[geometry]
+span = "6'-0\""
+post_height = 42
+baseplate_thickness = "1/2"
+
+[top_rail]
+section = "HSS4X2X1/8"       # grade left out: the rectangular HSS default applies (S6-5)
+long_side = "vertical"
+
+[post]
+section = "HSS3X2X1/8"
+long_side = "parallel to rail"
+
+[intermediate_rail]
+same_as_top_rail = false
+section = "HSS2X1-1/2X1/8"
+long_side = "horizontal"
+
+[baseplate]
+B = 6                        # parallel to the rail
+N = 8                        # perpendicular to the rail
+grade = "A36"
+
+[welds]
+rail_to_post = "1/8"
+intermediate_rail_to_post = "1/8"
+post_to_baseplate = "3/16"
+base_pattern = "all around"
+electrode = "E70XX"
+
+[deflection.rail]
+limit_L_over = 120
+bypass = false
+
+[deflection.post]
+limit_L_over = 60
+bypass = false
+
+[deflection.intermediate_rail]
+limit_L_over = 120
+bypass = false
+
+[verification]
+kind = "independent-calc"
+covers = ["section", "check1", "check2", "check3", "intermediate", "check4a", "check4b",
+          "post", "check5", "check6", "check7", "reactions"]
+recompute = ["check1", "check3", "check7"]
+
+# ---------------------------------------------------------------------------
+# Hand values: Micah's recompute of the governing case of Checks 1, 3 and 7
+# (deferred to the release review)
+# ---------------------------------------------------------------------------
+
+[hand.check1]
+controlling = "deferred"      # e.g. "outward, concentrated"
+
+[hand.check1.ratio]
+outward_concentrated = "deferred"
+
+[hand.check3]
+controlling = "deferred"      # e.g. "outward, distributed"
+
+[hand.check3.ratio]
+outward_distributed = "deferred"
+
+[hand.check7]
+controlling = "deferred"      # e.g. "outward, distributed"
+
+[hand.check7.ratio]
+outward_distributed = "deferred"

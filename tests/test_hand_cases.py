@@ -105,8 +105,75 @@ def _decision_text(lines, key):
     return texts[0]
 
 
+def _opt(lines, key):
+    """The value of the calc line with this key, or None where the case does
+    not print that line (a line some sections or directions have no use for)."""
+    if not any(ln.key == key and ln.kind == "value" for ln in lines):
+        return None
+    return _line_value(lines, key)
+
+
+def _first(cases, key):
+    """The value of the first case's line with this key, for a quantity
+    that is the same in every case that prints it; None where none does."""
+    for c in cases:
+        value = _opt(c.lines, key)
+        if value is not None:
+            return value
+    return None
+
+
 def _check(res, number):
-    return next(c for c in res.checks if c.number == number)
+    """A check by its number. The chord check of Check 3 is not one of the
+    seven: it hangs off Check 3 (S6-16 item 1)."""
+    for c in res.checks:
+        if c.number == number:
+            return c
+        chord = getattr(c, "chord", None)
+        if chord is not None and chord.number == number:
+            return chord
+    raise LookupError(f"the calc has no Check {number}")
+
+
+AXES = ("x", "y")
+
+
+def _rect_section(g, s):
+    """A rectangular member's properties, about both axes (S6-2): the
+    values the section page prints, published or computed."""
+    r = s.rect
+    v = {
+        f"{g}.H_in": r.H.m_as("inch"),
+        f"{g}.B_in": r.B.m_as("inch"),
+        f"{g}.tdes_in": s.tdes.m_as("inch"),
+        f"{g}.A_in2": s.A.m_as("in^2"),
+        f"{g}.b_t": r.b_t,
+        f"{g}.h_t": r.h_t,
+    }
+    for a in AXES:
+        ax = getattr(s, a)
+        v[f"{g}.I{a}_in4"] = ax.I.m_as("in^4")
+        v[f"{g}.S{a}_in3"] = ax.S.m_as("in^3")
+        v[f"{g}.Z{a}_in3"] = ax.Z.m_as("in^3")
+        v[f"{g}.r{a}_in"] = ax.r.m_as("inch")
+    v[f"{g}.J_in4"] = r.J.m_as("in^4")
+    return v
+
+
+def _rect_flexure(g, cases):
+    """Section F7's values that do not change from case to case, each only
+    where a case prints it: the plastic moment about each axis bent, and
+    the lateral-torsional buckling lengths."""
+    v = {}
+    for a in AXES:
+        Mp = _first(cases, f"M_p_{a}")
+        if Mp is not None:
+            v[f"{g}.Mp{a}_lbin"] = Mp.m_as("lbf*inch")
+    for name, key in (("Lp_in", "L_p"), ("Lr_in", "L_r")):
+        length = _first(cases, key)
+        if length is not None:
+            v[f"{g}.{name}"] = length.m_as("inch")
+    return v
 
 
 def _case(chk, direction, load_type=CONCENTRATED):
@@ -125,16 +192,22 @@ def _post_values(res):
     # Capacities, read from the printed lines of the case that prints them.
     down, out = _case(c5, "Downward").lines, _case(c5, "Outward").lines
     branch = _decision_text(down, E3_BRANCH)
-    v = {
-        "post.D_in": p.OD.m_as("inch"),
-        "post.tdes_in": p.tdes.m_as("inch"),
-        "post.A_in2": p.A.m_as("in^2"),
-        "post.W_plf": p.W.m_as("lbf/ft"),
-        "post.I_in4": p.I.m_as("in^4"),
-        "post.S_in3": p.S.m_as("in^3"),
-        "post.Z_in3": p.Z.m_as("in^3"),
-        "post.r_in": p.r.m_as("inch"),
-        "post.D_t": p.D_t,
+    if p.is_round:
+        v = {
+            "post.D_in": p.OD.m_as("inch"),
+            "post.tdes_in": p.tdes.m_as("inch"),
+            "post.A_in2": p.A.m_as("in^2"),
+            "post.W_plf": p.W.m_as("lbf/ft"),
+            "post.I_in4": p.I.m_as("in^4"),
+            "post.S_in3": p.S.m_as("in^3"),
+            "post.Z_in3": p.Z.m_as("in^3"),
+            "post.r_in": p.r.m_as("inch"),
+            "post.D_t": p.D_t,
+        }
+    else:
+        v = _rect_section("post", p)
+        v["post.W_plf"] = p.W.m_as("lbf/ft")
+    v.update({
         "post.D_post_lb": _line_value(ld.lines, "D_post").m_as("lbf"),
         "post.P_D_lb": ld.P_D.m_as("lbf"),
         "check5.Lc_in": _line_value(down, "L_c").m_as("inch"),
@@ -144,9 +217,19 @@ def _post_values(res):
         "check5.Fcr_equation": branch.split("Eq. ")[1],
         "check5.Pn_lb": _line_value(down, "P_n").m_as("lbf"),
         "check5.Pc_lb": _line_value(down, "P_c").m_as("lbf"),
-        "check5.Mn_lbin": _line_value(out, "M_n").m_as("lbf*inch"),
-        "check5.Mc_lbin": _line_value(out, "M_c").m_as("lbf*inch"),
-    }
+    })
+    if p.is_round:
+        v["check5.Mn_lbin"] = _line_value(out, "M_n").m_as("lbf*inch")
+        v["check5.Mc_lbin"] = _line_value(out, "M_c").m_as("lbf*inch")
+    else:
+        # A rectangular post bends one axis in the transverse cases and the
+        # other in the longitudinal case (S6-14 item 2); Cb = 1.0, so each
+        # axis has one strength.
+        for a in AXES:
+            Mn, Mc = _first(c5.checked, f"M_n_{a}"), _first(c5.checked, f"M_c_{a}")
+            if Mn is not None:
+                v[f"check5.Mn{a}_lbin"] = Mn.m_as("lbf*inch")
+                v[f"check5.Mc{a}_lbin"] = Mc.m_as("lbf*inch")
     # Pt is computed only when an upward case has net tension (0.6D < L).
     upward = [c for c in c5.checked if c.direction == "Upward"]
     if upward:
@@ -171,28 +254,48 @@ def tool_values(res):
     """Tool values keyed like the [hand] tables, in the same units."""
     r = res.rail
     c1, c2 = _check(res, 1), _check(res, 2)
-    v = {
-        "section.D_in": r.OD.m_as("inch"),
-        "section.tdes_in": r.tdes.m_as("inch"),
-        "section.I_in4": r.I.m_as("in^4"),
-        "section.S_in3": r.S.m_as("in^3"),
-        "section.Z_in3": r.Z.m_as("in^3"),
-        "section.D_t": r.D_t,
-        "section.w_D_plf": res.loading.w_D.m_as("lbf/ft"),
-        # Read from the controlling case's printed lines: compare what the PDF shows.
-        "check1.Mn_lbin": _line_value(c1.controlling.lines, "M_n").m_as("lbf*inch"),
-        "check1.Mn_over_Omega_lbin": _line_value(c1.controlling.lines, "M_n_over_Omega_b").m_as("lbf*inch"),
-    }
-    if r.custom:
-        # A custom rail's area and radius of gyration are computed on its
-        # section page, not read from the database, so they are compared too
-        # (docs/plans/slice-5.md, T1: test case 6). A database rail's are not
-        # values of any rail check, and stay out of the section group.
-        v["section.A_in2"] = r.A.m_as("in^2")
-        v["section.r_in"] = r.r.m_as("inch")
-    for c in c1.checked:
-        v[f"check1.moment_lbin.{_case_key(c)}"] = c.demand.m_as("lbf*inch")
-        v[f"check1.ratio.{_case_key(c)}"] = c.ratio
+    if r.is_round:
+        v = {
+            "section.D_in": r.OD.m_as("inch"),
+            "section.tdes_in": r.tdes.m_as("inch"),
+            "section.I_in4": r.I.m_as("in^4"),
+            "section.S_in3": r.S.m_as("in^3"),
+            "section.Z_in3": r.Z.m_as("in^3"),
+            "section.D_t": r.D_t,
+            "section.w_D_plf": res.loading.w_D.m_as("lbf/ft"),
+            # Read from the controlling case's printed lines: compare what the PDF shows.
+            "check1.Mn_lbin": _line_value(c1.controlling.lines, "M_n").m_as("lbf*inch"),
+            "check1.Mn_over_Omega_lbin": _line_value(c1.controlling.lines, "M_n_over_Omega_b").m_as("lbf*inch"),
+        }
+        if r.custom:
+            # A custom rail's area and radius of gyration are computed on its
+            # section page, not read from the database, so they are compared too
+            # (docs/plans/slice-5.md, T1: test case 6). A database rail's are not
+            # values of any rail check, and stay out of the section group.
+            v["section.A_in2"] = r.A.m_as("in^2")
+            v["section.r_in"] = r.r.m_as("inch")
+        for c in c1.checked:
+            v[f"check1.moment_lbin.{_case_key(c)}"] = c.demand.m_as("lbf*inch")
+            v[f"check1.ratio.{_case_key(c)}"] = c.ratio
+    else:
+        # A rectangular rail (S6-4): each case has a moment about the axis
+        # its vertical load bends and, in the outward and inward cases, one
+        # about the other axis, each with its own allowable strength; Cb is
+        # the case's own where lateral-torsional buckling is computed.
+        v = _rect_section("section", r)
+        v["section.w_D_plf"] = res.loading.w_D.m_as("lbf/ft")
+        v.update(_rect_flexure("check1", c1.checked))
+        for c in c1.checked:
+            k = _case_key(c)
+            for a in AXES:
+                Mr = _opt(c.lines, f"M_r_{a}")
+                if Mr is not None:
+                    v[f"check1.Mr{a}_lbin.{k}"] = Mr.m_as("lbf*inch")
+                    v[f"check1.Mc{a}_lbin.{k}"] = _line_value(c.lines, f"M_c_{a}").m_as("lbf*inch")
+            Cb = _opt(c.lines, "C_b")
+            if Cb is not None:
+                v[f"check1.Cb.{k}"] = Cb
+            v[f"check1.ratio.{k}"] = c.ratio
     if not c2.bypassed:
         v["check2.Delta_allow_in"] = c2.controlling.capacity.m_as("inch")
         for c in c2.checked:
@@ -200,6 +303,7 @@ def tool_values(res):
             v[f"check2.ratio.{_case_key(c)}"] = c.ratio
     v.update(_post_values(res))
     v.update(_weld_values(res, 3))
+    v.update(_chord_values(res))
     v.update(_weld_values(res, 7))
     v.update(_intermediate_values(res))
     v.update(_reaction_values(res))
@@ -213,26 +317,42 @@ def _intermediate_values(res):
     s, ld = res.inter, res.loading
     if s is None:
         return v
+    if s.is_round:
+        v.update({
+            "intermediate.D_in": s.OD.m_as("inch"),
+            "intermediate.tnom_in": s.tnom.m_as("inch"),
+            "intermediate.tdes_in": s.tdes.m_as("inch"),
+            "intermediate.I_in4": s.I.m_as("in^4"),
+            "intermediate.Z_in3": s.Z.m_as("in^3"),
+            "intermediate.D_t": s.D_t,
+        })
+    else:
+        v.update(_rect_section("intermediate", s))
+        v["intermediate.tnom_in"] = s.tnom.m_as("inch")
     v.update({
-        "intermediate.D_in": s.OD.m_as("inch"),
-        "intermediate.tnom_in": s.tnom.m_as("inch"),
-        "intermediate.tdes_in": s.tdes.m_as("inch"),
-        "intermediate.I_in4": s.I.m_as("in^4"),
-        "intermediate.Z_in3": s.Z.m_as("in^3"),
-        "intermediate.D_t": s.D_t,
         "intermediate.w_D_plf": ld.w_D_int.m_as("lbf/ft"),
         "intermediate.D_int_lb": ld.D_int.m_as("lbf"),
         "intermediate.P_c_lb": ld.P_c.m_as("lbf"),
     })
     c4a = _check(res, "4a")
     if c4a.computed:
-        bending = next(c for c in c4a.checked if c.limit_state == "Bending")
-        v["check4a.Mn_lbin"] = _line_value(bending.lines, "M_n").m_as("lbf*inch")
-        v["check4a.Mn_over_Omega_lbin"] = _line_value(bending.lines, "M_n_over_Omega_b").m_as("lbf*inch")
+        bending = [c for c in c4a.checked if c.limit_state == "Bending"]
+        if s.is_round:
+            v["check4a.Mn_lbin"] = _line_value(bending[0].lines, "M_n").m_as("lbf*inch")
+            v["check4a.Mn_over_Omega_lbin"] = _line_value(bending[0].lines, "M_n_over_Omega_b").m_as("lbf*inch")
+        else:
+            v.update(_rect_flexure("check4a", bending))
         for c in c4a.checked:
             d = c.direction.lower()
             if c.limit_state == "Bending":
                 v[f"check4a.moment_lbin.{d}"] = c.demand.m_as("lbf*inch")
+                if not s.is_round:
+                    # Each direction bends its own axis (S6-16 item 3), so the
+                    # allowable strength, and Cb where it is computed, are the case's.
+                    v[f"check4a.Mc_lbin.{d}"] = c.capacity.m_as("lbf*inch")
+                    Cb = _opt(c.lines, "C_b")
+                    if Cb is not None:
+                        v[f"check4a.Cb.{d}"] = Cb
             else:
                 v[f"check4a.deflection_in.{d}"] = c.demand.m_as("inch")
                 v["check4a.Delta_allow_in"] = c.capacity.m_as("inch")
@@ -243,6 +363,7 @@ def _intermediate_values(res):
         v.update({
             "check4b.R_D_lb": _line_value(head, "R_D").m_as("lbf"),
             "check4b.L_w_in": _line_value(head, "L_w").m_as("inch"),
+            **_effective_width("check4b", head),
             "check4b.throat_in": _line_value(head, "t_e").m_as("inch"),
             "check4b.t_min_in": _line_value(head, "t_min").m_as("inch"),
             "check4b.w_min_in": _line_value(head, "w_min").m_as("inch"),
@@ -284,22 +405,74 @@ def _reaction_values(res):
     return v
 
 
+def _effective_width(g, head):
+    """Table K5.1's effective width, where the weld is its effective weld
+    (a rectangular branch on a rectangular chord, S6-8)."""
+    Be = _opt(head, "B_e")
+    return {} if Be is None else {f"{g}.B_e_in": Be.m_as("inch")}
+
+
+def _chord_values(res):
+    """The chord check of Check 3 (S6-10), where the calc has one: a round
+    post on a round rail. Its own group, so Check 3's values stay the
+    weld's (S6-16 item 1)."""
+    chord = getattr(_check(res, 3), "chord", None)
+    if chord is None or not chord.checked:
+        return {}
+    g = "check3_chord"
+    head = chord.checked[0].lines  # every case prints the same head: the chord and the branch
+    v = {
+        f"{g}.beta": _line_value(head, "beta"),
+        f"{g}.gamma": _line_value(head, "gamma"),
+        f"{g}.e_in": _line_value(head, "e").m_as("inch"),
+        f"{g}.punching": "applies" if chord.punching else "does not apply",
+    }
+    for c in chord.checked:
+        k = _case_key(c)
+        v[f"{g}.Pr_lb.{k}"] = c.Pr.m_as("lbf")
+        if c.Mr is not None:
+            v[f"{g}.Mr_lbin.{k}"] = c.Mr.m_as("lbf*inch")
+        v[f"{g}.Qf.{k}"] = c.Qf
+        v[f"{g}.Pc_lb.{k}"] = c.Pc.m_as("lbf")
+        if c.Mr is not None:
+            v[f"{g}.Mc_lbin.{k}"] = c.Mc.m_as("lbf*inch")
+        if chord.punching:
+            # Which limit state gives each strength is a result only where there are two.
+            v[f"{g}.P_limit_state.{k}"] = c.P_state
+            if c.Mr is not None:
+                v[f"{g}.M_limit_state.{k}"] = c.M_state
+        v[f"{g}.ratio.{k}"] = c.ratio
+    return v
+
+
 def _weld_values(res, number):
-    """Check 3 or 7: the ring, the size line, the capacities, and each case's
-    forces per inch and ratios, read from the printed lines and the cases."""
+    """Check 3 or 7: the weld line, the size line, the capacities, and each
+    case's forces per inch and ratios, read from the printed lines and the
+    cases. A ring has one section modulus; a rectangular line has one for
+    each direction of bending (transverse and longitudinal)."""
     chk = _check(res, number)
     g = f"check{number}"
-    head = chk.checked[0].lines  # every case prints the same head: ring, size limits, capacities
-    v = {
-        f"{g}.L_w_in": _line_value(head, "L_w").m_as("inch"),
-        f"{g}.S_w_in2": _line_value(head, "S_w").m_as("in^2"),
+    head = chk.checked[0].lines  # every case prints the same head: the weld line, size limits, capacities
+    v = {f"{g}.L_w_in": _line_value(head, "L_w").m_as("inch"), **_effective_width(g, head)}
+    S_w = _opt(head, "S_w")
+    if S_w is not None:
+        v[f"{g}.S_w_in2"] = S_w.m_as("in^2")
+    else:
+        v[f"{g}.S_w_t_in2"] = _line_value(head, "S_w_t").m_as("in^2")
+        v[f"{g}.S_w_l_in2"] = _line_value(head, "S_w_l").m_as("in^2")
+    v.update({
         f"{g}.throat_in": _line_value(head, "t_e").m_as("inch"),
         f"{g}.t_min_in": _line_value(head, "t_min").m_as("inch"),
         f"{g}.w_min_in": _line_value(head, "w_min").m_as("inch"),
         f"{g}.min_size": "OK" if chk.min_size_ok else "NG",
         f"{g}.Fnw_ksi": _line_value(head, "F_nw").m_as("ksi"),
         f"{g}.base_allow_lbpin": chk.checked[0].base_allow.m_as("lbf/inch"),
-    }
+    })
+    # A face-pair base weld (S6-7): the post wall's two allowables per inch.
+    for name, key in (("wall_axial_allow_lbpin", "R_wall_axial"), ("wall_face_allow_lbpin", "R_wall_face")):
+        allow = _opt(head, key)
+        if allow is not None:
+            v[f"{g}.{name}"] = allow.m_as("lbf/inch")
     if number == 3:
         v[f"{g}.e_in"] = _line_value(head, "e").m_as("inch")
         v[f"{g}.weld_allow_lbpin"] = chk.checked[0].weld_allow.m_as("lbf/inch")
@@ -322,13 +495,19 @@ def _weld_values(res, number):
         v[f"{g}.ratio_weld.{k}"] = c.weld_ratio
         if c.base_ratio is not None:
             v[f"{g}.ratio_base.{k}"] = c.base_ratio
+        for name, key in (("ratio_wall_axial", "Ratio_wall_axial"), ("ratio_wall_face", "Ratio_wall_face")):
+            wall = _opt(c.lines, key)
+            if wall is not None:
+                v[f"{g}.{name}.{k}"] = wall
         v[f"{g}.ratio.{k}"] = c.ratio
     return v
 
 
 CONTROLLING = {f"check{n}.controlling": n for n in (1, 2, 3, "4a", "4b", 5, 6, 7)}
+CONTROLLING["check3_chord.controlling"] = "3 (chord wall)"  # the chord check's own group (S6-16 item 1)
 CHECK_GROUPS = {key.split(".")[0] for key in CONTROLLING}
-TEXT_KEYS = ("controlling", "equation", "Fcr_equation", "fiber", "min_size", "load_type", "base_governs")
+TEXT_KEYS = ("controlling", "equation", "Fcr_equation", "fiber", "min_size", "load_type", "base_governs",
+             "punching", "P_limit_state", "M_limit_state")
 
 
 def _is_text(key: str) -> bool:
@@ -355,7 +534,11 @@ def independent_path(case: Path) -> Path:
 def expected_keys(raw, res) -> list[str]:
     """Every tool value in the groups the case covers, in the tool's order."""
     covers = raw["verification"]["covers"]
-    return [k for k in [*tool_values(res), *CONTROLLING] if k.split(".")[0] in covers]
+    values = tool_values(res)
+    # A check's controlling key is a tool value only where the calc has the
+    # check: the chord check exists at a round post on a round rail alone.
+    groups = {key.split(".")[0] for key in values} | {f"check{n}" for n in (1, 2, 3, "4a", "4b", 5, 6, 7)}
+    return [k for k in [*values, *CONTROLLING] if k.split(".")[0] in covers and k.split(".")[0] in groups]
 
 
 def _sources(path):
@@ -569,6 +752,11 @@ def render_template(case: Path, keys) -> str:
         "#   min_size: \"OK\" or \"NG\" (Table J2.4 minimum fillet size).",
         "#   check4b.base_governs: \"post wall\" or \"intermediate rail wall\", the",
         "#     fusion face with the lower base metal allowable (a tie: \"post wall\").",
+        "#   check3_chord.punching: \"applies\" or \"does not apply\" (shear yielding,",
+        "#     punching, is a limit state when Db < D - 2t). Where it applies,",
+        "#     P_limit_state and M_limit_state name the limit state that gives each",
+        "#     available strength: \"chord plastification\" or \"shear yielding",
+        "#     (punching)\".",
         "#   reactions.load_type: \"concentrated\", \"distributed\", or",
         "#     \"concentrated and distributed\" when P = w s.",
         "#   controlling: direction, comma, load type, e.g. \"outward, distributed\".",
@@ -576,6 +764,11 @@ def render_template(case: Path, keys) -> str:
         "#     Check 4b: direction, comma, \"component\", e.g. \"downward, component\".",
         "#     When cases tie exactly, name the first tied case in this file's key",
         "#     order; the test accepts any of the tied cases.",
+        "# A rectangular member's keys name the section's own axes: x is the",
+        "#   strong axis (bending about it puts the long side in the plane of",
+        "#   bending) and y the weak axis, whichever way the member is turned.",
+        "#   A weld line that is not a ring has two section moduli: S_w_t for",
+        "#   the transverse cases (outward, inward) and S_w_l for the longitudinal.",
         "",
         "[provenance]",
         f'calc = "{PENDING}"           # "tests/cases/independent/{case.stem}.md"',
@@ -828,3 +1021,94 @@ def test_a_recorded_zero_compares_absolutely(runs):
     compare(case, "reactions.upward.V_lb", 0, res)
     with pytest.raises(AssertionError, match=r"RULE 2 STOP.*hand = 0, tool ="):
         compare(case, "reactions.lateral.V_lb", 0, res)
+
+
+# ---------------------------------------------------------------------------
+# Slice 6: the chord check's group, rectangular members, and --add
+# ---------------------------------------------------------------------------
+
+def test_the_chord_check_is_its_own_group_and_check_3_keeps_its_keys(runs):
+    """S6-16 item 1: the chord check reports under check3_chord, so no
+    check3 key changes meaning and no case gains a key it does not cover."""
+    path = _case_file("case-06.toml")
+    raw, res = runs(path)
+    values = tool_values(res)
+    chord = {k for k in values if k.startswith("check3_chord.")}
+    assert {"check3_chord.beta", "check3_chord.gamma", "check3_chord.e_in", "check3_chord.punching"} <= chord
+    assert not any("limit_state" in k for k in chord)  # punching does not apply at equal diameters
+    assert "check3_chord" in raw["verification"]["covers"]
+    assert "check3_chord.controlling" in expected_keys(raw, res)
+    # A case that does not cover the group is not asked for its keys.
+    other_raw, other = runs(_case_file("case-07.toml"))
+    assert any(k.startswith("check3_chord.") for k in tool_values(other))
+    assert not any(k.startswith("check3_chord") for k in expected_keys(other_raw, other))
+
+
+def test_chord_comparisons_catch_a_mismatch(runs):
+    path = _case_file("case-06.toml")
+    _, res = runs(path)
+    chord = _check(res, "3 (chord wall)")
+    key = f"check3_chord.ratio.{_case_key(chord.controlling)}"
+    tool = tool_values(res)[key]
+    compare(path, key, tool * 1.004, res, "independent")
+    with pytest.raises(AssertionError, match="RULE 2 STOP"):
+        compare(path, key, tool * 1.006, res, "independent")
+    compare(path, "check3_chord.controlling", chord.controlling.label, res)
+    other = next(c for c in chord.checked if c.ratio < 0.9 * chord.controlling.ratio)
+    with pytest.raises(AssertionError, match="RULE 2 STOP"):
+        compare(path, "check3_chord.controlling", other.label, res)
+    with pytest.raises(AssertionError, match="RULE 2 STOP"):
+        compare(path, "check3_chord.punching", "applies", res)
+
+
+def test_a_calc_with_no_chord_check_has_no_chord_keys(runs):
+    """Cases 8 and 9 have a rectangular member at the rail to post joint."""
+    for name in ("case-08.toml", "case-09.toml"):
+        _, res = runs(_case_file(name))
+        assert not any(k.startswith("check3_chord") for k in tool_values(res))
+        assert "check3_chord.controlling" not in expected_keys({"verification": {"covers": ["check3_chord"]}}, res)
+
+
+def test_a_rectangular_member_reports_per_axis_keys(runs):
+    """Extraction only: a rectangular member's values are keyed by its own
+    axes, and a round member's keys are unchanged (their files hold them)."""
+    _, res = runs(_case_file("case-08.toml"))
+    values = tool_values(res)
+    for group in ("section", "post", "intermediate"):
+        assert f"{group}.D_in" not in values and f"{group}.D_t" not in values
+        assert {f"{group}.{k}" for k in ("H_in", "B_in", "b_t", "h_t", "Ix_in4", "Iy_in4", "Zx_in3", "Zy_in3")} <= set(values)
+    assert "check1.Mn_lbin" not in values and "check1.moment_lbin.outward_concentrated" not in values
+    # The rail is on edge: the vertical load bends x in every case, the horizontal load y in the lateral ones.
+    assert "check1.Mrx_lbin.downward_concentrated" in values and "check1.Mry_lbin.downward_concentrated" not in values
+    assert {"check1.Mrx_lbin.outward_concentrated", "check1.Mry_lbin.outward_concentrated",
+            "check1.Mcy_lbin.outward_concentrated", "check1.Cb.outward_concentrated"} <= set(values)
+    assert {"check5.Mcx_lbin", "check5.Mcy_lbin", "check3.B_e_in", "check3.S_w_t_in2", "check7.S_w_l_in2"} <= set(values)
+    assert "check3.S_w_in2" not in values and "check5.Mc_lbin" not in values
+    # Case 9: a round rail keeps the round keys beside a rectangular post's, and the face pair adds the wall's.
+    _, mixed = runs(_case_file("case-09.toml"))
+    values = tool_values(mixed)
+    assert {"section.D_in", "check1.Mn_lbin", "post.H_in", "check7.wall_axial_allow_lbpin",
+            "check7.ratio_wall_axial.outward_distributed"} <= set(values)
+
+
+def test_add_appends_pending_keys_and_changes_nothing_else(tmp_path, capsys):
+    import independent_template
+
+    out = tmp_path / "case-xx.toml"
+    before = b'[provenance]\ncalc = "x"\n\n[independent.check3]\nL_w_in = 7.461\n\n[independent.check3.ratio]\na = 0.05'
+    out.write_bytes(before)  # no newline at the end, to hold that one is supplied
+    keys = ["check3.L_w_in", "check3.ratio.a", "check3_chord.beta", "check3_chord.punching", "check3_chord.ratio.a"]
+    assert independent_template.add(out, keys) == 0
+    after = out.read_bytes()
+    assert after.startswith(before + b"\n")
+    ind = _load(out)["independent"]
+    assert ind["check3"] == {"L_w_in": 7.461, "ratio": {"a": 0.05}}
+    assert ind["check3_chord"] == {"beta": PENDING, "punching": PENDING, "ratio": {"a": PENDING}}
+    printed = capsys.readouterr()
+    assert "3 keys added" in printed.out and "7.461" not in printed.out + printed.err
+    # A second run finds nothing to add.
+    assert independent_template.add(out, keys) == 0 and out.read_bytes() == after
+    # A key missing from a table the file already has cannot be appended.
+    assert independent_template.add(out, [*keys, "check3.S_w_in2"]) == 1
+    assert out.read_bytes() == after
+    assert "check3" in capsys.readouterr().err
