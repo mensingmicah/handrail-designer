@@ -321,34 +321,28 @@ def test_the_face_pair_assumption_is_printed_with_the_others_word_for_word():
     assert Registry().get("ej.weld.post_wall.face_pair").value in report.LOCKED_ASSUMPTIONS
 
 
-def test_the_force_along_the_face_is_the_shear_of_a_load_parallel_to_the_welded_faces():
-    """WAITING ON MICAH (docs/plans/slice-6.md, open item 3). The tool
-    follows S6-7's words: the weld force is resolved along the post axis
-    and along the face. A load along the welded faces puts its shear along
-    them, against shear rupture, 0.6 Fu t / 2.00. A load across them puts
-    its shear normal to the faces, which is in neither post wall line (it
-    stays in the weld metal's resultant). The alternative, the whole shear
-    against shear rupture in every case, would change the second half of
-    this test."""
+def test_the_post_walls_shear_check_takes_the_full_shear_whatever_its_direction():
+    """S6-17 item 3 (Micah, 2026-10-11), settling S6-7's open item. At a
+    face-pair weld the post wall's shear check is the full shear per inch of
+    weld against shear rupture, 0.6 Fu t / 2.00, whether the load is along
+    the welded faces or across them. A case with no horizontal force has no
+    shear line."""
     reg = Registry()
-    res = engine.run(project.from_dict(_raw(top_rail=PIPE_RAIL, post=SQUARE,
-                                             welds={"base_pattern": "faces parallel to rail"})), reg)
-    chk = res.check(7)
     Fu = reg.get("material.A500_GrB.hss_rect.Fu").value
-    along, across, down = _case(chk, "Longitudinal"), _case(chk, "Outward"), _case(chk, "Downward")
-    face = _value(along.lines, "R_wall_face").m_as("lbf/inch")
-    assert face == pytest.approx(0.6 * Fu * T_DES / 2.00 * 1000)
-    assert _value(along.lines, "Ratio_wall_face") == pytest.approx(along.f_v.m_as("lbf/inch") / face)
-    assert _value(along.lines, "Ratio_wall") == max(_value(along.lines, "Ratio_wall_axial"),
-                                                    _value(along.lines, "Ratio_wall_face"))
-    assert not any(ln.key == "Ratio_wall_face" for ln in across.lines)
-    assert "across the welded faces, not along them" in next(ln.note for ln in across.lines if ln.key == "Ratio_wall")
-    assert _value(across.lines, "Ratio_wall") == _value(across.lines, "Ratio_wall_axial")
+    for pattern, cases in (("faces parallel to rail", ("Longitudinal", "Outward")),
+                           ("faces perpendicular to rail", ("Outward", "Longitudinal"))):
+        chk = _run(top_rail=PIPE_RAIL, post=SQUARE, welds={"base_pattern": pattern}).check(7)
+        for name in cases:
+            case = _case(chk, name)
+            face = _value(case.lines, "R_wall_face").m_as("lbf/inch")
+            assert face == pytest.approx(0.6 * Fu * T_DES / 2.00 * 1000)
+            assert _value(case.lines, "Ratio_wall_face") == pytest.approx(case.f_v.m_as("lbf/inch") / face)
+            assert _value(case.lines, "Ratio_wall") == max(_value(case.lines, "Ratio_wall_axial"),
+                                                           _value(case.lines, "Ratio_wall_face"))
+    down = _case(chk, "Downward")
+    assert not any(ln.key == "Ratio_wall_face" for ln in down.lines)
     assert "no horizontal force in this case" in next(ln.note for ln in down.lines if ln.key == "Ratio_wall")
-    # Welded on the other pair, the transverse load's shear is the one along the faces.
-    other = _run(top_rail=PIPE_RAIL, post=SQUARE, welds={"base_pattern": "faces perpendicular to rail"}).check(7)
-    assert any(ln.key == "Ratio_wall_face" for ln in _case(other, "Outward").lines)
-    assert not any(ln.key == "Ratio_wall_face" for ln in _case(other, "Longitudinal").lines)
+    assert _value(down.lines, "Ratio_wall") == _value(down.lines, "Ratio_wall_axial")
 
 
 def test_the_post_wall_can_govern_a_face_pair_weld():

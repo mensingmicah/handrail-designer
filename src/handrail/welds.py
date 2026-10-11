@@ -685,9 +685,9 @@ WALL = "ej.weld.post_wall.face_pair"
 
 @dataclass
 class PostWall:
-    """The post wall at a face-pair base weld (S6-7): its allowable force
-    per inch along the post axis and along the face, and the lines that
-    computed them."""
+    """The post wall at a face-pair base weld (S6-7, S6-17 item 3): its
+    allowable force per inch along the post axis and its allowable shear
+    per inch, and the lines that computed them."""
 
     axial: Sym
     face: Sym
@@ -699,7 +699,9 @@ def post_wall(registry: Registry, project: Project, post: Section) -> PostWall:
     inch of weld (S6-7). Along the post axis: the lower of tensile yielding
     and tensile rupture (AISC 360-22 J4.1), the yielding limit standing for
     the compression side too, since a slender wall never reaches this check
-    (Table B4.1a). Along the face: shear rupture (J4.2(b), as W6)."""
+    (Table B4.1a). Shear: shear rupture (J4.2(b), as W6), against the full
+    shear per inch of weld whatever its direction relative to the welded
+    faces (S6-17 item 3)."""
     sh = Sheet(registry)
     sh.heading("Post wall at the welded faces")
     rule = registry.get(WALL)
@@ -718,35 +720,32 @@ def post_wall(registry: Registry, project: Project, post: Section) -> PostWall:
                     "Allowable force along the post axis per inch: the lower of yielding and rupture",
                     cite_ids=("aisc360.eq.B3-2",), unit=PER_INCH)
     R_v = sh.line("R_n_wall_v", 'R_("n,v")', sh.coeff("aisc360.eq.J4-4.coeff") * Fu * t,
-                  "Shear rupture of the wall under the force along the face, per inch of weld",
+                  "Shear rupture of the wall under the shear, per inch of weld",
                   cite_ids=("aisc360.eq.J4-4", "aisc_manual.part9.base_metal"), unit=PER_INCH)
     Om_v = sh.code_value("Omega_wall_v", "Omega_v", "aisc360.J4.2.omega_rupture", "Safety factor, shear rupture (ASD)")
-    face = sh.line("R_wall_face", 'R_("wall,f")', R_v / Om_v, "Allowable force along the face per inch",
+    face = sh.line("R_wall_face", 'R_("wall,f")', R_v / Om_v, "Allowable shear per inch",
                    cite_ids=("aisc360.eq.B3-2",), unit=PER_INCH)
     return PostWall(axial=axial, face=face, lines=sh.lines)
 
 
-def _wall_ratio(pw: PostWall, pattern: str) -> Callable[[Sheet, RingForces, Direction], tuple[Sym, Sym]]:
-    """How a case finds the post wall's ratio at a face-pair weld (S6-7):
-    the force along the post axis against its allowable, and the force
-    along the face against its own; the larger is the wall's, and the two
-    are not combined. The shear lies along the welded faces when the load
-    is parallel to them, and across them otherwise."""
-    along = (Direction.LONGITUDINAL,) if pattern == FACES_PARALLEL else (Direction.OUTWARD, Direction.INWARD)
+def _wall_ratio(pw: PostWall) -> Callable[[Sheet, RingForces, Direction], tuple[Sym, Sym]]:
+    """How a case finds the post wall's ratio at a face-pair weld (S6-7,
+    S6-17 item 3): the force along the post axis against its allowable, and
+    the full shear per inch of weld against shear rupture, whatever its
+    direction relative to the welded faces; the larger is the wall's, and
+    the two are not combined."""
 
     def ratio(sh: Sheet, f: RingForces, direction: Direction) -> tuple[Sym, Sym]:
         f_n = cast(Sym, f.f_n)  # Check 7 always has a normal force
         r_a = sh.line("Ratio_wall_axial", '"Ratio"_("wall,a")', f_n / pw.axial,
                       "Post wall: force along the post axis / allowable", cite_ids=("aisc360.eq.B3-2",), ratio=True)
-        if f.f_v is not None and direction in along:
+        if f.f_v is not None:
             r_f = sh.line("Ratio_wall_face", '"Ratio"_("wall,f")', f.f_v / pw.face,
-                          "Post wall: force along the face / allowable", cite_ids=("aisc360.eq.B3-2",), ratio=True)
+                          "Post wall: shear per inch of weld / allowable", cite_ids=("aisc360.eq.B3-2",), ratio=True)
             r = sh.line("Ratio_wall", '"Ratio"_"wall"', maximum(r_a, r_f),
                         "Post wall: the larger of the two, not combined", cite_ids=(WALL,), ratio=True)
             return r, pw.axial
-        why = ("no horizontal force in this case" if f.f_v is None else
-               "the horizontal force is across the welded faces, not along them")
-        r = sh.line("Ratio_wall", '"Ratio"_"wall"', r_a, f"Post wall: no force along the face, {why}",
+        r = sh.line("Ratio_wall", '"Ratio"_"wall"', r_a, "Post wall: no horizontal force in this case",
                     cite_ids=(WALL,), ratio=True)
         return r, pw.axial
 
@@ -802,7 +801,7 @@ def check_7(registry: Registry, project: Project, post: Section, loading: Loadin
         wall_lines = post_wall_covered(registry)
     else:
         pw = post_wall(registry, project, post)
-        wall_lines, wall = pw.lines, _wall_ratio(pw, pattern)
+        wall_lines, wall = pw.lines, _wall_ratio(pw)
     head = rg.lines + arm.lines + limits.lines + wm.lines + kd_lines + base.lines + wall_lines
     ws = WeldSetup(
         rg=rg, wm=wm, base=base, head=head,
