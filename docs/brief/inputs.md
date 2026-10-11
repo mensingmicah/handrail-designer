@@ -269,3 +269,33 @@ it has no decision for.
   the same commit as the code it describes (CLAUDE.md, Git). It is
   created on the slice 5 branch, in the refactor step (issue #21), with
   the golden snapshots proving no printed calc changes.
+
+## Rectangular sections (slice 6)
+
+Decided in planning slice 6 (docs/plans/slice-6.md); S6 numbers are that
+plan's decision numbers.
+
+- **A rectangular member's orientation is a geometric input,
+  `long_side`.** (S6-2, Micah 2026-10-10.) It replaces "the engineer sets
+  which axis resists the horizontal guard load" under "Inputs" above: the
+  axis is derived and printed, not entered.
+  - Top rail and intermediate rail: `long_side = "vertical"` or
+    `"horizontal"`.
+  - Post: `long_side = "perpendicular to rail"` or `"parallel to rail"`,
+    the words the baseplate's N and B use (S4-6).
+  - Required, with no default, for every rectangular member that is not
+    square. A forgotten orientation stops; it never picks one silently.
+  - Given on a square or a round member, it stops the calc as a
+    conflicting input.
+  - The tool derives the axes and prints the interpretation on the
+    section page, roughly: "long side vertical: the horizontal guard load
+    bends the weak axis (y), vertical load the strong axis (x)". The
+    Shapes Database lists every rectangular HSS with Ht ≥ B and x as the
+    strong axis (525 rows, 126 of them square; checked 2026-10-10), so
+    the mapping is fixed.
+  - Why geometric. The joints need the geometry, not only the axis: the
+    rail's depth for e = d/2 and its width against the post's (W8) in
+    Check 3, the post face the intermediate rail lands on in Check 4b,
+    and the faces of the base weld that see the moment in Check 7.
+  - Slice 7 reuses the key for flat bar; slice 8 makes it a two-option
+    picker in the form.

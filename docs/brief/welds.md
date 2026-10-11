@@ -577,10 +577,13 @@ checks.md and inputs.md.
     before rectangular chords. Each of the three is a clean stopping
     point.
   - The chord checks print compactly. Per joint, one table: limit state,
-    ratio, OK or NG. Full calc lines print only for a limit state whose
-    ratio exceeds a threshold. The threshold is 0.5 (Micah's suggestion,
-    Claude's proposal; an engineering-judgement registry entry). This
-    follows the slice 5 ruling to keep the package lean.
+    ratio, OK or NG. Full calc lines print for the governing limit state
+    of the joint, always, whatever its ratio (amended by Micah the same
+    day, so his release recompute traces to printed working), and for any
+    other limit state whose ratio exceeds a threshold. The rest are table
+    rows only. The threshold is 0.5 (Micah's suggestion, Claude's
+    proposal; an engineering-judgement registry entry). This follows the
+    slice 5 ruling to keep the package lean.
   - Review. Micah's slice review of the chord checks is a cursory read
     of that table. The release recompute rule is unchanged (ADR 0006,
     S5-2): the governing limit state of each case.
