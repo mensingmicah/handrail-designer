@@ -5,7 +5,8 @@ calc lines, with where each value comes from.
 from __future__ import annotations
 
 from handrail import materials
-from handrail.calc import Line, Sheet
+from handrail.calc import Line, Sheet, mtext
+from handrail.project import HORIZONTAL, PARALLEL, PERPENDICULAR, VERTICAL
 from handrail.registry import Registry
 from handrail.shapes import PIPE, RECT_HSS, ROUND_HSS, Section
 
@@ -37,14 +38,64 @@ def grade_notes(registry: Registry, sec: Section, grade: str) -> list[str]:
     return notes
 
 
-def section_lines(registry: Registry, sec: Section, with_r: bool = False) -> list[Line]:
+# The sentence printed under a rectangular member for each orientation (S6-2).
+ORIENTATION = {
+    VERTICAL: "ej.section.orientation.rail_vertical",
+    HORIZONTAL: "ej.section.orientation.rail_horizontal",
+    PERPENDICULAR: "ej.section.orientation.post_perpendicular",
+    PARALLEL: "ej.section.orientation.post_parallel",
+}
+SQUARE = "ej.section.orientation.square"
+
+
+def _orientation(sh: Sheet, sec: Section, long_side: str) -> None:
+    """Which axis each load bends, derived from the orientation entered and
+    printed, never entered (S6-2)."""
+    if sec.rect.square:
+        entry, statement = sh.registry.get(SQUARE), "Square section"
+    else:
+        entry, statement = sh.registry.get(ORIENTATION[long_side]), f"long_side = {long_side}"
+    sh.decision(mtext(statement), entry.value, "Orientation, and the axis each load bends", cite_ids=(entry.id,))
+
+
+def _rect_lines(sh: Sheet, sec: Section) -> None:
+    """A rectangular or square HSS as published: both outside dimensions,
+    both axes, the torsional constant and both wall ratios."""
+    r = sec.rect
+    sh.given("H", "H", r.H, f"{sec.label}: outside dimension of the longer side", sec.source)
+    sh.given("B", "B", r.B, "Outside dimension of the shorter side", sec.source)
+    sh.given("t_nom", 't_"nom"', sec.tnom, "Nominal wall thickness", sec.source)
+    sh.given("t_des", 't_"des"', sec.tdes, "Design wall thickness", sec.source)
+    sh.given("A", "A", sec.A, "Area (design wall)", sec.source)
+    sh.given("W", "W", sec.W, f"Nominal weight: tabulated {sec.W.m_as('lbf/ft'):g} lb/ft (nominal wall)", sec.source)
+    for name, ax, which in (("x", sec.x, "strong"), ("y", sec.y, "weak")):
+        about = f"about the {name} axis" + ("" if r.square else f", the {which} axis")
+        sh.given(f"I_{name}", f"I_{name}", ax.I, f"Moment of inertia {about}", sec.source)
+        sh.given(f"S_{name}", f"S_{name}", ax.S, f"Elastic section modulus {about}", sec.source)
+        sh.given(f"Z_{name}", f"Z_{name}", ax.Z, f"Plastic section modulus {about}", sec.source)
+        sh.given(f"r_{name}", f"r_{name}", ax.r, f"Radius of gyration {about}", sec.source)
+    sh.given("J", "J", r.J, "Torsional constant", sec.source)
+    sh.given("b_over_t", "b slash t", r.b_t, "Width-to-thickness ratio of the shorter walls, tabulated", sec.source)
+    sh.given("h_over_t", "h slash t", r.h_t, "Width-to-thickness ratio of the longer walls, tabulated", sec.source)
+
+
+def section_lines(registry: Registry, sec: Section, with_r: bool = False, long_side: str = "") -> list[Line]:
     """Section properties: as published for a database section, and for a
     custom section the lines that computed them from the dimensions entered
     (tube.py). The post block adds r, which only the compression check
-    uses; the rail block prints as it did in slice 1."""
-    if sec.custom:
+    uses; the rail block prints as it did in slice 1. A rectangular section
+    prints both axes, and under them which axis each load bends
+    (``long_side`` is the member's orientation, blank for a square)."""
+    if sec.is_round and sec.custom:
         return [ln for ln in sec.computed if with_r or ln.key != "r"]
     sh = Sheet(registry)
+    if not sec.is_round:
+        if sec.custom:
+            sh.lines.extend(sec.computed)
+        else:
+            _rect_lines(sh, sec)
+        _orientation(sh, sec, long_side)
+        return sh.lines
     sh.given("D", "D", sec.OD, f"{sec.label}: outside diameter", sec.source)
     sh.given("t_nom", 't_"nom"', sec.tnom, "Nominal wall thickness", sec.source)
     sh.given("t_des", 't_"des"', sec.tdes, "Design wall thickness", sec.source)

@@ -31,10 +31,12 @@ def compute(project: Project, registry: Registry) -> Results:
     project, rail, post, inter = m.project, m.rail, m.post, m.inter
     same = project.intermediate_rail.state == SAME_AS_TOP
     loading = build_loading(project, registry, rail, post, inter)
-    props = section_lines(registry, rail)
-    post_props = section_lines(registry, post, with_r=True)
+    props = section_lines(registry, rail, long_side=project.top_rail.long_side)
+    post_props = section_lines(registry, post, with_r=True, long_side=project.post.long_side)
     own = inter is not None and not same  # the intermediate rail has its own section
-    inter_props = section_lines(registry, inter) if inter is not None and own else []
+    own_member = project.intermediate_rail.member
+    inter_props = (section_lines(registry, inter, long_side=own_member.long_side)
+                   if inter is not None and own and own_member is not None else [])
     rail_notes = grade_notes(registry, rail, project.top_rail.grade)
     post_notes = grade_notes(registry, post, project.post.grade)
     inter_member = project.intermediate_member

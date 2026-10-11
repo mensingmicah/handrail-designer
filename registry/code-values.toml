@@ -205,6 +205,15 @@ review = [
   "aisc360.eq.F1-1.coeff_center",
   "aisc360.F1.c.cantilever_cb",
   "ej.bending.biaxial_rect",
+  # Slice 6 step 3 (member engineering), drafted 2026-10-11
+  "aisc_manual.t3-23.case1.Mx",
+  "aisc_manual.t3-23.case7.Mx",
+  "ej.flexure.unbraced_length",
+  "ej.section.orientation.rail_vertical",
+  "ej.section.orientation.rail_horizontal",
+  "ej.section.orientation.post_perpendicular",
+  "ej.section.orientation.post_parallel",
+  "ej.section.orientation.square",
 ]
 
 # ---------------------------------------------------------------------------
@@ -3818,3 +3827,148 @@ not SRSS; square HSS included; SRSS stays with round sections \
 term is zero for a rail. This entry holds the decision and the words \
 printed beside the combination; the wording is Claude's proposal for \
 Micah to accept or reword in the slice 6 pull request."""
+
+# --- Step 3: the moment diagram for Cb, the unbraced length, orientation ----
+
+[[entry]]
+id = "aisc_manual.t3-23.case1.Mx"
+value = "Simple beam, uniformly distributed load: moment at a distance x from the support"
+unit = "equation"
+cite = "AISC Manual Table 3-23, Case 1"
+document = "AISC Steel Construction Manual"
+edition = "16th Edition"
+section = "Part 3, Table 3-23, Case 1, Simple Beam - Uniformly Distributed Load, Mx"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = """
+From memory: Mx = (w x / 2)(l - x). Used at the quarter point of the \
+span for the Cb of Eq. F1-1 (cb.py; S6-4), and at the point where an \
+opposed moment peaks in the upward case. The same case as \
+aisc_manual.t3-23.case1.M, which is verified; this is its Mx line."""
+
+[[entry]]
+id = "aisc_manual.t3-23.case7.Mx"
+value = "Simple beam, concentrated load at center: moment at a distance x from the support, x less than half the span"
+unit = "equation"
+cite = "AISC Manual Table 3-23, Case 7"
+document = "AISC Steel Construction Manual"
+edition = "16th Edition"
+section = "Part 3, Table 3-23, Case 7, Simple Beam - Concentrated Load at Center, Mx (when x < l/2)"
+source = "memory"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = """
+From memory: Mx = P x / 2 when x < l/2. Used at the quarter point of \
+the span for the Cb of Eq. F1-1 (cb.py; S6-4). The same case as \
+aisc_manual.t3-23.case7.M, which is verified; this is its Mx line."""
+
+[[entry]]
+id = "ej.flexure.unbraced_length"
+value = "The laterally unbraced length for lateral-torsional buckling is the span between posts for a rail, and the post height h for the post."
+unit = "equation"
+cite = "Engineering judgement (EOR): unbraced length for lateral-torsional buckling"
+document = "Engineering decision of the engineer of record"
+edition = "docs/brief/checks.md, Flexural capacity; S6-4"
+section = "Flexural capacity: top rail Lb = span; post Lb = h; the intermediate rail's Lb is the span (S6-16 item 3)"
+source = "engineer"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = """
+The brief's standing decision (checks.md, Flexural capacity), applied \
+from slice 6 to rectangular HSS (S6-4): a rail is braced at the posts \
+only, so Lb is the span; the post is a cantilever and Lb is h, top of \
+concrete to top rail centerline, as in the compression effective length \
+(ej.post.unbraced_length), not h - t_p. Cited on the L_b line of a \
+section with a lateral-torsional limit state."""
+
+[[entry]]
+id = "ej.section.orientation.rail_vertical"
+value = "Long side vertical: a vertical load bends the strong axis (x); the horizontal guard load bends the weak axis (y)."
+unit = "text"
+cite = "Engineering judgement (EOR): a rectangular member's axes follow from its long side"
+document = "Engineering decision of the engineer of record"
+edition = "docs/brief/inputs.md, S6-2"
+section = "A rectangular rail's orientation, long_side = vertical: which axis each load bends"
+source = "engineer"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = """
+S6-2 (Micah, 2026-10-10): the orientation is a geometric input and the \
+axes are derived and printed, not entered. The Shapes Database lists \
+every rectangular HSS with Ht >= B and x as the strong axis, so the \
+mapping is fixed. Printed on the section page under the member. The \
+wording is Claude's proposal for Micah to accept or reword in the slice \
+6 pull request."""
+
+[[entry]]
+id = "ej.section.orientation.rail_horizontal"
+value = "Long side horizontal: a vertical load bends the weak axis (y); the horizontal guard load bends the strong axis (x)."
+unit = "text"
+cite = "Engineering judgement (EOR): a rectangular member's axes follow from its long side"
+document = "Engineering decision of the engineer of record"
+edition = "docs/brief/inputs.md, S6-2"
+section = "A rectangular rail's orientation, long_side = horizontal: which axis each load bends"
+source = "engineer"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = "S6-2; see ej.section.orientation.rail_vertical. Wording proposed by Claude for the slice 6 pull request."
+
+[[entry]]
+id = "ej.section.orientation.post_perpendicular"
+value = "Long side perpendicular to the rail: a load across the guard (outward or inward) bends the strong axis (x); a load along the rail bends the weak axis (y)."
+unit = "text"
+cite = "Engineering judgement (EOR): a rectangular member's axes follow from its long side"
+document = "Engineering decision of the engineer of record"
+edition = "docs/brief/inputs.md, S6-2"
+section = "A rectangular post's orientation, long_side = perpendicular to rail: which axis each load bends"
+source = "engineer"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = "S6-2; see ej.section.orientation.rail_vertical. The words are the ones the baseplate's N and B use (S4-6). Wording proposed by Claude for the slice 6 pull request."
+
+[[entry]]
+id = "ej.section.orientation.post_parallel"
+value = "Long side parallel to the rail: a load across the guard (outward or inward) bends the weak axis (y); a load along the rail bends the strong axis (x)."
+unit = "text"
+cite = "Engineering judgement (EOR): a rectangular member's axes follow from its long side"
+document = "Engineering decision of the engineer of record"
+edition = "docs/brief/inputs.md, S6-2"
+section = "A rectangular post's orientation, long_side = parallel to rail: which axis each load bends"
+source = "engineer"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = "S6-2; see ej.section.orientation.rail_vertical. Wording proposed by Claude for the slice 6 pull request."
+
+[[entry]]
+id = "ej.section.orientation.square"
+value = "Square section: both axes have the same properties, and no orientation is entered. The calc names the axis a vertical load bends (for a post, a load across the guard) x, and the other y."
+unit = "text"
+cite = "Engineering judgement (EOR): a rectangular member's axes follow from its long side"
+document = "Engineering decision of the engineer of record"
+edition = "docs/brief/inputs.md, S6-2"
+section = "A square member: long_side is not entered; which axis the calc names x and y"
+source = "engineer"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = """
+S6-2: long_side given on a square member stops as a conflicting input. \
+A square section's two axes are equal, so the names only tell the two \
+moments of a biaxial case apart. Wording proposed by Claude for the \
+slice 6 pull request."""

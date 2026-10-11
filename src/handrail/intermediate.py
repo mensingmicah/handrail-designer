@@ -17,6 +17,12 @@ own (own section) or Check 2's (same as the top rail), each bypassable.
 Same as the top rail with P_c <= P, Check 4a is not computed: Checks 1 and
 2 already run that section, span and dead load at P (S4-2). With no
 intermediate rail it prints "none".
+
+A rectangular intermediate rail (S6-16 item 3) bends the axis each case
+loads: the downward case the axis a vertical load bends, with Cb from the
+point load and the dead load together, the horizontal case the other axis,
+with Cb from the point load alone. Check 4a has no biaxial case: its
+horizontal case is the component load alone (S4-10).
 """
 
 from __future__ import annotations
@@ -24,11 +30,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import cast
 
-from handrail import beams
-from handrail.calc import Const, Line, Sheet, compare, fmt_quantity_plain, term
-from handrail.flexure import flexural_capacity
+from handrail import beams, cb
+from handrail.calc import Const, Line, Sheet, Sym, compare, fmt_quantity_plain, term
+from handrail.flexure import Unbraced, flexural_capacity, rect_axis_capacity, rect_limits
 from handrail.loading import COMBO, combo_text
 from handrail.directions import COMPONENT, COMPONENT_DIRECTIONS, DOWNWARD, HORIZONTAL, Direction, unknown
+from handrail.orientation import RailAxes, axis, rail_axes
 from handrail.project import NO_INTERMEDIATE, SAME_AS_TOP, DeflectionLimit, Member, Project
 from handrail.registry import Registry
 from handrail.results import Case, Check, Loading
@@ -79,13 +86,75 @@ def _bending_case(registry: Registry, project: Project, loading: Loading, cap, h
                          ratio=ratio.value, lines=sh.lines, limit_state=BENDING)
 
 
+def _axis_of(axes: RailAxes, direction: Direction) -> tuple[str, str]:
+    """The axis this direction of the component load bends, and the load's direction in words."""
+    if direction == DOWNWARD:
+        return axes.vertical, "vertical"
+    if direction == HORIZONTAL:
+        return axes.horizontal, "horizontal"
+    unknown("Check 4a", "component load direction", direction, COMPONENT_DIRECTIONS)
+
+
+def _rect_bending_case(registry: Registry, project: Project, inter: Section, grade: str, axes: RailAxes,
+                       loading: Loading, head: list[Line], direction: Direction,
+                       flags: list[str]) -> ComponentCase:
+    """One bending case of a rectangular intermediate rail. The demand
+    prints first: Cb comes from this case's own loads (S6-16 item 3)."""
+    sh = Sheet(registry)
+    sh.lines.extend(head)
+    a, load = _axis_of(axes, direction)
+    sh.heading(f"Demand: {direction.lower()}, component load")
+    combo, down = registry.get(COMBO), registry.get(DOWN)
+    L = sh.given("L", "L", project.span.value, "Span, simple beam", "Input")
+    Pc = sh.given("P_c", "P_c", loading.P_c, "Component load, a point load at midspan", "Loading")
+    ML = beams.point_moment(sh, "M_L", "M_L", Pc, L, "Component load moment, midspan", cite_ids=(MIDSPAN,))
+    fL = sh.factor(combo.id, "L")
+    if direction == DOWNWARD:
+        fD = sh.factor(combo.id, "D")
+        wD = sh.given("w_D_int", 'w_(D,"int")', loading.w_D_int, "Intermediate rail self-weight", "Loading")
+        MD = beams.uniform_moment(sh, "M_D", "M_D", wD, L, "Dead-load moment, midspan")
+        M = sh.line(f"M_r_{a}", f'M_"r{a}"', fD * MD + fL * ML,
+                    f"Required flexural strength about the {a} axis: D and L, both vertical",
+                    cite_ids=(down.id,), unit="lbf*inch")
+        loads = [cb.SpanLoad(fD * wD, True), cb.SpanLoad(fL * Pc, False)]
+        label = f"{combo_text(combo)}, vertical\n{combo.cite}; {down.cite}"
+    elif direction == HORIZONTAL:
+        M = sh.line(f"M_r_{a}", f'M_"r{a}"', fL * ML,
+                    f"Required flexural strength about the {a} axis: the component load alone, not combined "
+                    f"with dead load", cite_ids=(down.id,), unit="lbf*inch")
+        loads = [cb.SpanLoad(fL * Pc, False)]
+        label = f"{float(combo.value['L'])!r}L horizontal, alone\n{combo.cite}; {down.cite}"
+    else:
+        unknown("Check 4a", "component load direction", direction, COMPONENT_DIRECTIONS)
+    sh.heading("Section")
+    lim = rect_limits(sh, inter, grade)
+    sh.heading(f"Capacity about the {a} axis ({load} load)")
+    unbraced = Unbraced(L, "Laterally unbraced length: the span between posts",
+                        lambda s: cb.simple_span(s, L, M, loads))
+    Mc = rect_axis_capacity(sh, lim, inter, a, unbraced, flags)
+    ratio = sh.line("Ratio", '"Ratio"', M / Mc, "Demand / capacity", cite_ids=("aisc360.eq.B3-2",), ratio=True)
+    return ComponentCase(direction, COMPONENT, "checked", label, demand=M.value, capacity=Mc.value,
+                         ratio=ratio.value, lines=sh.lines, limit_state=BENDING)
+
+
+def _inertia(sh: Sheet, project: Project, inter: Section, direction: Direction) -> Sym:
+    """The moment of inertia the case deflects on: a round section's one
+    value, or a rectangular section's about the axis this case bends."""
+    if inter.is_round:
+        return sh.given("I_int", 'I_"int"', inter.I, f"Moment of inertia, {inter.label}", inter.source)
+    member = cast(Member, project.intermediate_member)
+    a, load = _axis_of(rail_axes(inter, member.long_side), direction)
+    return sh.given("I_int", f'I_"int,{a}"', axis(inter, a).I,
+                    f"Moment of inertia about the {a} axis ({load} load), {inter.label}", inter.source)
+
+
 def _deflection_case(registry: Registry, project: Project, inter: Section, loading: Loading,
                      limit: DeflectionLimit, head: list[Line], direction: Direction) -> ComponentCase:
     sh = Sheet(registry)
     sh.lines.extend(head)
     L = sh.given("L", "L", project.span.value, "Span, simple beam", "Input")
     E = sh.code_value("E", "E", "material.steel.E", "Modulus of elasticity")
-    I = sh.given("I_int", 'I_"int"', inter.I, f"Moment of inertia, {inter.label}", inter.source)
+    I = _inertia(sh, project, inter, direction)
     Pc = sh.given("P_c", "P_c", loading.P_c, "Component load, a point load at midspan", "Loading")
     DL = beams.point_deflection(sh, "Delta_L", "Delta_L", Pc, L, E, I, "Component load deflection, midspan",
                                 cite_ids=(MIDSPAN,))
@@ -144,11 +213,19 @@ def check_4a(registry: Registry, project: Project, inter: Section | None, loadin
 
     # Past the "none" return above there is an intermediate rail: its section and its member.
     inter = cast(Section, inter)
-    grade = cast(Member, project.intermediate_member).grade
-    cap = flexural_capacity(registry, inter, grade)
-    chk.flags = cap.flags
-    for direction in COMPONENT_DIRECTIONS:
-        chk.cases.append(_bending_case(registry, project, loading, cap, head, direction))
+    member = cast(Member, project.intermediate_member)
+    grade = member.grade
+    if inter.is_round:
+        cap = flexural_capacity(registry, inter, grade)
+        chk.flags = cap.flags
+        for direction in COMPONENT_DIRECTIONS:
+            chk.cases.append(_bending_case(registry, project, loading, cap, head, direction))
+    else:
+        axes, flags = rail_axes(inter, member.long_side), []
+        for direction in COMPONENT_DIRECTIONS:
+            chk.cases.append(_rect_bending_case(registry, project, inter, grade, axes, loading, head, direction,
+                                                flags))
+        chk.flags = list(dict.fromkeys(flags))  # each wall's flag once, however many cases met it
     for direction in COMPONENT_DIRECTIONS:
         if limit.bypass:
             chk.cases.append(ComponentCase(direction, COMPONENT, "bypassed", limit_state=DEFLECTION,

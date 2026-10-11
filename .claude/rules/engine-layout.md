@@ -16,7 +16,8 @@ convention below is held by a test, named beside it.
 | calc.py | Calc lines, the expression tree, number formatting, comparisons |
 | directions.py | Direction, LoadType and Kind enums; the envelope orders |
 | stops.py, errors.py | The id of every stop; the error classes that carry one |
-| shapes.py | Section, the one type for every section (family, source, both axes); the family names; the database lookup |
+| shapes.py | Section, the one type for every section (family, source, outline, both axes); the family names; the database lookup |
+| orientation.py | How a member is built into the guard: which axis each load bends, and its dimensions in the guard's directions (S6-2) |
 | tube.py | A custom round tube: its section computed from the dimensions entered, each property a calc line |
 | joints.py | Which section families may meet at each joint, as data |
 | materials.py | Which registry entry holds Fy and Fu for a grade, shape and wall; the default grade by shape |
@@ -24,7 +25,8 @@ convention below is held by a test, named beside it.
 | results.py | Case, Check, Loading, Results |
 | loading.py | The guard loads and the dead load at the post |
 | properties.py | The section properties block |
-| flexure.py | §F8 flexural capacity, shared by Checks 1, 4a and 5 |
+| flexure.py | Flexural capacity, shared by Checks 1, 4a and 5: §F8 for a round section, §F7 about the axis bent for a rectangular one |
+| cb.py | Cb by Eq. F1-1 from a case's moment diagram, written once (S6-4) |
 | rail.py | Checks 1 and 2 |
 | intermediate.py | Check 4a |
 | post.py | Checks 5 and 6 |

@@ -16,6 +16,7 @@ import typst
 from handrail.calc import Line, fmt_quantity_plain, fmt_ratio, fmt_sig, typst_str
 from handrail.intermediate import ComponentCase
 from handrail.post import PostCase
+from handrail.rail import BiaxialCase
 from handrail.dimensions import Dimension
 from handrail.project import OWN_SECTION, SAME_AS_TOP, Member
 from handrail.directions import LATERAL
@@ -178,6 +179,39 @@ def _envelope(chk: Check) -> str:
     )
 
 
+def _biaxial_terms(c: BiaxialCase) -> tuple[str, str]:
+    """A rectangular rail's case: its moment and allowable strength about
+    the axis the vertical load bends, and about the axis the horizontal
+    guard load bends where the case has one. The envelope and the summary
+    both print these."""
+    vertical = f"Mr{c.axis_v} = {fmt_quantity_plain(c.M_v)}\nMc{c.axis_v} = {fmt_quantity_plain(c.Mc_v)}"
+    if not c.axis_h:
+        return vertical, "—"
+    return vertical, f"Mr{c.axis_h} = {fmt_quantity_plain(c.M_h)}\nMc{c.axis_h} = {fmt_quantity_plain(c.Mc_h)}"
+
+
+def _envelope_biaxial(chk: Check) -> str:
+    """Check 1 envelope of a rectangular rail: the moment about each axis
+    with its allowable strength on the line below, and the ratio, which
+    combines the two axes in the outward and inward cases (S6-4)."""
+    ctrl = chk.controlling
+    rows, bold = [], []
+    for i, c in enumerate(cast("list[BiaxialCase]", chk.cases)):
+        if c.status == "checked":
+            vertical, horizontal = _biaxial_terms(c)
+            rows.append([c.direction, c.load_type, c.combination, vertical, horizontal, fmt_ratio(_ratio(c)),
+                         "Controls" if c is ctrl else ""])
+            if c is ctrl:
+                bold.append(i)
+        else:
+            rows.append([c.direction, c.load_type or "", c.remark, "", "", "", ""])
+    return _table(
+        ["[*Direction*]", "[*Load*]", "[*Combination*]", "[*Vertical load* \\ $M_r$, $M_c$]",
+         "[*Horizontal load* \\ $M_r$, $M_c$]", "[*Ratio*]", "[]"],
+        rows, "(auto, auto, 1fr, auto, auto, auto, auto)", bold, raw_header=True,
+    )
+
+
 def _envelope_5(chk: Check) -> str:
     """Check 5 envelope: axial and moment demands, each with its capacity on the
     line below, the equation, and alpha Pr/Pe for every case the second-order
@@ -191,7 +225,8 @@ def _envelope_5(chk: Check) -> str:
             rows.append([
                 c.direction, c.load_type, c.combination,
                 f"{fmt_quantity_plain(c.Pr)} {sense}\n{P_cap}",
-                f"{fmt_quantity_plain(c.Mr)}\n{M_cap}" if c.Mr is not None else "—",
+                f"{fmt_quantity_plain(c.Mr)}\n{M_cap}" + (f"\nabout {c.axis}" if c.axis else "")
+                if c.Mr is not None else "—",
                 c.equation.replace(" (", "\n("),  # the source equation on its own line keeps the column narrow
                 fmt_sig(c.second_order) if c.second_order is not None else "—",
                 fmt_ratio(_ratio(c)),
@@ -311,6 +346,8 @@ def _check(chk: Check) -> str:
         out.append(_envelope_weld(chk))
     elif isinstance(chk.controlling, ComponentCase):
         out.append(_envelope_4a(chk))
+    elif isinstance(chk.controlling, BiaxialCase):
+        out.append(_envelope_biaxial(chk))
     else:
         out.append(_envelope(chk))
     ctrl = _controlling(chk)
@@ -337,6 +374,13 @@ def _demand_capacity(c: Case) -> tuple[str, str]:
     the line that governs its ratio, weld metal or base metal, as the case set it."""
     if isinstance(c, WeldCase):
         return fmt_quantity_plain(c.demand), f"{fmt_quantity_plain(c.capacity)} ({c.governs})"
+    if isinstance(c, BiaxialCase):
+        demand = [f"Mr{c.axis_v} = {fmt_quantity_plain(c.M_v)}"]
+        capacity = [f"Mc{c.axis_v} = {fmt_quantity_plain(c.Mc_v)}"]
+        if c.axis_h:
+            demand.append(f"Mr{c.axis_h} = {fmt_quantity_plain(c.M_h)}")
+            capacity.append(f"Mc{c.axis_h} = {fmt_quantity_plain(c.Mc_h)}")
+        return "; ".join(demand), "; ".join(capacity)
     if not isinstance(c, PostCase):
         return fmt_quantity_plain(c.demand), fmt_quantity_plain(c.capacity)
     Pr, P_cap, Mr, M_cap = _post_terms(c)

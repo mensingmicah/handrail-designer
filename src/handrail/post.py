@@ -16,6 +16,14 @@ Direction cases (plan, Envelope):
   net tension when 0.6D >= L.
 Check 6 is live load only in the three horizontal cases; downward and
 upward are listed as vertical, with no lateral deflection.
+
+A rectangular or square post (S6-14 item 2). Compression uses the smaller
+radius of gyration in every case, and both walls are classified by Table
+B4.1a. Each lateral case bends one axis only: the transverse cases one,
+the longitudinal case the other, by the post's long_side. So section H1.1
+takes one moment per case, on that axis's AISC 360-22 F7 strength (Cb =
+1.0, a cantilever, Lb = h), and alpha Pr/Pe and Check 6 use I about the
+same axis.
 """
 
 from __future__ import annotations
@@ -24,15 +32,17 @@ from dataclasses import dataclass, field
 from typing import Any, cast
 from collections.abc import Callable
 
-from handrail.calc import PI, Const, Line, Sheet, Sym, Term, compare, fmt_sig, number, sqrt
+from handrail import cb
+from handrail.calc import PI, Const, Line, Sheet, Sym, Term, compare, fmt_quantity_plain, fmt_sig, number, sqrt
 from handrail.demand import ASD, Demand, Given, Wording, demand, live_at_post
 from handrail.directions import (
     DIRECTIONS, DISTRIBUTED, DOWNWARD, LOAD_TYPES, UPWARD, Direction, Kind, LoadType, kind, unknown,
 )
 from handrail.errors import SectionStop
-from handrail.flexure import flexural_capacity
+from handrail.flexure import Unbraced, flexural_capacity, rect_axis_capacity, rect_limits
 from handrail.loading import combo_text, exempt_case
 from handrail.materials import yield_stress
+from handrail.orientation import PostAxes, axis, post_axes
 from handrail.project import Project
 from handrail.registry import Entry, Registry
 from handrail.results import Case, Check, Loading
@@ -51,6 +61,7 @@ class PostCase(Case):
     M_allow: Any = None            # Mc; None in the axial-only cases
     equation: str = ""                # the equation the ratio comes from, as printed
     second_order: float | None = None  # alpha Pr/Pe, moment cases only
+    axis: str = ""                    # a rectangular post: the axis this case bends; "" otherwise
 
 
 # ---------------------------------------------------------------------------
@@ -75,38 +86,78 @@ class Compression:
     summary_flag: str
 
 
+def _rect_walls_in_compression(sh: Sheet, post: Section, E: Sym, Fy: Sym) -> None:
+    """Table B4.1a Case 6: both walls of a rectangular post, each on its own
+    ratio (S6-14 item 3). A slender wall stops, which is also what keeps a
+    face-pair base weld off a slender wall (S6-7). A square post has one
+    ratio."""
+    lr_e = sh.registry.get("aisc360.B4.1a.rect_hss.lambda_r")
+    lr = sh.line("lambda_r_c", "lambda_(r,c)", sh.coeff(lr_e.id) * sqrt(E / Fy),
+                 "Slender limit, walls of rectangular HSS in compression")
+    r = post.rect
+    walls = [("b", "b/t", r.b_t, r.B)] + ([] if r.square else [("h", "h/t", r.h_t, r.H)])
+    for letter, name, ratio, wall in walls:
+        lam = sh.given(f"lambda_{letter}", f"lambda_{letter}", ratio,
+                       f"Wall slenderness: {name} of the {fmt_quantity_plain(wall)} walls, {post.how} (design wall)",
+                       post.source)
+        # Evaluated once; its stop and its printed decision line come from it (ADR 0002).
+        slender = compare(lam.stated(post.ratio_text), ">", lr.stated(fmt_sig))
+        if slender:
+            raise SectionStop(
+                f"{post.label}: the {fmt_quantity_plain(wall)} wall is slender in compression, {name} = "
+                f"{post.ratio_text(ratio)} {slender.op} lambda_r = {lr_e.value} sqrt(E/Fy) = {fmt_sig(lr.value)} "
+                f"({lr_e.cite}). The tool does not check slender sections.",
+                stop=Stop.SECTION_SLENDER_IN_COMPRESSION
+            )
+        sh.decision(slender, "Nonslender", "Wall classification, compression: no noncompact category",
+                    cite_ids=("aisc360.B4.1a.classification",))
+
+
+def _radius_of_gyration(sh: Sheet, post: Section) -> Sym:
+    """r for the compression check: a round section's one value, and for a
+    rectangular post the smaller, in every case (S6-14 item 2)."""
+    if post.is_round:
+        return sh.given("r", "r", post.r, "Radius of gyration", post.source)
+    if post.rect.square:
+        return sh.given("r", "r", post.y.r, "Radius of gyration, the same about both axes", post.source)
+    return sh.given("r", "r_y", post.y.r, "Radius of gyration: the smaller, about the y axis, in every case",
+                    post.source)
+
+
 def compression_capacity(registry: Registry, project: Project, post: Section) -> Compression:
     """Classify per Table B4.1a and compute Pc per Chapter E. Raises SectionStop."""
     grade = project.post.grade
     head = Sheet(registry)
     Fy = yield_stress(registry, grade, post).line(head, "F_y", "F_y")
     E = head.code_value("E", "E", "material.steel.E", "Modulus of elasticity")
-    # The same D/t line the flexure block prints, so moment cases skip it here.
-    lam = head.given("lambda", "lambda", post.D_t, f"lambda = D/t, {post.how} (design wall)", post.source)
-
     sh = Sheet(registry)
-    lr_e = registry.get("aisc360.B4.1a.round_hss.lambda_r")
-    # lambda_(r,c): a moment case also prints the flexure block's lambda_r (Table B4.1b).
-    lr = sh.line("lambda_r_c", "lambda_(r,c)", sh.coeff(lr_e.id) * E / Fy, "Slender limit, round HSS in compression")
-    # Each comparison below is evaluated once; its stop or branch and its
-    # printed decision line come from that evaluation (ADR 0002).
-    D_t = post.ratio_text(post.D_t)
-    slender = compare(lam.stated(post.ratio_text), ">", lr.stated(fmt_sig))
-    if slender:
-        raise SectionStop(
-            f"{post.label}: wall is slender in compression, D/t = {D_t} {slender.op} lambda_r = "
-            f"{lr_e.value}E/Fy = {fmt_sig(lr.value)} ({lr_e.cite}). The tool does not check slender sections.",
-            stop=Stop.SECTION_SLENDER_IN_COMPRESSION
-        )
-    sh.decision(slender, "Nonslender", "Section classification, compression: no noncompact category",
-                cite_ids=("aisc360.B4.1a.classification",))
+    if post.is_round:
+        # The same D/t line the flexure block prints, so moment cases skip it here.
+        lam = head.given("lambda", "lambda", post.D_t, f"lambda = D/t, {post.how} (design wall)", post.source)
+        lr_e = registry.get("aisc360.B4.1a.round_hss.lambda_r")
+        # lambda_(r,c): a moment case also prints the flexure block's lambda_r (Table B4.1b).
+        lr = sh.line("lambda_r_c", "lambda_(r,c)", sh.coeff(lr_e.id) * E / Fy, "Slender limit, round HSS in compression")
+        # Each comparison below is evaluated once; its stop or branch and its
+        # printed decision line come from that evaluation (ADR 0002).
+        D_t = post.ratio_text(post.D_t)
+        slender = compare(lam.stated(post.ratio_text), ">", lr.stated(fmt_sig))
+        if slender:
+            raise SectionStop(
+                f"{post.label}: wall is slender in compression, D/t = {D_t} {slender.op} lambda_r = "
+                f"{lr_e.value}E/Fy = {fmt_sig(lr.value)} ({lr_e.cite}). The tool does not check slender sections.",
+                stop=Stop.SECTION_SLENDER_IN_COMPRESSION
+            )
+        sh.decision(slender, "Nonslender", "Section classification, compression: no noncompact category",
+                    cite_ids=("aisc360.B4.1a.classification",))
+    else:
+        _rect_walls_in_compression(sh, post, E, Fy)
 
     K = sh.code_value("K", "K", "aisc360.CA7.K_fixed_free", "Effective length factor, fixed-free (recommended design value)")
     h = sh.given("h", "h", project.post_height.value, "Post height, top of concrete to top rail centerline", "Input")
     Lc = sh.line("L_c", "L_c", K * h, "Effective length, with the unbraced length taken as the post height h",
                  cite_ids=("aisc360.E2.effective_length", "ej.post.unbraced_length"), unit="inch")
     Lc_line = sh.lines[-1]
-    r = sh.given("r", "r", post.r, "Radius of gyration", post.source)
+    r = _radius_of_gyration(sh, post)
     slenderness = sh.line("L_c_over_r", "frac(L_c, r)", Lc / r, "Effective slenderness ratio", cite_ids=("aisc360.eq.E3-4",))
 
     note_e = registry.get("aisc360.E2.user_note.slenderness")
@@ -181,9 +232,60 @@ class Capacity5:
     compression: Compression
     tension: Callable[[], Tension]  # computed on first use, so an unused §D2 is not listed as used
     flags: list[str] = field(default_factory=list)
+    # A rectangular post (S6-14 item 2): which axis each lateral case bends,
+    # and the flexure lines and Mc about each of them.
+    axes: PostAxes | None = None
+    about: dict[str, tuple[list[Line], Sym]] = field(default_factory=dict)
+
+    def flexure_for(self, direction: Direction) -> tuple[list[Line], Sym, str]:
+        """The flexure lines and Mc of a lateral case, and the axis it bends
+        ("" for a round post, which has one strength)."""
+        if self.axes is None:
+            return self.flexure, self.Mc, ""
+        name = _bent_axis(self.axes, direction)
+        lines, Mc = self.about[name]
+        return lines, Mc, name
+
+
+def _bent_axis(axes: PostAxes, direction: Direction) -> str:
+    """The axis of a rectangular post a lateral case bends: the transverse
+    cases one, the longitudinal case the other."""
+    if direction in (Direction.OUTWARD, Direction.INWARD):
+        return axes.transverse
+    if direction == Direction.LONGITUDINAL:
+        return axes.longitudinal
+    unknown("Check 5", "horizontal direction case", direction,
+            [d for d in DIRECTIONS if kind(d) is Kind.HORIZONTAL])
+
+
+def _rect_capacity(registry: Registry, project: Project, post: Section) -> Capacity5:
+    """Check 5's capacities for a rectangular post: AISC 360-22 F7 about
+    each axis a lateral case bends, with Cb = 1.0 and Lb = h (S6-4)."""
+    grade = project.post.grade
+    axes = post_axes(post, project.post.long_side)
+    flags: list[str] = []
+    about: dict[str, tuple[list[Line], Sym]] = {}
+    for name in dict.fromkeys((axes.transverse, axes.longitudinal)):
+        sh = Sheet(registry)
+        lim = rect_limits(sh, post, grade)
+        h = Sym("h", project.post_height.value)
+        unbraced = Unbraced(h, "Laterally unbraced length: the post height h, a cantilever", cb.cantilever)
+        about[name] = (sh.lines, rect_axis_capacity(sh, lim, post, name, unbraced, flags))
+    comp = compression_capacity(registry, project, post)
+    cache: list[Tension] = []
+
+    def tension() -> Tension:
+        if not cache:
+            cache.append(tension_capacity(registry, project, post))
+        return cache[0]
+
+    return Capacity5(flexure=[], Mc=about[axes.transverse][1], compression=comp, tension=tension,
+                     flags=list(dict.fromkeys(flags)) + comp.flags, axes=axes, about=about)
 
 
 def _capacity(registry: Registry, project: Project, post: Section) -> Capacity5:
+    if not post.is_round:
+        return _rect_capacity(registry, project, post)
     flex = flexural_capacity(registry, post, project.post.grade)
     sh = Sheet(registry)
     sh.lines.extend(flex.lines)
@@ -251,13 +353,18 @@ def _moment_case(registry, project, post, loading, cap: Capacity5, direction: Di
     sh = Sheet(registry)
     comp = cap.compression
     sh.heading("Capacity")
-    sh.lines.extend(cap.flexure + comp.body)
+    flexure, Mc, bent = cap.flexure_for(direction)
+    sh.lines.extend(flexure + comp.body)
     d = _demand(registry, project, loading, direction, load_type)
     sh.lines.extend(d.lines)
     Pr, Mr = cast(Sym, d.P), cast(Sym, d.M)  # a horizontal demand always has both
 
     # Second-order effects: a ratio and a stop, not an amplifier (plan D1).
-    I = sh.given("I", "I", post.I, "Moment of inertia", post.source)
+    if bent:
+        I = sh.given("I", f"I_{bent}", axis(post, bent).I, f"Moment of inertia about the {bent} axis, which this case bends",
+                     post.source)
+    else:
+        I = sh.given("I", "I", post.I, "Moment of inertia", post.source)
     Pe = sh.line("P_e", "P_e", PI**2 * comp.E * I / comp.Lc**2, "Elastic critical buckling load, at the compression Lc",
                  cite_ids=("aisc360.eq.A-8-5", "ej.second_order.pe_length"), unit="lbf")
     alpha = sh.coeff("aisc360.app8.alpha_asd")
@@ -275,7 +382,7 @@ def _moment_case(registry, project, post, loading, cap: Capacity5, direction: Di
     sentence = registry.get("ej.second_order.negligible")
     sh.decision(exceeds, sentence.value.format(ratio=fmt_sig(a_ratio.value)), "", cite_ids=(lim.id,))
 
-    Pc, Mc = comp.Pc, cap.Mc
+    Pc = comp.Pc
     t = registry.get("aisc360.H1.1.threshold")
     PrPc = sh.line("P_r_over_P_c", "frac(P_r, P_c)", Pr / Pc, "Axial ratio, selects the interaction equation", cite_ids=(t.id,))
     # Each equation entry is fetched only on its own branch, as for Chapter E.
@@ -294,7 +401,7 @@ def _moment_case(registry, project, post, loading, cap: Capacity5, direction: Di
                     demand=Mr.value, capacity=Mc.value, ratio=ratio.value, lines=sh.lines,
                     Pr=Pr.value, sense=d.sense, Mr=Mr.value, P_allow=Pc.value, M_allow=Mc.value,
                     equation=eq.equation_number,
-                    second_order=a_ratio.value)
+                    second_order=a_ratio.value, axis=bent)
 
 
 def _upward(registry, project, loading, cap: Capacity5, load_type) -> PostCase:
@@ -345,7 +452,12 @@ def _deflection_case(registry, project, post, loading, direction, load_type) -> 
     combo = registry.get("ej.combo.deflection.L_only")
     Lp = sh.given("L_post", 'L_"post"', loading.L_post, "Cantilever length, h - t_p", "Loading")
     E = sh.code_value("E", "E", "material.steel.E", "Modulus of elasticity")
-    I = sh.given("I", "I", post.I, "Moment of inertia", post.source)
+    if post.is_round:
+        I = sh.given("I", "I", post.I, "Moment of inertia", post.source)
+    else:
+        bent = _bent_axis(post_axes(post, project.post.long_side), direction)
+        I = sh.given("I", f"I_{bent}", axis(post, bent).I, f"Moment of inertia about the {bent} axis, which this case bends",
+                     post.source)
     V = live_at_post(sh, "V_L", "V_L", load_type, loading, project, f"horizontal ({direction.lower()}) at the top of the post")
     DL = sh.line("Delta_L", "Delta_L", V * Lp**3 / (3 * E * I), "Live-load deflection at the top of the post",
                  cite_ids=("aisc_manual.t3-23.case22.delta",), unit="inch")
