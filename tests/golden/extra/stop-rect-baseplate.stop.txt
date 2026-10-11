@@ -1,0 +1,1 @@
+ProjectError: [baseplate] B = 2.5 (parallel to the rail) is smaller than the post dimension parallel to the rail (HSS3X2X1/8, 3.000 in). Check the inputs.

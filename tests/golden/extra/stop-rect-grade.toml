@@ -1,0 +1,33 @@
+# Extra golden scenario stop-rect-grade (tests/test_golden.py, the second tier).
+# The tool refuses this project; the error class and message are compared with stop-rect-grade.stop.txt.
+# Slice 6: A53 Gr B on a rectangular HSS (S6-5).
+# Inputs only: this file holds no value, and none is ever copied into a test case.
+
+[project]
+name = "char"
+
+[geometry]
+span = "6'-0\""
+post_height = 42
+baseplate_thickness = "1/2"
+
+[top_rail]
+section = "HSS4X2X1/8"
+long_side = "vertical"
+
+[post]
+section = "HSS3X2X1/8"
+long_side = "parallel to rail"
+grade = "A53 Gr B"
+
+[welds]
+rail_to_post = "1/8"
+post_to_baseplate = "3/16"
+base_pattern = "all around"
+
+[baseplate]
+B = 6
+N = 8
+
+[intermediate_rail]
+none = true

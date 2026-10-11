@@ -1,0 +1,30 @@
+# Extra golden scenario stop-rect-base-pattern-round (tests/test_golden.py, the second tier).
+# The tool refuses this project; the error class and message are compared with stop-rect-base-pattern-round.stop.txt.
+# Slice 6: a face pair given for a round post (S6-6).
+# Inputs only: this file holds no value, and none is ever copied into a test case.
+
+[project]
+name = "char"
+
+[geometry]
+span = "6'-0\""
+post_height = 42
+baseplate_thickness = "1/2"
+
+[top_rail]
+section = "Pipe2STD"
+
+[post]
+section = "Pipe2STD"
+
+[welds]
+rail_to_post = "1/8"
+post_to_baseplate = "3/16"
+base_pattern = "faces parallel to rail"
+
+[baseplate]
+B = 6
+N = 8
+
+[intermediate_rail]
+none = true

@@ -1,0 +1,1 @@
+SectionStop: Rect. tube 4 × 4 × 0.1 (custom): the 4.000 in wall is slender in compression, b/t = 40.01 > lambda_r = 1.4 sqrt(E/Fy) = 35.15 (AISC 360-22 Table B4.1a, Case 6). The tool does not check slender sections.

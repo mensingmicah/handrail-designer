@@ -1,0 +1,1 @@
+ProjectError: [welds] is missing 'base_pattern': the post HSS3X2X1/8 is rectangular, and the tool never assumes how it is welded to the baseplate. Give base_pattern = "all around", "faces parallel to rail" or "faces perpendicular to rail".

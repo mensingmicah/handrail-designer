@@ -1,0 +1,1 @@
+ProjectError: [top_rail] OD is given for shape = "rectangular tube", which takes H, B and wall_nominal. Remove it, or check the shape.

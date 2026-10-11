@@ -1,0 +1,1 @@
+ProjectError: [top_rail] is missing 'long_side': HSS4X2X1/8 is not square, and the tool never assumes which way round a member is built. Give long_side = "vertical" or "horizontal".

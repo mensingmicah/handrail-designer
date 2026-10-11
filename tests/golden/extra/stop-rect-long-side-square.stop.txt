@@ -1,0 +1,1 @@
+ProjectError: [post] long_side = 'parallel to rail' is given, but HSS2X2X1/8 is a square section and has no long side. Remove long_side, or check the section.

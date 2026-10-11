@@ -1,0 +1,30 @@
+# Extra golden scenario full-mixed-square-post (tests/test_golden.py, the second tier).
+# The tool runs this project and its whole printed calc is compared with full-mixed-square-post.typ.
+# Slice 6: a square post under a pipe rail (S6-9), welded all around.
+# Inputs only: this file holds no value, and none is ever copied into a test case.
+
+[project]
+name = "char"
+
+[geometry]
+span = "6'-0\""
+post_height = 42
+baseplate_thickness = "1/2"
+
+[top_rail]
+section = "Pipe2STD"
+
+[post]
+section = "HSS2X2X1/8"
+
+[welds]
+rail_to_post = "1/8"
+post_to_baseplate = "3/16"
+base_pattern = "all around"
+
+[baseplate]
+B = 6
+N = 8
+
+[intermediate_rail]
+none = true

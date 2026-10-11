@@ -1,0 +1,1 @@
+ProjectError: [welds] base_pattern = 'faces parallel to rail' is given, but the post Pipe2STD is round and is welded all around. A face pair is for a rectangular post. Remove base_pattern, or check the post.

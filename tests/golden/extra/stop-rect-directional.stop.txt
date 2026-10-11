@@ -1,0 +1,1 @@
+ProjectError: [welds] directional_increase = true, but the post HSS3X2X1/8 is rectangular: the directional strength increase cannot be taken in fillet welds to the end of a rectangular HSS (AISC 360-22 §J2.4(a)(2); AISC 360-22 §K5, User Note). Set directional_increase = false, or remove it.

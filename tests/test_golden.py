@@ -202,7 +202,7 @@ def test_every_golden_file_is_a_snapshot_the_test_compares():
 
 
 def test_the_second_tier_holds_the_scenarios_it_was_committed_with():
-    """104 scenarios: 39 whole calcs, 45 refused projects and 20 direct
+    """130 scenarios: 47 whole calcs, 63 refused projects and 20 direct
     scenarios. A scenario added or retired on purpose changes these counts
     in the same commit; one lost by accident (a renamed or deleted input)
     fails here. Retired so far: stop-unknown-post, a round HSS post that
@@ -213,10 +213,13 @@ def test_the_second_tier_holds_the_scenarios_it_was_committed_with():
     5: four round HSS calcs (full-hss-post, -all, -unusual and -a618),
     and for custom round tubes three calcs (full-tube-noncompact-rail,
     -post and -all) and six stops (stop-tube-*); and stop-chord-rail and
-    stop-chord-post, the chord D/t limit (S5-3)."""
-    assert (len(EXTRA_CALCS), len(EXTRA_STOPS), len(DIRECT)) == (39, 45, 20)
+    stop-chord-post, the chord D/t limit (S5-3). Added in slice 6, step 5:
+    eight calcs of rectangular and mixed guards (full-rect-square,
+    -on-edge, -flat-same, -tube-all and -grades; full-mixed-square-post,
+    -round-post and -round-inter) and eighteen stops (stop-rect-*)."""
+    assert (len(EXTRA_CALCS), len(EXTRA_STOPS), len(DIRECT)) == (47, 63, 20)
     assert all(name.startswith("direct-") for name in DIRECT)
-    assert sum(name.startswith("extra/") for name in SNAPSHOTS) == 104
+    assert sum(name.startswith("extra/") for name in SNAPSHOTS) == 130
 
 
 @pytest.mark.parametrize("path", [p for p in EXTRA_CALCS if _stops_at_validation(p)], ids=lambda p: p.stem)

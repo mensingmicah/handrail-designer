@@ -1,0 +1,1 @@
+ProjectError: [top_rail] H (2) is less than B (4). H is the longer side of a rectangular tube and B the shorter; long_side says which way round the member is built. Swap them.

@@ -1,0 +1,44 @@
+# Extra golden scenario full-rect-tube-all (tests/test_golden.py, the second tier).
+# The tool runs this project and its whole printed calc is compared with full-rect-tube-all.typ.
+# Slice 6: custom rectangular tubes throughout (S6-3), one in A1085, two with a wall under 1/8 in (the thin-material warning).
+# Inputs only: this file holds no value, and none is ever copied into a test case.
+
+[project]
+name = "char"
+
+[geometry]
+span = "6'-0\""
+post_height = 42
+baseplate_thickness = "1/2"
+
+[top_rail]
+shape = "rectangular tube"
+H = 3
+B = 2
+wall_nominal = 0.12
+long_side = "vertical"
+
+[post]
+shape = "rectangular tube"
+H = 2
+B = 2
+wall_nominal = "1/8"
+grade = "A1085 Gr A"
+
+[welds]
+rail_to_post = "1/8"
+post_to_baseplate = "3/16"
+intermediate_rail_to_post = "1/8"
+base_pattern = "all around"
+
+[baseplate]
+B = 6
+N = 8
+
+[intermediate_rail]
+same_as_top_rail = false
+shape = "rectangular tube"
+H = 2
+B = 1
+wall_nominal = 0.083
+long_side = "horizontal"

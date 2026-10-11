@@ -1,0 +1,32 @@
+# Extra golden scenario full-mixed-round-post (tests/test_golden.py, the second tier).
+# The tool runs this project and its whole printed calc is compared with full-mixed-round-post.typ.
+# Slice 6: a pipe post under a square rail, with a rectangular intermediate rail on the round post (S6-9, both mixed pairs).
+# Inputs only: this file holds no value, and none is ever copied into a test case.
+
+[project]
+name = "char"
+
+[geometry]
+span = "6'-0\""
+post_height = 42
+baseplate_thickness = "1/2"
+
+[top_rail]
+section = "HSS3X3X1/8"
+
+[post]
+section = "Pipe2STD"
+
+[welds]
+rail_to_post = "1/8"
+post_to_baseplate = "1/4"
+intermediate_rail_to_post = "1/8"
+
+[baseplate]
+B = 6
+N = 8
+
+[intermediate_rail]
+same_as_top_rail = false
+section = "HSS2X1X1/8"
+long_side = "horizontal"

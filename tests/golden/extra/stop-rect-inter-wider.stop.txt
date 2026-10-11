@@ -1,0 +1,1 @@
+ProjectError: The intermediate rail (HSS3X2X1/8, 3.000 in wide) is wider than the post (HSS3X2X1/8, 2.000 in perpendicular to the rail). Its end is welded to the side of the post, and a branch may not be wider than its chord (Engineering judgement (EOR): a branch no wider than its chord). Enter a section no wider than the post.

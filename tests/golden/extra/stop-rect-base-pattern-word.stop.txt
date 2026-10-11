@@ -1,0 +1,1 @@
+ProjectError: [welds] base_pattern 'both sides': give one of "all around", "faces parallel to rail", "faces perpendicular to rail"
