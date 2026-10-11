@@ -472,6 +472,15 @@ def test_a_thin_custom_post_is_warned_of_at_both_of_its_welds():
         assert warning.startswith(THIN + "Post nominal wall thickness, Round tube 2.375 × 0.12 (custom), 0.1200 in")
 
 
+def test_a_baseplate_under_an_eighth_inch_prints_the_warning_at_check_7():
+    """The baseplate is a part the post to baseplate weld joins, compared as entered."""
+    res = _run(geometry={"span": "6'-0\"", "post_height": 42, "baseplate_thickness": 0.1})
+    [warning] = _thin(res.check(7))
+    assert warning.startswith(THIN + "Baseplate")
+    assert "0.1000 in, is thinner than 0.1250 in" in warning
+    assert not any(_thin(chk) for chk in res.checks if chk.number != 7)  # the pipe walls are over 1/8 in
+
+
 def test_the_warning_prints_for_the_intermediate_rail_weld_in_the_observation_state_too():
     """Same as the top rail, Check 4b stands on an observation and is not
     computed; the weld is still made, so the warning still prints, above it."""

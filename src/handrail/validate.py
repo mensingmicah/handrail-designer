@@ -55,7 +55,7 @@ def require_chord_within_limit(registry: Registry, sec: Section, name: str, wall
     if over:
         rule = registry.get(CHORD_STOP)
         raise ProjectError(
-            f"{name} {sec.label}: D/t = {over.left.text} {over.op} {over.right.text}, the limit of applicability "
+            f"{name} {sec.label}: D/t = {sec.ratio_text(sec.D_t)} {over.op} {over.right.text}, the limit of applicability "
             f"for the chord of a round T-connection ({limit.cite}). The local strength of {wall} is a stated "
             f"assumption, not a check (W7), and it is not assumed for a chord over the limit ({rule.cite}). "
             f"The tool does not check this section as a chord.",
@@ -75,7 +75,10 @@ def wider(registry: Registry, a: Q_, b: Q_) -> bool:
     """
     if not a > b:
         return False
-    return a - b > registry.get(OD_TOLERANCE).quantity
+    # Round the difference to 0.0001 in so a float such as 1.91 - 1.90 =
+    # 0.010000000000000009 in counts as exactly 0.01 in, which is equal.
+    difference = round((a - b).to("in").magnitude, 4)
+    return difference > registry.get(OD_TOLERANCE).quantity.to("in").magnitude
 
 
 def validate(project: Project, registry: Registry) -> None:

@@ -137,11 +137,13 @@ plan's decision numbers. (S5-5, Micah 2026-10-09.)
   designation, A53 Gr B on an HSS designation) are allowed, with the
   printed warning this file already calls for. Slice 5 builds the
   warning.
-- **Verify before the independent calcs.** I verify the A500 Gr B and
-  Gr C round Fy and Fu entries against Table 2-4 before slice 5's
-  independent calcs run: ASTM A500-21 changed the round values, and both
-  new test cases turn on them. This is my choice for these four values,
-  not a gate on the slice (ADR 0008 as amended).
+- **Verify at the release review.** I verify the A500 Gr B and Gr C round
+  Fy and Fu entries against Table 2-4: ASTM A500-21 changed the round
+  values, and both new test cases turn on them. I had planned to verify
+  these four before slice 5's independent calcs ran; on 2026-10-10 I
+  deferred it to the release review ("fix in post"). A correction then
+  regenerates the affected case values in fresh independent-calc
+  sessions. This is not a gate on the slice (ADR 0008 as amended).
 
 ### The plain grades and the grades with a rule of their own
 

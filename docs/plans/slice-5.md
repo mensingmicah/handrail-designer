@@ -539,7 +539,9 @@ clause (S5-3) and "(default)" on case 5's intermediate rail grade
     is applied. This planning session has read src/, so it must not write
     either (rule 6).
 11. **Micah's review** of both independent calcs and both PDFs against
-    the checklist. His recompute of case 6 is deferred (#18).
+    the checklist. His recompute of case 6 is deferred (#18). **Done:**
+    Micah reviewed the case 6 and 7 independent calcs and PDFs against the
+    checklist on 2026-10-10, with no changes.
 12. **Version 0.5.0** in pyproject.toml (#24), CHANGELOG, the
     calc-code-review skill, then the **pull request** to main.
 

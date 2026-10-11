@@ -8,7 +8,8 @@
 #          "verified" checked by Micah against the standard
 # source:  "memory", the URL the entry was drafted from, or "engineer" for a
 #          value Micah supplied directly. An "engineer" entry stays "drafted"
-#          until he verifies it.
+#          until he verifies it. Or the standard's own text read on a date,
+#          e.g. "AISC 360-22 text, read 2026-10-10".
 #
 # Any calc that uses a drafted entry prints "DRAFT: contains unverified code
 # values" on every page and lists those entries.
@@ -2264,8 +2265,8 @@ modeled differently (docs/ROADMAP.md, after v1)."""
 # ---------------------------------------------------------------------------
 
 # --- Fy and Fu for round HSS, AISC Manual Table 2-4 ------------------------
-# One entry per grade, shape and property (S5-5). The four A500 values are
-# the ones Micah verifies before slice 5's independent calcs run.
+# One entry per grade, shape and property (S5-5). Micah deferred verifying
+# the four A500 values to the release review (2026-10-10).
 
 [[entry]]
 id = "material.A500_GrB.hss_round.Fy"
@@ -2281,8 +2282,8 @@ drafted_on = 2026-10-10
 verified_by = ""
 verified_date = ""
 note = """
-S5-5: Micah verifies this value against Table 2-4 before slice 5's \
-independent calcs run. Drafted as 46 ksi, which I believe is the ASTM \
+S5-5: Micah verifies this value against Table 2-4 at the release review \
+(deferred 2026-10-10). Drafted as 46 ksi, which I believe is the ASTM \
 A500-21 value for Grade B, round and shaped alike. Before A500-21 round \
 Grade B was 42 ksi. I am not sure which the 16th Edition prints. Micah's \
 review note of 2026-09-30 on material.grades.hss_rect gives 46 ksi for \
@@ -2303,8 +2304,8 @@ drafted_on = 2026-10-10
 verified_by = ""
 verified_date = ""
 note = """
-S5-5: Micah verifies this value against Table 2-4 before slice 5's \
-independent calcs run. From memory: 58 ksi for Grade B before and after \
+S5-5: Micah verifies this value against Table 2-4 at the release review \
+(deferred 2026-10-10). From memory: 58 ksi for Grade B before and after \
 A500-21. Fu/Fy = 58/46 = 1.26 on the drafted values, above the 1.20 \
 guard on a post grade (W5, S5-13)."""
 
@@ -2322,8 +2323,8 @@ drafted_on = 2026-10-10
 verified_by = ""
 verified_date = ""
 note = """
-S5-5: Micah verifies this value against Table 2-4 before slice 5's \
-independent calcs run. Drafted as 50 ksi, which I believe is the ASTM \
+S5-5: Micah verifies this value against Table 2-4 at the release review \
+(deferred 2026-10-10). Drafted as 50 ksi, which I believe is the ASTM \
 A500-21 value for Grade C, round and shaped alike; a Steel Tube \
 Institute article (steeltubeinstitute.org, Understanding HSS Material \
 Specifications, read 2026-10-10) gives round Grade C as 50 ksi and 62 \
@@ -2345,8 +2346,8 @@ drafted_on = 2026-10-10
 verified_by = ""
 verified_date = ""
 note = """
-S5-5: Micah verifies this value against Table 2-4 before slice 5's \
-independent calcs run. From memory, and the Steel Tube Institute article \
+S5-5: Micah verifies this value against Table 2-4 at the release review \
+(deferred 2026-10-10). From memory, and the Steel Tube Institute article \
 noted under material.A500_GrC.hss_round.Fy gives 62 ksi. Fu/Fy = 62/50 = \
 1.24 on the drafted values: the lowest ratio of any grade slice 5 \
 drafts, and above the 1.20 guard on a post grade (W5, S5-13)."""

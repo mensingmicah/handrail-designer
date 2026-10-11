@@ -93,6 +93,25 @@ def test_an_intermediate_rail_wider_than_the_post_by_more_than_the_tolerance_sto
     assert "OD 2.395 in) is wider than the post (Pipe2STD, OD 2.375 in)" in str(stopped.value)
 
 
+def test_a_post_exactly_the_tolerance_wider_than_the_rail_is_equal_and_runs():
+    """W8: custom 1.91 in post under a 1.900 in rail. 1.91 - 1.90 is
+    0.010000000000000009 in as a float; rounded to 0.0001 in it is exactly
+    0.01 in, which is equal, not wider."""
+    raw = _raw(top_rail={"section": "Pipe1-1/2STD"})
+    raw["post"] = {"shape": "round tube", "OD": 1.91, "wall_nominal": 0.145}
+    res = engine.run(project.from_dict(raw), Registry())
+    assert res.post.OD == _od(1.91) and res.rail.OD == _od(1.900)
+
+
+def test_an_intermediate_rail_exactly_the_tolerance_wider_than_the_post_is_equal_and_runs():
+    """S4-11, with the same exact-tolerance case: custom 1.91 in under a 1.900 in post."""
+    raw = _raw(top_rail={"section": "Pipe1-1/2STD"}, post={"section": "Pipe1-1/2STD"}, welds=OWN_WELD,
+               intermediate_rail={"same_as_top_rail": False, "shape": "round tube", "OD": 1.91,
+                                  "wall_nominal": 0.145})
+    res = engine.run(project.from_dict(raw), Registry())
+    assert res.inter.OD == _od(1.91) and res.post.OD == _od(1.900)
+
+
 @pytest.mark.parametrize("tables", [
     {},                                                                   # equal ODs
     {"post": {"section": "Pipe1-1/2STD"}},                                # a narrower post

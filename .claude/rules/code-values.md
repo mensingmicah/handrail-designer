@@ -15,7 +15,9 @@ table (Fy and Fu: AISC Manual Table 2-4 for shapes, Table 2-5 for plates
 and bars). Claude may draft entries from memory or the
 web. Each drafted entry records the value or text; the document, edition
 and exact section, table or equation; the source, one of "memory", the
-URL, or "engineer" for a value I supplied directly; status "drafted"; and
+URL, "engineer" for a value I supplied directly, or the standard's own text
+read on a date, written as the standard and edition then "text, read" and
+the date (e.g. "AISC 360-22 text, read 2026-10-10"); status "drafted"; and
 blank verified-by and date fields that are filled only on my verdict. Only
 I mark an entry verified. My "verified" verdict in the registry review
 workbook counts as me marking it: an agent then records it in the registry
