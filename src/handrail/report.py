@@ -15,6 +15,7 @@ import typst
 
 from handrail.calc import Line, fmt_quantity_plain, fmt_ratio, fmt_sig, typst_str
 from handrail.intermediate import ComponentCase
+from handrail.chord import PLASTIFICATION, ChordCase, ChordCheck
 from handrail.post import PostCase
 from handrail.rail import BiaxialCase
 from handrail.dimensions import Dimension
@@ -24,7 +25,7 @@ from handrail.reactions import Reactions, ReactionSet
 from handrail.registry import Registry
 from handrail.results import Case, Check, Results
 from handrail.shapes import Section
-from handrail.welds import WeldCase
+from handrail.welds import WeldCase, WeldCheck
 from handrail.version import Stamp
 
 # The tool's own stated assumptions (docs/brief/output.md). Locked: always printed;
@@ -323,6 +324,82 @@ def _weld_capacities(c: WeldCase) -> str:
     return f"Weld {fmt_quantity_plain(c.weld_allow)}\n{base}{wall}"
 
 
+def _chord_terms(c: ChordCase) -> tuple[str, str, str, str]:
+    """'Pr = ...', 'Pc = ...', 'Mr = ...', 'Mc = ...'; the moment terms are
+    empty in the vertical cases. The chord table and the summary both print
+    these."""
+    terms = [f"Pr = {fmt_quantity_plain(c.Pr)}", f"Pc = {fmt_quantity_plain(c.Pc)}", "", ""]
+    if c.Mr is not None:
+        terms[2:] = [f"Mr = {fmt_quantity_plain(c.Mr)}", f"Mc = {fmt_quantity_plain(c.Mc)}"]
+    return terms[0], terms[1], terms[2], terms[3]
+
+
+def _limit_state(state: str) -> str:
+    """A limit state's name as a table cell has room for it."""
+    return "plastification" if state == PLASTIFICATION else "punching"
+
+
+def _chord_table(chk: ChordCheck) -> str:
+    """The chord check's one table (S6-1): every case of the weld envelope
+    with its branch force and moment, each over the available strength and
+    the limit state that gives it, Qf, the Eq. K4-5 ratio and OK or NG."""
+    ctrl = chk.controlling
+    rows, bold = [], []
+    for i, c in enumerate(cast("list[ChordCase]", chk.cases)):
+        if c.status != "checked":
+            rows.append([c.direction, c.load_type or "", c.remark, "", "", "", "", "", ""])
+            continue
+        Pr, Pc, Mr, Mc = _chord_terms(c)
+        sense = "tension" if c.sense == "tension" else "comp."
+        rows.append([
+            c.direction, c.load_type, c.combination,
+            f"{Pr} {sense}\n{Pc}\n{_limit_state(c.P_state)}",
+            f"{Mr}, {c.plane}\n{Mc}\n{_limit_state(c.M_state)}" if c.Mr is not None else "\u2014",
+            fmt_sig(cast(float, c.Qf)), fmt_ratio(_ratio(c)), "OK" if c.ok else "NG",
+            "Controls" if c is ctrl else "",
+        ])
+        if c is ctrl:
+            bold.append(i)
+    if not chk.punching:
+        # The table says where a limit state is not one (S6-10).
+        note = "Shear yielding (punching) does not apply: the post is not narrower than the inside of the rail"
+        rows.append(["All", "", note, "", "", "", "", "", ""])
+    table = _table(
+        ["[*Direction*]", "[*Load*]", "[*Combination*]", "[*Axial* $P_r$ \\ available $P_c$]",
+         "[*Moment* $M_r$ \\ available $M_c$]", "[$Q_f$]", "[*Ratio*]", "[]", "[]"],
+        rows, "(auto, auto, 1fr, auto, auto, auto, auto, auto, auto)", bold, raw_header=True,
+    )
+    return f"#text(size: 8pt)[{table}]"  # nine columns: set small, as Check 5's envelope
+
+
+def _chord(chk: ChordCheck) -> str:
+    """The rail wall's chord limit states, printed inside Check 3 after the
+    weld (S6-10, S6-16 item 7): the table, then the lines of the governing
+    case and of any other case over the print threshold."""
+    out = [f"#heading(level: 2, {typst_str(f'{chk.title}: chord limit states')})"]
+    for f in chk.flags:
+        out.append(f"#flag({typst_str(f)})")
+    out.append(f"Every direction case and load type of the weld is computed. The full calculation follows for the "
+               f"governing case, and for any other with a ratio over {chk.threshold:g}.")
+    out.append(_chord_table(chk))
+    ctrl = chk.controlling
+    for c in chk.full:
+        combination = c.combination.replace("\n", "; ")
+        if c is ctrl:
+            title = "Chord limit states, governing case"
+        elif c.no_strength:
+            title = "Chord limit states, case with no available strength"
+        else:
+            title = f"Chord limit states, case over {chk.threshold:g}"
+        out.append(f"#heading(level: 2, {typst_str(f'{title}: {c.label} ({combination})')})")
+        out.append(_lines(c.lines))
+    why = f"#h(6pt) #{typst_str('; ' + chk.summary_flag)}" if chk.failures else ""
+    relation = f"${chk.within_unity.text}$ " if ctrl is not None else ""
+    out.append(f"#align(right, text(size: 12pt, weight: \"bold\")[{relation}"
+               f"{why}#h(10pt) #{typst_str(chk.verdict)}])")
+    return "\n\n".join(out)
+
+
 def _check(chk: Check) -> str:
     out = [f"= Check {chk.number}: {chk.title}"]
     if chk.bypassed:
@@ -373,6 +450,8 @@ def _check(chk: Check) -> str:
     why = f"#h(6pt) #{typst_str('; ' + chk.summary_flag)}" if chk.failures else ""
     out.append(f"#align(right, text(size: 12pt, weight: \"bold\")[${chk.within_unity.text}$ "
                f"{why}#h(10pt) #{typst_str(chk.verdict)}])")
+    if isinstance(chk, WeldCheck) and chk.chord is not None:
+        out.append(_chord(chk.chord))
     return "\n\n".join(out)
 
 
@@ -382,6 +461,9 @@ def _demand_capacity(c: Case) -> tuple[str, str]:
     the line that governs its ratio, weld metal or base metal, as the case set it."""
     if isinstance(c, WeldCase):
         return fmt_quantity_plain(c.demand), f"{fmt_quantity_plain(c.capacity)} ({c.governs})"
+    if isinstance(c, ChordCase):
+        Pr, Pc, Mr, Mc = _chord_terms(c)
+        return (Pr, Pc) if c.Mr is None else (f"{Pr}; {Mr}", f"{Pc}; {Mc}")
     if isinstance(c, BiaxialCase):
         demand = [f"Mr{c.axis_v} = {fmt_quantity_plain(c.M_v)}"]
         capacity = [f"Mc{c.axis_v} = {fmt_quantity_plain(c.Mc_v)}"]
@@ -408,11 +490,26 @@ def _post_terms(c: PostCase) -> tuple[str, ...]:
     return tuple(terms)
 
 
+def _summary_rows(checks: list[Check]) -> list[Check]:
+    """The checks as the summary lists them: the seven, with the chord check
+    of Check 3 as a row of its own after it (S6-16 item 1)."""
+    out: list[Check] = []
+    for chk in checks:
+        out.append(chk)
+        if isinstance(chk, WeldCheck) and chk.chord is not None:
+            out.append(chk.chord)
+    return out
+
+
 def _summary(checks: list[Check]) -> str:
     rows = []
-    for chk in checks:
+    for chk in _summary_rows(checks):
         if not chk.computed:
             rows.append([f"{chk.number}. {chk.title}", "", "", "", "", chk.verdict])
+            continue
+        if chk.controlling is None:
+            # A chord check with no strength in any case: NG, with no ratio to print.
+            rows.append([f"{chk.number}. {chk.title}", "", "", "", "", f"{chk.verdict} ({chk.summary_flag})"])
             continue
         c = _controlling(chk)
         demand, capacity = _demand_capacity(c)

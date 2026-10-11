@@ -43,6 +43,7 @@ from typing import Any, cast
 from collections.abc import Callable
 
 from handrail import joints
+from handrail.chord import ChordCheck, chord_check
 from handrail.calc import (Line, Sheet, Sym, absolute, arccos, compare, fmt_quantity_plain, maximum, minimum,
                            mtext, number, order, sin, sqrt, term)
 from handrail.demand import ASD, Given, Wording, demand
@@ -109,6 +110,10 @@ class WeldCheck(Check):
 
     min_size_ok: bool = True
     base_governs: str = ""  # Check 4b's governing fusion face: "post wall" or "intermediate rail wall"
+    # Check 3 at a round post on a round rail: the rail wall's chord limit
+    # states, printed inside Check 3 with a summary row of their own (S6-10,
+    # S6-16 item 1). This check's own ratio stays the weld's.
+    chord: ChordCheck | None = None
 
 
 @dataclass
@@ -592,17 +597,17 @@ def check_3(registry: Registry, project: Project, rail: Section, post: Section, 
     grade = project.top_rail.grade
     t_rail = Part("t_rail", 't_"rail"', rail.tdes, f"Top rail design wall thickness, {rail.label}", rail.source)  # W4
     base = base_metal(registry, "Base metal: rail fusion face", tensile_strength(registry, grade, rail), t_rail)
-    # The rail wall under the force normal to it: a stated assumption, in
-    # the words of the pair that meets (W7; S6-12 for a rectangular chord,
-    # S6-9 where a round and a rectangular member meet).
-    if rail.is_round and post.is_round:
-        normal = registry.get("ej.weld.rail_wall_normal")
-    elif rail.is_round or post.is_round:
-        normal = registry.get("ej.weld.chord_wall.mixed")
-    else:
-        normal = registry.get("ej.weld.chord_wall.rect")
+    # The rail wall under the force normal to it. A round post on a round
+    # rail: the chord limit states, computed after the weld (S6-10).
+    # Otherwise a stated assumption, in the words of the pair that meets
+    # (S6-12 for a rectangular chord, S6-9 where a round and a rectangular
+    # member meet).
+    round_on_round = rail.is_round and post.is_round
     walls = Sheet(registry)
-    walls.decision(mtext("Rail wall, normal force"), "Not checked", normal.value, cite_ids=(normal.id,))
+    if not round_on_round:
+        normal = registry.get("ej.weld.chord_wall.mixed" if rail.is_round or post.is_round
+                              else "ej.weld.chord_wall.rect")
+        walls.decision(mtext("Rail wall, normal force"), "Not checked", normal.value, cite_ids=(normal.id,))
     head = (rg.lines + equal + ecc.lines + limits.lines + wm.lines + kd.lines + base.lines + walls.lines
             + post_wall_covered(registry))
     ws = WeldSetup(
@@ -617,7 +622,10 @@ def check_3(registry: Registry, project: Project, rail: Section, post: Section, 
         base_note="Rail fusion face: in-plane shear only",
     )
     chk = WeldCheck(3, "Top rail weld to post", "f_r", "frac(R_n, Omega_w)", derived_lengths=[e_line])
-    return _weld_check(chk, registry, project, loading, ws, limits, parts)
+    _weld_check(chk, registry, project, loading, ws, limits, parts)
+    if round_on_round:
+        chk.chord = chord_check(registry, project, rail, post, loading)
+    return chk
 
 
 # ---------------------------------------------------------------------------

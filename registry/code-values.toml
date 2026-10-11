@@ -269,6 +269,36 @@ review = [
   "aisc360.K3.1A.branch_D_over_t_max",
   "aisc360.K3.1A.branch_D_over_t_coeff",
   "aisc360.K3.1A.width_ratio_min",
+  "ej.weld.chord.actions",
+  "aisc360.K1.1.parameters",
+  "aisc360.K3.1.punching_condition",
+  "aisc360.K3.2.lowest_limit_state",
+  "aisc360.K3.1.omega_plastification",
+  "aisc360.K3.1.omega_punching",
+  "aisc360.eq.K3-1",
+  "aisc360.eq.K3-1.coeff",
+  "aisc360.eq.K3-2",
+  "aisc360.eq.K3-2.coeff_constant",
+  "aisc360.eq.K3-2.coeff_beta",
+  "aisc360.eq.K3-2.exponent",
+  "aisc360.eq.K4-1",
+  "aisc360.eq.K4-1.coeff",
+  "aisc360.eq.K4-1.exponent",
+  "aisc360.eq.K4-2",
+  "aisc360.eq.K4-2.coeff",
+  "aisc360.eq.K4-3",
+  "aisc360.eq.K4-3.coeff",
+  "aisc360.eq.K4-3.coeff_beta",
+  "aisc360.eq.K4-4",
+  "aisc360.eq.K4-4.coeff",
+  "aisc360.eq.K4-5",
+  "aisc360.eq.K1-3",
+  "aisc360.eq.K1-3.coeff",
+  "aisc360.eq.K1-6",
+  "aisc360.K1.1.Fc_asd",
+  "aisc360.K1.3.Qf_tension",
+  "ej.weld.chord.Mro",
+  "ej.weld.chord.print_threshold",
 ]
 
 # ---------------------------------------------------------------------------
@@ -5023,3 +5053,497 @@ Db/D <= 1.0, is the same requirement as W8 (the post no wider than the \
 rail), which has the 0.01 in OD tolerance of S5-4. The tool leaves the \
 upper bound to W8 and tests the lower bound here; a pipe and a round \
 HSS of one size (2.38 on 2.375 in, test case 7) would otherwise stop."""
+
+# --- Step 6: the chord limit states of a round rail at a round post (S6-10) ---
+
+[[entry]]
+id = "ej.weld.chord.actions"
+value = "The rail wall at a round post is checked for the post's forces on it as the branch of a T-connection at 90 degrees: branch axial force in the downward and upward cases; out-of-plane moment V e with the dead load axial in the outward and inward cases; in-plane moment V e with the dead load axial in the longitudinal case. e is half the rail diameter, and the loads and combinations are those of the rail to post weld."
+unit = "text"
+cite = "Engineering judgement (EOR): chord limit states of the rail wall at a round post"
+document = "Engineering decision of the engineer of record"
+edition = "docs/brief/welds.md, S6-10"
+section = "The chord limit states of a round rail at a round post (Check 3): the branch action in each guard load case"
+source = "engineer"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = """
+S6-10 (Micah, 2026-10-10); this retires W7 for a round post on a round \
+rail. AISC 360-22 Tables K3.1 (page 16.1-163) and K4.1 (page 16.1-167): \
+chord plastification and shear yielding (punching), each case combined \
+by Eq. K4-5. The chord check has its own summary row and value keys \
+(S6-16 item 1); Check 3's ratio stays the weld's. Printed in Check 3 \
+where the rail wall line used to read 'not checked'."""
+
+[[entry]]
+id = "aisc360.K1.1.parameters"
+value = "beta is the width ratio, the branch diameter over the chord diameter; gamma is the chord slenderness ratio, half the chord diameter over its design wall thickness."
+unit = "provision"
+cite = "AISC 360-22 §K1.1"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§K1.1, Definitions of Parameters, pages 16.1-158 and 16.1-159: beta = Db/D for round HSS; gamma = D/2t for round HSS; t is the design wall thickness of the chord"
+source = "AISC 360-22 text, read 2026-10-11"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = "Read in the 360-22 text; the extraction lost the Greek letters, which are restored here from the definitions' wording. Confirm against the printed page."
+
+[[entry]]
+id = "aisc360.K3.1.punching_condition"
+value = "The limit state of shear yielding (punching) is checked when Db < D - 2t."
+unit = "provision"
+cite = "AISC 360-22 Tables K3.1 and K4.1"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "Table K3.1, page 16.1-163: general check for T-, Y-, cross- and K-connections, when Db (tension or compression) < D - 2t; Table K4.1, page 16.1-167: shear yielding (punching), when Db < (D - 2t)"
+source = "AISC 360-22 text, read 2026-10-11"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = "Read in the 360-22 text. S6-10: at equal diameters punching does not apply, and the calc says so."
+
+[[entry]]
+id = "aisc360.K3.2.lowest_limit_state"
+value = "The available strength of a round HSS-to-HSS connection is the lowest value of the applicable limit states."
+unit = "provision"
+cite = "AISC 360-22 §K3.2 and §K4.2"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§K3.2, page 16.1-162: the available strength of round HSS-to-HSS truss connections, within the limits in Table K3.1A, shall be taken as the lowest value obtained according to the limit states shown in Table K3.1; §K4.2, page 16.1-164: the same for moment connections, Tables K4.1A and K4.1"
+source = "AISC 360-22 text, read 2026-10-11"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = "Read in the 360-22 text; the page numbers are taken from the running heads of the extracted text, to confirm against the page. Printed where shear yielding (punching) applies beside chord plastification (S6-10)."
+
+[[entry]]
+id = "aisc360.K3.1.omega_plastification"
+value = 1.67
+unit = ""
+cite = "AISC 360-22 Tables K3.1 and K4.1"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "Table K3.1, page 16.1-163, and Table K4.1, page 16.1-167: limit state of chord plastification, Omega = 1.67 (ASD)"
+source = "AISC 360-22 text, read 2026-10-11"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = "Read in the 360-22 text, the same in both tables."
+
+[[entry]]
+id = "aisc360.K3.1.omega_punching"
+value = 1.58
+unit = ""
+cite = "AISC 360-22 Tables K3.1 and K4.1"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "Table K3.1, page 16.1-163, and Table K4.1, page 16.1-167: limit state of shear yielding (punching), Omega = 1.58 (ASD)"
+source = "AISC 360-22 text, read 2026-10-11"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = "Read in the 360-22 text, the same in both tables."
+
+[[entry]]
+id = "aisc360.eq.K3-1"
+value = "Shear yielding (punching) under branch axial load, round HSS: nominal strength from Fy, the chord wall, the branch perimeter and the branch angle"
+unit = "equation"
+cite = "AISC 360-22 Eq. K3-1"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "Table K3.1, Available Strengths of Round HSS-to-HSS Truss Connections, Equation K3-1, page 16.1-163"
+source = "AISC 360-22 text, read 2026-10-11"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = """
+Read in the 360-22 text as Pn = 0.6 Fy t pi Db [(1 + sin theta)/(2 \
+sin^2 theta)]; the extraction lost pi and theta, restored here from \
+memory of the equation. At 90 degrees the bracket is 1. Confirm the \
+form against the printed page. The coefficient is aisc360.eq.K3-1.coeff."""
+
+[[entry]]
+id = "aisc360.eq.K3-1.coeff"
+value = 0.6
+unit = ""
+cite = "AISC 360-22 Eq. K3-1"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "Table K3.1, Equation K3-1, page 16.1-163: the coefficient 0.6 on Fy"
+source = "AISC 360-22 text, read 2026-10-11"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = "Read in the 360-22 text."
+
+[[entry]]
+id = "aisc360.eq.K3-2"
+value = "Chord plastification under branch axial load, round HSS T- and Y-connections: nominal strength from Fy, the chord wall squared, the width ratio, the chord slenderness and Qf"
+unit = "equation"
+cite = "AISC 360-22 Eq. K3-2"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "Table K3.1, T- and Y-connections, limit state of chord plastification, Equation K3-2, page 16.1-163"
+source = "AISC 360-22 text, read 2026-10-11"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = """
+Read in the 360-22 text as Pn sin theta = Fy t^2 (3.1 + 15.6 beta^2) \
+gamma^0.2 Qf; the extraction lost the Greek letters, restored here from \
+memory of the equation. Confirm against the printed page. The \
+coefficients are aisc360.eq.K3-2.coeff_constant, .coeff_beta and \
+.exponent. The equation is the same for a branch in tension and in \
+compression."""
+
+[[entry]]
+id = "aisc360.eq.K3-2.coeff_constant"
+value = 3.1
+unit = ""
+cite = "AISC 360-22 Eq. K3-2"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "Table K3.1, Equation K3-2, page 16.1-163: the constant 3.1"
+source = "AISC 360-22 text, read 2026-10-11"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = "Read in the 360-22 text."
+
+[[entry]]
+id = "aisc360.eq.K3-2.coeff_beta"
+value = 15.6
+unit = ""
+cite = "AISC 360-22 Eq. K3-2"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "Table K3.1, Equation K3-2, page 16.1-163: the coefficient 15.6 on beta squared"
+source = "AISC 360-22 text, read 2026-10-11"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = "Read in the 360-22 text."
+
+[[entry]]
+id = "aisc360.eq.K3-2.exponent"
+value = 0.2
+unit = ""
+cite = "AISC 360-22 Eq. K3-2"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "Table K3.1, Equation K3-2, page 16.1-163: the exponent 0.2 on gamma"
+source = "AISC 360-22 text, read 2026-10-11"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = "Read in the 360-22 text."
+
+[[entry]]
+id = "aisc360.eq.K4-1"
+value = "Chord plastification under branch in-plane bending, round HSS T-, Y- and cross-connections: nominal flexural strength from Fy, the chord wall squared, the chord slenderness, the width ratio, the branch diameter and Qf"
+unit = "equation"
+cite = "AISC 360-22 Eq. K4-1"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "Table K4.1, Available Strengths of Round HSS-to-HSS Moment Connections, branch under in-plane bending, chord plastification, Equation K4-1, page 16.1-167"
+source = "AISC 360-22 text, read 2026-10-11"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = """
+Read in the 360-22 text as Mn-ip = 5.39 Fy t^2 gamma^0.5 beta Db Qf / \
+sin theta; the extraction lost the Greek letters, restored here from \
+memory of the equation. Confirm against the printed page. The \
+coefficients are aisc360.eq.K4-1.coeff and .exponent."""
+
+[[entry]]
+id = "aisc360.eq.K4-1.coeff"
+value = 5.39
+unit = ""
+cite = "AISC 360-22 Eq. K4-1"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "Table K4.1, Equation K4-1, page 16.1-167: the coefficient 5.39"
+source = "AISC 360-22 text, read 2026-10-11"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = "Read in the 360-22 text."
+
+[[entry]]
+id = "aisc360.eq.K4-1.exponent"
+value = 0.5
+unit = ""
+cite = "AISC 360-22 Eq. K4-1"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "Table K4.1, Equation K4-1, page 16.1-167: the exponent 0.5 on gamma"
+source = "AISC 360-22 text, read 2026-10-11"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = "Read in the 360-22 text."
+
+[[entry]]
+id = "aisc360.eq.K4-2"
+value = "Shear yielding (punching) under branch in-plane bending, round HSS: nominal flexural strength from Fy, the chord wall, the branch diameter squared and the branch angle"
+unit = "equation"
+cite = "AISC 360-22 Eq. K4-2"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "Table K4.1, branch under in-plane bending, shear yielding (punching), Equation K4-2, page 16.1-167"
+source = "AISC 360-22 text, read 2026-10-11"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = "Read in the 360-22 text as Mn-ip = 0.6 Fy t Db^2 [(1 + 3 sin theta)/(4 sin^2 theta)]; at 90 degrees the bracket is 1. The coefficient is aisc360.eq.K4-2.coeff."
+
+[[entry]]
+id = "aisc360.eq.K4-2.coeff"
+value = 0.6
+unit = ""
+cite = "AISC 360-22 Eq. K4-2"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "Table K4.1, Equation K4-2, page 16.1-167: the coefficient 0.6 on Fy"
+source = "AISC 360-22 text, read 2026-10-11"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = "Read in the 360-22 text."
+
+[[entry]]
+id = "aisc360.eq.K4-3"
+value = "Chord plastification under branch out-of-plane bending, round HSS T-, Y- and cross-connections: nominal flexural strength from Fy, the chord wall squared, the branch diameter, the width ratio and Qf"
+unit = "equation"
+cite = "AISC 360-22 Eq. K4-3"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "Table K4.1, branch under out-of-plane bending, chord plastification, Equation K4-3, page 16.1-167"
+source = "AISC 360-22 text, read 2026-10-11"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = """
+Read in the 360-22 text as Mn-op = (Fy t^2 Db / sin theta) [3.0/(1 - \
+0.81 beta)] Qf; the extraction lost the Greek letters, restored here \
+from memory of the equation. Confirm against the printed page. The \
+coefficients are aisc360.eq.K4-3.coeff and .coeff_beta."""
+
+[[entry]]
+id = "aisc360.eq.K4-3.coeff"
+value = 3.0
+unit = ""
+cite = "AISC 360-22 Eq. K4-3"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "Table K4.1, Equation K4-3, page 16.1-167: the numerator 3.0"
+source = "AISC 360-22 text, read 2026-10-11"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = "Read in the 360-22 text."
+
+[[entry]]
+id = "aisc360.eq.K4-3.coeff_beta"
+value = 0.81
+unit = ""
+cite = "AISC 360-22 Eq. K4-3"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "Table K4.1, Equation K4-3, page 16.1-167: the coefficient 0.81 on beta in the denominator"
+source = "AISC 360-22 text, read 2026-10-11"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = "Read in the 360-22 text."
+
+[[entry]]
+id = "aisc360.eq.K4-4"
+value = "Shear yielding (punching) under branch out-of-plane bending, round HSS: nominal flexural strength from Fy, the chord wall, the branch diameter squared and the branch angle"
+unit = "equation"
+cite = "AISC 360-22 Eq. K4-4"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "Table K4.1, branch under out-of-plane bending, shear yielding (punching), Equation K4-4, page 16.1-167"
+source = "AISC 360-22 text, read 2026-10-11"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = "Read in the 360-22 text as Mn-op = 0.6 Fy t Db^2 [(3 + sin theta)/(4 sin^2 theta)]; at 90 degrees the bracket is 1. The coefficient is aisc360.eq.K4-4.coeff."
+
+[[entry]]
+id = "aisc360.eq.K4-4.coeff"
+value = 0.6
+unit = ""
+cite = "AISC 360-22 Eq. K4-4"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "Table K4.1, Equation K4-4, page 16.1-167: the coefficient 0.6 on Fy"
+source = "AISC 360-22 text, read 2026-10-11"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = "Read in the 360-22 text."
+
+[[entry]]
+id = "aisc360.eq.K4-5"
+value = "Round HSS T-, Y- and cross-connections with branch under combined axial load, in-plane bending and out-of-plane bending: the axial ratio plus the square of the in-plane ratio plus the out-of-plane ratio, not over 1.0"
+unit = "equation"
+cite = "AISC 360-22 Eq. K4-5"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "Table K4.1, Equation K4-5, page 16.1-167: Pr/Pc + (Mr-ip/Mc-ip)^2 + Mr-op/Mc-op <= 1.0; Pc from Table K3.1, Mc-ip and Mc-op from Table K4.1"
+source = "AISC 360-22 text, read 2026-10-11"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = """
+Read in the 360-22 text. Each available strength is the lowest of its \
+applicable limit states (K4.2: 'the lowest value of the applicable \
+limit states'). A guard load case has at most one moment, so each case \
+prints the terms it has."""
+
+[[entry]]
+id = "aisc360.eq.K1-3"
+value = "Chord-stress interaction parameter for a round HSS chord whose connecting surface is in compression: Qf from the utilization U, not over 1.0"
+unit = "equation"
+cite = "AISC 360-22 Eq. K1-3"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§K1.3(b), Chord-Stress Interaction Parameter, round HSS chord member connecting surface in compression, Equation K1-3, page 16.1-159"
+source = "AISC 360-22 text, read 2026-10-11"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = "Read in the 360-22 text: Qf = 1.0 - 0.3 U (1 + U) <= 1.0. The coefficient is aisc360.eq.K1-3.coeff."
+
+[[entry]]
+id = "aisc360.eq.K1-3.coeff"
+value = 0.3
+unit = ""
+cite = "AISC 360-22 Eq. K1-3"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§K1.3(b), Equation K1-3, page 16.1-159: the coefficient 0.3"
+source = "AISC 360-22 text, read 2026-10-11"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = "Read in the 360-22 text."
+
+[[entry]]
+id = "aisc360.eq.K1-6"
+value = "Chord utilization U: the absolute value of the required axial stress plus the required flexural stress in the chord, each over the available stress Fc"
+unit = "equation"
+cite = "AISC 360-22 Eq. K1-6"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§K1.3, Equation K1-6, pages 16.1-159 and 16.1-160: U = |Pro/(Fc Ag) + Mro/(Fc S)|; Pro and Mro the required strengths in the chord, Pa and Ma for ASD"
+source = "AISC 360-22 text, read 2026-10-11"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = """
+Read in the 360-22 text. For a round HSS, Pro and Mro are taken on the \
+side of the joint with the lower compression stress. The tool takes \
+Pro = 0 and Mro as ej.weld.chord.Mro says (S6-10). The equation number \
+sits on the U line in the extraction; confirm it against the page."""
+
+[[entry]]
+id = "aisc360.K1.1.Fc_asd"
+value = 0.60
+unit = ""
+cite = "AISC 360-22 §K1.1"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§K1.1, Definitions of Parameters, page 16.1-158: Fc, available stress in chord member, = Fy for LRFD; 0.60 Fy for ASD"
+source = "AISC 360-22 text, read 2026-10-11"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = "Coefficient on Fy for ASD. Read in the 360-22 text."
+
+[[entry]]
+id = "aisc360.K1.3.Qf_tension"
+value = 1.0
+unit = ""
+cite = "AISC 360-22 §K1.3(a)"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "§K1.3(a), page 16.1-159: for HSS chord member connecting surface in tension, Qf = 1"
+source = "AISC 360-22 text, read 2026-10-11"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = "Read in the 360-22 text. S6-10: the upward case, where the rail's underside is in tension."
+
+[[entry]]
+id = "ej.weld.chord.Mro"
+value = "The tool models the rail as a simple span, which has no moment at the post. The real rail is continuous over the post and hogs there. For the chord-stress parameter Qf the rail's midspan moment of the same case is used at the post, a bound on the continuity moment (w L^2/8 against w L^2/12; P L/4 against 3 P L/16), with no axial force in the rail. Only the moment that stresses the rail's underside, the connecting surface, is used: the vertical moment of the downward case, and the dead-load moment in the horizontal cases, whose guard load leaves the underside on the neutral axis. In the upward case the underside is in tension and Qf = 1.0."
+unit = "text"
+cite = "Engineering judgement (EOR): rail moment at the post for the chord-stress parameter"
+document = "Engineering decision of the engineer of record"
+edition = "docs/brief/welds.md, S6-10"
+section = "Qf uses the rail's Check 1 required moment as Mro, with Pro = 0: a conservative bound on the continuous rail's hogging moment at the post"
+source = "engineer"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = """
+S6-10 (Micah, 2026-10-10). Not chosen: Qf = 1.0 (unconservative for \
+the real continuous rail), or a continuous-beam support moment (the \
+continuity analysis left out of v1, issue #29). The calc prints this \
+sentence, and on each case's Mro line which moment that case used. \
+Wording proposed by Claude for the slice 6 pull request."""
+
+[[entry]]
+id = "ej.weld.chord.print_threshold"
+value = 0.5
+unit = ""
+cite = "Engineering judgement (EOR): chord limit states printed in full above a ratio of 0.5"
+document = "Engineering decision of the engineer of record"
+edition = "docs/brief/welds.md, S6-1"
+section = "The chord checks print compactly: full calc lines for the governing limit state always, and for any other whose ratio exceeds a threshold"
+source = "engineer"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = """
+S6-1 (Micah's suggestion, Claude's proposal). The chord table lists \
+every guard load case with its ratio and OK or NG. The governing case \
+always prints its lines in full, so Micah's release recompute traces to \
+printed working; any other case over this ratio prints its lines too. \
+A print rule: it changes no number."""

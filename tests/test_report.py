@@ -157,8 +157,10 @@ def test_closing_line_prints_the_checks_verdict_not_a_recomputed_one(monkeypatch
     monkeypatch.setattr(Check, "verdict", property(lambda self: "SENTINEL"))
     src = report.build_source(res, reg, CLEAN)
     # One closing line per computed check; a check not computed (Check 4a with
-    # no intermediate rail) prints its observation line instead.
-    assert src.count('#h(10pt) #"SENTINEL"') == len([c for c in res.checks if c.computed])
+    # no intermediate rail) prints its observation line instead. The chord
+    # check inside Check 3 closes with a line of its own (S6-16 item 1).
+    assert res.check(3).chord is not None
+    assert src.count('#h(10pt) #"SENTINEL"') == len([c for c in res.checks if c.computed]) + 1
 
 
 def _printed_equations(lines):

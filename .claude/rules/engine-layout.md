@@ -33,6 +33,7 @@ convention below is held by a test, named beside it.
 | post.py | Checks 5 and 6 |
 | weld_lines.py | The line a weld is checked on: the ring, the rounded rectangle, the face pair, Table K5.1 (S6-6, S6-8) |
 | welds.py | Checks 3, 4b and 7 |
+| chord.py | The rail wall at a round post: the Chapter K chord limit states, inside Check 3 with a summary row of their own (S6-10) |
 | demand.py, reactions.py | The shared per-direction demand; the anchor reaction sets |
 | validate.py, engine.py | Input validation; compute() and run() |
 | report.py | The Typst source and the PDF |

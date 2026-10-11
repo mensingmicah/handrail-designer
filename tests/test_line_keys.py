@@ -26,6 +26,10 @@ def _blocks(res):
         yield f"Check {chk.number} observation", chk.observation_lines
         for c in chk.cases:
             yield f"Check {chk.number}, {c.label}", c.lines
+        chord = getattr(chk, "chord", None)  # Check 3's chord check, at a round post on a round rail
+        if chord is not None:
+            for c in chord.cases:
+                yield f"Check {chord.number}, {c.label}", c.lines
     yield "reactions head", res.reactions.head
     for s in res.reactions.sets:
         yield f"reactions, {s.name} set", s.lines
