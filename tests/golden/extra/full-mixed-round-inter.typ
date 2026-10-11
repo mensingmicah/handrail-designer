@@ -62,7 +62,7 @@ Loading is per ASCE 7-22.
 + #"The rail to post weld is modeled as a flat line at the underside of the rail, with eccentricity e = half the rail depth from the rail centerline: the post's own outline (a ring of its perimeter for a round post, its rounded rectangle for a rectangular post under a round rail), or, where post and rail are both rectangular, the effective weld of AISC 360-22 Table K5.1. For a round member the saddle of the cope is ignored, which is conservative (the saddle centroid is at 2R/π for equal round diameters). It is modeled as a fillet of the entered size all around, although at equal widths the sides form a flare-bevel joint."
 + #"The intermediate rail to post weld is modeled the same way at the post face, on the intermediate rail's outline or, where both are rectangular, the effective weld of Table K5.1. It is a simple shear connection consistent with the simple-span intermediate rail: the end reaction acts at the weld with no end moment. It is modeled as a fillet of the entered size all around, although at equal widths the sides form a flare-bevel joint."
 + #"Local strength of the rail wall at the post (AISC 360-22 Chapter K chord limit states) is checked for a round post on a round rail. It is not checked where the rail is rectangular or where a round and a rectangular member meet; the rail is then held to the Chapter K limits of applicability."
-+ #"At a post to baseplate weld on one pair of faces, the post wall is checked for the weld force along the post axis and for the force along the face separately; the two are not combined, the force along the face being small next to the other."
++ #"At a face-pair base weld, the post wall's normal force and its shear are each checked against their own limit, not combined; the shear is small next to the normal force."
 + #"The component load's effect on the post is not checked."
 + #"Guard loads are not combined with floor or roof live load; wind, snow and ice are not considered."
 + #"Base reactions can reverse; direction is set in the anchor software."
@@ -542,7 +542,7 @@ Every direction case and load type is computed. The full calculation follows for
 #calcline([$Omega_"BM" = "2.000"$], "Safety factor, shear rupture (ASD)", "AISC 360-22 §J4.2(b)")
 #calcline([$display(frac(R_(n,"BM"), Omega_"BM") = frac(("17,400 lb/in"), "2.000") = "8,700 lb/in")$], "Allowable base metal strength per inch", "AISC 360-22 Eq. B3-2")
 #subhead("Post wall at the welded faces")
-#calcline([$"Post wall at the weld"$ #h(6pt) $arrow.r$ #h(6pt) *#"Checked on its own lines"*], "At a post to baseplate weld on one pair of faces, the post wall is checked for the weld force along the post axis and for the force along the face separately; the two are not combined, the force along the face being small next to the other.", "Engineering judgement (EOR): post wall at a face-pair base weld checked on its own lines")
+#calcline([$"Post wall at the weld"$ #h(6pt) $arrow.r$ #h(6pt) *#"Checked on its own lines"*], "At a face-pair base weld, the post wall's normal force and its shear are each checked against their own limit, not combined; the shear is small next to the normal force.", "Engineering judgement (EOR): post wall at a face-pair base weld checked on its own lines")
 #calcline([$F_y = "46.00 ksi"$], "Yield stress, A500 Gr B", "AISC Manual Table 2-4")
 #calcline([$F_u = "58.00 ksi"$], "Tensile strength, A500 Gr B", "AISC Manual Table 2-4")
 #calcline([$t_"wall" = "0.1160 in"$], "Post design wall thickness, HSS2X2X1/8", "AISC Shapes Database v16.0")

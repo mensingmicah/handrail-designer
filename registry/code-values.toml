@@ -4436,7 +4436,7 @@ note = "Paraphrase of the User Note as read in the 360-22 text. Printed with ais
 
 [[entry]]
 id = "ej.weld.post_wall.face_pair"
-value = "At a post to baseplate weld on one pair of faces, the post wall is checked for the weld force along the post axis and for the force along the face separately; the two are not combined, the force along the face being small next to the other."
+value = "At a face-pair base weld, the post wall's normal force and its shear are each checked against their own limit, not combined; the shear is small next to the normal force."
 unit = "text"
 cite = "Engineering judgement (EOR): post wall at a face-pair base weld checked on its own lines"
 document = "Engineering decision of the engineer of record"

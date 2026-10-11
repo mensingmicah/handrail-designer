@@ -51,9 +51,8 @@ LOCKED_ASSUMPTIONS = (
     ("Local strength of the rail wall at the post (AISC 360-22 Chapter K chord limit states) is checked "
      "for a round post on a round rail. It is not checked where the rail is rectangular or where a round and a "
      "rectangular member meet; the rail is then held to the Chapter K limits of applicability."),
-    ("At a post to baseplate weld on one pair of faces, the post wall is checked for the weld force along the "
-     "post axis and for the force along the face separately; the two are not combined, the force along the "
-     "face being small next to the other."),
+    ("At a face-pair base weld, the post wall's normal force and its shear are each checked against their own "
+     "limit, not combined; the shear is small next to the normal force."),
     "The component load's effect on the post is not checked.",
     "Guard loads are not combined with floor or roof live load; wind, snow and ice are not considered.",
     "Base reactions can reverse; direction is set in the anchor software.",
