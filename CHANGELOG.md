@@ -1,5 +1,193 @@
 # Changelog
 
+## v0.5.0 (2026-10-10)
+
+Slice 5: hollow round sections. Plan in docs/plans/slice-5.md.
+
+`uv run handrail calc` now prints the full package for a guard of round
+HSS from the Shapes Database and of custom round tubes entered by
+dimensions, in every grade AISC Manual Table 2-4 lists for the shape, as
+well as AISC pipe. No check is added: the engineering is pipe's (§F8,
+Table B4.1, Chapter E, the round weld decisions), and what is new is where
+the section and material numbers come from.
+
+### What changed for the engineer
+
+- **Round HSS** from the AISC Shapes Database v16.0, used exactly as
+  published, the outside diameter included (2.38 in for HSS2.375; S5-4).
+  Outside diameters within 0.01 in are treated as equal in the two width
+  stops (post OD ≤ rail OD, intermediate rail OD ≤ post OD), so an
+  HSS2.375 post runs under a Pipe2STD rail.
+- **Custom round tubes**: `shape = "round tube"`, `OD` and `wall_nominal`
+  in place of `section`. The wall entered is always the nominal wall
+  (S5-8). t_des per AISC 360-22 §B4.2 by grade; A, I, S, Z, r and D/t from
+  OD and t_des; weight from the nominal wall. Each prints as a calc line
+  with its citation.
+- **Every Table 2-4 grade per shape** (S5-5 to S5-7). Round HSS and custom
+  round tubes: A500 Gr B (the default) and Gr C, A501 Gr A and Gr B, A618
+  Gr Ia, Ib, II and III, A847, A1085 Gr A; a custom tube also takes A53
+  Gr B. Pipe stays A53 Gr B by default. A618 reads Fy and Fu by nominal
+  wall (to 3/4 in, over 3/4 to 1-1/2 in, a stop above). A1085: a database
+  section runs on its published properties with a printed note; a custom
+  tube runs on t_des = t_nom.
+- **The "(default)" mark**: a grade the project file leaves out prints as
+  "A500 Gr B (default)" on the section page (S5-10). The intermediate rail
+  takes the top rail's grade when that grade is listed for its own shape,
+  otherwise its own shape's default.
+- **Grade warnings**: an HSS grade on a Pipe designation, or A53 Gr B on
+  an HSS designation, prints an unusual-pairing warning and still runs. An
+  unsupported grade stops, naming the grades supported for that shape.
+  "Designed as round HSS" prints for AISC pipe and a custom A53 tube only
+  (S5-14).
+- **The chord D/t limit** (S5-3): the calc stops when a chord's D/t
+  exceeds 50, the AISC 360-22 Chapter K limit of applicability (Tables
+  K3.1A and K4.1A): the top rail in Check 3, and the post in Check 4b
+  whenever there is an intermediate rail. The Chapter K chord limit states
+  themselves are still a stated assumption, checked from slice 6.
+- **The directional strength increase is the engineer's election** (W2 as
+  revised, Micah 2026-10-10): `[welds] directional_increase`, false when
+  left out. False: Check 7 runs on k_ds = 1.0, citing §J2.4(a)(3). True:
+  k_ds per Eq. J2-5 as before, with a line saying the increase is applied
+  at the engineer's election and its basis. Either way the election is
+  echoed under the dimensions table. Checks 3 and 4b stay at k_ds = 1.0.
+- **The thin-material warning** (Micah, 2026-10-10): a weld that joins a
+  part thinner than 1/8 in (nominal wall, or the baseplate as entered)
+  prints "THIN MATERIAL AT WELD" at the top of its check: below the AWS
+  D1.1 thickness range, welding procedure the engineer's responsibility.
+  A warning, not a stop; it fires on database sections too (Pipe1/2STD,
+  Pipe3/4STD, HSS1.900X0.120).
+- **The stops register**: docs/brief/stops.md lists every place the tool
+  refuses to compute (60 stops), each with its decision and the test that
+  triggers it, and one table per joint of which section families may meet
+  there. A pair with no cell stops (S5-9). A test holds the code to the
+  file.
+- Check 4b's same-as-top observation gains a third guard: a post wider
+  than the rail by any amount runs the full check (S5-11).
+
+### What it delivers
+
+- The engine made safe to generalize before any of the above (issue #21),
+  with no printed calc changed: golden snapshots of the printed text of
+  cases 1–5 and the example, and of 104 machinery scenarios; one
+  comparison behind each decision line; direction and load type as fixed
+  lists; a key on every calc line; checks.py split by check; an id on
+  every stop; `ruff check` and pyright in CI.
+- One section type for every section, with its family, its source and
+  properties about both axes (round shapes set x = y), and every calc line
+  citing its own section's source (S5-1).
+- The 189 round HSS rows extracted to `data/shapes-hss-round.toml`,
+  verified row for row against the original workbook.
+- The footer's tool version is now the release's, 0.5.0. It read
+  "Tool 0.1.0" on every calc through v0.4.0 (issue #24); the commit hash
+  beside it was always right.
+- 43 new drafted registry entries (120 drafted, 32 verified in all). Every
+  calc still prints the DRAFT stamp.
+
+### Changes to existing calcs
+
+The printed calcs of cases 1–5 and the example differ from v0.4.0 in these
+places only; the golden snapshots show each as a diff. The three intended
+changes of the plan:
+
+- A defaulted grade gains "(default)": one line, case 5's intermediate
+  rail grade (S5-10).
+- The stated assumption on the Chapter K chord limit states gains its
+  clause: "; the chord's D/t is limited to 50, the Chapter K limit of
+  applicability." (S5-3; all six calcs.)
+- The chord D/t limit is a drafted entry read for every validated calc, so
+  "Draft code values" gains its row (cases 1, 2, 4 and 5 and the example;
+  case 3 is computed past validation and does not read it).
+
+And from Micah's rulings of 2026-10-10, after the build:
+
+- The directional increase by election. Every calc gains the echo line
+  under the dimensions table. Cases 4 and 5 and the example elect it:
+  one more line in Check 7, no number changed. Cases 1 to 3 are left at
+  the default (Micah's decision for cases 1 and 2): Check 7 runs on
+  k_ds = 1.0, its ratio 1.5 times what it was, and it now reads NG in
+  cases 1 and 2 (0.92 to 1.38). None of the three records a Check 7 value.
+- The thin-material limit is a drafted entry read at every weld, so
+  "Draft code values" gains one row in every calc
+  (`aws.d1_1.thickness_min`). None of these six calcs has a part under
+  1/8 in. Case 6 does, its 0.055 in rail wall, and prints the warning at
+  Check 3.
+- The fillet weld strength line cites "AISC 360-22 Eq. J2-4" in place of
+  "§J2.4" (read in the 360-22 text, page 16.1-130), in Checks 3, 4b and 7
+  and in that entry's row of "Draft code values". No number changed.
+
+### Database findings
+
+Found by the property-formula test, which runs the custom tube's formulas
+(exact geometry on the listed OD and the §B4.2 design wall) on database
+rows. Full tables in data/README.md. The tool uses every database value as
+published, so none of this changes a calc of a database section; it
+matters for a custom tube entered with a database shape's dimensions.
+
+- **Reproduces, and binding in the test**: the 67 round HSS rows of 10 in
+  or less whose OD column is the designation's OD, on all seven
+  properties; the 36 pipe rows under 12 in OD on I, S, Z, r and weight
+  (reproduced or below published, never above).
+- **Pipe area under 12 in OD**: above published on five rows (Pipe3STD
+  +0.64%, Pipe6XS +0.61%, Pipe5STD +0.48%, Pipe3-1/2XS +0.42%, Pipe4STD
+  +0.37%). Accepted by Micah; the test holds the formula's area to no more
+  than 1% above published. A custom A53 tube with one of these pipes'
+  dimensions gets up to 0.64% more area than the database pipe.
+- **Pipe D/t**: Pipe2XS is published as 11.7 against 2.375/0.204 = 11.64.
+  Accepted; not asserted.
+- **Six XS pipe rows, 14 to 26 in**: published A, I, S and Z are 2.9 to
+  3.4% below the formulas; they match a wall of 0.90·t_nom, not the listed
+  design wall of 0.93·t_nom. Not asserted; no guard member is this size.
+- **The other pipe rows 12 in and over** (nine rows): misses in both
+  directions (Pipe12XS area +2.6%; Pipe12XXS −2.5 to −2.9% on A, I, S and
+  Z). Not asserted.
+- **Round HSS over 10 in OD** (84 rows, 34 reproducing in full): the
+  misses run mostly above published, the worst +1.9% on I, because the OD
+  column is rounded. Not asserted.
+- **Round HSS of 10 in or less with a rounded OD column** (38 rows, such
+  as HSS2.375 listed as 2.38 in): no row reproduces every property; the
+  worst misses are under 0.8%. Not asserted; used as published (S5-4).
+
+### Verification
+
+- Test case 6 (a custom noncompact tube rail, 2.375 × 0.055 in A500 Gr C,
+  on a Pipe2STD post) and test case 7 (an HSS2.375X0.125 post at the
+  default grade under a Pipe2STD rail) each have an independent calc
+  written in a fresh session; every value agrees with the tool within
+  0.5%. Case 6 is the noncompact case of issue #3: Eq. F8-2 governs.
+- Micah ruled on the open questions of both independent calcs: the post
+  wall at the base weld (W5), the directional increase as an election
+  (W2), and thin material at a weld. His review of both calcs and both
+  PDFs against the checklist is step 11 of the plan, ahead of the pull
+  request.
+- Cases 1–5: every recorded value is unchanged. Cases 4 and 5 and the
+  example gained `directional_increase = true`, an input only.
+- The property-formula test (above) checks the custom tube's formulas
+  against AISC's published numbers, not against the tool's own.
+- At this entry: 2008 tests passed, 33 skipped (the deferred [hand]
+  values).
+
+### Deferred to the release review (issue #18)
+
+- Verification of the 43 slice 5 entries. Among them: the A500 Gr B and
+  Gr C round Fy and Fu, which the calcs of cases 6 and 7 rest on; and the
+  two AWS D1.1 entries, drafted from memory, whose 2020 clause number and
+  wording are not confirmed.
+- Micah's recompute of case 6's section properties and Check 1; those
+  [hand] values read "deferred".
+
+### Known gaps
+
+- The A618 wall ranges and the A1085 wall rule are tested by same-author
+  machinery tests only; no test case reaches them.
+- Not checked: the Chapter K chord limit states (slice 6), local effects
+  of the concentrated guard load on a thin tube wall (issue #28), and
+  everything listed under v0.4.0.
+- Only round hollow sections. Rectangular HSS and tubes are slice 6; solid
+  bars are slice 7.
+- A same-size pipe and round HSS pair of 10.75 in or larger still stops at
+  the width comparison: the database rounds those ODs by more than the
+  0.01 in tolerance.
+
 ## v0.4.0 (2026-10-09)
 
 Slice 4: the intermediate rail and the anchor reaction sets. Merged in PR

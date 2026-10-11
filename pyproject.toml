@@ -1,6 +1,6 @@
 [project]
 name = "handrail"
-version = "0.1.0"
+version = "0.5.0"
 description = "Checker for baseplate-mounted steel guards; produces a hand-checkable calc package"
 authors = [
     { name = "mensingmicah", email = "mensingmicah@gmail.com" }
