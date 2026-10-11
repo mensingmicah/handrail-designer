@@ -532,14 +532,17 @@ def test_check_4b_with_a_round_rail_on_a_rectangular_post_uses_the_rails_ring():
      "welds": {**OWN_WELD, "base_pattern": None, "post_to_baseplate": "1/4"}},
     {"top_rail": PIPE_RAIL, "post": SQUARE,
      "intermediate_rail": {"same_as_top_rail": False, "section": "Pipe1-1/4STD"}, "welds": OWN_WELD},
+    {"top_rail": PIPE_RAIL, "post": PIPE_POST,
+     "intermediate_rail": {"same_as_top_rail": False, "section": "Pipe1-1/4STD"},
+     "welds": {**OWN_WELD, "base_pattern": None, "post_to_baseplate": "1/4"}},
 ])
-def test_check_4b_says_the_chord_limit_states_have_no_demand_at_a_joint_with_a_rectangular_member(tables):
+def test_check_4b_says_the_chord_limit_states_have_no_demand_for_each_of_the_four_pairs(tables):
     """S6-11, for every pair, mixed pairs included (S6-16 item 2): one
     line, no table. The base metal lines on both walls stay (S6-16 item 6)."""
     reg, _, chk, lines = _line_4b(**tables)
     line = next(ln for ln in lines if ln.kind == "decision" and ln.symbol == '"Post wall, chord limit states"')
     assert line.text == "No demand" and line.note == reg.get("ej.weld.check4b.no_chord_demand").value
-    assert "ej.weld.post_wall_chord_intermediate" not in {e.id for e in reg.used}
+    assert getattr(chk, "chord", None) is None  # the chord check is Check 3's alone (S6-10)
     assert {"R_n_BM_post", "R_n_BM_int"} <= {ln.key for ln in lines}
     assert chk.base_governs in ("post wall", "intermediate rail wall")
 

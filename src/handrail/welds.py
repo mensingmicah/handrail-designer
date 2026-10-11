@@ -1002,15 +1002,11 @@ def check_4b(registry: Registry, project: Project, post: Section, inter: Section
     else:
         base, chk.base_governs = base_post, "post wall"
     gov.decision(lower, f"{chk.base_governs.capitalize()} governs", both.value, cite_ids=(both.id,))
+    # A simple shear connection puts no force normal to the post wall,
+    # whatever the two families are: one line, no table (S6-11, S6-16 item 2).
     walls = Sheet(registry)
-    if both_round:
-        chord = registry.get("ej.weld.post_wall_chord_intermediate")
-        walls.decision(mtext("Post wall, chord limit states"), "Not checked", chord.value, cite_ids=(chord.id,))
-    else:
-        # A simple shear connection puts no force normal to the post wall,
-        # whatever the two families are (S6-11, S6-16 item 2).
-        chord = registry.get("ej.weld.check4b.no_chord_demand")
-        walls.decision(mtext("Post wall, chord limit states"), "No demand", chord.value, cite_ids=(chord.id,))
+    chord = registry.get("ej.weld.check4b.no_chord_demand")
+    walls.decision(mtext("Post wall, chord limit states"), "No demand", chord.value, cite_ids=(chord.id,))
     head = (head_guard + rg.lines + equal + model.lines + limits.lines + wm.lines + kd.lines + base_post.lines
             + base_int.lines + gov.lines + walls.lines)
     ws = WeldLines(

@@ -101,7 +101,6 @@ review = [
   "ej.weld.line_method",
   "ej.weld.no_bearing",
   "ej.weld.post_wall_covered",
-  "ej.weld.rail_wall_normal",
   "ej.weld.max_size_not_applicable",
   # Slice 4 (the intermediate rail and the anchor reaction sets), drafted 2026-10-09
   "asce7.guard.component",
@@ -113,7 +112,6 @@ review = [
   "ej.weld.intermediate_ring_model",
   "aisc_manual.t3-23.case1.R",
   "ej.weld.intermediate_simple_shear",
-  "ej.weld.post_wall_chord_intermediate",
   "ej.weld.intermediate_base_metal",
   "ej.weld.intermediate.same_as_top",
   "ej.combo.reaction",
@@ -2030,32 +2028,6 @@ covers the post side of Check 3 too. Holds only while Fu/Fy >= 1.20 for \
 the post grade (ej.weld.post_wall.fu_fy_min, checked at validation)."""
 
 [[entry]]
-id = "ej.weld.rail_wall_normal"
-value = "Rail wall, force normal to the wall: a chord-wall limit state of the round T-connection (AISC 360-22 Chapter K), not weld base metal; not checked (stated assumption)."
-unit = "text"
-cite = "Engineering judgement (EOR): rail wall chord limit states not checked"
-document = "Engineering decision of the engineer of record"
-edition = "docs/brief/welds.md, W5 and W7"
-section = "Rail side: force normal to the rail wall"
-source = "engineer"
-status = "drafted"
-drafted_on = 2026-10-08
-verified_by = ""
-verified_date = ""
-note = """
-Micah, 2026-10-04 (W7). Printed in Check 3 beside the rail fusion face \
-line, which takes the in-plane force only (W6). From memory, unverified: \
-the margin for pipe on pipe is about 20 times. Slice 4 (S4-12): the W7 \
-stated assumption is extended to the post wall at the intermediate rail, \
-whose printed line is ej.weld.post_wall_chord_intermediate. \
-Slice 5 (S5-3, Micah 2026-10-09): W7 is kept for every round hollow \
-chord, with a stop when the chord's D/t exceeds 50, the Chapter K limit \
-of applicability (aisc360.K.round_chord.D_over_t_max, \
-ej.weld.chord_D_over_t_stop). The value printed here is unchanged; the \
-stated assumption in the front matter gains the clause. From slice 6 \
-the chord limit states are checked and W7 is retired."""
-
-[[entry]]
 id = "ej.weld.max_size_not_applicable"
 value = "Maximum fillet size along edges of material does not apply: this weld is a T-joint, not a weld along an edge. No maximum size is checked."
 unit = "text"
@@ -2267,28 +2239,6 @@ note = """
 The intermediate rail's dead-load reaction at the post, R_D = w_D L/2 \
 (Check 4b, S4-9). Same case as aisc_manual.t3-23.case1.M, whose number \
 was corroborated by a web search summary; not read from the Manual."""
-
-[[entry]]
-id = "ej.weld.post_wall_chord_intermediate"
-value = "Post wall at the intermediate rail: chord-wall limit states of the round T-connection (AISC 360-22 Chapter K) not checked (stated assumption)."
-unit = "text"
-cite = "Engineering judgement (EOR): post wall chord limit states at the intermediate rail not checked"
-document = "Engineering decision of the engineer of record"
-edition = "docs/brief/welds.md, S4-12 (revised 2026-10-09)"
-section = "Base metal at Check 4b: chord side (post wall)"
-source = "engineer"
-status = "drafted"
-drafted_on = 2026-10-09
-verified_by = ""
-verified_date = ""
-note = """
-Micah, 2026-10-09 (S4-12). Printed in Check 4b beside the post wall \
-fusion face line, which takes the in-plane shear (W6). Its own entry \
-because ej.weld.rail_wall_normal prints "Rail wall", the chord of Check \
-3; at Check 4b the post is the chord. The W7 stated assumption is \
-extended to cover it. Replaces ej.weld.post_wall_normal_intermediate, \
-whose text named the R e moment's normal force: with the simple shear \
-connection (Micah, 2026-10-09) there is no end moment."""
 
 [[entry]]
 id = "ej.weld.intermediate_base_metal"

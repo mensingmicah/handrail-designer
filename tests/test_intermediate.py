@@ -260,8 +260,9 @@ def test_check_4b_prints_base_metal_on_both_walls_and_which_governs():
     assert simple.text == "Simple shear connection"
     assert simple.note == ("Simple shear connection consistent with the simple-span member assumption; "
                            "no end moment at the weld.")
+    # S6-11: no force is normal to the post wall, so the chord limit states have no demand.
     chord = decisions['"Post wall, chord limit states"']
-    assert chord.text == "Not checked" and "R·e" not in chord.note
+    assert chord.text == "No demand" and "simple shear connection" in chord.note
     assert '"Intermediate rail wall at the weld"' not in decisions  # replaced by its base metal line
     headings = {ln.symbol for ln in c.lines if ln.kind == "heading"}
     assert {"Base metal: post wall fusion face (chord)",
