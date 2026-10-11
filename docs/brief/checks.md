@@ -435,4 +435,51 @@ plan's decision numbers.
   - Not chosen, recorded as the fuller alternatives: an inclined-load
     case for rectangular rails (item 1); a rectangular same-as-top
     observation for Check 4b with its own guards (item 5).
+- **Found when slice 6's rulings were checked against each other and
+  against slice 5's.** (S6-16; Claude's, 2026-10-10, awaiting Micah's
+  confirmation.)
+  1. **The round chord table gets its own summary row and its own value
+     keys.** This amends item 7 of S6-14. Test cases 4 to 7 record
+     `check3.ratio` for each direction case as the weld check's ratio. If
+     the chord interaction were folded into that ratio, recorded values
+     would change wherever the chord ratio exceeds the weld's (case 6:
+     about 0.15 against about 0.05), and a recorded value is never edited
+     to follow the tool (CLAUDE.md rule 5). So Check 3's ratio keeps its
+     meaning, the chord table reports under its own keys, and the summary
+     table gains a row, "3 (chord wall)", as Check 4 has 4a and 4b. It
+     prints only at a round post on a round rail.
+  2. **At Check 4b the S6-11 line prints for every pair, mixed pairs
+     included.** The simple shear connection puts no force normal to the
+     post wall whatever the two families are. So the "chord wall not
+     checked" assumption of S6-9 and S6-12 concerns Check 3 only; S6-9's
+     "and its Check 4b counterpart" is dropped.
+  3. **S6-4 covers the intermediate rail in Check 4a.** Cb comes from
+     each component load case's own diagram (horizontal: the midspan
+     point load alone; downward: the point load with the dead load), and
+     Lb is the span. Check 4a has no biaxial case: its horizontal case is
+     the component load alone (S4-10).
+  4. **One sentence replaces W7's in the "Stated assumptions" list.** The
+     list prints word for word in every calc, so it cannot depend on the
+     sections entered. Proposed, for the pull request: "Local strength of
+     the rail wall at the post (AISC 360-22 Chapter K and §J10 chord
+     limit states) is checked for a round post on a round rail. It is not
+     checked where the rail is rectangular or where a round and a
+     rectangular member meet; the rail is then held to the Chapter K
+     limits of applicability."
+  5. **J in the property-formula test is held at the database's printed
+     precision.** Scratch trial (planning arithmetic): the midline
+     formula of S6-4 reproduces J to three significant figures on 207 of
+     the 208 rows with Ht ≤ 8 in, and on 524 of all 525. The one miss is
+     reported to Micah in the build, not asserted and not tuned away.
+  6. **The base metal lines of Checks 3 and 4b carry over to rectangular
+     walls** (welds.md W5, W6, S4-12): shear rupture on the chord wall,
+     and on both walls in Check 4b, with the in-plane shear taken over
+     the weld line's length (le of Table K5.1, or the branch's outline at
+     a mixed pair); "post wall covered by Check 5" at the Check 3 joint.
+  7. **Case 6 runs under the Chapter K limits only by the A500 Gr C
+     exception** (S6-13): its rail's drafted Fy/Fu is 50/62 = 0.81. So
+     the exception has a test case.
+  8. **Slice 5's stop at post D/t > 50 with an intermediate rail goes,**
+     with its row in stops.md and its same-author test (S6-13). The rail
+     stop stays.
 

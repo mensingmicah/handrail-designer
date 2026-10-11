@@ -191,6 +191,17 @@ A value in a test case that has not been worked yet reads "pending" or
   A custom rail case records the rail's weight and D at the post, for
   example, though it does not cover Checks 5 to 7. Each slice plan lists
   each case's groups and those quantities.
+- **Slice 6's cases.** (S6-15, Micah 2026-10-10; detail in
+  docs/plans/slice-6.md.) Case 6 is extended with the round chord table
+  of Check 3 (S5-3). Case 8 is an all-rectangular guard covering all
+  seven checks and the reactions. Case 9 is a mixed pair (a square post
+  under a pipe rail) with a rectangular intermediate rail, covering the
+  post group, Checks 3 to 7 and the reactions. Grades are left at the
+  A500 Gr B default. My release recompute: case 6, the governing chord
+  limit state; case 8, Checks 1, 3 and 7; case 9, Checks 5 and 7. No
+  case runs a custom rectangular tube: it is a known gap on the
+  release-review issue (#18), covered by the property-formula test
+  against the Shapes Database (S6-3, checks.md).
 - Every value records its provenance. A value corrected after comparison
   with the tool keeps a note saying so, because it is no longer an
   independent check. Tool output is never used to fill or edit a test
