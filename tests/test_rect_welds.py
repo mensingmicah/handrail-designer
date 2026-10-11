@@ -622,12 +622,13 @@ def test_the_chords_material_limits_apply_where_its_wall_is_a_stated_assumption(
     """Fy over 52 ksi and Fy/Fu over 0.8 stop, for the top rail, at a
     rectangular chord and at a mixed pair. No offered grade is outside the
     limits on the drafted values, so each is reached with a stand-in value."""
+    other = {"grade": "A500 Gr C"}       # the post on another grade, so the stand-in touches the rail alone
     with pytest.raises(ProjectError) as stopped:
-        _with_stress("material.A500_GrB.hss_rect.Fy", 55)
+        _with_stress("material.A500_GrB.hss_rect.Fy", 55, post=other)
     assert stopped.value.stop is Stop.JOINT_CHECK3_FY_OVER_LIMIT
     assert str(stopped.value).startswith("top rail HSS4X2X1/8, A500 Gr B: Fy = 55.00 ksi > 52.00 ksi")
     with pytest.raises(ProjectError) as stopped:
-        _with_stress("material.A500_GrB.hss_rect.Fu", 50)
+        _with_stress("material.A500_GrB.hss_rect.Fu", 50, post=other)
     assert stopped.value.stop is Stop.JOINT_CHECK3_FY_FU_OVER_LIMIT
     assert "Fy/Fu = 0.9200 > 0.8" in str(stopped.value)
     # A mixed pair: a pipe rail over a square post, the rail's A53 Fu lowered to 40 (35/40 = 0.875).

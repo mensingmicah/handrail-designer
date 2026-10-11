@@ -289,7 +289,9 @@ def test_eq_F8_2_is_listed_as_used_only_for_a_noncompact_section(section, span, 
 def test_upward_margin_note_states_net_downward_when_dead_load_wins():
     # Heavy rail, small guard load: 0.6 M_D exceeds M_L, so the net moment acts down.
     loads = Loads(concentrated=Q_(10, "lbf"), uniform=Q_(1, "lbf/ft"))
-    res = engine.run(project(section="Pipe12STD", loads=loads), Registry())
+    # Computed past validation: a rail this heavy on this post is outside the Chapter K width ratio (S6-13),
+    # and this is a test of the check, not of the inputs.
+    res = engine.compute(project(section="Pipe12STD", loads=loads), Registry())
     for c in res.checks[0].checked:
         if c.direction == "Upward":
             Ma = next(ln for ln in c.lines if ln.symbol == "M_a")

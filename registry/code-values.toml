@@ -265,6 +265,10 @@ review = [
   "ej.weld.intermediate.rect_full",
   "ej.weld.line.corner_radius_coeff",
   "ej.weld.intermediate_line_model",
+  # Slice 6 step 6 (the chord limit states), drafted 2026-10-11
+  "aisc360.K3.1A.branch_D_over_t_max",
+  "aisc360.K3.1A.branch_D_over_t_coeff",
+  "aisc360.K3.1A.width_ratio_min",
 ]
 
 # ---------------------------------------------------------------------------
@@ -3010,12 +3014,12 @@ chord limit states and decides what becomes of this stop (S5-3)."""
 
 [[entry]]
 id = "ej.weld.chord_D_over_t_stop"
-value = "The calc stops when the D/t of a round chord exceeds the Chapter K limit of applicability: the top rail in Check 3, and the post in Check 4b when there is an intermediate rail."
+value = "The calc stops when the D/t of a round top rail, the chord at the rail to post joint (Check 3), exceeds the Chapter K limit of applicability."
 unit = "provision"
 cite = "Engineering judgement (EOR): chord D/t limited to the Chapter K limit of applicability"
 document = "Engineering decision of the engineer of record"
-edition = "docs/brief/welds.md, S5-3"
-section = "W7 kept for slice 5, with a stop at chord D/t over 50"
+edition = "docs/brief/welds.md, S5-3; S6-13"
+section = "The chord D/t limit of 50 kept as a stop at Check 3; no applicability stop at Check 4b"
 source = "engineer"
 status = "drafted"
 drafted_on = 2026-10-10
@@ -3026,7 +3030,14 @@ Micah, 2026-10-09 (S5-3). D/t is the value the section's classification \
 uses (design wall). The limit is aisc360.K.round_chord.D_over_t_max. \
 The stop is in input validation, beside the per-joint tables, and names \
 the member, its D/t, the limit and W7. A post with no intermediate rail \
-is not a chord and is not stopped."""
+is not a chord and is not stopped. \
+Revised 2026-10-11 (slice 6, S6-13 and S6-16 item 8): the value and \
+section no longer name the post in Check 4b, where no applicability \
+stop is left (S6-11), and the stop's message no longer says W7, which \
+is retired for a round post on a round rail (S6-10). The cite is \
+unchanged. A round rail keeps this stop under a round post, where its \
+wall is checked, and under a rectangular one, where it is a stated \
+assumption (S6-9)."""
 
 # --- Engineering judgement: section input (S5-4, S5-8) ----------------------
 
@@ -4949,3 +4960,66 @@ The rulings behind ej.weld.intermediate_ring_model (S4-8, S4-9 and the \
 simple shear connection, Micah 2026-10-09), carried to a rectangular \
 intermediate rail by S6-8 and S6-9. Only the weld line differs; the \
 load position and the connection model are the same decisions."""
+
+# --- Step 6: the Chapter K limits for a round post on a round rail (S6-13) ---
+
+[[entry]]
+id = "aisc360.K3.1A.branch_D_over_t_max"
+value = 50
+unit = ""
+cite = "AISC 360-22 Tables K3.1A and K4.1A"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "Table K3.1A, Limits of Applicability of Table K3.1, page 16.1-164: branch wall slenderness, Db/tb <= 50 for a tension or compression branch; Table K4.1A, page 16.1-168: Db/tb <= 50"
+source = "AISC 360-22 text, read 2026-10-11"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = """
+Read in the 360-22 text. S6-13: a stop at Check 3 for a round post on a \
+round rail, on the post's D/t as its classification uses it (design \
+wall). The text extraction lost the relation signs; confirm <= against \
+the printed page."""
+
+[[entry]]
+id = "aisc360.K3.1A.branch_D_over_t_coeff"
+value = 0.05
+unit = ""
+cite = "AISC 360-22 Tables K3.1A and K4.1A"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "Table K3.1A, page 16.1-164: branch wall slenderness, Db/tb <= 0.05 E/Fyb for a compression branch; Table K4.1A, page 16.1-168: Db/tb <= 0.05 E/Fyb"
+source = "AISC 360-22 text, read 2026-10-11"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = """
+Coefficient on E/Fyb. Read in the 360-22 text. Table K3.1A gives it \
+for a compression branch; Table K4.1A gives it without that qualifier. \
+S6-13 applies it to the post in every calc: the post is in compression \
+in the downward and horizontal cases."""
+
+[[entry]]
+id = "aisc360.K3.1A.width_ratio_min"
+value = 0.2
+unit = ""
+cite = "AISC 360-22 Tables K3.1A and K4.1A"
+document = "AISC 360-22, Specification for Structural Steel Buildings"
+edition = "2022"
+section = "Table K3.1A, page 16.1-164: width ratio, 0.2 < Db/D <= 1.0 for T-, Y-, cross- and overlapped K-connections; Table K4.1A, page 16.1-168: 0.2 < Db/D <= 1.0"
+source = "AISC 360-22 text, read 2026-10-11"
+status = "drafted"
+drafted_on = 2026-10-11
+verified_by = ""
+verified_date = ""
+note = """
+Read in the 360-22 text; the extraction lost the relation signs, and \
+issue #28 records the lower bound as strict (0.2 < Db/D). Confirm \
+against the printed page. S6-13: a stop at Check 3 for a round post on \
+a round rail. OPEN FOR MICAH (plan, open item 2): the upper bound, \
+Db/D <= 1.0, is the same requirement as W8 (the post no wider than the \
+rail), which has the 0.01 in OD tolerance of S5-4. The tool leaves the \
+upper bound to W8 and tests the lower bound here; a pipe and a round \
+HSS of one size (2.38 on 2.375 in, test case 7) would otherwise stop."""

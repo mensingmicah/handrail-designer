@@ -403,6 +403,18 @@ def _(tmp_path, monkeypatch):
     _run(post=SQUARE_POST, welds={"base_pattern": "all around", "directional_increase": True})
 
 
+@trigger(Stop.SECTION_BRANCH_D_T_OVER_LIMIT)
+def _(tmp_path, monkeypatch):
+    # A round post over D/t = 50 under a round rail: HSS6.000X0.125, 51.7.
+    _run(top_rail={"section": "HSS6.000X0.250"}, post={"section": "HSS6.000X0.125"}, baseplate={"B": 12, "N": 12})
+
+
+@trigger(Stop.JOINT_CHECK3_WIDTH_RATIO_BELOW_LIMIT)
+def _(tmp_path, monkeypatch):
+    # A Pipe2STD post under a Pipe12STD rail: Db/D = 2.375/12.75 = 0.19, not over 0.2.
+    _run(top_rail={"section": "Pipe12STD"})
+
+
 @trigger(Stop.SECTION_CHORD_WALL_OVER_LIMIT)
 def _(tmp_path, monkeypatch):
     # HSS5X2X1/8 on edge: H/t = 5/0.116 = 43, over the Chapter K limit of 35.
@@ -454,7 +466,8 @@ def _(tmp_path, monkeypatch):
 @trigger(Stop.CHECK5_SECOND_ORDER_NOT_NEGLIGIBLE)
 def _(tmp_path, monkeypatch):
     # A 104 lb/ft rail over 12'-0" on a Pipe2STD post: alpha Pr/Pe is about 0.087.
-    _run(top_rail={"section": "Pipe20XS"}, geometry={"span": "12'-0\""})
+    # Past validation: that rail on that post is outside the Chapter K width ratio (S6-13).
+    engine.compute(_load(top_rail={"section": "Pipe20XS"}, geometry={"span": "12'-0\""}), Registry())
 
 
 # -- the code-value registry -------------------------------------------------

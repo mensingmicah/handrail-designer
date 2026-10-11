@@ -1,1 +1,1 @@
-SectionStop: Round tube 6 × 0.065 (custom): wall is slender in compression, D/t = 99.26 > lambda_r = 0.11E/Fy = 69.35 (AISC 360-22 Table B4.1a, Case 9). The tool does not check slender sections.
+ProjectError: post Round tube 6 × 0.065 (custom): D/t = 99.26 > 50, the limit of applicability for the branch of a round T-connection (AISC 360-22 Tables K3.1A and K4.1A; Engineering judgement (EOR): Chapter K limits of applicability are stops, at Check 3 only). The tool does not check this section as a branch on a round rail.

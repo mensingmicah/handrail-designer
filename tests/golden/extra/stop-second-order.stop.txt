@@ -1,1 +1,1 @@
-SectionStop: Second-order effects are not negligible in the outward, concentrated case of Check 5: alpha Pr/Pe = 0.08744 > 0.05 (Engineering judgement (EOR): second-order limit). The tool does not amplify for second-order effects.
+ProjectError: post Pipe2STD on top rail Pipe20XS: Db/D = 0.1187 <= 0.2. The width ratio of a round T-connection must be over 0.2 (AISC 360-22 Tables K3.1A and K4.1A; Engineering judgement (EOR): Chapter K limits of applicability are stops, at Check 3 only). The tool does not check a post this narrow against its rail.

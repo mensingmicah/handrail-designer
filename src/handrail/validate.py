@@ -41,16 +41,17 @@ CHORD_LIMIT = "aisc360.K.round_chord.D_over_t_max"
 CHORD_STOP = "ej.weld.chord_D_over_t_stop"
 
 
-def require_chord_within_limit(registry: Registry, sec: Section, name: str, wall: str) -> None:
-    """Refuse a chord whose D/t is over the Chapter K limit of applicability
-    (S5-3). The local strength of a chord's wall at the member welded to it
-    is a stated assumption, not a check (W7), and the engineer of record
-    makes that assumption only up to the limit. D/t is the value the
-    section's classification uses (design wall). ``wall`` says which wall:
-    the rail's at the post, or the post's at the intermediate rail.
+def require_chord_within_limit(registry: Registry, sec: Section, name: str) -> None:
+    """Refuse a round top rail whose D/t is over the Chapter K limit of
+    applicability for the chord of a round T-connection (S5-3, kept by
+    S6-13). The rail wall at the post is checked under a round post
+    (S6-10) and is a stated assumption under a rectangular one (S6-9),
+    and either way only up to the limit. D/t is the value the section's
+    classification uses (design wall).
 
-    The limit is read for every calc, so every calc lists it while it is
-    drafted. The decision behind the stop is read only when it stops.
+    The limit is read for every calc with a round rail, so each lists it
+    while it is drafted. The decision behind the stop is read only when it
+    stops.
     """
     limit = registry.get(CHORD_LIMIT)
     over = compare(number(sec.D_t, fmt_g), ">", number(limit.value))
@@ -58,11 +59,55 @@ def require_chord_within_limit(registry: Registry, sec: Section, name: str, wall
         rule = registry.get(CHORD_STOP)
         raise ProjectError(
             f"{name} {sec.label}: D/t = {sec.ratio_text(sec.D_t)} {over.op} {over.right.text}, the limit of applicability "
-            f"for the chord of a round T-connection ({limit.cite}). The local strength of {wall} is a stated "
-            f"assumption, not a check (W7), and it is not assumed for a chord over the limit ({rule.cite}). "
+            f"for the chord of a round T-connection ({limit.cite}). The rail wall at the post is checked, or held "
+            f"as a stated assumption, only within the Chapter K limits of applicability ({rule.cite}). "
             f"The tool does not check this section as a chord.",
             stop=Stop.SECTION_CHORD_D_T_OVER_LIMIT
         )
+
+
+BRANCH_LIMIT, BRANCH_COEFF = "aisc360.K3.1A.branch_D_over_t_max", "aisc360.K3.1A.branch_D_over_t_coeff"
+WIDTH_RATIO_MIN = "aisc360.K3.1A.width_ratio_min"
+
+
+def require_round_branch_within_limits(registry: Registry, project: Project, rail: Section, post: Section) -> None:
+    """Refuse a round post on a round rail outside the branch limits of
+    AISC 360-22 Tables K3.1A and K4.1A (S6-13), where the chord check of
+    Check 3 is computed (S6-10): the post's D/t over 50, or over 0.05
+    E/Fyb, or the width ratio Db/D not over 0.2.
+
+    The width ratio's upper bound, Db/D <= 1.0, is W8's test, with its OD
+    tolerance (S5-4); it is not made a second time here (plan, open item 2).
+    """
+    rule = LIMITS_STOP
+    limit = registry.get(BRANCH_LIMIT)
+    ratio = number(post.D_t, fmt_g)
+    over = compare(ratio, ">", number(limit.value))
+    if over:
+        raise ProjectError(
+            f"post {post.label}: D/t = {post.ratio_text(post.D_t)} {over.op} {over.right.text}, the limit of "
+            f"applicability for the branch of a round T-connection ({limit.cite}; {registry.get(rule).cite}). The tool "
+            f"does not check this section as a branch on a round rail.", stop=Stop.SECTION_BRANCH_D_T_OVER_LIMIT)
+    coeff = registry.get(BRANCH_COEFF)
+    E = registry.get("material.steel.E").quantity
+    Fyb = materials.yield_stress(registry, project.post.grade, post).quantity(registry)
+    by_grade = (coeff.value * E / Fyb).m_as("dimensionless")
+    over = compare(ratio, ">", number(by_grade, fmt_sig))
+    if over:
+        raise ProjectError(
+            f"post {post.label}, {project.post.grade}: D/t = {post.ratio_text(post.D_t)} {over.op} {coeff.value}E/Fyb = "
+            f"{over.right.text}, the limit of applicability for the branch of a round T-connection ({coeff.cite}; "
+            f"{registry.get(rule).cite}). The tool does not check this section as a branch on a round rail.",
+            stop=Stop.SECTION_BRANCH_D_T_OVER_LIMIT)
+    low = registry.get(WIDTH_RATIO_MIN)
+    width = (post.OD / rail.OD).m_as("dimensionless")
+    within = compare(number(width, fmt_sig), ">", number(low.value))
+    if not within:
+        raise ProjectError(
+            f"post {post.label} on top rail {rail.label}: Db/D = {within.left.text} {within.op} {within.right.text}. "
+            f"The width ratio of a round T-connection must be over {low.value} ({low.cite}; "
+            f"{registry.get(rule).cite}). The tool does not check a post this narrow against its rail.",
+            stop=Stop.JOINT_CHECK3_WIDTH_RATIO_BELOW_LIMIT)
 
 
 CHORD_WALL_LIMIT = "aisc360.K1.3.rect_chord.wall_max"
@@ -150,8 +195,10 @@ def validate(project: Project, registry: Registry) -> None:
     - the section families at each joint are a pair its table lists as
       allowed (joints.py, S5-9; before the tables, W7 and S4-12's stop on a
       section that is not round hollow);
-    - each chord's D/t is within the Chapter K limit of applicability
-      (S5-3): the top rail, and the post when there is an intermediate rail;
+    - the rail to post joint is within the Chapter K limits of applicability
+      (S5-3, S6-13): the top rail's wall slenderness, and its grade's Fy and
+      Fy/Fu; for a round post on a round rail the post's too, with the
+      width ratio's lower bound;
     - each grade is one the tool supports for its member's shape (S5-5), and
       the electrode and the baseplate grade are ones it supports (W12);
     - the post is no wider than the rail (W8), ODs within 0.01 in being
@@ -179,16 +226,14 @@ def validate(project: Project, registry: Registry) -> None:
     # The post to baseplate weld's pattern (S6-6): the same test Check 7 makes.
     base_pattern(registry, project, post, error=ProjectError)
 
-    # The chords (S5-3), beside W7's stop on a section that is not round
-    # hollow: the top rail in Check 3, and the post in Check 4b whenever
-    # there is an intermediate rail. A rectangular rail has its own wall
-    # limit (S6-13).
+    # The chord's wall slenderness at the rail to post joint (S5-3, S6-13):
+    # the top rail's D/t, or B/t and H/t. The post is a chord at the
+    # intermediate rail, but no force is normal to its wall there, and
+    # Check 4b has no applicability stop (S6-11, S6-13).
     if rail.is_round:
-        require_chord_within_limit(registry, rail, "top rail", "the rail wall at the post")
+        require_chord_within_limit(registry, rail, "top rail")
     else:
         require_rect_chord_within_limit(registry, rail, "top rail")
-    if project.intermediate_member is not None and post.is_round:
-        require_chord_within_limit(registry, post, "post", "the post wall at the intermediate rail")
 
     require_supported_grade(registry, project.top_rail, rail, "top rail")
     require_supported_grade(registry, project.post, post, "post")
@@ -203,12 +248,7 @@ def validate(project: Project, registry: Registry) -> None:
         raise ProjectError(f"[baseplate] grade {project.baseplate.grade!r}: this version supports "
                            f"{', '.join(BASEPLATE_GRADES)} only", stop=Stop.BASEPLATE_GRADE_UNSUPPORTED)
 
-    # Where the chord wall at the rail to post joint is a stated assumption
-    # (a rectangular rail, or a round and a rectangular member meeting), the
-    # chord's own material limits apply (S6-13).
     round_on_round = rail.is_round and post.is_round
-    if not round_on_round:
-        require_material_within_limits(registry, project.top_rail, rail, "top rail")
 
     # The width rule (W8, S6-9): the post no wider across the rail than the
     # rail itself. Exact where either is rectangular; two round members
@@ -242,6 +282,19 @@ def validate(project: Project, registry: Registry) -> None:
             f"The post wall at the weld is covered by Check 5 only while yielding governs over rupture; "
             f"the tool does not check this grade's post wall at the weld.", stop=Stop.GRADE_POST_FU_FY_BELOW_LIMIT
         )
+
+    # The Chapter K limits of applicability at the rail to post joint
+    # (S6-13), after the post grade's own guard above, which is the older
+    # stop and names what it protects. A round post on a round rail, where the chord check is
+    # computed: every limit, for the chord and for the branch. Where the
+    # chord wall is a stated assumption (a rectangular rail, or a round and
+    # a rectangular member meeting): the chord's own material limits only.
+    if round_on_round:
+        require_round_branch_within_limits(registry, project, rail, post)
+        require_material_within_limits(registry, project.top_rail, rail, "top rail")
+        require_material_within_limits(registry, project.post, post, "post")
+    else:
+        require_material_within_limits(registry, project.top_rail, rail, "top rail")
 
     member = project.intermediate_member
     if member is not None:

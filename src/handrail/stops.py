@@ -70,6 +70,8 @@ class Stop(StrEnum):
     BASEPLATE_SMALLER_THAN_POST = "baseplate.smaller_than_post"
     SECTION_CHORD_D_T_OVER_LIMIT = "section.chord_D_t_over_limit"
     SECTION_CHORD_WALL_OVER_LIMIT = "section.chord_wall_over_limit"
+    SECTION_BRANCH_D_T_OVER_LIMIT = "section.branch_D_t_over_limit"
+    JOINT_CHECK3_WIDTH_RATIO_BELOW_LIMIT = "joint.check3.width_ratio_below_limit"
     JOINT_CHECK3_FY_OVER_LIMIT = "joint.check3.Fy_over_limit"
     JOINT_CHECK3_FY_FU_OVER_LIMIT = "joint.check3.Fy_Fu_over_limit"
     SECTION_POST_WIDER_THAN_RAIL = "section.post_wider_than_rail"

@@ -182,6 +182,18 @@ def _run(registry: Registry | None = None, **tables):
     return engine.run(project.from_dict(_raw(**tables)), registry or Registry())
 
 
+def _compute(**tables):
+    """The checks past validation. A round post this thin is outside the
+    Chapter K branch limits under a round rail (S6-13) and validation
+    refuses it there; these tests are of the stop inside the check."""
+    return engine.compute(project.from_dict(_raw(**tables)), Registry())
+
+
+# A custom tube post inside the Chapter K branch limit for every grade it is
+# given here: D/t = 2.375 / (0.93 x 0.12) = 21.3, under 0.05 E/Fyb = 29 at 50 ksi.
+STOUT = {"shape": "round tube", "OD": 2.375, "wall_nominal": 0.12}
+
+
 def _source(**tables) -> str:
     reg = Registry()
     return report.build_source(engine.run(project.from_dict(_raw(**tables)), reg), reg, CLEAN)
@@ -314,7 +326,7 @@ def test_a_custom_tube_is_a_round_section_named_by_its_dimensions():
 
 
 def test_a_custom_tubes_grade_defaults_to_a500_gr_b_and_an_intermediate_tube_takes_the_top_rails():
-    res = _run(post=TUBE)
+    res = _run(post=STOUT)
     assert (res.project.post.grade, res.project.post.grade_defaulted) == ("A500 Gr B", True)
     own = {"same_as_top_rail": False, "shape": "round tube", "OD": 1.66, "wall_nominal": 0.109}
     for top_grade in ("A53 Gr B", "A847"):  # any grade a custom tube accepts (S5-10)
@@ -325,7 +337,7 @@ def test_a_custom_tubes_grade_defaults_to_a500_gr_b_and_an_intermediate_tube_tak
 
 def test_no_grade_is_an_unusual_pairing_for_a_custom_tube():
     for grade in ("A53 Gr B", "A500 Gr C", "A1085 Gr A"):
-        res = _run(post={**TUBE, "grade": grade})
+        res = _run(post={**STOUT, "grade": grade})
         assert res.post_notes == [] and properties.grade_notes(Registry(), res.post, grade) == []
 
 
@@ -359,21 +371,21 @@ def _post(od: float, wall: float, grade: str = "A500 Gr B") -> dict:
 
 def test_a_custom_tube_slender_in_compression_stops_on_its_computed_ratio():
     with pytest.raises(SectionStop) as stopped:
-        _run(**_post(6.0, 0.065))  # D/t = 6 / (0.93 x 0.065) = 99.3, over 0.11E/Fy
+        _compute(**_post(6.0, 0.065))  # D/t = 6 / (0.93 x 0.065) = 99.3, over 0.11E/Fy
     assert stopped.value.stop is Stop.SECTION_SLENDER_IN_COMPRESSION
     assert str(stopped.value).startswith("Round tube 6 × 0.065 (custom): wall is slender in compression, D/t = 99.26 > ")
 
 
 def test_a_custom_tube_slender_in_flexure_stops_on_its_computed_ratio():
     with pytest.raises(SectionStop) as stopped:
-        _run(**_post(6.0, 0.026))  # D/t = 248, over 0.31E/Fy and under 0.45E/Fy
+        _compute(**_post(6.0, 0.026))  # D/t = 248, over 0.31E/Fy and under 0.45E/Fy
     assert stopped.value.stop is Stop.SECTION_SLENDER_IN_FLEXURE
     assert "wall is slender in flexure, D/t = 248.1 > lambda_r" in str(stopped.value)
 
 
 def test_a_custom_tube_beyond_the_f8_limit_stops_on_its_computed_ratio():
     with pytest.raises(SectionStop) as stopped:
-        _run(**_post(6.0, 0.02))  # D/t = 323, not less than 0.45E/Fy
+        _compute(**_post(6.0, 0.02))  # D/t = 323, not less than 0.45E/Fy
     assert stopped.value.stop is Stop.SECTION_BEYOND_F8_LIMIT
     assert "Round tube 6 × 0.02 (custom): D/t = 322.6 is not less than" in str(stopped.value)
 

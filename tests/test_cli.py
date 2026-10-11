@@ -400,7 +400,11 @@ def test_a_post_grade_below_the_fu_fy_limit_stops(monkeypatch):
     with pytest.raises(project.ProjectError,
                        match=r"post grade A53 Gr B: Fu/Fy = 1\.143 is below 1\.2 .*covered by Check 5 only"):
         _validate_with(monkeypatch, fu=40)
-    _validate_with(monkeypatch, fu=42)  # 1.20 exactly passes
+    # At 1.20 exactly the guard passes. Since slice 6 the same grade is then
+    # refused by the Chapter K ductility limit, which is tested after it
+    # (S6-13): 35/42 = 0.833 is over 0.8.
+    with pytest.raises(project.ProjectError, match=r"A53 Gr B: Fy/Fu = 0\.8333 > 0\.8, the ductility limit"):
+        _validate_with(monkeypatch, fu=42)
 
 
 # ---------------------------------------------------------------------------

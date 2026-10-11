@@ -153,7 +153,9 @@ def test_axial_only_cases_carry_the_D8_margin_note(check5, direction, note):
 def test_upward_with_no_net_tension_is_listed_not_checked():
     # Heavy rail, small guard loads: 0.6 P_D exceeds P_L, so the post stays in compression.
     loads = Loads(concentrated=Q_(10, "lbf"), uniform=Q_(1, "lbf/ft"))
-    chk = engine.run(project(rail="Pipe12STD", loads=loads), Registry()).check(5)
+    # Computed past validation: a rail this heavy on this post is outside the Chapter K width ratio (S6-13),
+    # and this is a test of the check, not of the inputs.
+    chk = engine.compute(project(rail="Pipe12STD", loads=loads), Registry()).check(5)
     up = [c for c in chk.cases if c.direction == "Upward"]
     assert len(up) == 2
     for c in up:
@@ -183,8 +185,10 @@ def test_second_order_ratio_above_the_limit_stops_naming_case_ratio_and_limit():
     lim = Registry().get("ej.second_order.limit")
     expected = (rf"outward, concentrated case of Check 5: alpha Pr/Pe = {re.escape(fmt_sig(a))} > "
                 rf"{lim.value} \({re.escape(lim.cite)}\)")
+    # Computed past validation: a rail this heavy on this post is outside the Chapter K width ratio (S6-13),
+    # and this is a test of the check, not of the inputs.
     with pytest.raises(SectionStop, match=expected):
-        engine.run(project(rail="Pipe20XS", span="12'-0\""), Registry())
+        engine.compute(project(rail="Pipe20XS", span="12'-0\""), Registry())
 
 
 def test_downward_above_the_second_order_limit_does_not_stop():
@@ -291,7 +295,9 @@ def test_exemption_removes_the_distributed_post_cases():
 def test_tension_entries_are_not_listed_when_no_upward_case_is_checked():
     loads = Loads(concentrated=Q_(10, "lbf"), uniform=Q_(1, "lbf/ft"))
     reg = Registry()
-    engine.run(project(rail="Pipe12STD", loads=loads), reg)
+    # Computed past validation: a rail this heavy on this post is outside the Chapter K width ratio (S6-13),
+    # and this is a test of the check, not of the inputs.
+    engine.compute(project(rail="Pipe12STD", loads=loads), reg)
     used = {e.id for e in reg.used}
     assert "aisc360.eq.D2-1" not in used and "aisc360.D2.omega_t" not in used
 
