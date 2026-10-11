@@ -510,3 +510,11 @@ plan's decision numbers.
   8. **Item 17: the Chapter K registry entries whose notes say the PDF
      text extraction lost symbols are flagged high priority** in the
      slice-close registry review workbook.
+  9. **Case 8 carries the face-pair base weld, per S6-15** (the faces
+     parallel to the rail), and its Check 7 may print NG in the
+     longitudinal case; that is expected. This amends item 2 above for
+     case 8, whose inputs were otherwise accepted as proposed. The
+     face-pair assumption sentence is reworded: "At a face-pair base
+     weld, the post wall's normal force and its shear are each checked
+     against their own limit, not combined; the shear is small next to
+     the normal force." (Micah, 2026-10-11.)
