@@ -650,6 +650,9 @@ checks.md and inputs.md.
       the lower of yielding, Fy·t_des/1.67, and rupture, Fu·t_des/2.00;
     - force along the face, against shear rupture, 0.6·Fu·t_des/2.00
       (§J4.2(b), as W6).
+    - Amended by S6-17 (Micah, 2026-10-11): the shear check is the full
+      shear per inch of weld against 0.6·Fu·t_des/2.00 in every case,
+      whatever its direction relative to the welded faces.
     - Each component has its own ratio; the larger is the post wall's.
       They are not combined.
   - **Compression side.** (Micah's addition.) The yielding limit applies
@@ -700,7 +703,7 @@ checks.md and inputs.md.
     - effective length le = 2·Hb + 2·Be (Eq. K5-5);
     - S_ip and S_op per Eqs. K5-6 and K5-7;
     - Be per Eq. K1-1 (page 16.1-159), and Be/2 not over Bb/4 when
-      β > 0.85 (Table K5.1);
+      β > 0.85 or θ > 50° (Table K5.1; S6-17);
     - Hb and Bb are the branch's outside dimensions, as the equations are
       written: no rounded-corner correction.
     - Case mapping: the longitudinal case is in-plane bending, the

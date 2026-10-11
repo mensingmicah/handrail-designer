@@ -483,3 +483,30 @@ plan's decision numbers.
      with its row in stops.md and its same-author test (S6-13). The rail
      stop stays.
 
+- **Rulings on the slice 6 build report.** (S6-17, Micah, 2026-10-11.) The
+  plan (docs/plans/slice-6.md) stays as written; this amends it. Item
+  numbers are those of the "Waiting on Micah" list in the Slice status
+  issue (#16) at the close of build step 7.
+  1. **Item 10: A500 Gr B rectangular Fy/Fu stays drafted at 46/58 ksi**
+     (AISC 360-22 Table 2-4). The default grade for a rectangular section
+     remains A500 Gr B (S6-5).
+  2. **Item 7: case 8's inputs are accepted as proposed.** Case 9's base
+     weld is all around, as S6-15 specified, not a face pair; its other
+     inputs are accepted as proposed.
+  3. **Item 3: at a face-pair base weld the post wall's shear check uses
+     one rule in every case.** The full shear per inch of weld is checked
+     against wall shear rupture, 0.6·Fu·t_des/2.00, whatever the shear's
+     direction relative to the welded faces. This replaces S6-7's "force
+     along the face" condition for the shear component; the normal-force
+     line of S6-7 is unchanged.
+  4. **Item 1: Table K5.1's cap on Be applies when β > 0.85 or θ > 50°,**
+     as printed. S6-8's sentence is corrected to match (welds.md).
+  5. **Items 2, 4, 5, 6, 9, 11, 12, 14, 15, 18 and 19 are accepted as the
+     build report recommended.**
+  6. **Item 8: "or rectangular HSS" is added to `section.not_found`.** One
+     stop snapshot changes; allowed.
+  7. **Item 13: "and §J10" is dropped from the C1 assumption sentence**
+     (S6-16 item 4), the round check computing Tables K3.1 and K4.1 only.
+  8. **Item 17: the Chapter K registry entries whose notes say the PDF
+     text extraction lost symbols are flagged high priority** in the
+     slice-close registry review workbook.
