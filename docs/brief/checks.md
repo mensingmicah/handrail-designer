@@ -556,5 +556,9 @@ plan's decision numbers.
      horizontal direction". The rail checks: S6-14's inclined-load
      alternative for rectangular rails stays not chosen. Check 4b.
   6. **A printed assumption sentence for the skew case** is drafted by
-     Claude on the calc branch for Micah's acceptance in the pull request;
-     output.md changes in the commit that prints it.
+     Claude on the calc branch for Micah's acceptance in the pull request
+     (registry entry `ej.skew.case`). As built it prints in the skew
+     case's lines in Checks 3, 5 and 7, not in the "Stated assumptions"
+     list: that list prints word for word in every calc, round posts
+     included, and S6-18 leaves round-post calcs unchanged. Whether it
+     also joins the list is Micah's call in the pull request.
