@@ -386,12 +386,15 @@ plan's decision numbers.
      arithmetic (not test values): an HSS4×2 rail on edge over an
      HSS2×2×1/8 post with a 1/8 in fillet gives Check 3 about 0.05;
      doubling e for a load at the rail's top surface gives about 0.09.
+     (Amended by S6-18, Micah 2026-10-17: where the post is rectangular,
+     Checks 3 and 7 take a skew horizontal case; welds.md.)
   2. **Check 5 on a rectangular post.** Compression uses the smaller
      radius of gyration with K = 2.1, in every case. Each lateral case
      bends one axis only (the transverse cases one, the longitudinal case
      the other), so §H1.1 takes one moment per case and the post has no
      biaxial case. αPr/Pe and Check 6 use I about the axis that case
-     bends.
+     bends. (Amended by S6-18, Micah 2026-10-17: a skew case bends both
+     axes, below.)
   3. **Classification.** Flexure is classified for each bent axis by
      AISC 360-22 Table B4.1b (page 16.1-23): the wall in compression is
      the flange (Case 17) and the other wall the web (Case 19; case
@@ -518,3 +521,40 @@ plan's decision numbers.
      weld, the post wall's normal force and its shear are each checked
      against their own limit, not combined; the shear is small next to
      the normal force." (Micah, 2026-10-11.)
+
+- **A skew horizontal guard-load case for rectangular posts.** (S6-18,
+  Micah, 2026-10-17; prompted by finding 1 of case 8's independent calc,
+  tests/cases/independent/case-08.md §16.) This amends S6-14 item 2. The
+  weld side is in welds.md, under the same number.
+  1. **Why.** ASCE 7-22 §4.5.1 applies the guard load in any direction.
+     Where a section or weld line has a point that sees both bending
+     components at full value, the transverse and longitudinal cases do
+     not envelope a horizontal load between them. Case 8's independent
+     calc found Check 5 about 25% higher at the worst angle (0.708 against
+     0.5651) and Check 7 about 9% higher (about 2.27 against 2.090).
+  2. **A sixth direction case, "skew".** The horizontal guard load, both
+     load types, enveloped as in the transverse and longitudinal cases, at
+     the plan angle θ from transverse that is worst for the check being
+     made. Same Pr = D and the same moment arm as the other lateral cases.
+     Each check finds its own θ and prints it. It runs only where a
+     rectangular or square member gives a corner (Checks 3, 5 and 7, as
+     below).
+  3. **Check 5, rectangular and square posts.** Mr,t = Mr·cosθ and Mr,l =
+     Mr·sinθ. Eqs. H1-1a and H1-1b are linear in the two, so the worst
+     angle is tanθ = Mc,t/Mc,l and the moment term is Mr·√(1/Mc,t² +
+     1/Mc,l²), times 8/9 under H1-1a; √2·Mr/Mc for a square post. Mc,t and
+     Mc,l are the available flexural strengths the transverse and
+     longitudinal cases already compute. This replaces S6-14 item 2's "the
+     post has no biaxial case"; the rest of that item stands.
+  4. **No skew case for αPr/Pe or Check 6.** Each prints one sentence
+     saying why. αPr/Pe: the skew case has the same Pr, and the smallest Pe
+     is already computed. Check 6: the skew deflection √(δ_t²·cos²θ +
+     δ_l²·sin²θ) never exceeds the larger of the two orthogonal cases.
+  5. **Unchanged.** Round posts and ring welds: a circular section or line
+     has no corner, and the inclined-load ruling of 2026-10-03
+     (loads-and-envelope.md) stands. The reaction sets, already "any
+     horizontal direction". The rail checks: S6-14's inclined-load
+     alternative for rectangular rails stays not chosen. Check 4b.
+  6. **A printed assumption sentence for the skew case** is drafted by
+     Claude on the calc branch for Micah's acceptance in the pull request;
+     output.md changes in the commit that prints it.
