@@ -297,6 +297,12 @@ review = [
   "aisc360.K1.3.Qf_tension",
   "ej.weld.chord.Mro",
   "ej.weld.chord.print_threshold",
+  # Slice 6, S6-18: the skew horizontal case at a rectangular post, drafted 2026-10-17
+  "ej.skew.case",
+  "ej.skew.angle.post",
+  "ej.skew.angle.weld",
+  "ej.skew.second_order",
+  "ej.skew.deflection",
 ]
 
 # ---------------------------------------------------------------------------
@@ -5497,3 +5503,105 @@ every guard load case with its ratio and OK or NG. The governing case \
 always prints its lines in full, so Micah's release recompute traces to \
 printed working; any other case over this ratio prints its lines too. \
 A print rule: it changes no number."""
+
+# --- S6-18: the skew horizontal case at a rectangular post ------------------
+
+[[entry]]
+id = "ej.skew.case"
+value = "The guard load acts in any direction (ASCE 7-22 §4.5.1). At a rectangular or square post, Checks 3, 5 and 7 also take the horizontal guard load at the plan angle from transverse that is worst for each check, with the same axial dead load and moment arm as the transverse and longitudinal cases."
+unit = "text"
+cite = "Engineering judgement (EOR): skew guard load at a rectangular post"
+document = "Engineering decision of the engineer of record"
+edition = "docs/brief/checks.md and welds.md, S6-18"
+section = "A skew horizontal guard-load case for rectangular posts: the case, and the sentence printed in it"
+source = "engineer"
+status = "drafted"
+drafted_on = 2026-10-17
+verified_by = ""
+verified_date = ""
+note = """
+S6-18 (Micah, 2026-10-17), prompted by finding 1 of case 8's independent \
+calc. A section or weld line with a corner sees both bending components \
+at full value there, so the transverse and longitudinal cases do not \
+envelope a horizontal load between them. Both guard load types run, as \
+in the other lateral cases. Round posts and ring welds have no corner and \
+keep the orthogonal cases (ruled 2026-10-03). The value is the printed \
+assumption sentence, Claude's wording for Micah to accept or reword in \
+the slice 6 pull request. It prints in the skew case's lines, not in the \
+'Stated assumptions' list: that list prints in every calc, round posts \
+included, whose golden snapshots S6-18 keeps byte-identical."""
+
+[[entry]]
+id = "ej.skew.angle.post"
+value = "The plan angle of the skew guard load worst for AISC 360-22 Eq. H1-1a or H1-1b at a rectangular post: the interaction is linear in the moment's two components, each over its own axis's available flexural strength"
+unit = "equation"
+cite = "Engineering judgement (EOR): worst plan angle for Check 5"
+document = "Engineering decision of the engineer of record"
+edition = "docs/brief/checks.md, S6-18"
+section = "A skew horizontal guard-load case for rectangular posts, item 3: Check 5"
+source = "engineer"
+status = "drafted"
+drafted_on = 2026-10-17
+verified_by = ""
+verified_date = ""
+note = """
+S6-18 item 3 (Micah, 2026-10-17). With the moment's components Mr cos \
+theta and Mr sin theta on the transverse and longitudinal axes, the \
+moment term peaks at tan theta = Mc,t/Mc,l and equals Mr times the \
+square root of (1/Mc,t^2 + 1/Mc,l^2); sqrt(2) Mr/Mc for a square post. \
+Mc,t and Mc,l are the strengths the transverse and longitudinal cases \
+compute. This entry cites the rule; the code implements it once \
+(post.py) and prints both components."""
+
+[[entry]]
+id = "ej.skew.angle.weld"
+value = "The plan angle of the skew guard load worst for a weld line with two section moduli, and the bending force per inch with both components taken at full value at one point: the corner of an all-around line, the end of a face-pair line"
+unit = "equation"
+cite = "Engineering judgement (EOR): skew load at a weld line's corner"
+document = "Engineering decision of the engineer of record"
+edition = "docs/brief/welds.md, S6-18"
+section = "The skew horizontal case at a rectangular post's welds: Checks 7 and 3"
+source = "engineer"
+status = "drafted"
+drafted_on = 2026-10-17
+verified_by = ""
+verified_date = ""
+note = """
+S6-18 (Micah, 2026-10-17). f_b = M times the square root of (1/S_t^2 + \
+1/S_l^2), at tan theta = S_t/S_l, on the weld-line moduli the transverse \
+and longitudinal cases use. The rounded line of S6-6 stays; the \
+full-value sum is conservative at a rounded corner. Check 3 takes the \
+same rule on S_op and S_ip where the post is rectangular. The shear per \
+inch is the larger of the two orthogonal cases' values; under W3 both \
+are V/L_w, so it is that value. This entry cites the rule; the code \
+implements it once (welds.py) and prints both components."""
+
+[[entry]]
+id = "ej.skew.second_order"
+value = "Not computed for the skew case: it has the same Pr as the transverse and longitudinal cases, and the smallest Pe is already computed in them."
+unit = "text"
+cite = "Engineering judgement (EOR): no skew case for the second-order ratio"
+document = "Engineering decision of the engineer of record"
+edition = "docs/brief/checks.md, S6-18"
+section = "A skew horizontal guard-load case for rectangular posts, item 4: no skew case for alpha Pr/Pe"
+source = "engineer"
+status = "drafted"
+drafted_on = 2026-10-17
+verified_by = ""
+verified_date = ""
+note = "S6-18 item 4 (Micah, 2026-10-17). Printed in the skew case of Check 5 in place of the alpha Pr/Pe lines. Wording is Claude's, for the slice 6 pull request."
+
+[[entry]]
+id = "ej.skew.deflection"
+value = "Skew: not checked. Its deflection, √(δt²·cos²θ + δl²·sin²θ), never exceeds the larger of the transverse and longitudinal cases."
+unit = "text"
+cite = "Engineering judgement (EOR): no skew case for Check 6"
+document = "Engineering decision of the engineer of record"
+edition = "docs/brief/checks.md, S6-18"
+section = "A skew horizontal guard-load case for rectangular posts, item 4: no skew case for Check 6"
+source = "engineer"
+status = "drafted"
+drafted_on = 2026-10-17
+verified_by = ""
+verified_date = ""
+note = "S6-18 item 4 (Micah, 2026-10-17). Printed as the skew row of Check 6's envelope at a rectangular or square post. Wording is Claude's, for the slice 6 pull request."

@@ -30,6 +30,10 @@ class Direction(StrEnum):
     HORIZONTAL = "Horizontal"
     # The lateral anchor reaction set: any horizontal direction (S4-4).
     LATERAL = "Lateral"
+    # The horizontal guard load at the plan angle worst for the check: a
+    # rectangular or square post's Checks 3, 5 and 7 only, after the
+    # orthogonal cases (S6-18). Not in DIRECTIONS, which every check runs.
+    SKEW = "Skew"
 
 
 class LoadType(StrEnum):
@@ -48,8 +52,8 @@ class Kind(StrEnum):
     HORIZONTAL = "horizontal"
 
 
-DOWNWARD, UPWARD, HORIZONTAL, LATERAL = (Direction.DOWNWARD, Direction.UPWARD, Direction.HORIZONTAL,
-                                         Direction.LATERAL)
+DOWNWARD, UPWARD, HORIZONTAL, LATERAL, SKEW = (Direction.DOWNWARD, Direction.UPWARD, Direction.HORIZONTAL,
+                                               Direction.LATERAL, Direction.SKEW)
 CONCENTRATED, DISTRIBUTED, COMPONENT = LoadType.CONCENTRATED, LoadType.DISTRIBUTED, LoadType.COMPONENT
 
 # The guard load's direction cases, in envelope order (ties go to the first).
@@ -59,8 +63,8 @@ LOAD_TYPES = (LoadType.CONCENTRATED, LoadType.DISTRIBUTED)
 # The component load's two directions: Checks 4a and 4b (S4-10).
 COMPONENT_DIRECTIONS = (Direction.DOWNWARD, Direction.HORIZONTAL)
 
-# Every direction a demand can be built for, with its kind. Outward, inward
-# and longitudinal (and the reaction sets' lateral) are the horizontal kind.
+# Every direction a demand can be built for, with its kind. Outward, inward,
+# longitudinal and skew (and the reaction sets' lateral) are the horizontal kind.
 # The component load's HORIZONTAL has no entry: it has no demand at the post.
 _KIND = {
     Direction.DOWNWARD: Kind.DOWNWARD,
@@ -69,6 +73,7 @@ _KIND = {
     Direction.INWARD: Kind.HORIZONTAL,
     Direction.LONGITUDINAL: Kind.HORIZONTAL,
     Direction.LATERAL: Kind.HORIZONTAL,
+    Direction.SKEW: Kind.HORIZONTAL,
 }
 
 

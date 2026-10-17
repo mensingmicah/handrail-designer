@@ -227,11 +227,12 @@ def _envelope_5(chk: Check) -> str:
     for i, c in enumerate(cast("list[PostCase]", chk.cases)):
         if c.status == "checked":
             sense = "tension" if c.sense == "tension" else "comp."
-            _, P_cap, _, M_cap = _post_terms(c)
+            _, P_cap, M_dem, M_cap = _post_terms(c)
             rows.append([
-                c.direction, c.load_type, c.combination,
+                _direction(c), c.load_type, c.combination,
                 f"{fmt_quantity_plain(c.Pr)} {sense}\n{P_cap}",
-                f"{fmt_quantity_plain(c.Mr)}\n{M_cap}" + (f"\nabout {c.axis}" if c.axis else "")
+                (f"{fmt_quantity_plain(c.Mr)}\n{M_dem}\n{M_cap}" if c.Mc_by else
+                 f"{fmt_quantity_plain(c.Mr)}\n{M_cap}" + (f"\nabout {c.axis}" if c.axis else ""))
                 if c.Mr is not None else "—",
                 c.equation.replace(" (", "\n("),  # the source equation on its own line keeps the column narrow
                 fmt_sig(c.second_order) if c.second_order is not None else "—",
@@ -251,6 +252,13 @@ def _envelope_5(chk: Check) -> str:
     return f"#text(size: 8pt)[{table}]"  # nine columns: set small so the rows stay a few lines
 
 
+def _direction(c: PostCase | WeldCase) -> str:
+    """An envelope row's direction: the skew case (S6-18) with its plan angle."""
+    if c.plan_angle is None:
+        return c.direction
+    return f"{c.direction}\nθ = {fmt_quantity_plain(c.plan_angle)}"
+
+
 def _envelope_weld(chk: Check) -> str:
     """Weld envelope (Checks 3 and 7): the forces per inch at the governing
     fiber, theta and k_ds where k_ds comes from theta (Check 7), and the weld
@@ -260,7 +268,7 @@ def _envelope_weld(chk: Check) -> str:
     rows, bold = [], []
     for i, c in enumerate(cast("list[WeldCase]", chk.cases)):
         if c.status == "checked":
-            row = [c.direction, c.load_type, c.combination,
+            row = [_direction(c), c.load_type, c.combination,
                    f"{fmt_quantity_plain(c.f_n)}\n{c.fiber}" if c.f_n is not None else "—\nshear only",
                    fmt_quantity_plain(c.f_v) if c.f_v is not None else "—",
                    fmt_quantity_plain(c.f_r)]
@@ -484,7 +492,11 @@ def _post_terms(c: PostCase) -> tuple[str, ...]:
     summary both print these."""
     P_cap = "Pt" if c.sense == "tension" else "Pc"
     terms = [f"Pr = {fmt_quantity_plain(c.Pr)}", f"{P_cap} = {fmt_quantity_plain(c.P_allow)}", "", ""]
-    if c.Mr is not None:
+    if c.Mc_by:
+        # The skew case (S6-18): the moment's component on each axis, over that axis's strength.
+        terms[2:] = [", ".join(f"Mr{a} = {fmt_quantity_plain(v)}" for a, v in c.Mr_by.items()),
+                     ", ".join(f"Mc{a} = {fmt_quantity_plain(v)}" for a, v in c.Mc_by.items())]
+    elif c.Mr is not None:
         terms[2:] = [f"Mr = {fmt_quantity_plain(c.Mr)}", f"Mc = {fmt_quantity_plain(c.M_allow)}"]
     return tuple(terms)
 

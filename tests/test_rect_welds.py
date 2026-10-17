@@ -251,10 +251,13 @@ def test_a_rectangular_post_welded_all_around_runs_on_its_rounded_rectangle():
     assert along.f_b.m_as("lbf/inch") == pytest.approx(M / _value(lines, "S_w_l").m_as("in^2"))
     assert out.f_b > along.f_b                      # the transverse load bends the line over its 2 in depth
     assert out.f_v.m_as("lbf/inch") == pytest.approx(300.0 / _value(lines, "L_w").m_as("inch"))
-    assert chk.controlling.direction in ("Outward", "Inward")
+    orthogonal = [c for c in chk.checked if c.direction != "Skew"]
+    assert max(orthogonal, key=lambda c: c.ratio).direction in ("Outward", "Inward")
+    assert chk.controlling.direction == "Skew"                       # the corner sees both components (S6-18)
     assert _decisions(lines)['"Post wall at the weld"'] == "Covered by Check 5"
     assert out.wall_ratio is None and out.governs == "weld metal"
-    assert [c.status for c in chk.cases] == ["checked"] * 10        # all five direction cases, both load types
+    # All five direction cases and the skew case (S6-18), both load types.
+    assert [c.status for c in chk.cases] == ["checked"] * 12
 
 
 def test_k_ds_is_1_for_every_rectangular_post_and_says_why():
@@ -277,14 +280,18 @@ def test_k_ds_is_1_for_every_rectangular_post_and_says_why():
     ({"section": "HSS3X2X1/8", "long_side": "perpendicular to rail"}, "faces perpendicular to rail", "Longitudinal"),
 ])
 def test_a_face_pair_runs_all_five_cases_and_is_weak_across_its_own_lines(post, pattern, strong):
-    """S6-6: all five direction cases run on either pattern. The case that
-    bends the two lines about their own length governs by a wide margin
-    (plan, open item 7)."""
+    """S6-6: all five direction cases run on either pattern, and the skew
+    case after them (S6-18). Of the orthogonal cases, the one that bends
+    the two lines about their own length governs by a wide margin (plan,
+    open item 7); the skew case, loading a line's end with both, governs
+    over all."""
     wide_rail = {"section": "HSS4X3X1/8", "long_side": "horizontal"}   # 4 in wide: wide enough for either post
     chk = _run(top_rail=wide_rail, post=post, welds={"base_pattern": pattern}).check(7)
     weak = "Longitudinal" if strong == "Outward" else "Outward"
-    assert [c.status for c in chk.cases] == ["checked"] * 10
-    assert chk.controlling.direction in (weak, "Inward") and chk.controlling.direction != strong
+    assert [c.status for c in chk.cases] == ["checked"] * 12
+    orthogonal = max((c for c in chk.checked if c.direction != "Skew"), key=lambda c: c.ratio)
+    assert orthogonal.direction in (weak, "Inward") and orthogonal.direction != strong
+    assert chk.controlling.direction == "Skew"
     assert _case(chk, weak).ratio > 2 * _case(chk, strong).ratio
     assert _case(chk, weak).f_b > _case(chk, strong).f_b
 
@@ -655,3 +662,62 @@ def test_the_branch_is_not_held_to_the_chords_limits_at_a_rectangular_or_mixed_j
     narrow = {"section": "HSS3X1X1/8", "long_side": "horizontal"}             # H/B = 3: outside 0.5 to 2.0
     assert _run(top_rail=narrow, post={"section": "Pipe2STD", "long_side": None},
                 welds={"base_pattern": None, "post_to_baseplate": "1/4"}).check(3).computed
+
+
+# ---------------------------------------------------------------------------
+# The skew case at a rectangular post's welds (S6-18)
+# ---------------------------------------------------------------------------
+
+def _skew_expected(lines, M: float) -> tuple[float, float]:
+    """The plan angle (degrees) and f_b (lb/in) S6-18 gives for a line with
+    moduli S_w_t and S_w_l, from the brief's closed form."""
+    S_t, S_l = _value(lines, "S_w_t").m_as("in^2"), _value(lines, "S_w_l").m_as("in^2")
+    return math.degrees(math.atan(S_t / S_l)), M * math.sqrt(1 / S_t**2 + 1 / S_l**2)
+
+
+@pytest.mark.parametrize("pattern", ["all around", "faces parallel to rail", "faces perpendicular to rail"])
+def test_the_skew_case_takes_both_bending_components_at_full_value(pattern):
+    """S6-18, Check 7: f_b = M sqrt(1/S_t^2 + 1/S_l^2) at tan theta =
+    S_t/S_l, on the moduli the orthogonal cases use; the axial term as in
+    them, and the shear the larger of theirs."""
+    chk = _run(welds={"base_pattern": pattern}).check(7)
+    skew, out, along = _case(chk, "Skew"), _case(chk, "Outward"), _case(chk, "Longitudinal")
+    angle, f_b = _skew_expected(skew.lines, 300.0 * 41.5)
+    assert skew.plan_angle.m_as("degree") == pytest.approx(angle)
+    assert skew.f_b.m_as("lbf/inch") == pytest.approx(f_b)
+    assert skew.f_a == out.f_a and skew.f_v == max(out.f_v, along.f_v)
+    assert skew.f_n == skew.f_a + skew.f_b and skew.fiber == "compression side"
+    assert skew.ratio > max(out.ratio, along.ratio)
+    assert _decisions(skew.lines)['"Skew guard load"'] == "At the plan angle worst for this weld line"
+
+
+def test_at_a_face_pair_the_post_wall_takes_the_skew_forces():
+    """S6-18: the post-wall lines of S6-7 and S6-17 item 3 take the skew
+    normal force and shear."""
+    chk = _run(welds={"base_pattern": "faces parallel to rail"}).check(7)
+    skew = _case(chk, "Skew")
+    lines = skew.lines
+    assert _value(lines, "Ratio_wall_axial") == pytest.approx((skew.f_n / skew.wall_allow).m_as(""))
+    assert _value(lines, "Ratio_wall_face") == pytest.approx((skew.f_v / _value(lines, "R_wall_face")).m_as(""))
+
+
+def test_check_3_takes_the_skew_case_where_the_post_is_rectangular():
+    """S6-18 item 5: on Table K5.1's line (rectangular on rectangular) and on
+    the post's rounded rectangle under a round rail, with S_op and S_ip."""
+    for top_rail in (None, PIPE_RAIL):
+        chk = (_run() if top_rail is None else _run(top_rail=top_rail)).check(3)
+        skew = _case(chk, "Skew")
+        e = _value(skew.lines, "e").m_as("inch")
+        angle, f_b = _skew_expected(skew.lines, 300.0 * e)
+        assert skew.plan_angle.m_as("degree") == pytest.approx(angle)
+        assert skew.f_b.m_as("lbf/inch") == pytest.approx(f_b)
+        assert skew.base_demand == skew.f_v                     # the rail fusion face: in-plane shear only
+
+
+def test_a_round_post_has_no_skew_case_at_its_welds():
+    """S6-18 item 6: a ring has no corner. A round post on a rectangular
+    rail keeps the ring at Check 3 and at Check 7."""
+    res = _run(top_rail={"section": "HSS4X3X1/8", "long_side": "horizontal"}, post=PIPE_POST, welds={"base_pattern": None})
+    for n in (3, 7):
+        assert all(c.direction != "Skew" for c in res.check(n).cases)
+        assert len(res.check(n).cases) == 10

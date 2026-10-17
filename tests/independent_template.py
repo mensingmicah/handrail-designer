@@ -9,12 +9,14 @@ it runs the tool to learn which values it reports, and never writes or
 prints one (CLAUDE.md rule 5). It refuses to overwrite an existing file,
 which may hold the independent calc's values.
 
-With --add, the file exists and the case has come to cover a new group
-(test case 6 gained the chord check in slice 6): the keys the file lacks
-are appended at its end, each "pending". Nothing already in the file is
-changed, and none of its values is read out or printed; only its key
-names are compared. It refuses if a missing key belongs to a table the
-file already has, since a TOML table cannot be opened twice.
+With --add, the file exists and the case has come to cover new values
+(test case 6 gained the chord check in slice 6; cases 8 and 9 the skew
+case of S6-18): the keys the file lacks are added, each "pending". A key
+whose table the file already has is inserted at the end of that table,
+since a TOML table cannot be opened twice; the rest are appended at the
+file's end in tables of their own. Nothing already in the file is changed
+or reordered: lines are only inserted. None of its values is read out or
+printed; only its key names are compared.
 """
 
 import sys
@@ -45,40 +47,54 @@ def render_added(keys) -> str:
            "# calc fills it. Nothing above this line was changed."]
     for parent, leaves in tables.items():
         out += ["", f"[independent.{parent}]"]
-        for leaf in leaves:
-            hint = "  # text, in quotes" if _is_text(f"{parent}.{leaf}") else ""
-            out.append(f'{leaf} = "{PENDING}"{hint}')
+        out += [_pending(parent, leaf) for leaf in leaves]
     return "\n".join(out) + "\n"
 
 
+INSERTED = "# Added by tests/independent_template.py --add, each \"pending\":"
+
+
+def _pending(parent: str, leaf: str) -> str:
+    hint = "  # text, in quotes" if _is_text(f"{parent}.{leaf}") else ""
+    return f'{leaf} = "{PENDING}"{hint}'
+
+
 def add(out, keys) -> int:
-    """Append the keys the file lacks, each "pending". Compares key names
-    only; no value of the file is printed or rewritten."""
+    """Add the keys the file lacks, each "pending": into the table the file
+    already has for a key, or appended in a new table. Compares key names
+    only; no value of the file is printed, rewritten or moved."""
     with open(out, "rb") as f:
         have = dict(_flatten(tomllib.load(f).get("independent", {})))
     missing = [k for k in keys if k not in have]
     if not missing:
         print(f"{_rel(out)}: no key to add")
         return 0
-    # Every table the file has, at any depth: a parent of any key it holds.
-    tables = set()
-    for k in have:
-        parts = k.split(".")[:-1]
-        tables.update(".".join(parts[:i]) for i in range(1, len(parts) + 1))
-    clash = sorted({k.rsplit(".", 1)[0] for k in missing} & tables)
-    if clash:
-        print(f"{_rel(out)}: keys are missing from tables the file already has "
-              f"({', '.join(clash)}); add them by hand, in those tables", file=sys.stderr)
-        return 1
-    text = render_added(missing)
-    with open(out, "rb") as f:
-        f.seek(0, 2)
-        size = f.tell()
-        f.seek(max(size - 1, 0))
-        ends_clean = size == 0 or f.read(1) == b"\n"
-    with open(out, "a", encoding="utf-8", newline="\n") as f:
-        f.write(text if ends_clean else "\n" + text)
-    print(f"{_rel(out)}: {len(missing)} keys added, all \"pending\"; "
+    with open(out, encoding="utf-8", newline="") as f:
+        lines = f.read().split("\n")
+    headers = {line.strip()[len("[independent."):-1]: i for i, line in enumerate(lines)
+               if line.strip().startswith("[independent.") and line.strip().endswith("]")}
+    into: dict[str, list[str]] = {}
+    appended = []
+    for key in missing:
+        parent, leaf = key.rsplit(".", 1)
+        if parent in headers:
+            into.setdefault(parent, []).append(leaf)
+        else:
+            appended.append(key)
+    # Insert from the bottom of the file up, so each header's index holds.
+    for parent in sorted(into, key=lambda p: headers[p], reverse=True):
+        end = next((i for i in range(headers[parent] + 1, len(lines)) if lines[i].lstrip().startswith("[")),
+                   len(lines))
+        while end - 1 > headers[parent] and (not lines[end - 1].strip() or lines[end - 1].lstrip().startswith("#")):
+            end -= 1  # after the table's last key, before the blank and comment lines that close it
+        lines[end:end] = [INSERTED] + [_pending(parent, leaf) for leaf in into[parent]]
+    text = "\n".join(lines)
+    if appended:
+        text = (text if text.endswith("\n") or not text else text + "\n") + render_added(appended)
+    with open(out, "w", encoding="utf-8", newline="\n") as f:
+        f.write(text if text.endswith("\n") else text + "\n")
+    print(f"{_rel(out)}: {len(missing)} keys added, all \"pending\" "
+          f"({sum(map(len, into.values()))} into tables the file had, {len(appended)} in new tables); "
           f"groups {sorted({k.split('.')[0] for k in missing})}")
     return 0
 

@@ -241,7 +241,14 @@ def _post_values(res):
         v[f"check5.ratio.{k}"] = c.ratio
         if c.Mr is not None:
             v[f"check5.Mr_lbin.{k}"] = c.Mr.m_as("lbf*inch")
+        if c.second_order is not None:  # every moment case but the skew case (S6-18)
             v[f"check5.alpha_Pr_over_Pe.{k}"] = c.second_order
+        if c.plan_angle is not None:
+            # The skew case of a rectangular post (S6-18): its plan angle, and
+            # the moment's component about each axis.
+            v[f"check5.plan_angle_deg.{k}"] = c.plan_angle.m_as("degree")
+            for a, Mr in c.Mr_by.items():
+                v[f"check5.Mr{a}_lbin.{k}"] = Mr.m_as("lbf*inch")
     if not c6.bypassed:
         v["check6.Delta_allow_in"] = c6.controlling.capacity.m_as("inch")
         for c in c6.checked:
@@ -481,6 +488,12 @@ def _weld_values(res, number):
     for c in chk.checked:
         k = _case_key(c)
         v[f"{g}.f_a_lbpin.{k}"] = c.f_a.m_as("lbf/inch")
+        if c.plan_angle is not None:
+            # The skew case (S6-18): its plan angle, and the bending force per
+            # inch from each component.
+            v[f"{g}.plan_angle_deg.{k}"] = c.plan_angle.m_as("degree")
+            v[f"{g}.f_b_t_lbpin.{k}"] = _line_value(c.lines, "f_b_t").m_as("lbf/inch")
+            v[f"{g}.f_b_l_lbpin.{k}"] = _line_value(c.lines, "f_b_l").m_as("lbf/inch")
         if c.f_b is not None:
             v[f"{g}.f_b_lbpin.{k}"] = c.f_b.m_as("lbf/inch")
         if c.f_v is not None:
@@ -769,6 +782,12 @@ def render_template(case: Path, keys) -> str:
         "#   bending) and y the weak axis, whichever way the member is turned.",
         "#   A weld line that is not a ring has two section moduli: S_w_t for",
         "#   the transverse cases (outward, inward) and S_w_l for the longitudinal.",
+        "# The skew case (S6-18; rectangular and square posts, Checks 3, 5 and 7):",
+        "#   the horizontal guard load at the plan angle from transverse worst for",
+        "#   the check. plan_angle_deg is that angle; check5.Mrx/Mry_lbin are its",
+        "#   moment's components on the post's axes; f_b_t and f_b_l are the",
+        "#   bending force per inch from the transverse and longitudinal components.",
+        "#   Check 6 has no skew case.",
         "",
         "[provenance]",
         f'calc = "{PENDING}"           # "tests/cases/independent/{case.stem}.md"',
@@ -1109,7 +1128,17 @@ def test_add_appends_pending_keys_and_changes_nothing_else(tmp_path, capsys):
     assert "3 keys added" in printed.out and "7.461" not in printed.out + printed.err
     # A second run finds nothing to add.
     assert independent_template.add(out, keys) == 0 and out.read_bytes() == after
-    # A key missing from a table the file already has cannot be appended.
-    assert independent_template.add(out, [*keys, "check3.S_w_in2"]) == 1
-    assert out.read_bytes() == after
-    assert "check3" in capsys.readouterr().err
+    # A key missing from a table the file already has goes into that table
+    # (S6-18 added the skew case to tables cases 8 and 9 had): lines are only
+    # inserted, and no value is printed.
+    capsys.readouterr()
+    assert independent_template.add(out, [*keys, "check3.S_w_in2", "check3.ratio.b", "check3.min_size"]) == 0
+    inserted = out.read_bytes()
+    assert _load(out)["independent"]["check3"] == {"L_w_in": 7.461, "S_w_in2": PENDING, "min_size": PENDING,
+                                                   "ratio": {"a": 0.05, "b": PENDING}}
+    old, new = after.decode().splitlines(), inserted.decode().splitlines()
+    assert [ln for ln in new if ln in old] == old        # every line kept, in order: insertions only
+    assert new[new.index("L_w_in = 7.461") + 1] == independent_template.INSERTED
+    assert 'min_size = "pending"  # text, in quotes' in new
+    printed = capsys.readouterr()
+    assert "3 keys added" in printed.out and "7.461" not in printed.out + printed.err

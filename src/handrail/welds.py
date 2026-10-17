@@ -34,6 +34,12 @@ the two lines of a face-pair base weld, or the effective weld of AISC
 direction case takes the one it bends. A rectangular post's base weld takes
 k_ds = 1.0, and welded on a face pair its wall is checked on its own lines
 in place of "covered by Check 5" (S6-7).
+
+Such a line also takes the skew case (S6-18): the horizontal guard load at
+the plan angle theta worst for the line, tan theta = S_t/S_l, with both
+bending components at full value at one point, the corner of an
+all-around line or the end of a face-pair line. A ring has no corner and
+no skew case.
 """
 
 from __future__ import annotations
@@ -44,12 +50,12 @@ from collections.abc import Callable
 
 from handrail import joints
 from handrail.chord import ChordCheck, chord_check
-from handrail.calc import (Line, Sheet, Sym, absolute, arccos, compare, fmt_quantity_plain, maximum, minimum,
-                           mtext, number, order, sin, sqrt, term)
+from handrail.calc import (Line, Sheet, Sym, absolute, arccos, arctan, compare, cos, fmt_quantity_plain, maximum,
+                           minimum, mtext, number, order, sin, sqrt, term)
 from handrail.demand import ASD, Given, Wording, demand
 from handrail.directions import (
-    COMPONENT, COMPONENT_DIRECTIONS, DIRECTIONS, DISTRIBUTED, DOWNWARD, HORIZONTAL, LOAD_TYPES, Direction, Kind,
-    LoadType, unknown,
+    COMPONENT, COMPONENT_DIRECTIONS, DIRECTIONS, DISTRIBUTED, DOWNWARD, HORIZONTAL, LOAD_TYPES, SKEW, Direction,
+    Kind, LoadType, unknown,
 )
 from handrail.dimensions import Dimension
 from handrail.errors import SectionStop
@@ -66,8 +72,8 @@ from handrail.results import Case, Check, Loading
 from handrail.shapes import Section
 from handrail.stops import Stop
 from handrail.units import Q_
-from handrail.weld_lines import (K5_MAPPING, LINE_METHOD, Ring, Side, face_pair, ring, rounded_rectangle,
-                                 table_k5_1)
+from handrail.weld_lines import (K5_MAPPING, LINE_METHOD, LONGITUDINAL, TRANSVERSE, Ring, Side, face_pair, ring,
+                                 rounded_rectangle, table_k5_1)
 
 NO_BEARING = "ej.weld.no_bearing"
 PER_INCH = "lbf/inch"
@@ -97,6 +103,7 @@ class WeldCase(Case):
     # A face-pair base weld (S6-7): the post wall's own lines.
     wall_allow: Any = None  # allowable force along the post axis per inch
     wall_ratio: float | None = None
+    plan_angle: Any = None  # the skew case (S6-18): the guard load's plan angle from transverse
 
 
 # ---------------------------------------------------------------------------
@@ -271,14 +278,16 @@ SIDE = {"compression": '"c"', "tension": '"t"'}
 
 
 def ring_forces(sh: Sheet, rg: Ring, P: Sym, sense: str, V: Sym | None = None, M: Sym | None = None,
-                S: Sym | None = None) -> RingForces:
+                S: Sym | None = None, bend: Callable[[Sheet, Sym], Sym] | None = None) -> RingForces:
     """Forces per inch of weld at the governing point of the weld line (W3, W10).
 
     P is the axial force's magnitude and ``sense`` its direction. With a
     moment, the side of bending whose stress has the same sense as P adds
     to it; the other side subtracts. Both are printed and the larger governs.
     ``S`` is the section modulus the moment acts on, for a line that has
-    one for each direction of bending; a ring has one, its own.
+    one for each direction of bending; a ring has one, its own. ``bend``
+    prints the bending force per inch in place of M/S, where it comes from
+    both moduli (the skew case, S6-18).
     """
     f_a = sh.line("f_a", "f_a", P / rg.L_w, f"Axial force per inch of weld, {sense}, {rg.uniform}",
                   cite_ids=(LINE_METHOD,), unit=PER_INCH)
@@ -288,11 +297,14 @@ def ring_forces(sh: Sheet, rg: Ring, P: Sym, sense: str, V: Sym | None = None, M
                       cite_ids=(NO_BEARING,), unit=PER_INCH)
         fiber = "uniform"
     else:
-        modulus = rg.S_w if S is None else S
-        if modulus is None:
-            raise ValueError("a moment at a weld line that was built without a section modulus")  # a bug in the tool
-        f_b = sh.line("f_b", "f_b", M / modulus, "Bending force per inch at the extreme fiber", cite_ids=(LINE_METHOD,),
-                      unit=PER_INCH)
+        if bend is not None:
+            f_b = bend(sh, M)
+        else:
+            modulus = rg.S_w if S is None else S
+            if modulus is None:
+                raise ValueError("a moment at a weld line that was built without a section modulus")  # a bug in the tool
+            f_b = sh.line("f_b", "f_b", M / modulus, "Bending force per inch at the extreme fiber",
+                          cite_ids=(LINE_METHOD,), unit=PER_INCH)
         other = "tension" if sense == "compression" else "compression"
         add = sh.line(f"f_n_{sense}", f"f_(n,{SIDE[sense]})", f_a + f_b, f"Normal force per inch, {sense} side of bending: "
                       f"axial and bending add", cite_ids=(NO_BEARING,), unit=PER_INCH)
@@ -463,8 +475,40 @@ def _weld_case(registry: Registry, project: Project, loading: Loading, ws: WeldS
     sh = Sheet(registry)
     sh.lines.extend(ws.head)
     sh.lines.extend(d.lines)
-    f = ring_forces(sh, ws.rg, d.P, d.sense, d.V, d.M, ws.rg.S_for(direction))
-    return _weld_result(sh, ws, f, direction, load_type, d.label, d.sense)
+    if direction != SKEW:
+        f = ring_forces(sh, ws.rg, d.P, d.sense, d.V, d.M, ws.rg.S_for(direction))
+        return _weld_result(sh, ws, f, direction, load_type, d.label, d.sense)
+    case = registry.get(SKEW_CASE)
+    sh.decision(mtext("Skew guard load"), "At the plan angle worst for this weld line", case.value,
+                cite_ids=(case.id,))
+    angle: list[Sym] = []
+    f = ring_forces(sh, ws.rg, d.P, d.sense, d.V, d.M, bend=lambda s, M: _skew_bending(s, ws.rg, M, angle))
+    result = _weld_result(sh, ws, f, direction, load_type, d.label, d.sense)
+    result.plan_angle = angle[0].value
+    return result
+
+
+SKEW_CASE = "ej.skew.case"
+SKEW_WELD = "ej.skew.angle.weld"
+
+
+def _skew_bending(sh: Sheet, rg: Ring, M: Sym, angle: list[Sym]) -> Sym:
+    """The skew case's bending force per inch (S6-18): at the plan angle
+    theta from transverse with tan theta = S_t/S_l, the moment's two
+    components each on its own modulus, taken at full value at one point,
+    the corner of an all-around line or the end of a face-pair line. Their
+    sum is M sqrt(1/S_t^2 + 1/S_l^2). The angle is kept in ``angle``."""
+    S_t, S_l = rg.S_by[TRANSVERSE], rg.S_by[LONGITUDINAL]
+    theta = sh.line("theta_plan", "theta", arctan(S_t / S_l),
+                    "Plan angle of the guard load from transverse, worst for this weld line: tan θ = S_w,t/S_w,l",
+                    cite_ids=(SKEW_WELD,), unit="degree")
+    angle.append(theta)
+    f_bt = sh.line("f_b_t", 'f_"b,t"', M * cos(theta) / S_t, "Bending force per inch from the transverse component",
+                   cite_ids=(LINE_METHOD,), unit=PER_INCH)
+    f_bl = sh.line("f_b_l", 'f_"b,l"', M * sin(theta) / S_l, "Bending force per inch from the longitudinal component",
+                   cite_ids=(LINE_METHOD,), unit=PER_INCH)
+    return sh.line("f_b", "f_b", f_bt + f_bl, "Bending force per inch at the corner (the end of a face-pair line): "
+                   "both components at full value", cite_ids=(SKEW_WELD,), unit=PER_INCH)
 
 
 def _weld_result(sh: Sheet, ws: WeldLines, f: RingForces, direction: Direction, load_type: LoadType, label: str,
@@ -519,7 +563,9 @@ def _weld_check(chk: WeldCheck, registry: Registry, project: Project, loading: L
                 limits: SizeLimits, parts: tuple[Part, Part]) -> WeldCheck:
     _min_size(chk, limits)
     chk.flags.extend(thin_material(registry, parts))
-    for direction in DIRECTIONS:
+    # A line with two section moduli, at a rectangular or square post, takes
+    # the skew case after the orthogonal ones (S6-18); a ring has none.
+    for direction in DIRECTIONS + ((SKEW,) if ws.rg.S_by else ()):
         for lt in LOAD_TYPES:
             if lt == DISTRIBUTED and loading.exempt:
                 chk.cases.append(exempt_case(registry, direction, WeldCase))

@@ -343,10 +343,20 @@ def _sin(angle) -> float:
     return math.sin(angle.to("radian").magnitude)
 
 
+def _cos(angle) -> float:
+    return math.cos(angle.to("radian").magnitude)
+
+
 def _arccos(x):
     # x is a ratio: a plain float, or a dimensionless pint quantity.
     ratio = x.to("dimensionless").magnitude if hasattr(x, "units") else x
     return ureg.Quantity(math.degrees(math.acos(ratio)), "degree")
+
+
+def _arctan(x):
+    # x is a ratio, as for _arccos.
+    ratio = x.to("dimensionless").magnitude if hasattr(x, "units") else x
+    return ureg.Quantity(math.degrees(math.atan(ratio)), "degree")
 
 
 _FUNC_EVAL: dict[str, Callable] = {
@@ -355,7 +365,9 @@ _FUNC_EVAL: dict[str, Callable] = {
     "max": max,
     "abs": abs,
     "sin": _sin,
+    "cos": _cos,
     "arccos": _arccos,
+    "arctan": _arctan,
 }
 
 
@@ -420,7 +432,7 @@ class Func(Expr):
             return f"sqrt({parts[0]})"
         if self.name == "abs":
             return f"abs({parts[0]})"
-        if self.name in ("sin", "arccos"):  # Typst math operators
+        if self.name in ("sin", "cos", "arccos", "arctan"):  # Typst math operators
             return f"{self.name}({parts[0]})"
         return f'"{self.name}"({", ".join(parts)})'
 
@@ -455,9 +467,19 @@ def sin(angle: Expr) -> Expr:
     return Func("sin", (_wrap(angle),))
 
 
+def cos(angle: Expr) -> Expr:
+    """Cosine of an angle quantity (degrees or radians)."""
+    return Func("cos", (_wrap(angle),))
+
+
 def arccos(x: Expr) -> Expr:
     """Inverse cosine of a ratio, as an angle in degrees."""
     return Func("arccos", (_wrap(x),))
+
+
+def arctan(x: Expr) -> Expr:
+    """Inverse tangent of a ratio, as an angle in degrees."""
+    return Func("arctan", (_wrap(x),))
 
 
 # ---------------------------------------------------------------------------

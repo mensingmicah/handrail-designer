@@ -665,11 +665,55 @@ def test_each_lateral_case_of_a_rectangular_post_bends_one_axis():
     assert _value(out.lines, "I") == m.post.y.I and _value(along.lines, "I") == m.post.x.I
     E, Lc = reg.get("material.steel.E").quantity, _value(out.lines, "L_c")
     assert out.second_order == pytest.approx((1.6 * out.Pr * Lc**2 / (math.pi**2 * E * m.post.y.I)).m_as("dimensionless"))
-    assert chk.controlling.direction == "Outward" and chk.controlling.load_type == "Distributed"
+    orthogonal = max((c for c in chk.checked if c.direction != "Skew"), key=lambda c: c.ratio)
+    assert orthogonal.direction == "Outward" and orthogonal.load_type == "Distributed"
     perpendicular = _guard(post={"long_side": "perpendicular to rail"})
     chk = check_5(perpendicular[0], perpendicular[1].project, perpendicular[1].post, perpendicular[2])
     assert (_case(chk, "Outward").axis, _case(chk, "Longitudinal").axis) == ("x", "y")
-    assert chk.controlling.direction == "Longitudinal"   # the load along the rail is now on the weak axis
+    # The load along the rail is now on the weak axis; the skew case (S6-18) governs over all.
+    assert max((c for c in chk.checked if c.direction != "Skew"), key=lambda c: c.ratio).direction == "Longitudinal"
+    assert chk.controlling.direction == "Skew"
+
+
+@pytest.mark.parametrize("post", [{}, {"long_side": "perpendicular to rail"},
+                                  {"section": "HSS2X2X1/8", "long_side": None}])
+def test_the_skew_case_of_a_rectangular_post_is_at_the_worst_plan_angle(post):
+    """S6-18 item 3: Mr,t = Mr cos theta, Mr,l = Mr sin theta; Eq. H1-1 is
+    linear in the two, so tan theta = Mc,t/Mc,l and the moment term is
+    Mr sqrt(1/Mc,t^2 + 1/Mc,l^2); sqrt(2) Mr/Mc for a square post. No
+    alpha Pr/Pe of its own (item 4)."""
+    reg, m, loading = _guard(post=post)
+    chk = check_5(reg, m.project, m.post, loading)
+    for lt in ("Concentrated", "Distributed"):
+        skew, out, along = _case(chk, "Skew", lt), _case(chk, "Outward", lt), _case(chk, "Longitudinal", lt)
+        Mct, Mcl, Mr = out.M_allow, along.M_allow, skew.Mr
+        assert skew.Mr == out.Mr and skew.Pr == out.Pr and skew.second_order is None
+        assert skew.plan_angle.m_as("degree") == pytest.approx(math.degrees(math.atan((Mct / Mcl).m_as(""))))
+        term = (Mr * ((1 / Mct**2 + 1 / Mcl**2) ** 0.5)).m_as("")
+        assert skew.equation == "Eq. H1-1b"
+        assert skew.ratio == pytest.approx((skew.Pr / (2 * skew.P_allow)).m_as("") + term)
+        assert skew.ratio > max(out.ratio, along.ratio)
+        assert skew.Mc_by == {out.axis: Mct, along.axis: Mcl}
+        if m.post.rect.square:
+            assert term == pytest.approx(math.sqrt(2) * (Mr / Mct).m_as(""))
+            assert skew.plan_angle.m_as("degree") == pytest.approx(45.0)
+        assert _decisions(skew.lines)[-3:-1] == ["At the plan angle worst for this check",
+                                                 "Not computed for the skew case"]
+
+
+def test_check_6_has_no_skew_case_and_says_why():
+    """S6-18 item 4: the skew deflection never exceeds the larger
+    orthogonal case, so Check 6 lists the skew case as not checked; a round
+    post has no skew row."""
+    reg, m, loading = _guard()
+    chk = check_6(reg, m.project, m.post, loading)
+    skew = [c for c in chk.cases if c.direction == "Skew"]
+    assert len(skew) == 1 and skew[0].status == "not checked"
+    assert skew[0].remark == reg.get("ej.skew.deflection").value
+    reg, m, loading = _guard(top_rail={"section": "Pipe2STD", "long_side": None},
+                             post={"section": "Pipe2STD", "long_side": None})
+    assert all(c.direction != "Skew" for c in check_6(reg, m.project, m.post, loading).cases)
+    assert all(c.direction != "Skew" for c in check_5(reg, m.project, m.post, loading).cases)
 
 
 def test_a_rectangular_post_buckles_about_its_weak_axis_in_every_case():

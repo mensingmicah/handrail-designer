@@ -24,6 +24,11 @@ the longitudinal case the other, by the post's long_side. So section H1.1
 takes one moment per case, on that axis's AISC 360-22 F7 strength (Cb =
 1.0, a cantilever, Lb = h), and alpha Pr/Pe and Check 6 use I about the
 same axis.
+
+The skew case of a rectangular or square post (S6-18): the horizontal
+guard load at the plan angle theta from transverse worst for Eq. H1-1,
+tan theta = Mc,t/Mc,l, its moment split onto the two axes. It has no
+alpha Pr/Pe of its own and no Check 6 case; each prints why.
 """
 
 from __future__ import annotations
@@ -33,10 +38,11 @@ from typing import Any, cast
 from collections.abc import Callable
 
 from handrail import cb
-from handrail.calc import PI, Const, Line, Sheet, Sym, Term, compare, fmt_quantity_plain, fmt_sig, number, sqrt
+from handrail.calc import (PI, Const, Expr, Line, Sheet, Sym, Term, arctan, compare, cos, fmt_quantity_plain, fmt_sig,
+                           mtext, number, sin, sqrt)
 from handrail.demand import ASD, Demand, Given, Wording, demand, live_at_post
 from handrail.directions import (
-    DIRECTIONS, DISTRIBUTED, DOWNWARD, LOAD_TYPES, UPWARD, Direction, Kind, LoadType, kind, unknown,
+    DIRECTIONS, DISTRIBUTED, DOWNWARD, LOAD_TYPES, SKEW, UPWARD, Direction, Kind, LoadType, kind, unknown,
 )
 from handrail.errors import SectionStop
 from handrail.flexure import Unbraced, flexural_capacity, rect_axis_capacity, rect_limits
@@ -60,8 +66,13 @@ class PostCase(Case):
     P_allow: Any = None            # Pc (compression) or Pt (tension)
     M_allow: Any = None            # Mc; None in the axial-only cases
     equation: str = ""                # the equation the ratio comes from, as printed
-    second_order: float | None = None  # alpha Pr/Pe, moment cases only
+    second_order: float | None = None  # alpha Pr/Pe, moment cases only (not the skew case, S6-18)
     axis: str = ""                    # a rectangular post: the axis this case bends; "" otherwise
+    # The skew case (S6-18): the plan angle from transverse, and the moment's
+    # component and the available strength about each axis, by axis name.
+    plan_angle: Any = None
+    Mr_by: dict[str, Any] = field(default_factory=dict)
+    Mc_by: dict[str, Any] = field(default_factory=dict)
 
 
 # ---------------------------------------------------------------------------
@@ -385,6 +396,17 @@ def _moment_case(registry, project, post, loading, cap: Capacity5, direction: Di
     sh.decision(exceeds, sentence.value.format(ratio=fmt_sig(a_ratio.value)), "", cite_ids=(lim.id,))
 
     Pc = comp.Pc
+    ratio, eq = _interaction(sh, registry, Pr, Pc, Mr / Mc)
+    return PostCase(direction, load_type, "checked", d.label,
+                    demand=Mr.value, capacity=Mc.value, ratio=ratio.value, lines=sh.lines,
+                    Pr=Pr.value, sense=d.sense, Mr=Mr.value, P_allow=Pc.value, M_allow=Mc.value,
+                    equation=eq.equation_number,
+                    second_order=a_ratio.value, axis=bent)
+
+
+def _interaction(sh: Sheet, registry: Registry, Pr: Sym, Pc: Sym, moment: Expr) -> tuple[Sym, Entry]:
+    """AISC 360-22 §H1.1: Eq. H1-1a or H1-1b, chosen by Pr/Pc. ``moment`` is
+    the flexure term: Mr/Mc, or in the skew case the sum over both axes."""
     t = registry.get("aisc360.H1.1.threshold")
     PrPc = sh.line("P_r_over_P_c", "frac(P_r, P_c)", Pr / Pc, "Axial ratio, selects the interaction equation", cite_ids=(t.id,))
     # Each equation entry is fetched only on its own branch, as for Chapter E.
@@ -392,18 +414,61 @@ def _moment_case(registry, project, post, loading, cap: Capacity5, direction: Di
     if high_axial:
         eq = registry.get("aisc360.eq.H1-1a")
         sh.decision(high_axial, eq.equation_number, "", cite_ids=(t.id,))
-        ratio = sh.line("Ratio", '"Ratio"', PrPc + sh.fraction("aisc360.eq.H1-1a.coeff") * (Mr / Mc),
+        ratio = sh.line("Ratio", '"Ratio"', PrPc + sh.fraction("aisc360.eq.H1-1a.coeff") * moment,
                         "Combined axial and flexure", cite_ids=(eq.id,), ratio=True)
     else:
         eq = registry.get("aisc360.eq.H1-1b")
         sh.decision(high_axial, eq.equation_number, "", cite_ids=(t.id,))
-        ratio = sh.line("Ratio", '"Ratio"', Pr / (sh.coeff("aisc360.eq.H1-1b.coeff") * Pc) + Mr / Mc,
+        ratio = sh.line("Ratio", '"Ratio"', Pr / (sh.coeff("aisc360.eq.H1-1b.coeff") * Pc) + moment,
                         "Combined axial and flexure", cite_ids=(eq.id,), ratio=True)
-    return PostCase(direction, load_type, "checked", d.label,
-                    demand=Mr.value, capacity=Mc.value, ratio=ratio.value, lines=sh.lines,
-                    Pr=Pr.value, sense=d.sense, Mr=Mr.value, P_allow=Pc.value, M_allow=Mc.value,
-                    equation=eq.equation_number,
-                    second_order=a_ratio.value, axis=bent)
+    return ratio, eq
+
+
+SKEW_CASE = "ej.skew.case"
+
+
+def _skew_case(registry, project, loading, cap: Capacity5, load_type: LoadType) -> PostCase:
+    """The skew case of a rectangular or square post (S6-18): the horizontal
+    guard load at the plan angle theta from transverse worst for Eq. H1-1.
+    The interaction is linear in the two components Mr cos theta and Mr sin
+    theta, so theta is at tan theta = Mc,t/Mc,l, the strengths the
+    transverse and longitudinal cases compute. Same Pr = D and the same arm
+    as those cases; no alpha Pr/Pe of its own (the line says why)."""
+    axes = cast(PostAxes, cap.axes)  # only a rectangular post has a skew case
+    t, l = axes.transverse, axes.longitudinal
+    sh = Sheet(registry)
+    comp = cap.compression
+    t_lines, Mct = cap.about[t]
+    l_lines, Mcl = cap.about[l]
+    sh.heading(f"Capacity about the {t} axis (transverse component)")
+    sh.lines.extend(t_lines)
+    sh.heading(f"Capacity about the {l} axis (longitudinal component)")
+    sh.lines.extend(l_lines)
+    sh.heading("Capacity in compression")
+    sh.lines.extend(comp.body)
+    d = _demand(registry, project, loading, SKEW, load_type)
+    sh.lines.extend(d.lines)
+    Pr, Mr = cast(Sym, d.P), cast(Sym, d.M)  # a horizontal demand always has both
+    case = registry.get(SKEW_CASE)
+    sh.decision(mtext("Skew guard load"), "At the plan angle worst for this check", case.value, cite_ids=(case.id,))
+    no_pe = registry.get("ej.skew.second_order")
+    sh.decision(mtext("Second-order ratio"), "Not computed for the skew case", no_pe.value, cite_ids=(no_pe.id,))
+    theta = sh.line("theta_plan", "theta", arctan(Mct / Mcl),
+                    f"Plan angle of the guard load from transverse, worst for Eq. H1-1: tan θ = Mc{t}/Mc{l}",
+                    cite_ids=("ej.skew.angle.post",), unit="degree")
+    Mrt = sh.line(f"M_r_{t}", f'M_"r{t}"', Mr * cos(theta),
+                  f"Required flexural strength about the {t} axis: the transverse component",
+                  cite_ids=("ej.skew.angle.post",), unit="lbf*inch")
+    Mrl = sh.line(f"M_r_{l}", f'M_"r{l}"', Mr * sin(theta),
+                  f"Required flexural strength about the {l} axis: the longitudinal component",
+                  cite_ids=("ej.skew.angle.post",), unit="lbf*inch")
+    Pc = comp.Pc
+    ratio, eq = _interaction(sh, registry, Pr, Pc, Mrt / Mct + Mrl / Mcl)
+    return PostCase(SKEW, load_type, "checked", d.label,
+                    demand=Mr.value, ratio=ratio.value, lines=sh.lines,
+                    Pr=Pr.value, sense=d.sense, Mr=Mr.value, P_allow=Pc.value,
+                    equation=eq.equation_number, plan_angle=theta.value,
+                    Mr_by={t: Mrt.value, l: Mrl.value}, Mc_by={t: Mct.value, l: Mcl.value})
 
 
 def _upward(registry, project, loading, cap: Capacity5, load_type) -> PostCase:
@@ -441,6 +506,13 @@ def check_5(registry: Registry, project: Project, post: Section, loading: Loadin
                 chk.cases.append(_moment_case(registry, project, post, loading, cap, direction, lt))
             else:
                 unknown("Check 5", "kind of direction case", k, Kind)
+    # A rectangular or square post: the skew case, after the orthogonal ones (S6-18).
+    if cap.axes is not None:
+        for lt in LOAD_TYPES:
+            if lt == DISTRIBUTED and loading.exempt:
+                chk.cases.append(exempt_case(registry, SKEW, PostCase))
+            else:
+                chk.cases.append(_skew_case(registry, project, loading, cap, lt))
     return chk
 
 
@@ -491,4 +563,7 @@ def check_6(registry: Registry, project: Project, post: Section, loading: Loadin
                 chk.cases.append(exempt_case(registry, direction))
                 continue
             chk.cases.append(_deflection_case(registry, project, post, loading, direction, lt))
+    if not post.is_round:
+        # No skew case: its deflection never exceeds the larger orthogonal one (S6-18).
+        chk.cases.append(Case(SKEW, None, "not checked", remark=registry.get("ej.skew.deflection").value))
     return chk
