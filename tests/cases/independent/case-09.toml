@@ -39,6 +39,12 @@
 #   bending) and y the weak axis, whichever way the member is turned.
 #   A weld line that is not a ring has two section moduli: S_w_t for
 #   the transverse cases (outward, inward) and S_w_l for the longitudinal.
+# The skew case (S6-18; rectangular and square posts, Checks 3, 5 and 7):
+#   the horizontal guard load at the plan angle from transverse worst for
+#   the check. plan_angle_deg is that angle; check5.Mrx/Mry_lbin are its
+#   moment's components on the post's axes; f_b_t and f_b_l are the
+#   bending force per inch from the transverse and longitudinal components.
+#   Check 6 has no skew case.
 
 [provenance]
 calc = "pending"           # "tests/cases/independent/case-09.md"
@@ -92,6 +98,8 @@ upward_concentrated = "pending"
 upward_distributed = "pending"
 longitudinal_concentrated = "pending"
 longitudinal_distributed = "pending"
+skew_concentrated = "pending"
+skew_distributed = "pending"
 
 [independent.check5.equation]
 downward_concentrated = "pending"  # text, in quotes
@@ -104,6 +112,8 @@ upward_concentrated = "pending"  # text, in quotes
 upward_distributed = "pending"  # text, in quotes
 longitudinal_concentrated = "pending"  # text, in quotes
 longitudinal_distributed = "pending"  # text, in quotes
+skew_concentrated = "pending"  # text, in quotes
+skew_distributed = "pending"  # text, in quotes
 
 [independent.check5.ratio]
 downward_concentrated = "pending"
@@ -116,6 +126,8 @@ upward_concentrated = "pending"
 upward_distributed = "pending"
 longitudinal_concentrated = "pending"
 longitudinal_distributed = "pending"
+skew_concentrated = "pending"
+skew_distributed = "pending"
 
 [independent.check5.Mr_lbin]
 outward_concentrated = "pending"
@@ -124,6 +136,8 @@ inward_concentrated = "pending"
 inward_distributed = "pending"
 longitudinal_concentrated = "pending"
 longitudinal_distributed = "pending"
+skew_concentrated = "pending"
+skew_distributed = "pending"
 
 [independent.check5.alpha_Pr_over_Pe]
 outward_concentrated = "pending"
@@ -132,6 +146,18 @@ inward_concentrated = "pending"
 inward_distributed = "pending"
 longitudinal_concentrated = "pending"
 longitudinal_distributed = "pending"
+
+[independent.check5.plan_angle_deg]
+skew_concentrated = "pending"
+skew_distributed = "pending"
+
+[independent.check5.Mrx_lbin]
+skew_concentrated = "pending"
+skew_distributed = "pending"
+
+[independent.check5.Mry_lbin]
+skew_concentrated = "pending"
+skew_distributed = "pending"
 
 [independent.check6]
 Delta_allow_in = "pending"
@@ -178,6 +204,8 @@ upward_concentrated = "pending"
 upward_distributed = "pending"
 longitudinal_concentrated = "pending"
 longitudinal_distributed = "pending"
+skew_concentrated = "pending"
+skew_distributed = "pending"
 
 [independent.check3.f_n_lbpin]
 downward_concentrated = "pending"
@@ -190,6 +218,8 @@ upward_concentrated = "pending"
 upward_distributed = "pending"
 longitudinal_concentrated = "pending"
 longitudinal_distributed = "pending"
+skew_concentrated = "pending"
+skew_distributed = "pending"
 
 [independent.check3.f_r_lbpin]
 downward_concentrated = "pending"
@@ -202,6 +232,8 @@ upward_concentrated = "pending"
 upward_distributed = "pending"
 longitudinal_concentrated = "pending"
 longitudinal_distributed = "pending"
+skew_concentrated = "pending"
+skew_distributed = "pending"
 
 [independent.check3.fiber]
 downward_concentrated = "pending"  # text, in quotes
@@ -214,6 +246,8 @@ upward_concentrated = "pending"  # text, in quotes
 upward_distributed = "pending"  # text, in quotes
 longitudinal_concentrated = "pending"  # text, in quotes
 longitudinal_distributed = "pending"  # text, in quotes
+skew_concentrated = "pending"  # text, in quotes
+skew_distributed = "pending"  # text, in quotes
 
 [independent.check3.ratio_weld]
 downward_concentrated = "pending"
@@ -226,6 +260,8 @@ upward_concentrated = "pending"
 upward_distributed = "pending"
 longitudinal_concentrated = "pending"
 longitudinal_distributed = "pending"
+skew_concentrated = "pending"
+skew_distributed = "pending"
 
 [independent.check3.ratio]
 downward_concentrated = "pending"
@@ -238,6 +274,8 @@ upward_concentrated = "pending"
 upward_distributed = "pending"
 longitudinal_concentrated = "pending"
 longitudinal_distributed = "pending"
+skew_concentrated = "pending"
+skew_distributed = "pending"
 
 [independent.check3.f_b_lbpin]
 outward_concentrated = "pending"
@@ -246,6 +284,8 @@ inward_concentrated = "pending"
 inward_distributed = "pending"
 longitudinal_concentrated = "pending"
 longitudinal_distributed = "pending"
+skew_concentrated = "pending"
+skew_distributed = "pending"
 
 [independent.check3.f_v_lbpin]
 outward_concentrated = "pending"
@@ -254,6 +294,8 @@ inward_concentrated = "pending"
 inward_distributed = "pending"
 longitudinal_concentrated = "pending"
 longitudinal_distributed = "pending"
+skew_concentrated = "pending"
+skew_distributed = "pending"
 
 [independent.check3.ratio_base]
 outward_concentrated = "pending"
@@ -262,6 +304,20 @@ inward_concentrated = "pending"
 inward_distributed = "pending"
 longitudinal_concentrated = "pending"
 longitudinal_distributed = "pending"
+skew_concentrated = "pending"
+skew_distributed = "pending"
+
+[independent.check3.plan_angle_deg]
+skew_concentrated = "pending"
+skew_distributed = "pending"
+
+[independent.check3.f_b_t_lbpin]
+skew_concentrated = "pending"
+skew_distributed = "pending"
+
+[independent.check3.f_b_l_lbpin]
+skew_concentrated = "pending"
+skew_distributed = "pending"
 
 [independent.check7]
 L_w_in = "pending"
@@ -287,6 +343,8 @@ upward_concentrated = "pending"
 upward_distributed = "pending"
 longitudinal_concentrated = "pending"
 longitudinal_distributed = "pending"
+skew_concentrated = "pending"
+skew_distributed = "pending"
 
 [independent.check7.f_n_lbpin]
 downward_concentrated = "pending"
@@ -299,6 +357,8 @@ upward_concentrated = "pending"
 upward_distributed = "pending"
 longitudinal_concentrated = "pending"
 longitudinal_distributed = "pending"
+skew_concentrated = "pending"
+skew_distributed = "pending"
 
 [independent.check7.f_r_lbpin]
 downward_concentrated = "pending"
@@ -311,6 +371,8 @@ upward_concentrated = "pending"
 upward_distributed = "pending"
 longitudinal_concentrated = "pending"
 longitudinal_distributed = "pending"
+skew_concentrated = "pending"
+skew_distributed = "pending"
 
 [independent.check7.fiber]
 downward_concentrated = "pending"  # text, in quotes
@@ -323,6 +385,8 @@ upward_concentrated = "pending"  # text, in quotes
 upward_distributed = "pending"  # text, in quotes
 longitudinal_concentrated = "pending"  # text, in quotes
 longitudinal_distributed = "pending"  # text, in quotes
+skew_concentrated = "pending"  # text, in quotes
+skew_distributed = "pending"  # text, in quotes
 
 [independent.check7.ratio_weld]
 downward_concentrated = "pending"
@@ -335,6 +399,8 @@ upward_concentrated = "pending"
 upward_distributed = "pending"
 longitudinal_concentrated = "pending"
 longitudinal_distributed = "pending"
+skew_concentrated = "pending"
+skew_distributed = "pending"
 
 [independent.check7.ratio_base]
 downward_concentrated = "pending"
@@ -347,6 +413,8 @@ upward_concentrated = "pending"
 upward_distributed = "pending"
 longitudinal_concentrated = "pending"
 longitudinal_distributed = "pending"
+skew_concentrated = "pending"
+skew_distributed = "pending"
 
 [independent.check7.ratio]
 downward_concentrated = "pending"
@@ -359,6 +427,8 @@ upward_concentrated = "pending"
 upward_distributed = "pending"
 longitudinal_concentrated = "pending"
 longitudinal_distributed = "pending"
+skew_concentrated = "pending"
+skew_distributed = "pending"
 
 [independent.check7.f_b_lbpin]
 outward_concentrated = "pending"
@@ -367,6 +437,8 @@ inward_concentrated = "pending"
 inward_distributed = "pending"
 longitudinal_concentrated = "pending"
 longitudinal_distributed = "pending"
+skew_concentrated = "pending"
+skew_distributed = "pending"
 
 [independent.check7.f_v_lbpin]
 outward_concentrated = "pending"
@@ -375,6 +447,20 @@ inward_concentrated = "pending"
 inward_distributed = "pending"
 longitudinal_concentrated = "pending"
 longitudinal_distributed = "pending"
+skew_concentrated = "pending"
+skew_distributed = "pending"
+
+[independent.check7.plan_angle_deg]
+skew_concentrated = "pending"
+skew_distributed = "pending"
+
+[independent.check7.f_b_t_lbpin]
+skew_concentrated = "pending"
+skew_distributed = "pending"
+
+[independent.check7.f_b_l_lbpin]
+skew_concentrated = "pending"
+skew_distributed = "pending"
 
 [independent.intermediate]
 H_in = "pending"
