@@ -13,6 +13,9 @@ combinations, dead/live separation, and the anchor reaction sets.
   members the controlling case has live load parallel to dead load; for
   others (a flat bar loaded about its weak axis, for example) a horizontal
   case may control.
+  - A sixth case, skew, for rectangular and square posts (S6-18, Micah
+    2026-10-17): the horizontal guard load at the plan angle that is
+    worst for the check, in Checks 3, 5 and 7 (checks.md, welds.md).
 - Longitudinal is a real load case, not only a reaction row. It enters the
   post interaction, post deflection and both welds, since a rectangular post
   may take it on the weak axis. Both guard loads apply at the top of the

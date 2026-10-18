@@ -1,7 +1,7 @@
 ---
 paths:
   - "src/handrail/**"
-  - "tests/**"
+  - "tests/*.py"
 ---
 
 # Where things are in the calc engine

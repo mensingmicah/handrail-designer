@@ -262,7 +262,9 @@ plan's decision numbers, kept for the record.
   the demand is V·e with e = D_rail/2. In Check 7 its effect is
   negligible. Engineering judgement (Micah, 2026-10-08, ruling on the case
   4 independent calc). To revisit for rectangular rails (docs/ROADMAP.md,
-  slices 5 and 6).
+  slices 5 and 6). Amended for rectangular posts by S6-18 (Micah,
+  2026-10-17, below): a skew horizontal case at Checks 3 and 7. The
+  orthogonal cases stand for round posts.
 - **Fillet size limits.** (W11, Micah 2026-10-08.) The minimum size is a
   pass/fail line: AISC 360-22 Table J2.4, on the thinner part joined (1/8
   in for every v1 pipe wall, all ≤ 1/4 in). There is no maximum size
@@ -650,6 +652,9 @@ checks.md and inputs.md.
       the lower of yielding, Fy·t_des/1.67, and rupture, Fu·t_des/2.00;
     - force along the face, against shear rupture, 0.6·Fu·t_des/2.00
       (§J4.2(b), as W6).
+    - Amended by S6-17 (Micah, 2026-10-11): the shear check is the full
+      shear per inch of weld against 0.6·Fu·t_des/2.00 in every case,
+      whatever its direction relative to the welded faces.
     - Each component has its own ratio; the larger is the post wall's.
       They are not combined.
   - **Compression side.** (Micah's addition.) The yielding limit applies
@@ -686,6 +691,29 @@ checks.md and inputs.md.
     yielding 3.20 kip/in (0.84). Against shear rupture on the resultant,
     the alternative not chosen, 2.02 kip/in (1.34).
   - Slice 7 decides the same question for a solid bar post.
+- **The skew horizontal case at a rectangular post's welds.** (S6-18,
+  Micah, 2026-10-17; the case itself and Check 5 are in checks.md under
+  the same number.) The horizontal guard load at the plan angle θ from
+  transverse that is worst for the weld, both load types enveloped, the
+  same Pr = D and the same arm as the other lateral cases. Each check
+  prints its θ.
+  - **Check 7, rectangular posts, both base patterns.** The two bending
+    components of the normal force per inch are taken at full value at
+    one point: the corner of an all-around line, the end of a face-pair
+    line. f_b = Mr·√(1/S_t² + 1/S_l²), at tanθ = S_t/S_l, on the weld-line
+    moduli the transverse and longitudinal cases already use. The rounded
+    line of S6-6 stays; the full-value sum is conservative at a rounded
+    corner. The axial term is taken as in the other lateral cases. Shear
+    per inch: the larger of the transverse and longitudinal cases' values,
+    conservative, the shear being small.
+  - **At a face pair, the post-wall lines** (S6-7's normal force, and the
+    shear as amended by S6-17 item 3) take the same skew normal force and
+    shear.
+  - **Check 3 where the post (the branch) is rectangular:** the same
+    treatment with S_ip and S_op.
+  - **Unchanged.** A round post's ring weld at the baseplate and a round
+    branch at Check 3: a circular line has no corner, and the inclined-load
+    ruling (W10 and the paragraph after its table) stands. Check 4b.
 - **Rail to post welds at a rectangular chord use AISC 360-22 Table K5.1;
   the round ring model stands.** (S6-8, Micah 2026-10-10.) AISC 360-22
   §K5, page 16.1-168, had not been read into the brief before slice 6:
@@ -700,7 +728,7 @@ checks.md and inputs.md.
     - effective length le = 2·Hb + 2·Be (Eq. K5-5);
     - S_ip and S_op per Eqs. K5-6 and K5-7;
     - Be per Eq. K1-1 (page 16.1-159), and Be/2 not over Bb/4 when
-      β > 0.85 (Table K5.1);
+      β > 0.85 or θ > 50° (Table K5.1; S6-17);
     - Hb and Bb are the branch's outside dimensions, as the equations are
       written: no rounded-corner correction.
     - Case mapping: the longitudinal case is in-plane bending, the
