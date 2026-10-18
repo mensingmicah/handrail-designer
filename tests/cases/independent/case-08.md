@@ -759,3 +759,461 @@ as the template's header says.
    S_ip (6.00 in²) is less than S_op (7.17 in²) at this joint. Check 7:
    longitudinal and NG, as S6-17 item 9 expects of a face pair bent about
    the lines' own length.
+
+
+---
+
+## S6-18 rerun
+
+A partial rerun of this case's independent calc, for the skew horizontal
+guard-load case only (S6-18). It fills the 69 keys left "pending": the
+`skew_concentrated` and `skew_distributed` keys of Checks 3, 5 and 7, and
+`check3`, `check5`, `check7` `controlling`. Written blind to the earlier
+sections of this file and to every filled value in case-08.toml; every
+quantity it needs (section properties, Mc per axis, weld-line moduli, the
+orthogonal cases' ratios that decide the controlling case) is derived
+again here.
+
+### S6-18.0 Header
+
+- Case: test case 8 (tests/cases/case-08.toml), all rectangular.
+- Date: 2026-10-17. Model: claude-opus-5-5.
+- Branch `slice-6`, commit 388f83d08ce846b5411054a25bb0b99dc29318cd.
+- Sources read:
+  - Case inputs, through the skill's command (value tables stripped).
+  - The brief as it stands on `origin/main` at 69f176cd19c5: docs/BRIEF.md
+    and every file in docs/brief/ (read from main because S6-18's text is
+    in main's checks.md, welds.md and loads-and-envelope.md and not yet on
+    `slice-6`; see open question Q1), CONTEXT.md (main), and the slice 6
+    plan (main), decisions only.
+  - Verified registry entries, through the skill's command (32 entries).
+  - AISC Shapes Database v16.0 rows for HSS4X2X1/8, HSS3X2X1/8 and
+    HSS2X1-1/2X1/8, through the skill's command.
+  - out/aisc-360-22.pdf, converted to text with pdftotext: Eq. K1-1
+    (§K1.2a), §K5 (Eqs. K5-1 to K5-3 and its Ω), Table K5.1 (page
+    16.1-171), §F7.4 (Eqs. F7-8 to F7-11 and the User Note, pages 16.1-64
+    and 16.1-65), and the equation numbers of E3-2, F7-1 and H1-1b.
+  - The key names of tests/cases/independent/case-08.toml that are
+    "pending", and those lines' own template notes, only.
+
+### S6-18.1 Inputs
+
+| Item | Value | Source |
+| --- | --- | --- |
+| Top rail | HSS4X2X1/8, long side vertical: depth d = 4 in vertical, width 2 in horizontal | case file |
+| Post | HSS3X2X1/8, long side parallel to rail: 3 in along the rail, 2 in across it | case file |
+| Intermediate rail | HSS2X1-1/2X1/8, own section (dead load only, here) | case file |
+| Span s | 6'-0" = 72 in | case file |
+| Post height h | 42 in, top of concrete to top rail centerline | case file |
+| Baseplate t_p | 1/2 in, A36 | case file |
+| Grades | none entered: A500 Gr B for every rectangular HSS (S6-5 default) | inputs.md |
+| Rail to post weld | 1/8 in fillet, E70XX | case file |
+| Post to baseplate weld | 3/16 in fillet, `base_pattern = "faces parallel to rail"` | case file; S6-17 item 9 |
+| Guard loads | P = 200 lb concentrated; w = 50 lb/ft distributed, w·s = 300 lb at the post top; no exemption | `asce7.guard.concentrated`, `asce7.guard.uniform` (verified) |
+| Combination, lateral cases | ASD D + L | `asce7.combo.asd.D_plus_L` (verified) |
+
+### S6-18.2 Limit states considered (skew case only)
+
+The skew case is a horizontal guard load at plan angle θ from transverse
+(S6-18 item 2). It changes only the direction of the horizontal load, so
+the limit states are those of the orthogonal lateral cases, with both
+bending components acting together.
+
+Check 5, post at the top of the baseplate (S6-18 item 3):
+
+- Compression, flexural buckling about the weaker axis (§E3): applies, Pr = D.
+- Flexure about x and about y: yielding, §F7.1 (applies); flange and web
+  local buckling, §F7.2 and §F7.3 (do not apply: both walls compact for
+  both axes, below); LTB about x, §F7.4 (does not apply: Lb = 42 in ≤ Lp
+  = 77.96 in); LTB about y does not exist (User Note to §F7.4).
+- Combined, §H1.1, Eq. H1-1b (Pr/Pc < 0.2). The skew case is biaxial, so
+  both moment terms are present.
+- Torsion (§H3): none. The load acts through the rail centerline, over the
+  post axis (W1/W10 carried over by S6-14 item 1).
+- Member shear (§G4): not checked, a stated assumption of the tool (W5).
+  Magnitude sense: V ≤ 300 lb against a web shear strength in kips.
+- Second-order (αPr/Pe) and Check 6: no skew case, by S6-18 item 4. Not
+  computed here.
+
+Check 7, post to baseplate, face pair (S6-6, S6-7, S6-17 item 3, S6-18):
+
+- Weld metal, §J2.4 with k_ds = 1.0 (§J2.4(a) condition (2); S6-6):
+  applies.
+- Baseplate base metal, shear rupture through t_p, §J4.2(b) (W5): applies.
+- Post wall at a face pair, normal force along the post axis, §J4.1, the
+  lower of yielding and rupture (S6-7): applies, at the same skew normal
+  force (S6-18).
+- Post wall shear, 0.6·Fu·t_des/2.00 on the full shear per inch (S6-17
+  item 3): applies.
+- Post wall slenderness on the compression side (S6-7): the welded wall's
+  h/t = 22.9 ≤ 1.40√(E/Fy) = 35.15, Table B4.1a Case 6: nonslender, so
+  the yielding limit is valid.
+- Minimum fillet size, Table J2.4: thinner part t_nom = 0.125 in → 1/8 in
+  minimum; 3/16 in provided, OK. Thin-material warning: t_nom = 0.125 in
+  is exactly 1/8 in, nothing prints. Neither depends on the direction case.
+
+Check 3, rail to post, rectangular branch on rectangular chord (S6-8,
+S6-18):
+
+- Weld metal on Table K5.1's effective properties, §K5 with Ω = 2.00 and
+  Fnw = 0.60·FEXX, k_ds = 1.0: applies.
+- Chord (rail) wall base metal, shear rupture on the in-plane shear over
+  le (S6-16 item 6, W6): applies.
+- Post wall at the Check 3 joint: covered by Check 5 (W5, S6-16 item 6).
+- Chord limit states of a rectangular chord: not computed in v1, a stated
+  assumption inside the Chapter K limits (S6-12, S6-13). Not checked here.
+- Equal widths, Bb = B = 2 in: the side welds land on the rail's rounded
+  corners (flare bevel, User Note to §K5); the fillet model is kept, a
+  stated assumption (S6-8).
+- Minimum fillet size: thinner part 0.125 in → 1/8 in; 1/8 in provided, OK.
+
+Nothing that could govern is missing that the brief does not already
+decide. One observation for Micah, not a new limit state: under the skew
+case the governing point of the face-pair line is its end, at the tangent
+point of the post's corner, where the weld stops; see Q3.
+
+### S6-18.3 Loads and load path
+
+Dead load, ASD D + L with D at 1.0:
+
+| Load | Equation | Value |
+| --- | --- | --- |
+| Top rail over the span | w_D,rail·s = 4.75 lb/ft × 6 ft | 28.50 lb |
+| Post, top of baseplate to rail centerline | W·(h − t_p) = 3.90 lb/ft × 41.5/12 ft | 13.4875 lb |
+| Intermediate rail over the span | w_D,int·s = 2.63 lb/ft × 6 ft | 15.78 lb |
+| D at the post (Checks 5 and 7) | sum | 57.7675 lb |
+| D at Check 3 | w_D,rail·s (loads-and-envelope.md: the intermediate rail frames in below) | 28.50 lb |
+
+Guard load, horizontal, at the top of the post through the rail
+centerline, in plan at θ from the transverse direction, both load types
+enveloped separately and never concurrent:
+
+| Load type | V | Mr at the top of the baseplate, V·(h − t_p) = V × 41.5 in | M at the Check 3 weld plane, V·e, e = d/2 = 2.0 in |
+| --- | --- | --- | --- |
+| Concentrated | 200 lb | 8,300 lb-in | 400 lb-in |
+| Distributed | w·s = 300 lb | 12,450 lb-in | 600 lb-in |
+
+Components: transverse V·cosθ, longitudinal V·sinθ. Transverse load bends
+the post about its axis parallel to the rail; with the post's 2 in side
+across the rail that is the weak axis y (Iy = 0.692 in⁴). Longitudinal load
+bends the strong axis x (Ix = 1.30 in⁴). At Check 3 the transverse
+component is out-of-plane bending of the branch (S_op) and the
+longitudinal component in-plane bending (S_ip) (S6-8 case mapping). At
+Check 7 the transverse moment bends the two weld lines about the axis
+parallel to them (S_t) and the longitudinal moment bends them about their
+own length (S_l).
+
+Envelope for these three checks: downward, upward, outward, inward,
+longitudinal (S6-14, W10) and now skew (S6-18), each under the
+concentrated and the distributed load. Outward and inward are identical
+here (symmetric section and weld lines). Each check's worst θ is found by
+calculation below, not assumed, and the controlling case is found by
+computing every case's ratio (S6-18.8).
+
+### S6-18.4 Section properties and materials
+
+From the AISC Shapes Database v16.0 (as published, checks.md):
+
+| Property | HSS3X2X1/8 post | HSS4X2X1/8 rail |
+| --- | --- | --- |
+| W | 3.90 lb/ft | 4.75 lb/ft |
+| A | 1.07 in² | 1.30 in² |
+| Ht × B | 3 × 2 in | 4 × 2 in |
+| t_nom / t_des | 0.125 / 0.116 in | 0.125 / 0.116 in |
+| b/t_des, h/t_des | 14.2, 22.9 | 14.2, 31.5 |
+| Ix, Zx, Sx, rx | 1.30 in⁴, 1.06 in³, 0.867 in³, 1.10 in | — |
+| Iy, Zy, Sy, ry | 0.692 in⁴, 0.803 in³, 0.692 in³, 0.804 in | — |
+| J | 1.47 in⁴ | — |
+
+Intermediate rail HSS2X1-1/2X1/8: W = 2.63 lb/ft (dead load only here).
+
+Materials (own reading unless noted): A500 Gr B rectangular HSS Fy = 46
+ksi, Fu = 58 ksi (AISC Manual 16th ed. Table 2-4); A36 plate Fu = 58 ksi
+(Table 2-5); E70XX, FEXX = 70 ksi; E = 29,000 ksi (`material.steel.E`,
+verified).
+
+### S6-18.5 Check 5, post combined axial and flexure, skew case
+
+Case-independent capacities.
+
+√(E/Fy) = √(29000/46) = 25.108.
+
+Classification, AISC 360-22 Table B4.1a Case 6 (compression) and Table
+B4.1b Cases 17 and 19 (flexure), own reading:
+
+| Element | λ | Limit | Result |
+| --- | --- | --- | --- |
+| Compression, both walls | 14.2, 22.9 | λr = 1.40√(E/Fy) = 35.15 | nonslender |
+| Flexure about x: flange (2 in wall) | b/t = 14.2 | λp = 1.12√(E/Fy) = 28.12 | compact |
+| Flexure about x: web (3 in wall) | h/t = 22.9 | λp = 2.42√(E/Fy) = 60.76 | compact |
+| Flexure about y: flange (3 in wall) | h/t = 22.9 | λp = 28.12 | compact |
+| Flexure about y: web (2 in wall) | b/t = 14.2 | λp = 60.76 | compact |
+
+Compression, Chapter E (own reading):
+
+| Line | Equation | Substituted | Result | Citation |
+| --- | --- | --- | --- | --- |
+| Lc | K·h | 2.1 × 42 | 88.2 in | Commentary App. 7 Table C-A-7.1; checks.md D3 |
+| Lc/r | Lc/r_y (smaller r, S6-14 item 2) | 88.2/0.804 | 109.70 ≤ 200 | §E2 User Note |
+| Fe | π²E/(Lc/r)² | π²·29000/109.70² | 23.783 ksi | Eq. E3-4 |
+| Branch | Lc/r vs 4.71√(E/Fy) | 109.70 ≤ 118.26 | Eq. E3-2 | §E3(a) |
+| Fcr | 0.658^(Fy/Fe)·Fy | 0.658^1.9341 × 46 | 20.473 ksi | Eq. E3-2 |
+| Pn | Fcr·Ag | 20.473 × 1.07 | 21.906 kips | Eq. E3-1 |
+| Pc | Pn/Ωc, Ωc = 1.67 | 21.906/1.67 | 13.117 kips | §E1 |
+
+Flexure, §F7 (own reading; Ωb = 1.67 is `aisc360.F1.omega_b`, verified):
+
+| Line | Equation | Substituted | Result | Citation |
+| --- | --- | --- | --- | --- |
+| Mp,x | Fy·Zx | 46 × 1.06 | 48.760 kip-in | Eq. F7-1 |
+| Lp | 0.13·E·r_y·√(J·Ag)/Mp | 0.13·29000·0.804·√(1.47·1.07)/48.76 | 77.96 in | Eq. F7-10 (PDF p. 16.1-64) |
+| LTB about x | Lb = h = 42 in ≤ Lp | — | does not apply | §F7.4(a); Cb = 1.0 (S6-4) moot |
+| Mc,x = Mc,l | Mp,x/Ωb | 48.760/1.67 | 29.198 kip-in | §F7.1, §F1 |
+| Mp,y | Fy·Zy | 46 × 0.803 | 36.938 kip-in | Eq. F7-1 |
+| LTB about y | weak axis | — | does not apply | User Note to §F7.4 (PDF p. 16.1-65) |
+| Mc,y = Mc,t | Mp,y/Ωb | 36.938/1.67 | 22.119 kip-in | §F7.1, §F1 |
+
+Skew case. Pr = D = 57.7675 lb compression (same as the other lateral
+cases, S6-18 item 2). Pr/Pc = 0.0577675/13.1175 = 0.004404 < 0.2 → Eq.
+H1-1b: Pr/(2Pc) + (Mrx/Mcx + Mry/Mcy) ≤ 1.0 (§H1.1(b), own reading).
+
+With Mry = Mr·cosθ (transverse, weak axis) and Mrx = Mr·sinθ
+(longitudinal, strong axis), the moment term Mr·(cosθ/Mc,t + sinθ/Mc,l) is
+largest at tanθ = Mc,t/Mc,l (S6-18 item 3):
+
+- tanθ = 22.119/29.198 = 0.75755 → θ = 37.15° from transverse.
+- √(1/Mc,t² + 1/Mc,l²) = √(1/22.119² + 1/29.198²) = 0.056719 per kip-in.
+- Pr/(2Pc) = 0.004404/2 = 0.002202.
+
+| Load type | Mr | Mry = Mr·cosθ | Mrx = Mr·sinθ | Mry/Mcy | Mrx/Mcx | H1-1b ratio |
+| --- | --- | --- | --- | --- | --- | --- |
+| Concentrated | 8,300 lb-in | 6,616 lb-in | 5,012 lb-in | 0.2991 | 0.1717 | **0.4730** |
+| Distributed | 12,450 lb-in | 9,924 lb-in | 7,518 lb-in | 0.4487 | 0.2575 | **0.7084** |
+
+Check by the closed form: 0.002202 + 12.45 × 0.056719 = 0.7084. OK.
+
+### S6-18.6 Check 7, post to baseplate weld, face pair, skew case
+
+Case-independent capacities, per inch of weld:
+
+| Line | Equation | Substituted | Result | Citation, source |
+| --- | --- | --- | --- | --- |
+| Throat | t_e = 0.707w | 0.707 × 0.1875 | 0.13256 in | §J2.2a; brief form (welds.md) |
+| Weld metal | 0.60·FEXX·t_e·k_ds/Ω, k_ds = 1.0, Ω = 2.00 | 0.6·70·0.13256/2.00 | 2.7838 kip/in | §J2.4, Table J2.5, own reading; k_ds per §J2.4(a)(2), S6-6 |
+| Baseplate, shear rupture | 0.6·Fu·t_p/2.00 | 0.6·58·0.5/2.00 | 8.700 kip/in | §J4.2(b), own reading |
+| Post wall, normal force | min(Fy·t_des/1.67, Fu·t_des/2.00) | min(3.1952, 3.364) | 3.1952 kip/in (yielding) | §J4.1, own reading; S6-7 |
+| Post wall, shear | 0.6·Fu·t_des/2.00 | 0.6·58·0.116/2.00 | 2.0184 kip/in | §J4.2(b); S6-17 item 3 |
+
+Weld line (S6-6). "Faces parallel to rail" are the post's two 3 in faces,
+on the outside surface at ±B/2 = ±1.0 in from the axis parallel to the
+rail. Each line is the flat of its face, ℓ = Ht − 4·t_des = 3 − 4(0.116) =
+2.536 in, from tangent point to tangent point.
+
+- Total length L_w = 2ℓ = 5.072 in.
+- Transverse modulus (bending about the axis parallel to the lines):
+  I = 2·ℓ·(1.0)² = 5.072 in³; S_t = I/1.0 = 5.072 in².
+- Longitudinal modulus (bending about the axis across the lines):
+  I = 2·ℓ³/12 = 2.7184 in³; S_l = I/(ℓ/2) = ℓ²/3 = 2.1438 in².
+
+Skew case (welds.md S6-18): both bending components at full value at the
+end of a line on the compression side, f_b = Mr·(cosθ/S_t + sinθ/S_l),
+largest at tanθ = S_t/S_l = 5.072/2.1438 = 2.3659 → θ = 67.09° from
+transverse; f_b = Mr·√(1/S_t² + 1/S_l²) = Mr × 0.50642 per in².
+
+Axial term as in the other lateral cases: f_a = D/L_w = 57.7675/5.072 =
+11.389 lb/in, compression, adding to the bending compression at the
+governing end (W10, no bearing credit). Shear: f_v = V/L_w, uniform (W3);
+the transverse and longitudinal cases give the same V/L_w, so "the larger
+of the two" is that value. Resultant f_r = √(f_n² + f_v²), f_n = f_a + f_b.
+
+| Quantity, lb/in unless noted | Concentrated (V = 200 lb) | Distributed (V = 300 lb) |
+| --- | --- | --- |
+| Mr, lb-in | 8,300 | 12,450 |
+| θ | 67.09° | 67.09° |
+| f_b,t = Mr·cosθ/S_t | 637.1 | 955.6 |
+| f_b,l = Mr·sinθ/S_l | 3,566 | 5,349 |
+| f_b | 4,203 | 6,305 |
+| f_a | 11.39 | 11.39 |
+| f_n | 4,215 | 6,316 |
+| f_v | 39.43 | 59.15 |
+| f_r | 4,215 | 6,317 |
+| Weld metal, f_r/2,783.8 | 1.514 | **2.269** |
+| Baseplate, f_r/8,700 | 0.4845 | 0.7261 |
+| Post wall normal, f_n/3,195.2 | 1.319 | 1.977 |
+| Post wall shear, f_v/2,018.4 | 0.01954 | 0.02930 |
+| Check 7 ratio (largest line; weld metal governs) | **1.514 NG** | **2.269 NG** |
+
+Governing point: the end of a weld line on the compression side (fiber
+"compression"). NG is the expected result for this case (S6-17 item 9).
+
+### S6-18.7 Check 3, rail to post weld, Table K5.1, skew case
+
+Case-independent capacities and properties. The post is the branch: Hb =
+3 in (its dimension along the rail, in the plane of the connection), Bb =
+2 in (across the rail). The rail is the chord: B = 2 in (its horizontal
+width), t = 0.116 in. θ = 90°.
+
+| Line | Equation | Substituted | Result | Citation, source |
+| --- | --- | --- | --- | --- |
+| β | Bb/B | 2/2 | 1.00 | §K1 |
+| Be | 10/(B/t)·(Fy·t)/(Fyb·tb)·Bb ≤ Bb | 10/17.241 × 1.0 × 2 | 1.160 in | Eq. K1-1 (PDF, §K1.2a) |
+| Be cap | β > 0.85 or θ > 50°: Be/2 ≤ Bb/4 | Be ≤ 1.0 in | Be = 1.000 in | Table K5.1, PDF p. 16.1-171; S6-8, S6-17 item 4 |
+| le | 2Hb/sinθ + 2Be | 2(3) + 2(1.0) | 8.000 in | Eq. K5-5 |
+| S_ip (per t_w) | (Hb/sinθ)²/3 + Be·(Hb/sinθ) | 9/3 + 1.0·3 | 6.000 in² | Eq. K5-6 |
+| S_op (per t_w) | (Hb/sinθ)·Bb + Bb²/3 − (Bb − Be)³/(3Bb) | 6 + 1.3333 − 0.16667 | 7.1667 in² | Eq. K5-7 |
+| Throat | 0.707w | 0.707 × 0.125 | 0.088375 in | §J2.2a; brief form |
+| Weld metal | Fnw·t_w/Ω, Fnw = 0.60·FEXX, Ω = 2.00 | 0.6·70·0.088375/2.00 | 1.8559 kip/in | §K5, Eqs. K5-1 to K5-3 (PDF p. 16.1-168), own reading |
+| Chord wall shear rupture | 0.6·Fu·t/2.00 | 0.6·58·0.116/2.00 | 2.0184 kip/in | §J4.2(b); W6, S6-16 item 6 |
+
+Eqs. K5-6 and K5-7 were checked by deriving them as line moduli: S_ip from
+two side lines of length Hb plus two effective end lines of Be at Hb/2;
+S_op from two side lines at Bb/2 plus the two end lines of Bb less their
+ineffective middle (Bb − Be). Both agree with the printed equations.
+
+Loads at the weld plane: e = d/2 = 4/2 = 2.0 in (W1, rail on edge); D =
+28.50 lb compression, f_a = 28.50/8 = 3.5625 lb/in; f_v = V/le.
+
+Skew case: f_b = M·(cosθ/S_op + sinθ/S_ip), largest at tanθ = S_op/S_ip =
+7.1667/6.000 = 1.1944 → θ = 50.06° from transverse; f_b = M·√(1/S_op² +
+1/S_ip²) = M × 0.21737 per in².
+
+| Quantity, lb/in unless noted | Concentrated (V = 200 lb) | Distributed (V = 300 lb) |
+| --- | --- | --- |
+| M = V·e, lb-in | 400 | 600 |
+| θ | 50.06° | 50.06° |
+| f_b,t = M·cosθ/S_op | 35.83 | 53.74 |
+| f_b,l = M·sinθ/S_ip | 51.12 | 76.68 |
+| f_b | 86.95 | 130.4 |
+| f_a | 3.5625 | 3.5625 |
+| f_n | 90.51 | 134.0 |
+| f_v = V/8 | 25.00 | 37.50 |
+| f_r | 93.90 | 139.1 |
+| Weld metal, f_r/1,855.9 | 0.05059 | **0.07497** |
+| Chord wall, f_v/2,018.4 | 0.01239 | 0.01858 |
+| Check 3 ratio (weld metal governs) | **0.05059** | **0.07497** |
+
+Governing point: the corner of the effective line on the compression side
+(fiber "compression").
+
+### S6-18.8 Controlling case of each check
+
+Computed for every direction case with the same capacities, so the
+controlling case is found by calculation (these orthogonal values are this
+rerun's own; they fill no key):
+
+| Case | Check 5 | Check 7 | Check 3 |
+| --- | --- | --- | --- |
+| Downward, conc. / dist. | 0.01965 / 0.02727 (Pr/Pc) | 0.01826 / 0.02534 | 0.01539 / 0.02213 |
+| Upward, conc. / dist. | 0.005610 / 0.009003 (Pr/Pt) | 0.01171 / 0.01879 | 0.01232 / 0.01905 |
+| Outward = inward, conc. / dist. | 0.3775 / 0.5651 | 0.5921 / 0.8861 | 0.03471 / 0.05119 |
+| Longitudinal, conc. / dist. | 0.2865 / 0.4286 | 1.395 / 2.090 | 0.04017 / 0.05935 |
+| Skew, conc. / dist. | 0.4730 / **0.7084** | 1.514 / **2.269** | 0.05059 / **0.07497** |
+
+(Upward: Pt = Fy·Ag/1.67 = 29.47 kips, §D2; net tension 1.0L − 0.6D > 0 in
+both load types. Vertical weld cases: uniform (D + L)/length or
+(L − 0.6D)/length against the weld metal line.)
+
+Controlling: **Check 5 skew, distributed, 0.7084; Check 7 skew,
+distributed, 2.269 (NG); Check 3 skew, distributed, 0.07497.** The skew
+case raises Check 5 by 25% over the transverse case, Check 7 by 8.5% over
+the longitudinal case and Check 3 by 26% over the longitudinal case.
+
+### S6-18.9 Values from my own reading (no verified entry)
+
+| Value | Document, section | Source |
+| --- | --- | --- |
+| A500 Gr B rectangular Fy = 46, Fu = 58 ksi | AISC Manual 16th ed. Table 2-4 | memory; consistent with S6-17 item 1 |
+| A36 Fu = 58 ksi | AISC Manual 16th ed. Table 2-5 | memory |
+| FEXX = 70 ksi; Fnw = 0.60·FEXX | AISC 360-22 §J2.4, Table J2.5; §K5 | memory; §K5 text read in the PDF |
+| Ω = 2.00, fillet welds | AISC 360-22 §J2.4; §K5(a) | §K5 read in the PDF |
+| t_e = 0.707w | AISC 360-22 §J2.2a | brief's rule (welds.md) |
+| k_ds = 1.0 | AISC 360-22 §J2.4(a) condition (2); User Note to §K5 | brief S6-6 |
+| Table J2.4 minimum fillet 1/8 in for t ≤ 1/4 in | AISC 360-22 Table J2.4 | memory |
+| Ωt = 1.67 yielding, 2.00 rupture | AISC 360-22 §D2, §J4.1 | memory |
+| 0.6·Fu·Anv, Ω = 2.00 | AISC 360-22 §J4.2(b) | memory |
+| Ωc = 1.67; Eqs. E3-1, E3-2, E3-4; 4.71√(E/Fy) limit | AISC 360-22 §E1, §E3 | memory; equation numbers seen in the PDF text |
+| K = 2.1 | AISC 360-22 Commentary Appendix 7, Table C-A-7.1 | brief D3 |
+| λr = 1.40√(E/Fy) | AISC 360-22 Table B4.1a Case 6 | memory; brief S6-7 |
+| λp = 1.12√(E/Fy) flange, 2.42√(E/Fy) web | AISC 360-22 Table B4.1b Cases 17, 19 | memory |
+| Mn = Mp = Fy·Z | AISC 360-22 Eq. F7-1 | PDF text |
+| Lp = 0.13·E·r_y·√(J·Ag)/Mp | AISC 360-22 Eq. F7-10 | PDF text, p. 16.1-64 |
+| No LTB for minor-axis bending | AISC 360-22 User Note to §F7.4 | PDF text, p. 16.1-65 |
+| Eq. H1-1b and the Pr/Pc = 0.2 threshold | AISC 360-22 §H1.1 | memory; equation seen in the PDF text |
+| Eq. K1-1 | AISC 360-22 §K1.2a | PDF text |
+| Eqs. K5-5 to K5-7 and the Be cap | AISC 360-22 Table K5.1, p. 16.1-171 | PDF text |
+
+Verified entries used: `material.steel.E`, `asce7.guard.concentrated`,
+`asce7.guard.uniform`, `asce7.combo.asd.D_plus_L`, `ej.combo.bending.upward`
+(upward rows of S6-18.8 only), `aisc360.F1.omega_b`, `aisc360.eq.B3-2`.
+
+### S6-18.10 Open questions
+
+- **Q1. S6-18's brief text is on main, not on `slice-6`.** The branch's
+  docs/brief/checks.md, welds.md and loads-and-envelope.md have no S6-18;
+  `origin/main` (69f176cd19c5) has it, and also differs from the branch in
+  output.md and stops.md. I worked from main's brief. Nothing in this calc
+  depends on which copy, except that S6-18 exists. Before the pull
+  request, main needs merging into `slice-6` so the branch's brief matches
+  the code it describes.
+- **Q2. Vocabulary of the text keys.** The template's note says only
+  "text, in quotes". I wrote `controlling = "skew_distributed"` (the key
+  suffix form), `equation = "H1-1b"` and `fiber = "compression"`. If the
+  test compares these strings exactly and the tool uses other words, a
+  mismatch there is wording, not engineering.
+- **Q3. The governing point of a face-pair line is its end, at the
+  corner's tangent point, under S6-18.** The weld stops there; the post
+  corner between the two faces is unwelded. The elastic line model is
+  what the brief rules, and the result is NG by a wide margin anyway, so
+  this changes no verdict. Noted only because the skew case is the first
+  to put the peak normal force at a line end.
+- **Q4. Independence caveat.** The brief's S6-18 item 1 quotes the earlier
+  case 8 independent calc's skew figures (Check 5 0.708, Check 7 about
+  2.27). I read them before computing. They come from the earlier
+  independent calc, not from the tool, and my numbers were derived from
+  the inputs; they agree (0.7084 and 2.269).
+- **Q5. Check 3 at β = 1.** The skew corner of Table K5.1's effective line
+  sits where the post's side welds meet the rail's rounded corner, a
+  flare-bevel joint (S6-8 equal widths). The fillet model is the brief's
+  stated assumption; the ratio is 0.075, so it cannot flip a result.
+
+### S6-18.11 Review checklist (docs/brief/verification.md, items 1–9)
+
+1. **Loads complete.** D at the post includes the top rail, the post over
+   h − t_p and the intermediate rail (57.77 lb); Check 3 uses the top rail
+   only (28.50 lb), per loads-and-envelope.md. Both guard load types run.
+   The component load does not act on these checks (it is Check 4's). The
+   baseplate weight is below the critical section and is excluded. OK.
+2. **Direction and worst case.** The skew angle of each check is found by
+   maximizing its own linear moment term, not assumed: 37.15°, 67.09° and
+   50.06°. Every envelope case was computed (S6-18.8) and skew controls
+   all three. OK.
+3. **Checks complete.** Every line the brief rules for these joints is
+   computed: Check 7's weld metal, baseplate, post wall normal and shear;
+   Check 3's weld metal and chord wall shear; Check 5's H1-1b. The
+   rectangular chord limit states stay a stated assumption (S6-12). OK.
+4. **Geometry.** Arm h − t_p = 41.5 in at Checks 5 and 7; e = d/2 = 2.0 in
+   with the rail on edge; Hb = 3 in along the rail and Bb = 2 in across it
+   from `long_side = "parallel to rail"`; weld lines at ±1.0 in on the
+   outside surface, flats of 2.536 in; Lc = K·h with h, not h − t_p. OK.
+5. **Method and equations.** Classification before capacity (all compact,
+   nonslender); Lb < Lp so no LTB; Pr/Pc = 0.0044 < 0.2 → H1-1b; Eq. E3-2
+   by the 4.71√(E/Fy) limit; Table K5.1 with the Be cap as printed in
+   360-22 (Bb/4, checked in the PDF; my memory of an older edition's "2t"
+   was wrong and was not used). OK.
+6. **Assumptions.** Fixed base at the top of the baseplate; K = 2.1; load
+   through the rail centerline, no torsion; no bearing credit; elastic
+   weld line; shear uniform; the face-pair post wall lines not combined
+   (S6-7). All as the brief rules. OK.
+7. **Code editions.** AISC 360-22 throughout, AISC Manual 16th ed. for
+   material tables, ASCE 7-22 for loads; Lp cited as Eq. F7-10, the
+   2022 numbering. OK.
+8. **Magnitude sense.** Check 5 0.71 is about 1.25 × the transverse 0.565,
+   as the √(1 + (Mc,t/Mc,l)²) = 1.255 factor on the moment term predicts. Check 7's f_b of
+   6.3 kip/in against a 2.78 kip/in weld is the expected NG for a face
+   pair bent about its own length. Check 3 under 0.1, as the brief expects
+   for a guard. Units: lb, lb-in, lb/in in the values; kips in capacities,
+   converted. OK.
+9. **Governing case.** Skew distributed for all three, as S6-18 intends:
+   the distributed load is larger (300 > 200 lb) and the skew case adds
+   both bending components at one point. Check 7 governed by weld metal,
+   then the post wall normal line (1.98), both NG. As expected.

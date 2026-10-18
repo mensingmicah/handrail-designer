@@ -41,6 +41,7 @@
 #   the transverse cases (outward, inward) and S_w_l for the longitudinal.
 
 [provenance]
+# S6-18 rerun: 2026-10-17, model claude-opus-5-5, commit 388f83d08ce846b5411054a25bb0b99dc29318cd, S6-18 keys; calc in the final section of case-08.md
 calc = "tests/cases/independent/case-08.md"
 written_on = 2026-10-11
 model = "Claude, fresh independent-calc session (model id given in the session report to Micah, not recorded in repo files)"
@@ -180,7 +181,7 @@ Mcx_lbin = 29200.0
 Mny_lbin = 36940.0
 Mcy_lbin = 22120.0
 Pt_lb = 29470.0
-controlling = "pending"  # reset to pending by S6-18 (rule change), not after comparison
+controlling = "skew_distributed"  # reset to pending by S6-18 (rule change), not after comparison
 
 [independent.check5.Pr_lb]
 downward_concentrated = 257.8
@@ -194,8 +195,8 @@ upward_distributed = 265.3
 longitudinal_concentrated = 57.77
 longitudinal_distributed = 57.77
 # Added by tests/independent_template.py --add, each "pending":
-skew_concentrated = "pending"
-skew_distributed = "pending"
+skew_concentrated = 57.77
+skew_distributed = 57.77
 
 [independent.check5.equation]
 downward_concentrated = "Pr/Pc"
@@ -209,8 +210,8 @@ upward_distributed = "Pr/Pt"
 longitudinal_concentrated = "H1-1b"
 longitudinal_distributed = "H1-1b"
 # Added by tests/independent_template.py --add, each "pending":
-skew_concentrated = "pending"  # text, in quotes
-skew_distributed = "pending"  # text, in quotes
+skew_concentrated = "H1-1b"  # text, in quotes
+skew_distributed = "H1-1b"  # text, in quotes
 
 [independent.check5.ratio]
 downward_concentrated = 0.01965
@@ -224,8 +225,8 @@ upward_distributed = 0.009003
 longitudinal_concentrated = 0.2865
 longitudinal_distributed = 0.4286
 # Added by tests/independent_template.py --add, each "pending":
-skew_concentrated = "pending"
-skew_distributed = "pending"
+skew_concentrated = 0.473
+skew_distributed = 0.7084
 
 [independent.check5.Mr_lbin]
 outward_concentrated = 8300.0
@@ -235,8 +236,8 @@ inward_distributed = 12450.0
 longitudinal_concentrated = 8300.0
 longitudinal_distributed = 12450.0
 # Added by tests/independent_template.py --add, each "pending":
-skew_concentrated = "pending"
-skew_distributed = "pending"
+skew_concentrated = 8300.0
+skew_distributed = 12450
 
 [independent.check5.alpha_Pr_over_Pe]
 outward_concentrated = 0.00363
@@ -279,7 +280,7 @@ Fnw_ksi = 42.0
 base_allow_lbpin = 2018.0
 e_in = 2.0
 weld_allow_lbpin = 1856.0
-controlling = "pending"  # reset to pending by S6-18 (rule change), not after comparison
+controlling = "skew_distributed"  # reset to pending by S6-18 (rule change), not after comparison
 
 [independent.check3.f_a_lbpin]
 downward_concentrated = 28.56
@@ -293,8 +294,8 @@ upward_distributed = 35.36
 longitudinal_concentrated = 3.562
 longitudinal_distributed = 3.562
 # Added by tests/independent_template.py --add, each "pending":
-skew_concentrated = "pending"
-skew_distributed = "pending"
+skew_concentrated = 3.562
+skew_distributed = 3.562
 
 [independent.check3.f_n_lbpin]
 downward_concentrated = 28.56
@@ -308,8 +309,8 @@ upward_distributed = 35.36
 longitudinal_concentrated = 70.23
 longitudinal_distributed = 103.6
 # Added by tests/independent_template.py --add, each "pending":
-skew_concentrated = "pending"
-skew_distributed = "pending"
+skew_concentrated = 90.51
+skew_distributed = 134.0
 
 [independent.check3.f_r_lbpin]
 downward_concentrated = 28.56
@@ -323,8 +324,8 @@ upward_distributed = 35.36
 longitudinal_concentrated = 74.55
 longitudinal_distributed = 110.1
 # Added by tests/independent_template.py --add, each "pending":
-skew_concentrated = "pending"
-skew_distributed = "pending"
+skew_concentrated = 93.9
+skew_distributed = 139.1
 
 [independent.check3.fiber]
 downward_concentrated = "uniform"
@@ -338,8 +339,8 @@ upward_distributed = "uniform"
 longitudinal_concentrated = "compression side"
 longitudinal_distributed = "compression side"
 # Added by tests/independent_template.py --add, each "pending":
-skew_concentrated = "pending"  # text, in quotes
-skew_distributed = "pending"  # text, in quotes
+skew_concentrated = "compression"  # text, in quotes
+skew_distributed = "compression"  # text, in quotes
 
 [independent.check3.ratio_weld]
 downward_concentrated = 0.01539
@@ -353,8 +354,8 @@ upward_distributed = 0.01905
 longitudinal_concentrated = 0.04017
 longitudinal_distributed = 0.05935
 # Added by tests/independent_template.py --add, each "pending":
-skew_concentrated = "pending"
-skew_distributed = "pending"
+skew_concentrated = 0.05059
+skew_distributed = 0.07497
 
 [independent.check3.ratio]
 downward_concentrated = 0.01539
@@ -368,8 +369,8 @@ upward_distributed = 0.01905
 longitudinal_concentrated = 0.04017
 longitudinal_distributed = 0.05935
 # Added by tests/independent_template.py --add, each "pending":
-skew_concentrated = "pending"
-skew_distributed = "pending"
+skew_concentrated = 0.05059
+skew_distributed = 0.07497
 
 [independent.check3.f_b_lbpin]
 outward_concentrated = 55.81
@@ -379,8 +380,8 @@ inward_distributed = 83.72
 longitudinal_concentrated = 66.67
 longitudinal_distributed = 100.0
 # Added by tests/independent_template.py --add, each "pending":
-skew_concentrated = "pending"
-skew_distributed = "pending"
+skew_concentrated = 86.95
+skew_distributed = 130.4
 
 [independent.check3.f_v_lbpin]
 outward_concentrated = 25.0
@@ -390,8 +391,8 @@ inward_distributed = 37.5
 longitudinal_concentrated = 25.0
 longitudinal_distributed = 37.5
 # Added by tests/independent_template.py --add, each "pending":
-skew_concentrated = "pending"
-skew_distributed = "pending"
+skew_concentrated = 25.0
+skew_distributed = 37.5
 
 [independent.check3.ratio_base]
 outward_concentrated = 0.01239
@@ -401,8 +402,8 @@ inward_distributed = 0.01858
 longitudinal_concentrated = 0.01239
 longitudinal_distributed = 0.01858
 # Added by tests/independent_template.py --add, each "pending":
-skew_concentrated = "pending"
-skew_distributed = "pending"
+skew_concentrated = 0.01239
+skew_distributed = 0.01858
 
 [independent.check7]
 L_w_in = 5.072
@@ -417,7 +418,7 @@ base_allow_lbpin = 8700.0
 wall_axial_allow_lbpin = 3195.0
 wall_face_allow_lbpin = 2018.0
 arm_in = 41.5
-controlling = "pending"  # reset to pending by S6-18 (rule change), not after comparison
+controlling = "skew_distributed"  # reset to pending by S6-18 (rule change), not after comparison
 
 [independent.check7.f_a_lbpin]
 downward_concentrated = 50.82
@@ -431,8 +432,8 @@ upward_distributed = 52.31
 longitudinal_concentrated = 11.39
 longitudinal_distributed = 11.39
 # Added by tests/independent_template.py --add, each "pending":
-skew_concentrated = "pending"
-skew_distributed = "pending"
+skew_concentrated = 11.39
+skew_distributed = 11.39
 
 [independent.check7.f_n_lbpin]
 downward_concentrated = 50.82
@@ -446,8 +447,8 @@ upward_distributed = 52.31
 longitudinal_concentrated = 3883.0
 longitudinal_distributed = 5819.0
 # Added by tests/independent_template.py --add, each "pending":
-skew_concentrated = "pending"
-skew_distributed = "pending"
+skew_concentrated = 4215.0
+skew_distributed = 6316.0
 
 [independent.check7.f_r_lbpin]
 downward_concentrated = 50.82
@@ -461,8 +462,8 @@ upward_distributed = 52.31
 longitudinal_concentrated = 3883.0
 longitudinal_distributed = 5819.0
 # Added by tests/independent_template.py --add, each "pending":
-skew_concentrated = "pending"
-skew_distributed = "pending"
+skew_concentrated = 4215.0
+skew_distributed = 6317.0
 
 [independent.check7.fiber]
 downward_concentrated = "uniform"
@@ -476,8 +477,8 @@ upward_distributed = "uniform"
 longitudinal_concentrated = "compression side"
 longitudinal_distributed = "compression side"
 # Added by tests/independent_template.py --add, each "pending":
-skew_concentrated = "pending"  # text, in quotes
-skew_distributed = "pending"  # text, in quotes
+skew_concentrated = "compression"  # text, in quotes
+skew_distributed = "compression"  # text, in quotes
 
 [independent.check7.ratio_weld]
 downward_concentrated = 0.01826
@@ -491,8 +492,8 @@ upward_distributed = 0.01879
 longitudinal_concentrated = 1.395
 longitudinal_distributed = 2.09
 # Added by tests/independent_template.py --add, each "pending":
-skew_concentrated = "pending"
-skew_distributed = "pending"
+skew_concentrated = 1.514
+skew_distributed = 2.269
 
 [independent.check7.ratio_base]
 downward_concentrated = 0.005842
@@ -506,8 +507,8 @@ upward_distributed = 0.006013
 longitudinal_concentrated = 0.4464
 longitudinal_distributed = 0.6689
 # Added by tests/independent_template.py --add, each "pending":
-skew_concentrated = "pending"
-skew_distributed = "pending"
+skew_concentrated = 0.4845
+skew_distributed = 0.7261
 
 [independent.check7.ratio_wall_axial]
 downward_concentrated = 0.01591
@@ -521,8 +522,8 @@ upward_distributed = 0.01637
 longitudinal_concentrated = 1.215
 longitudinal_distributed = 1.821
 # Added by tests/independent_template.py --add, each "pending":
-skew_concentrated = "pending"
-skew_distributed = "pending"
+skew_concentrated = 1.319
+skew_distributed = 1.977
 
 [independent.check7.ratio]
 downward_concentrated = 0.01826
@@ -536,8 +537,8 @@ upward_distributed = 0.01879
 longitudinal_concentrated = 1.395
 longitudinal_distributed = 2.09
 # Added by tests/independent_template.py --add, each "pending":
-skew_concentrated = "pending"
-skew_distributed = "pending"
+skew_concentrated = 1.514
+skew_distributed = 2.269
 
 [independent.check7.f_b_lbpin]
 outward_concentrated = 1636.0
@@ -547,8 +548,8 @@ inward_distributed = 2455.0
 longitudinal_concentrated = 3872.0
 longitudinal_distributed = 5808.0
 # Added by tests/independent_template.py --add, each "pending":
-skew_concentrated = "pending"
-skew_distributed = "pending"
+skew_concentrated = 4203.0
+skew_distributed = 6305.0
 
 [independent.check7.f_v_lbpin]
 outward_concentrated = 39.43
@@ -558,8 +559,8 @@ inward_distributed = 59.15
 longitudinal_concentrated = 39.43
 longitudinal_distributed = 59.15
 # Added by tests/independent_template.py --add, each "pending":
-skew_concentrated = "pending"
-skew_distributed = "pending"
+skew_concentrated = 39.43
+skew_distributed = 59.15
 
 [independent.check7.ratio_wall_face]
 outward_concentrated = 0.01954
@@ -569,8 +570,8 @@ inward_distributed = 0.0293
 longitudinal_concentrated = 0.01954
 longitudinal_distributed = 0.0293
 # Added by tests/independent_template.py --add, each "pending":
-skew_concentrated = "pending"
-skew_distributed = "pending"
+skew_concentrated = 0.01954
+skew_distributed = 0.0293
 
 [independent.intermediate]
 H_in = 2.0
@@ -681,37 +682,37 @@ M_lbin = 0
 # calc fills it. Nothing above this line was changed.
 
 [independent.check5.plan_angle_deg]
-skew_concentrated = "pending"
-skew_distributed = "pending"
+skew_concentrated = 37.15
+skew_distributed = 37.15
 
 [independent.check5.Mry_lbin]
-skew_concentrated = "pending"
-skew_distributed = "pending"
+skew_concentrated = 6616.0
+skew_distributed = 9924.0
 
 [independent.check5.Mrx_lbin]
-skew_concentrated = "pending"
-skew_distributed = "pending"
+skew_concentrated = 5012.0
+skew_distributed = 7518.0
 
 [independent.check3.plan_angle_deg]
-skew_concentrated = "pending"
-skew_distributed = "pending"
+skew_concentrated = 50.06
+skew_distributed = 50.06
 
 [independent.check3.f_b_t_lbpin]
-skew_concentrated = "pending"
-skew_distributed = "pending"
+skew_concentrated = 35.83
+skew_distributed = 53.74
 
 [independent.check3.f_b_l_lbpin]
-skew_concentrated = "pending"
-skew_distributed = "pending"
+skew_concentrated = 51.12
+skew_distributed = 76.68
 
 [independent.check7.plan_angle_deg]
-skew_concentrated = "pending"
-skew_distributed = "pending"
+skew_concentrated = 67.09
+skew_distributed = 67.09
 
 [independent.check7.f_b_t_lbpin]
-skew_concentrated = "pending"
-skew_distributed = "pending"
+skew_concentrated = 637.1
+skew_distributed = 955.6
 
 [independent.check7.f_b_l_lbpin]
-skew_concentrated = "pending"
-skew_distributed = "pending"
+skew_concentrated = 3566.0
+skew_distributed = 5349.0
