@@ -563,3 +563,7 @@ An OSHA toggle that sets the component load to OSHA 1910.29(b)(5)'s
 150 lb is after v1. In v1 the default stays 50 lb (ASCE 7-22) and the
 input info box tells the engineer to enter 150 lb where OSHA applies
 (S4-10, checks.md). (Micah, 2026-10-09.)
+
+Biaxial bending of compact square and rectangular HSS posts: claim the
+plastic reserve over the linear §H1.1 sum (S6-18 item 10, checks.md).
+(Micah, 2026-10-17.)

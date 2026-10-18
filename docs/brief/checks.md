@@ -560,5 +560,24 @@ plan's decision numbers.
      (registry entry `ej.skew.case`). As built it prints in the skew
      case's lines in Checks 3, 5 and 7, not in the "Stated assumptions"
      list: that list prints word for word in every calc, round posts
-     included, and S6-18 leaves round-post calcs unchanged. Whether it
-     also joins the list is Micah's call in the pull request.
+     included, and S6-18 leaves round-post calcs unchanged. Ruled: item 9.
+  7. **The weld side** (Checks 7 and 3, and the face-pair post-wall lines)
+     is in welds.md under S6-18.
+  8. **Case 9 keeps its inputs and stays a failing case** (Micah,
+     2026-10-17, ruling on the S6-18 build report): Checks 5 and 7 print
+     NG under the skew case. A test case checks the arithmetic; NG is a
+     valid result, and case 9 is the only case on the square-post √2
+     path.
+  9. **The skew assumption sentence prints in the skew cases' lines
+     only,** not in the "Stated assumptions" list (Micah, 2026-10-17). Its
+     wording is reviewed in the pull request with the other printed text.
+  10. **Square posts keep the linear §H1.1 interaction** (Eqs. H1-1a and
+      H1-1b) in the skew case (Micah, 2026-10-17). It is the
+      Specification's path: Chapter F gives Mn about the geometric axes
+      only, and §H2 (elastic, S at the corner) gives the same √2. The
+      plastic reserve about the diagonal of a compact square tube is not
+      claimed in v1: a thin-wall estimate gives Mp,diag ≈ 0.943·Mp,x,
+      against 0.707·Mp from the linear sum, and EN 1993-1-1 §6.2.9.1(6)
+      gives about 0.93·Mp at n ≈ 0, but either would be engineering
+      judgement or a foreign code, not traceable to 360-22. After v1
+      (docs/ROADMAP.md).
