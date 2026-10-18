@@ -530,8 +530,9 @@ plan's decision numbers.
      Where a section or weld line has a point that sees both bending
      components at full value, the transverse and longitudinal cases do
      not envelope a horizontal load between them. Case 8's independent
-     calc found Check 5 about 25% higher at the worst angle (0.708 against
-     0.5651) and Check 7 about 9% higher (about 2.27 against 2.090).
+     calc found Check 5 and Check 7 higher at the worst angle than the
+     transverse and longitudinal cases give; the values are in
+     tests/cases/independent/case-08.md §16.
   2. **A sixth direction case, "skew".** The horizontal guard load, both
      load types, enveloped as in the transverse and longitudinal cases, at
      the plan angle θ from transverse that is worst for the check being
