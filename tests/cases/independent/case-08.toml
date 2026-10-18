@@ -181,7 +181,7 @@ Mcx_lbin = 29200.0
 Mny_lbin = 36940.0
 Mcy_lbin = 22120.0
 Pt_lb = 29470.0
-controlling = "skew_distributed"  # reset to pending by S6-18 (rule change), not after comparison
+controlling = "skew, distributed"  # reset to pending by S6-18 (rule change), not after comparison; wording corrected after comparison to the header vocabulary; meaning unchanged
 
 [independent.check5.Pr_lb]
 downward_concentrated = 257.8
@@ -280,7 +280,7 @@ Fnw_ksi = 42.0
 base_allow_lbpin = 2018.0
 e_in = 2.0
 weld_allow_lbpin = 1856.0
-controlling = "skew_distributed"  # reset to pending by S6-18 (rule change), not after comparison
+controlling = "skew, distributed"  # reset to pending by S6-18 (rule change), not after comparison; wording corrected after comparison to the header vocabulary; meaning unchanged
 
 [independent.check3.f_a_lbpin]
 downward_concentrated = 28.56
@@ -339,8 +339,8 @@ upward_distributed = "uniform"
 longitudinal_concentrated = "compression side"
 longitudinal_distributed = "compression side"
 # Added by tests/independent_template.py --add, each "pending":
-skew_concentrated = "compression"  # text, in quotes
-skew_distributed = "compression"  # text, in quotes
+skew_concentrated = "compression side"  # text, in quotes; wording corrected after comparison to the header vocabulary; meaning unchanged
+skew_distributed = "compression side"  # text, in quotes; wording corrected after comparison to the header vocabulary; meaning unchanged
 
 [independent.check3.ratio_weld]
 downward_concentrated = 0.01539
@@ -418,7 +418,7 @@ base_allow_lbpin = 8700.0
 wall_axial_allow_lbpin = 3195.0
 wall_face_allow_lbpin = 2018.0
 arm_in = 41.5
-controlling = "skew_distributed"  # reset to pending by S6-18 (rule change), not after comparison
+controlling = "skew, distributed"  # reset to pending by S6-18 (rule change), not after comparison; wording corrected after comparison to the header vocabulary; meaning unchanged
 
 [independent.check7.f_a_lbpin]
 downward_concentrated = 50.82
@@ -477,8 +477,8 @@ upward_distributed = "uniform"
 longitudinal_concentrated = "compression side"
 longitudinal_distributed = "compression side"
 # Added by tests/independent_template.py --add, each "pending":
-skew_concentrated = "compression"  # text, in quotes
-skew_distributed = "compression"  # text, in quotes
+skew_concentrated = "compression side"  # text, in quotes; wording corrected after comparison to the header vocabulary; meaning unchanged
+skew_distributed = "compression side"  # text, in quotes; wording corrected after comparison to the header vocabulary; meaning unchanged
 
 [independent.check7.ratio_weld]
 downward_concentrated = 0.01826
