@@ -649,3 +649,77 @@ cases only); the Check 4a L_b-to-L_p comparison and the uncapped B_e
    The skew case takes over Checks 3, 5 and 7 by √2 (Check 5) and 1.318
    (the welds), and turns Checks 5 and 7 NG. That is the finding to
    resolve first (open question 1).
+
+## 16. S6-18 item 4 correction
+
+Recomputed after comparison, 2026-10-17, slice-6 at e8b4247 (equal to
+origin/slice-6, clean tree). Source of the ruling: docs/brief/welds.md,
+S6-18 (Micah, 2026-10-17), "The skew horizontal case at a rectangular
+post's welds", items on Check 7 and Check 3 [brief: S6-18]. This session
+read only welds.md's S6-18 text and my own case-09.md and case-09.toml;
+no tool output. It supersedes the skew lines of sections 5 and 10, the
+skew rows of the summary (section 12), and resolves open question 2:
+the two bending components are taken at full value at one point (the
+corner of the all-around line), not as the elastic stress at the
+corner-arc midpoint I used first.
+
+**Method [brief: S6-18].** f_b,t = M_r·cos θ / S_w,t; f_b,l = M_r·sin θ /
+S_w,l; f_b = f_b,t + f_b,l, maximum M_r·√(1/S_w,t² + 1/S_w,l²) at
+tan θ = S_w,t/S_w,l. Moduli: the rounded-line values already used for
+the transverse and longitudinal cases (S6-6), S_w,t = S_w,l = 4.906 in²,
+so θ = 45° (unchanged) and f_b = √2·M_r/4.906. Axial term as in the other
+lateral cases (compression side governs, f_n = f_a + f_b). Shear per
+inch: the larger of the transverse and longitudinal values, equal here
+(V/L_w). The sum is 1.0729 times my arc-point value (√2/4.906 against
+2·cos 45°·0.9320/4.906), as open question 2 estimated.
+
+Check 3 note: the rail here is round (Pipe2STD), so the moduli are the
+post's rounded rectangle of section 5 (S6-9), not Table K5.1's S_ip and
+S_op; S6-18's "same treatment" is applied with those moduli. Check 3's
+base metal ratio is f_v/2574 (in-plane force only) and does not change.
+
+**Check 3, skew (e = 1.1875 in; f_a = 21.96/7.602 = 2.889 lb/in;
+allowable 1856 lb/in).**
+
+| Quantity | Conc (M = 237.5 lb-in) | Dist (M = 356.25 lb-in) | Arc-point values (first calc), conc / dist |
+| --- | --- | --- | --- |
+| f_b,t = M cos 45°/4.906 | 34.23 lb/in | 51.35 lb/in | 31.91 / 47.86 |
+| f_b,l = M sin 45°/4.906 | 34.23 lb/in | 51.35 lb/in | 31.91 / 47.86 |
+| f_b | 68.47 lb/in | 102.7 lb/in | 63.81 / 95.72 |
+| f_v = V/7.602 (unchanged) | 26.31 lb/in | 39.46 lb/in | 26.31 / 39.46 |
+| f_n = f_a + f_b | 71.36 lb/in | 105.6 lb/in | 66.70 / 98.61 |
+| f_r = √(f_n² + f_v²) | 76.05 lb/in | 112.7 lb/in | 71.70 / 106.2 |
+| Weld ratio = f_r/1856 | 0.04098 | **0.06074** | 0.03864 / 0.05723 |
+| Base ratio = f_v/2574 (unchanged) | 0.01022 | 0.01533 | 0.01022 / 0.01533 |
+| Ratio | 0.04098 | **0.06074** | 0.03864 / 0.05723 |
+
+**Check 3 controlling: skew, distributed, 0.0607 (OK)** (was 0.0572;
+controlling case unchanged).
+
+**Check 7, skew (arm 41.5 in; f_a = 45.71/7.602 = 6.013 lb/in; weld
+allowable 2784 lb/in; baseplate base metal 8700 lb/in).**
+
+| Quantity | Conc (M = 8300 lb-in) | Dist (M = 12,450 lb-in) | Arc-point values (first calc), conc / dist |
+| --- | --- | --- | --- |
+| f_b,t = M cos 45°/4.906 | 1196 lb/in | 1795 lb/in | 1115 / 1673 |
+| f_b,l = M sin 45°/4.906 | 1196 lb/in | 1795 lb/in | 1115 / 1673 |
+| f_b | 2393 lb/in | 3589 lb/in | 2230 / 3345 |
+| f_v (unchanged) | 26.31 lb/in | 39.46 lb/in | 26.31 / 39.46 |
+| f_n = f_a + f_b | 2399 lb/in | 3595 lb/in | 2236 / 3351 |
+| f_r | 2399 lb/in | 3595 lb/in | 2236 / 3351 |
+| Weld ratio = f_r/2784 | 0.8617 | **1.292** | 0.8033 / 1.204 |
+| Base ratio = f_r/8700 | 0.2757 | 0.4133 | 0.2570 / 0.3852 |
+| Ratio | 0.8617 | **1.292 NG** | 0.8033 / 1.204 |
+
+**Check 7 controlling: skew, distributed, 1.292, NG** (was 1.204;
+controlling case unchanged). Without the skew case: outward,
+distributed, 0.914, OK (unchanged).
+
+**Unchanged:** plan_angle_deg (45° in both checks), f_a, f_v, fiber
+("compression side"), Check 3's ratio_base, every orthogonal case, the
+controlling-case text of Checks 3, 5 and 7, and Check 5 (not a weld
+check; S6-18 item 4 does not reach it).
+
+Values file: 30 lines of tests/cases/independent/case-09.toml replaced,
+each carrying the note "recomputed after comparison under S6-18 item 4
+(sum of component maxima); first value used the stress at the arc point".
