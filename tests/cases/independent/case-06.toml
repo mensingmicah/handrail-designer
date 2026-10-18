@@ -35,6 +35,7 @@ calc = "tests/cases/independent/case-06.md"
 written_on = 2026-10-10
 model = "Claude (Anthropic); model id given in the session report, not recorded in the repo"
 commit = "f0f148213da84a5e2d6e653ac4e73aa791e3222d"
+# 2026-10-17, Claude (Anthropic; model id in the session report), commit 75c2813d1d37cb314f1f5a9fff7de13141d05b10: check3_chord keys; calc in the final section of case-06.md
 
 [independent.section]
 D_in = 2.375
@@ -223,72 +224,72 @@ longitudinal_distributed = 0.0422619
 # calc fills it. Nothing above this line was changed.
 
 [independent.check3_chord]
-beta = "pending"
-gamma = "pending"
-e_in = "pending"
-punching = "pending"  # text, in quotes
-controlling = "pending"  # text, in quotes
+beta = 1.0
+gamma = 23.22
+e_in = 1.1875
+punching = false  # text, in quotes
+controlling = "downward, distributed"  # text, in quotes
 
 [independent.check3_chord.Pr_lb]
-downward_concentrated = "pending"
-downward_distributed = "pending"
-outward_concentrated = "pending"
-outward_distributed = "pending"
-inward_concentrated = "pending"
-inward_distributed = "pending"
-upward_concentrated = "pending"
-upward_distributed = "pending"
-longitudinal_concentrated = "pending"
-longitudinal_distributed = "pending"
+downward_concentrated = 208.2
+downward_distributed = 308.2
+outward_concentrated = 8.184
+outward_distributed = 8.184
+inward_concentrated = 8.184
+inward_distributed = 8.184
+upward_concentrated = 195.1
+upward_distributed = 295.1
+longitudinal_concentrated = 8.184
+longitudinal_distributed = 8.184
 
 [independent.check3_chord.Qf]
-downward_concentrated = "pending"
-downward_distributed = "pending"
-outward_concentrated = "pending"
-outward_distributed = "pending"
-inward_concentrated = "pending"
-inward_distributed = "pending"
-upward_concentrated = "pending"
-upward_distributed = "pending"
-longitudinal_concentrated = "pending"
-longitudinal_distributed = "pending"
+downward_concentrated = 0.7273
+downward_distributed = 0.8125
+outward_concentrated = 0.9965
+outward_distributed = 0.9965
+inward_concentrated = 0.9965
+inward_distributed = 0.9965
+upward_concentrated = 1.0
+upward_distributed = 1.0
+longitudinal_concentrated = 0.9965
+longitudinal_distributed = 0.9965
 
 [independent.check3_chord.Pc_lb]
-downward_concentrated = "pending"
-downward_distributed = "pending"
-outward_concentrated = "pending"
-outward_distributed = "pending"
-inward_concentrated = "pending"
-inward_distributed = "pending"
-upward_concentrated = "pending"
-upward_distributed = "pending"
-longitudinal_concentrated = "pending"
-longitudinal_distributed = "pending"
+downward_concentrated = 1998.0
+downward_distributed = 2232.0
+outward_concentrated = 2738.0
+outward_distributed = 2738.0
+inward_concentrated = 2738.0
+inward_distributed = 2738.0
+upward_concentrated = 2748.0
+upward_distributed = 2748.0
+longitudinal_concentrated = 2738.0
+longitudinal_distributed = 2738.0
 
 [independent.check3_chord.ratio]
-downward_concentrated = "pending"
-downward_distributed = "pending"
-outward_concentrated = "pending"
-outward_distributed = "pending"
-inward_concentrated = "pending"
-inward_distributed = "pending"
-upward_concentrated = "pending"
-upward_distributed = "pending"
-longitudinal_concentrated = "pending"
-longitudinal_distributed = "pending"
+downward_concentrated = 0.1042
+downward_distributed = 0.138
+outward_concentrated = 0.08413
+outward_distributed = 0.1247
+inward_concentrated = 0.08413
+inward_distributed = 0.1247
+upward_concentrated = 0.07101
+upward_distributed = 0.1074
+longitudinal_concentrated = 0.005423
+longitudinal_distributed = 0.008464
 
 [independent.check3_chord.Mr_lbin]
-outward_concentrated = "pending"
-outward_distributed = "pending"
-inward_concentrated = "pending"
-inward_distributed = "pending"
-longitudinal_concentrated = "pending"
-longitudinal_distributed = "pending"
+outward_concentrated = 237.5
+outward_distributed = 356.2
+inward_concentrated = 237.5
+inward_distributed = 356.2
+longitudinal_concentrated = 237.5
+longitudinal_distributed = 356.2
 
 [independent.check3_chord.Mc_lbin]
-outward_concentrated = "pending"
-outward_distributed = "pending"
-inward_concentrated = "pending"
-inward_distributed = "pending"
-longitudinal_concentrated = "pending"
-longitudinal_distributed = "pending"
+outward_concentrated = 2927.0
+outward_distributed = 2927.0
+inward_concentrated = 2927.0
+inward_distributed = 2927.0
+longitudinal_concentrated = 4815.0
+longitudinal_distributed = 4815.0

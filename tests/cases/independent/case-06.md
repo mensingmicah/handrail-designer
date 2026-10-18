@@ -558,3 +558,296 @@ the other may not):
 - Check 3's dead load at the ring, D = w_D·s = 8.184 lb, and the
   tension-side forces in the horizontal cases.
 - The chord D/t limit check, 46.43 ≤ 50.
+
+## Check 3 chord wall (slice 6)
+
+Independent calc of the `check3_chord` group only: the AISC 360-22 Chapter K
+chord limit states of the round rail wall at the round post (S6-10). Every
+other group in this file was worked by an earlier session; this section
+reads none of it and derives what it needs (rail weight, Check 1 moments)
+afresh.
+
+- Case: tests/cases/case-06.toml (inputs read with the `hand` and
+  `independent` tables stripped).
+- Date: 2026-10-17. Model: Claude (Anthropic); model id given in the
+  session report, not recorded in the repo.
+- Branch slice-6, commit 75c2813d1d37cb314f1f5a9fff7de13141d05b10 (equal to
+  origin/slice-6, clean tree, checked before starting).
+- Sources read: docs/BRIEF.md and every file in docs/brief/; CONTEXT.md;
+  docs/plans/slice-6.md (decisions only; its planning figures were not
+  used); the verified registry entries (command in the skill); the
+  Pipe2STD row of data/aisc-shapes-database-v16.0.xlsx; out/aisc-360-22.pdf
+  (§K1 pp. 16.1-157 to 16.1-160, §K3 Tables K3.1 and K3.1A pp. 16.1-163 to
+  16.1-164, §K4 Tables K4.1 and K4.1A pp. 16.1-167 to 16.1-168), read
+  through `pdftotext`; the pending key names and the comment header of
+  tests/cases/independent/case-06.toml (step 7). Nothing else.
+- Arithmetic: Python standard library, full precision; values below are
+  rounded to 4 significant figures for reporting only.
+
+### C1. Inputs
+
+| Symbol | Value | Source |
+| --- | --- | --- |
+| Rail (chord) | custom round tube, OD 2.375 in, t_nom = 0.055 in, A500 Gr C | case input |
+| Post (branch) | Pipe2STD, A53 Gr B | case input |
+| Span L | 6'-0" = 72 in | case input |
+| Intermediate rail | none | case input |
+| Guard loads | P = 200 lb; w = 50 lb/ft = 4.1667 lb/in; no exemption | case has no `[loads]`: defaults, verified `asce7.guard.concentrated`, `asce7.guard.uniform` |
+| Combinations | D + L (1.0, 1.0); upward 0.6D + 1.0L | verified `asce7.combo.asd.D_plus_L`, `ej.combo.bending.upward` |
+| E | 29,000 ksi | verified `material.steel.E` |
+| Rail Fy / Fu | 50 / 62 ksi | own reading: AISC Manual 16th Ed. Table 2-4, ASTM A500/A500M-21 Gr C (round and shaped now equal), from memory |
+| Post Fyb | 35 ksi | verified `material.A53_GrB.Fy` |
+| Post Fub | 60 ksi | own reading: AISC Manual 16th Ed. Table 2-4, A53 Gr B, from memory (used only in the Fyb/Fub limit) |
+| Pipe2STD | OD = Db = 2.375 in, t_des = tb = 0.143 in, D/t = 16.6 | AISC Shapes Database v16.0 row |
+| θ | 90° (post perpendicular to rail) | geometry; T-connection per §K3(a) and §K4(a) |
+
+### C2. Limit states considered (from the code)
+
+The joint is a single round branch (post) welded perpendicular to the
+underside of a continuous round chord (rail): a T-connection, AISC 360-22
+§K3(a) for axial branch load and §K4(a) for branch moment. Every limit
+state Chapter K could apply:
+
+| Limit state | Provision | Applies? Why |
+| --- | --- | --- |
+| Chord plastification, branch axial | Table K3.1, Eq. K3-2 (T- and Y-) | Yes: downward and upward cases (and the axial D in the lateral cases) |
+| Chord plastification, cross-connection | Eq. K3-3 | No: one branch only, punching load equilibrated by chord beam shear (§K3(a)) |
+| K-connection plastification | Eqs. K3-4, K3-5 | No: one branch |
+| Shear yielding (punching), axial | Eq. K3-1 | Only when Db < D − 2t. Here Db = 2.375 in, D − 2t = 2.273 in: does not apply |
+| Chord plastification, in-plane moment | Table K4.1, Eq. K4-1 | Yes: longitudinal case (moment in the plane of rail and post) |
+| Punching, in-plane moment | Eq. K4-2 | Same condition as K3-1: does not apply |
+| Chord plastification, out-of-plane moment | Eq. K4-3 | Yes: outward and inward cases |
+| Punching, out-of-plane moment | Eq. K4-4 | Does not apply (as above) |
+| Combined axial and moments | Eq. K4-5 | Yes: every case |
+| Chord-stress interaction Qf | §K1.3, Eqs. K1-3 and K1-6 | Yes: in K3-2, K4-1, K4-3 (plan S6-10 sets Mro) |
+| End distance | §K1.4, Eq. K1-8 | No: interior post (stated assumption, output.md); S6-13 adds nothing |
+| Plate-to-round HSS | Table K2.1 | No: no plate; the branch is an HSS. Not used for the guard load's own local effect either (see Q4) |
+| Branch local yielding from uneven load | Table K3.2 (K3-9) | No: rectangular branches only |
+| Rectangular chord limit states, §J10 | Table K4.2, §J10 | No: round chord |
+| Weld of branch to chord | §K5, Table K5.2 | Not in this group: Check 3's weld lines (Table K5.2 is axial only, 0.1 ≤ β ≤ 0.5, so S6-8 keeps the ring model) |
+| Branch and chord as members | Chapters E, F, H | Not in this group: Checks 1 and 5 |
+
+Limits of applicability (Tables K3.1A and K4.1A, T-connections; §K1.3):
+
+| Limit | Value | Result |
+| --- | --- | --- |
+| D/t ≤ 50 | 2.375/0.05115 = 46.43 | OK |
+| Db/tb ≤ 50 | 16.6 (published) | OK |
+| Db/tb ≤ 0.05E/Fyb (compression branch) | 0.05(29,000)/35 = 41.43 | OK |
+| 0.2 < Db/D ≤ 1.0 | 2.375/2.375 = 1.000 | OK (at the upper bound) |
+| Fy, Fyb ≤ 52 ksi | 50, 35 | OK |
+| Fy/Fu ≤ 0.8 | 50/62 = 0.8065 | Over 0.8; passes only by the tables' note "ASTM A500/A500M Grade C is acceptable" (S6-13, S6-16 item 7) |
+| Fyb/Fub ≤ 0.8 | 35/60 = 0.5833 | OK |
+
+### C3. Loads and load path
+
+All guard loads act through the rail centerline (brief, Check 3 weld
+model). The branch actions at the chord wall are the weld envelope's (W10),
+by S6-10: the load reaches the post through the rail wall at the post.
+
+- **Rail dead load.** Custom tube weight on the nominal wall (checks.md;
+  S5-8): A_nom = π·t_nom·(OD − t_nom) = π(0.055)(2.320) = 0.4009 in²;
+  steel 490 lb/ft³ = 0.28356 lb/in³ (own reading: AISC Manual, steel unit
+  weight 490 pcf, memory); w_D = 0.4009 × 0.28356 = 0.11367 lb/in = 1.364
+  lb/ft.
+- **D in Check 3** = w_D·L = 0.11367 × 72 = 8.184 lb (welds.md W10: the
+  top rail's dead load over the span; no intermediate rail).
+- **Guard load reaching the post (L).** Concentrated: P = 200 lb applied at
+  the post. Distributed: w·s = 4.1667 × 72 = 300.0 lb, the tributary span
+  of an interior post. Both load types are run in every case.
+- **Eccentricity.** e = D_rail/2 = 2.375/2 = 1.1875 in (S6-10, W1).
+
+| Case | Branch action on the rail wall | Combination | Qf basis (S6-10) |
+| --- | --- | --- | --- |
+| Downward | Pr = D + L, branch compression | D + L | Check 1 downward vertical moment; underside in compression, Eq. K1-3 |
+| Upward | Pr = L − 0.6D, branch tension | 0.6D + 1.0L | underside in tension, Qf = 1.0 |
+| Outward, inward | Mr-op = L·e; Pr = D | D + L | Check 1 dead-load vertical moment only, Eq. K1-3 |
+| Longitudinal | Mr-ip = L·e; Pr = D | D + L | dead-load vertical moment only, Eq. K1-3 |
+
+Outward and inward are identical (round chord, round branch, no sign
+dependence in K4-3 or Qf); both are listed.
+
+Check 1 moments for Mro (simple span, L = 72 in; verified
+`aisc_manual.t3-23.case1.M` and `aisc_manual.t3-23.case7.M`):
+
+- M_D = w_D·L²/8 = 0.11367 × 5184/8 = 73.66 lb-in
+- Concentrated, midspan: P·L/4 = 200 × 72/4 = 3,600 lb-in
+- Distributed: w·L²/8 = 4.1667 × 5184/8 = 2,700 lb-in
+- Downward Mro: concentrated 3,600 + 73.66 = 3,674 lb-in; distributed
+  2,700 + 73.66 = 2,774 lb-in.
+- Lateral cases Mro = M_D = 73.66 lb-in. Pro = 0 in every case (S6-10).
+
+### C4. Section properties of the chord (rail)
+
+- t = t_des = 0.93·t_nom = 0.93 × 0.055 = 0.05115 in. AISC 360-22 §B4.2
+  (HSS other than A1065 and A1085: 0.93 of nominal); own reading, memory.
+- Di = D − 2t = 2.375 − 0.1023 = 2.273 in
+- Ag = π/4·(D² − Di²) = 0.3734 in² (not used: Pro = 0)
+- I = π/64·(D⁴ − Di⁴) = 0.2522 in⁴; S = I/(D/2) = 0.2124 in³ (exact hollow
+  circle on the design wall, checks.md custom round tube ruling)
+- β = Db/D = 2.375/2.375 = 1.000 (§K1.1)
+- γ = D/(2t) = 2.375/(2 × 0.05115) = 23.22 (§K1.1)
+- γ^0.2 = 1.876; γ^0.5 = 4.818; 3.0/(1 − 0.81β) = 3.0/0.19 = 15.79
+
+### C5. Case-independent capacities (Qf = 1, θ = 90°, sin θ = 1)
+
+All AISC 360-22, read from out/aisc-360-22.pdf (equation forms
+reconstructed where the text extraction lost symbols; they match my
+memory of the 360-16 tables, renumbered).
+
+- **Eq. K3-2** (Table K3.1, chord plastification, T-connection):
+  Pn·sinθ = Fy·t²·(3.1 + 15.6β²)·γ^0.2·Qf
+  = 50 × 0.05115² × (3.1 + 15.6) × 1.876 × Qf = 4.588·Qf kips.
+  Ω = 1.67 (Table K3.1). Pc = 4,588/1.67 = 2,748·Qf lb.
+- **Eq. K4-1** (Table K4.1, in-plane, chord plastification):
+  Mn-ip = 5.39·Fy·t²·γ^0.5·β·Db·sinθ·Qf
+  = 5.39 × 50 × 0.05115² × 4.818 × 1.0 × 2.375 × Qf = 8.069·Qf kip-in.
+  Ω = 1.67. Mc-ip = 4,832·Qf lb-in.
+- **Eq. K4-3** (Table K4.1, out-of-plane, chord plastification):
+  Mn-op = Fy·t²·Db·[3.0/(1 − 0.81β)]·Qf/sinθ
+  = 50 × 0.05115² × 2.375 × 15.79 × Qf = 4.906·Qf kip-in.
+  Ω = 1.67. Mc-op = 2,937·Qf lb-in.
+- Punching (Eqs. K3-1, K4-2, K4-4, Ω = 1.58): not computed, Db = 2.375 in
+  is not < D − 2t = 2.273 in.
+- **Qf** (§K1.3(b), Eq. K1-3): Qf = 1 − 0.3U(1 + U) ≤ 1.0, with
+  U = |Pro/(Fc·Ag) + Mro/(Fc·S)| ≤ 1.0 (Eq. K1-6) and Fc = 0.60Fy for ASD
+  (§K1.1 definitions) = 30 ksi. Fc·S = 30 × 0.2124 = 6.371 kip-in.
+- **Eq. K4-5**: Pr/Pc + (Mr-ip/Mc-ip)² + Mr-op/Mc-op ≤ 1.0, with Pc from
+  Table K3.1 at the case's Qf.
+
+### C6. Every case
+
+Downward (D + L), branch compression, Mr = 0:
+
+| Load type | Mro (lb-in) | U = Mro/(Fc S) | Qf | Pr = D + L (lb) | Pc = 2,748·Qf (lb) | Ratio Pr/Pc |
+| --- | --- | --- | --- | --- | --- | --- |
+| concentrated | 3,674 | 0.5766 | 0.7273 | 8.184 + 200 = 208.2 | 1,998 | 0.1042 |
+| distributed | 2,774 | 0.4353 | 0.8125 | 8.184 + 300 = 308.2 | 2,233 | **0.1380** |
+
+Qf, concentrated: 1 − 0.3(0.5766)(1.5766) = 0.7273. Distributed:
+1 − 0.3(0.4353)(1.4353) = 0.8125.
+
+Upward (0.6D + 1.0L), branch tension, Qf = 1.0 (connecting surface in
+tension, §K1.3(a)), Mr = 0:
+
+| Load type | Pr = L − 0.6D (lb) | Pc (lb) | Ratio |
+| --- | --- | --- | --- |
+| concentrated | 200 − 4.911 = 195.1 | 2,748 | 0.07101 |
+| distributed | 300 − 4.911 = 295.1 | 2,748 | 0.1074 |
+
+Net tension in both (L > 0.6D), so the case is checked.
+
+Outward and inward (identical), Mro = M_D = 73.66 lb-in:
+U = 73.66/6,371 = 0.01156; Qf = 1 − 0.3(0.01156)(1.01156) = 0.9965.
+Pr = D = 8.184 lb; Pc = 2,748 × 0.9965 = 2,738 lb; Pr/Pc = 0.002989.
+Mc-op = 2,937 × 0.9965 = 2,927 lb-in.
+
+| Load type | Mr-op = L·e (lb-in) | Mr-op/Mc-op | Ratio (K4-5) |
+| --- | --- | --- | --- |
+| concentrated | 200 × 1.1875 = 237.5 | 0.08114 | 0.08413 |
+| distributed | 300 × 1.1875 = 356.3 | 0.1217 | 0.1247 |
+
+Longitudinal, same Qf = 0.9965, Pr/Pc = 0.002989;
+Mc-ip = 4,832 × 0.9965 = 4,815 lb-in:
+
+| Load type | Mr-ip = L·e (lb-in) | (Mr-ip/Mc-ip)² | Ratio (K4-5) |
+| --- | --- | --- | --- |
+| concentrated | 237.5 | 0.002433 | 0.005423 |
+| distributed | 356.3 | 0.005475 | 0.008464 |
+
+### C7. Summary
+
+| Case | Concentrated | Distributed |
+| --- | --- | --- |
+| Downward | 0.1042 | **0.1380** |
+| Upward | 0.07101 | 0.1074 |
+| Outward | 0.08413 | 0.1247 |
+| Inward | 0.08413 | 0.1247 |
+| Longitudinal | 0.005423 | 0.008464 |
+
+Controlling: **downward, distributed**, chord plastification (Eq. K3-2)
+in the Eq. K4-5 interaction, ratio 0.138 ≤ 1.0, OK. Qf decides the order:
+at Qf = 1 the downward distributed case would be 308.2/2,748 = 0.112,
+below the outward distributed case's 0.125; the downward case's own rail
+moment lowers its Qf to 0.81.
+
+### C8. Values from my own reading (no verified entry)
+
+| Value | Used | Source |
+| --- | --- | --- |
+| A500 Gr C Fy = 50, Fu = 62 ksi | chord Fy, limits | AISC Manual 16th Ed. Table 2-4 and ASTM A500-21, memory |
+| A53 Gr B Fu = 60 ksi | Fyb/Fub limit only | AISC Manual 16th Ed. Table 2-4, memory |
+| t_des = 0.93·t_nom | chord t | AISC 360-22 §B4.2, memory |
+| Steel 490 lb/ft³ | rail weight, D | AISC Manual, memory |
+| Eqs. K3-1, K3-2, K4-1 to K4-5; Ω = 1.67 and 1.58 | capacities | AISC 360-22 Tables K3.1 and K4.1, pp. 16.1-163 and 16.1-167 (PDF, symbols reconstructed) |
+| Eqs. K1-3, K1-6; Fc = 0.60Fy (ASD) | Qf | AISC 360-22 §K1.1 and §K1.3, pp. 16.1-158 to 16.1-160 (PDF) |
+| β, γ definitions | parameters | AISC 360-22 §K1.1 (PDF) |
+| Punching condition Db < D − 2t | punching not checked | Tables K3.1 and K4.1 (PDF) |
+| Limits of applicability, A500 Gr C note | C2 | Tables K3.1A and K4.1A, §K1.3 (PDF) |
+
+### C9. Open questions and findings for Micah
+
+- **Q1. An inclined guard load raises the chord interaction by about
+  38%.** Eq. K4-5 is linear in Pr and Mr-op, so a load in the
+  transverse-vertical plane, inclined downward and outward, adds the two
+  ratios about as a root-sum-square. Scanning the angle (with Qf following
+  the inclined case's vertical moment), the distributed load gives 0.190 at
+  51° below horizontal, against 0.138 for the worst orthogonal case; the
+  concentrated load 0.138 at 56°; upward-and-outward 0.162. W10's reason
+  for no inclined case (under 10% on the weld, because the weld demand is
+  V·e) does not carry over to this interaction, though S6-10 reuses W10's
+  envelope. Not recorded in the values file (the plan's five cases are);
+  no result changes at these magnitudes. A ruling or a sentence in the
+  brief would close it.
+- **Q2. Concentrated load in two places at once.** The branch actions put
+  P at the post, while Qf takes Check 1's moment with P at midspan. They
+  cannot occur together; S6-10 chooses this as a bound, so it is
+  conservative and I applied it as written.
+- **Q3. Pro = 0 in the longitudinal case.** The rail carries the
+  longitudinal load axially (up to 300 lb). §K1.3 takes Pro on the side of
+  the joint with lower compression stress for round HSS, which here is
+  the side in tension or unloaded, so Pro = 0 is at or above the code's
+  Qf penalty. No issue; noted because the plan does not say why.
+- **Q4. Local effect of the guard load on the thin rail wall away from the
+  post** (plan open item 5, issue #28): no Chapter K provision is written
+  for a hand load; not computed.
+- **Q5. Brief inconsistency on A500 Gr C round Fy.** welds.md W5 lists
+  "A500 Gr C round (1.35)" for Fu/Fy, which is 62/46, the pre-2021 round
+  value; checks.md S5-13 and the plan use 50/62. I used 50 ksi. At 46 ksi
+  every chord capacity here scales by 0.92 and Fc changes too.
+- **Q6. Key `check3_chord.punching` has no listed words** in the values
+  file's header. I recorded `false` (punching does not apply, Db not <
+  D − 2t). The test may expect another form.
+
+### C10. Review checklist (docs/brief/verification.md, items 1 to 9)
+
+1. **Loads complete.** Rail dead load over the span (the only D at this
+   joint; no intermediate rail, and the post's own weight is below the
+   joint); both guard load types in every case. The component load does
+   not reach Check 3.
+2. **Direction and worst case.** Five orthogonal cases, both load types,
+   each worked; downward distributed governs by calculation. Inward is
+   computed equal to outward. The inclined load (Q1) is outside the plan's
+   envelope and flagged.
+3. **Checks complete.** Every Chapter K limit state for a round
+   T-connection listed in C2; punching excluded by its own condition;
+   applicability limits all checked.
+4. **Geometry.** e = D_rail/2 = 1.1875 in; span 72 in for Check 1 moments
+   and tributary length; θ = 90°; β = 1.000; γ on the design wall.
+5. **Method and equations.** T-connection equations (not cross); Ω = 1.67
+   for plastification; Qf by Eq. K1-3 with Fc = 0.6Fy (ASD) and the
+   S6-10 moment per case; Qf = 1 for the upward case; K4-5 with the
+   in-plane term squared.
+6. **Assumptions.** Interior post (no end-distance reduction); Mro as
+   S6-10's bound; Pro = 0 (Q3); loads at the rail centerline.
+7. **Code editions.** AISC 360-22 throughout for Chapter K, §B4.2 and
+   §K1; AISC Manual 16th Ed. for Table 2-4 and steel weight; ASCE 7-22 for
+   loads and combinations.
+8. **Magnitude sense.** Pc ≈ 2.7 kips and Mc-op ≈ 2.9 kip-in against
+   branch forces of 0.2 to 0.3 kips: ratios 0.01 to 0.14, consistent with
+   S6-1's "tens to hundreds of pounds against capacities in kips" and the
+   S5-3 order-of-magnitude estimate for a 2.375 in tube near D/t = 46.
+9. **Governing case.** Downward, distributed. I expected an outward case
+   from the brief's planning description; it is not, because the downward
+   case's own vertical moment cuts Qf to 0.81 while the lateral cases keep
+   Qf ≈ 1.0. That is S6-10's Qf rule doing what it says.
